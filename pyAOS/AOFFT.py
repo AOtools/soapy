@@ -245,8 +245,25 @@ class mpFFT(object):
         Q.put(fftData)
 
 
+def ftShift2d(inputData, outputData=None):
+    """
+    Helper function to shift and array of 2-D FFT data
 
+    Args:
+        inputData(ndarray): array of data to be shifted. Will shift final 2 axes
+        outputData(ndarray, optional): array to place data. If not given, will overwrite inputData
+    """
+    if not outputData:
+        outputData = inputData.view()
 
+    shape = inputData.shape
+
+    outputData[..., :shape[-2]*0.5, :shape[-1]*0.5] = inputData[..., :shape[-2]*0.5, :shape[-1]*0.5][...,::-1,::-1]
+    outputData[..., shape[-2]*0.5:, :shape[-1]*0.5] = inputData[..., shape[-2]*0.5:, :shape[-1]*0.5][...,::-1,::-1]
+    outputData[..., :shape[-2]*0.5, shape[-1]*0.5:] = inputData[..., :shape[-2]*0.5, shape[-1]*0.5:][...,::-1,::-1]
+    outputData[..., shape[-2]*0.5:, shape[-1]*0.5:] = inputData[..., shape[-2]*0.5:, shape[-1]*0.5:][...,::-1,::-1]
+
+    return outputData
 
 class Convolve(object):
     

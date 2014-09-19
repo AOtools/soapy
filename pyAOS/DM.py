@@ -8,32 +8,36 @@ except NameError:
     xrange = range
 
 class DM:
-    def __init__ (self,pupilSize,acts,wfss,mask,cond,wfsList=[0]):
+    def __init__ (self, simConfig, dmConfig, wfss, mask):
 
-        #A comment to test the cython repo
-       self.pupilSize = pupilSize
-       self.acts = acts
-       self.wfss = wfss
-       self.mask = mask
-       self.cond = cond
-       self.acts = self.getActiveActs()
-       self.wvl = wfss[wfsList[0]].waveLength
+        self.simConfig = simConfig
+        self.dmConfig = dmConfig
+        self.wfss = wfss
+        self.mask = mask
+        self.acts = self.getActiveActs()
+        self.wvl = wfss[0].wfsConfig.wavelength
        
-       self.actCoeffs = numpy.zeros( (self.acts) )
+        self.actCoeffs = numpy.zeros( (self.acts) )
        
-       #find the total number of WFS subaps, and make imat
-       #placeholder
-       self.totalSubaps = 0
-       for wfs in wfsList:
-           self.totalSubaps += self.wfss[wfs].activeSubaps
+        #find the total number of WFS subaps, and make imat
+        #placeholder
+        self.totalSubaps = 0
+        for wfs in wfss:
+            self.totalSubaps += self.wfss[wfs].activeSubaps
            
+    def getActiveActs(self):
+        """
+        Method returning the total number of actuators used by the DM - May be overwritten in DM classes
+
+        Returns:
+            int: number of active DM actuators
+        """
+        return self.acts
+
+
     def makeIMat(self,wfsList=[0], callback=None, progressCallback=None ):
        '''
-       Returns all wavefronts which will be used for creating the
-       interaction matrix.
-       INPUT:  Zmax - maximum zernike required, integer
-
-       OUTPUT: wavefronts - numpy array, shape Zmax,self.pupilSize,self.pupilSize
+       makes IMat
        '''
        self.makeIMatShapes()
 
@@ -97,8 +101,6 @@ class DM:
 
 class zernike(DM):
 
-    def getActiveActs(self):
-        return self.acts
 
     def makeIMatShapes(self):
         '''
@@ -106,7 +108,7 @@ class zernike(DM):
         interaction Matrix
         '''
 
-        shapes = zerns.zernikeArray(int(self.acts+2),int(self.pupilSize))[2:]
+        shapes = zerns.zernikeArray(int(self.acts+2),int(self.simConfig.pupilSize))[2:]
 
         self.iMatShapes = shapes*self.mask
 
@@ -116,7 +118,7 @@ class peizo(DM):
 
     def getActiveActs(self):
         activeActs = []
-        xActs = int(numpy.round(numpy.sqrt(self.acts)))
+        xActs = int(numpy.round(numpy.sqrt(self.dmConfig.dmActs)))
         spcing = self.mask.shape[0]/float(xActs)
 
         for x in xrange(xActs):
@@ -130,8 +132,8 @@ class peizo(DM):
 
     def makeIMatShapes(self):
 
-        shapes = numpy.zeros( (self.acts, self.pupilSize, self.pupilSize) )
-        zoomFactor = float(self.pupilSize)/float(self.xActs)
+        shapes = numpy.zeros( (self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize) )
+        zoomFactor = float(self.simConfig.pupilSize)/float(self.xActs)
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]
@@ -140,7 +142,7 @@ class peizo(DM):
             shape[x,y] = 1
 
             shapes[i] = 5 * aoSimLib.zoom(shape,
-                    (self.pupilSize,self.pupilSize), order=1)
+                    (self.simConfig.pupilSize,self.simConfig.pupilSize), order=1)
         self.iMatShapes = (shapes * self.mask) #*self.wvl
 
 
@@ -148,7 +150,7 @@ class peizo(DM):
 class TT:
 
     def __init__(self,pupilSize, wfs, mask):
-        self.pupilSize = pupilSize
+        self.simConfig.pupilSize = pupilSize
         self.mask = mask
         self.dmCommands = numpy.zeros(2)
         self.wfs = wfs
@@ -159,7 +161,7 @@ class TT:
 
     def makeIMatShapes(self):
 
-        coords = numpy.arange(-1, 1, 2./self.pupilSize) + 1./self.pupilSize
+        coords = numpy.arange(-1, 1, 2./self.simConfig.pupilSize) + 1./self.simConfig.pupilSize
 
         X,Y = numpy.meshgrid( coords, coords ) 
 

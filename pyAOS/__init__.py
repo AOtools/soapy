@@ -7,7 +7,7 @@ the AO objects, then finally runs a choice of loops.
 
 
 #sim imports
-from . import atmosphere
+from . import atmosphere, logger
 from . import WFS
 from . import DM
 from . import LGS
@@ -20,7 +20,6 @@ from . import aoSimLib
 import numpy
 import datetime
 import sys
-import logging
 import os
 import time
 import traceback
@@ -60,6 +59,9 @@ class Sim(object):
         self.configFile = configFile
         self.readParams()
 
+        self.guiQueue = None
+        self.go = False
+
     def readParams(self):
         '''
         Reads configuration file parameters
@@ -68,7 +70,11 @@ class Sim(object):
         set reasonable defaults to AO parameters
         '''
 
-        confParse.readParams(self, self.configFile)
+        self.config = confParse.Configurator(self.configFile)
+        self.config.readfile()
+        self.config.loadSimParams() 
+
+        self.gain = self.config.sim.gain
 
     def aoinit(self):
         '''
@@ -76,149 +82,142 @@ class Sim(object):
 
         Initialises and passes relevant data to sim objects. This does important pre-run tasks, such as creating or loading phase screens, determining WFS geometry, setting propagation modes and pre-allocating data arrays used later in the simulation.
         '''
+        global log
+        log = logger.Logger()
+
         #Read params if they haven't been read before
         try:
-            self.pupilSize
+            self.config.sim.pupilSize
         except:
             #self.readParams()
             confParse.readParams(self, self.configFile)
 
-        if self.loggingMode == 0:
-            logging.basicConfig(level=logging.WARNING)
+        log.verbosity = self.config.sim.verbosity
+        log.filename = self.config.sim.logfile
 
-        elif self.loggingMode == 1:
-            logging.basicConfig(level=logging.INFO)
-
-        elif self.loggingMode == 2:
-            logging.basicConfig(level=logging.DEBUG)
 
         #calculate some params from read ones
         #calculated
-        self.aoloop = eval("self."+self.aoloopMode)
-        self.pxlScale = self.pupilSize/float(self.telDiam)  # pxls per Metre
-        self.scrnSize = numpy.ceil(
-                            2*self.pxlScale*self.scrnHeights.max()
-                            * self.GSPositions.max() * numpy.pi/(3600.*180))\
-                            + self.pupilSize
+        self.aoloop = eval("self."+self.config.sim.aoloopMode)
+        self.pxlScale = self.config.sim.pupilSize/float(
+                                    self.config.tel.telDiam)  # pxls per Metre
+
+
+
+
 
 
         #Init Pupil Mask
-        logging.info("Creating mask...")
-        if self.mask == "circle":
-            self.mask = aoSimLib.circle(self.pupilSize/2.,self.pupilSize)
-            if self.obs!=None:
-                self.mask -= aoSimLib.circle(self.obs*self.pxlScale/2., self.pupilSize)
+        log.info("Creating mask...")
+        if self.config.tel.mask == "circle":
+            self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
+                                        self.config.sim.pupilSize)
+            if self.config.tel.obs!=None:
+                self.mask -= aoSimLib.circle(
+                        self.config.tel.obs*self.config.sim.pxlScale/2., 
+                        self.config.sim.pupilSize
+                        )
+   
 
-
-
-        self.initAtmos()   
+        self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
         #Find if WFSs should each have own process
-        if self.mp_wfs:
-            self.wfs_fftw_threads=1
+        if self.config.sim.wfsMP:
+
+            log.info("Setting fftwThreads to 1 as WFS MP")
+            for wfs in xrange(self.config.sim.nGS):
+                self.config.wfs[wfs].fftwThreads = 1
             self.runWfs = self.runWfs_MP
         else:
-            self.wfs_fftw_threads=None
             self.runWfs = self.runWfs_noMP
 
         #Init LGS module
-        logging.info("Initialising LGS..")
+        log.info("Initialising LGS...")
         self.LGSs = {}
-        for i in xrange(self.GSNo):
-            if self.LGSUplink[i] != 0:
-                print("propMode:%s"%self.lgsPropMode)
-                if self.lgsPropMode[i]=="phys" or self.lgsPropMode[i]=="physical":
+        for i in xrange(self.config.sim.nGS):
+            if self.config.lgs[i].lgsUplink != 0:
+                
+                if  (   self.config.lgs[i].propagationMode=="phys" or 
+                        self.config.lgs[i].propagationMode=="physical"):
                     LGS.LGS = LGS.PhysicalLGS
-                    print("Physical LGS")
+                    
                 else:
                     LGS.LGS = LGS.GeometricLGS
-                    print("Geometric LGS")
-                self.LGSs[i] = LGS.LGS( self.pupilSize, self.GSPositions[i],
-                                        self.pxlScale, self.scrnHeights,
-                                        self.lgsHeight[i], self.LGSPupilSize,
-                                        self.scrns, self.LGSFFTPadding[i],
-                                        self.LGSWL[i],
-                                        self.subapFOV[i],
-                                        self.pxlsPerSubap[i],
-                                        self.subapOversamp[i], self.atmos.wvl,
-                                        self.wfs_fftw_threads,
-                                        self.lgsPyfftw_FLAG)
+                    
+                self.LGSs[i] = LGS.LGS( self.config.sim, self.config.wfs[i], 
+                                        self.config.lgs[i], self.config.atmos
+                                        )
             else:
                 self.LGSs[i] = None
 
         #init WFSs
-        logging.info("Initialising WFSs....")
+        log.info("Initialising WFSs....")
         self.wfss = {}
-        self.totalSubaps = 0
+        self.config.sim.totalSubaps = 0
 
-        for wfs in xrange(self.GSNo):
-            self.wfss[wfs]=WFS.ShackHartmannWfs(
-                self.subaps[wfs], self.pupilSize, self.GSPositions[wfs],
-                self.pxlScale, self.scrnHeights, self.mask,
-                self.subapThreshold, self.GSHeight[wfs], self.pxlsPerSubap[wfs],
-                        self.subapOversamp[wfs], self.subapFOV[wfs],
-                        self.waveLengths[wfs], self.telDiam,  self.LGSs[wfs],
-                        self.elongation, self.elongLayers,
-                        self.wfsFftProcs, self.wfsPyfftw_FLAG, self.wfs_fftw_threads,
-                        self.lgsLaunchPos[wfs],
-                        self.atmos.wvl, self.removeTT[wfs], self.wfsSNR[i],
-                        self.angleEquivNoise[i], self.wfsBitDepth[i], self.wfsPropMode[wfs],
-                        self.scrns )
+        for wfs in xrange(self.config.sim.nGS):
+            self.wfss[wfs]=WFS.ShackHartmannWfs(    
+                    self.config.sim, self.config.wfs[wfs], 
+                    self.config.atmos, self.mask, self.LGSs[wfs])
 
-            self.totalSubaps += self.wfss[wfs].activeSubaps
+            self.config.sim.totalSubaps += self.wfss[wfs].activeSubaps
 
-            logging.info("WFS %i: %i active sub-apertures",wfs,
-                     len(self.wfss[wfs].subapCoords))
+            log.info("WFS {0}: {1} active sub-apertures".format(wfs,
+                     len(self.wfss[wfs].subapCoords)))
+        self.config.sim.totalSlopes = 2*self.config.sim.totalSubaps
 
 
         #init DMs
-        logging.info("Initialising DMs...")
-        if self.tipTilt:
-            self.TT = DM.TT(self.pupilSize, self.wfss[0], self.mask)
+        log.info("Initialising DMs...")
+        if self.config.sim.tipTilt:
+            self.TT = DM.TT(self.config.sim.pupilSize, self.wfss[0], self.mask)
 
         self.dms = {}
         self.dmActCommands = {}
-        self.totalActs = 0
-        for dm in xrange(self.dmNo):
-            dmObj = eval( "DM."+self.dmTypes[dm])
-            self.dms[dm] = dmObj(self.pupilSize,self.dmActs[dm],
-                                 self.wfss,self.mask, self.dmCond[dm])
-            self.dmActCommands[dm] = numpy.empty( (self.nIters, self.dms[dm].acts) )
-            self.totalActs+=self.dms[dm].acts
+        self.config.sim.totalActs = 0
+        for dm in xrange(self.config.sim.nDM):
+            dmObj = eval( "DM."+self.config.dm[dm].dmType)
 
-            logging.info("DM %d: %d active actuators"%(dm,self.dms[dm].acts))
-        logging.info("%d total DM Actuators"%self.totalActs)
+            self.dms[dm] = dmObj(
+                        self.config.sim, self.config.dm[dm],
+                        self.wfss, self.mask
+                        )
+
+            self.dmActCommands[dm] = numpy.empty( (self.config.sim.nIters, 
+                                                    self.dms[dm].acts) )
+            self.config.sim.totalActs+=self.dms[dm].acts
+
+            log.info("DM %d: %d active actuators"%(dm,self.dms[dm].acts))
+        log.info("%d total DM Actuators"%self.config.sim.totalActs)
 
 
         #init Reconstructor
-        logging.info("Initialising Reconstructor...")
-        reconObj = eval("RECON."+self.reconstructor)
-        self.recon = reconObj(self.dms, self.wfss, 2*self.totalSubaps,
-                            self.dmNo, self.dmTypes, self.dmActs, self.dmCond, 
-                            self.totalActs, self.runWfs, self.atmos,
-                            self.learnAtmos, self.learnIters, self.filePrefix,
-                            self.saveLearn)
+        log.info("Initialising Reconstructor...")
+        reconObj = eval("RECON."+self.config.sim.reconstructor)
+        self.recon = reconObj(  self.config.sim, self.dms, 
+                                self.wfss, self.atmos, self.runWfs
+                                )
+
 
         #init Science Cameras
-        logging.info("Initialising Science Cams...")
+        log.info("Initialising Science Cams...")
         self.sciCams = {}
         self.sciImgs = {}
         self.sciImgNo=0
-        for sci in xrange(self.sciNo):
-            self.sciCams[sci] = SCI.scienceCam(self.pupilSize, self.pxlScale,
-                                               self.sciPos[sci],
-                                                self.scrnHeights, self.mask,
-                                                self.sciFOV[sci],
-                                                self.sciWvls[sci],
-                                                self.telDiam, self.sciPxls[sci],
-                                                self.sciOversamp[sci],
-                                                self.atmos.wvl)
-            self.sciImgs[sci] = numpy.zeros( [self.sciPxls[sci]]*2 )
+        for sci in xrange(self.config.sim.nSci):
+            self.sciCams[sci] = SCI.scienceCam( 
+                        self.config.sim, self.config.tel, self.config.atmos,
+                        self.config.sci[sci], self.mask
+                        )
+
+            self.sciImgs[sci] = numpy.zeros( [self.config.sci[sci].pxls]*2 )
 
 
         #Init data storage
-        logging.info("Initialise Data Storage...")
+        log.info("Initialise Data Storage...")
         self.initSaveData()
+
+        
 
         self.iters=0
 
@@ -232,20 +231,8 @@ class Sim(object):
         self.Tatmos = 0
 
 
-        logging.info("Initialisation Complete!")
+        log.info("Initialisation Complete!")
 
-    def initAtmos(self):
-        """
-        Helper function to handle atmosphere initialisation
-        """
-        logging.info("Initialising Atmosphere...")
-        self.atmos = atmosphere.atmos()
-        self.scrns = self.atmos.loadScrns(  self.scrnNo, self.scrnNames,
-                                            self.scrnSize, self.windSpeeds,
-                                            self.windDirs, self.scrnStrengths,
-                                            self.pxlScale, self.newScreens,
-                                            self.wholeScrnSize, self.loopTime,
-                                            self.r0)
 
     def makeIMat(self,forceNew=False, progressCallback=None):
         """
@@ -264,9 +251,9 @@ class Sim(object):
             progressCallback (func): function called to report progress of interaction matrix construction
         """
         t = time.time()
-        logging.info("Making interaction Matrices...")
-        if self.tipTilt:
-            logging.info("Generating Tip Tilt IMat")
+        log.info("Making interaction Matrices...")
+        if self.config.sim.tipTilt:
+            log.info("Generating Tip Tilt IMat")
             self.TT.makeIMat(self.addToGuiQueue,
                                     progressCallback=progressCallback)
 
@@ -274,7 +261,7 @@ class Sim(object):
             loadIMat=False
             loadCMat=False
         else:
-            if self.filePrefix==None:
+            if self.config.sim.filePrefix==None:
                 loadIMat=False
                 loadCMat=False
             else:
@@ -303,14 +290,14 @@ class Sim(object):
         if scrns != None:
             self.scrns=scrns
 
-        slopes = numpy.zeros( (self.totalSubaps*2))
+        slopes = numpy.zeros( (self.config.sim.totalSubaps*2))
         s = 0
         if wfsList==None:
-            wfsList=range(self.GSNo)
+            wfsList=range(self.config.sim.nGS)
 
         for wfs in wfsList:
 
-            if self.LGSUplink[wfs]!=0:
+            if self.config.lgs[wfs].lgsUplink!=0:
                 tlgs=time.time()
                 self.LGSs[wfs].LGSPSF(self.scrns)
                 self.Tlgs +=time.time()-tlgs
@@ -341,24 +328,24 @@ class Sim(object):
         if scrns != None:
             self.scrns=scrns
 
-        slopes = numpy.zeros( (self.totalSubaps*2))
+        slopes = numpy.zeros( (self.config.sim.totalSubaps*2))
         s = 0
         if wfsList==None:
-            wfsList=range(self.GSNo)
+            wfsList=range(self.config.sim.nGS)
 
         wfsProcs = []
         wfsQueues = []
 
-        for wfs in xrange(self.GSNo):
+        for wfs in xrange(self.config.sim.nGS):
 
             wfsQueues.append(Queue())
             wfsProcs.append(Process(target=multiWfs,
                     args=[ self.scrns,self.wfss[wfs],self.LGSs[wfs],dmShape,
                                                         wfsQueues[wfs]]))
-        for wfs in xrange(self.GSNo):
+        for wfs in xrange(self.config.sim.nGS):
             wfsProcs[wfs].start()
 
-        for wfs in xrange(self.GSNo):
+        for wfs in xrange(self.config.sim.nGS):
 
             (slopes[s:s+self.wfss[wfs].activeSubaps*2],
                     self.wfss[wfs].wfsDetectorPlane,
@@ -391,7 +378,7 @@ class Sim(object):
             ndArray: TT corrected slopes
         """
 
-        if self.tipTilt:
+        if self.config.sim.tipTilt:
             #calculate the shape of TT Mirror
             TTShape = self.TT.dmFrame(slopes,self.ttGain,closed)
 
@@ -400,7 +387,7 @@ class Sim(object):
             xySlopes = (xySlopes.T - xySlopes.mean(1)).T
             slopes = xySlopes.reshape(self.TT.wfs.activeSubaps*2)
         else:
-            TTShape = numpy.zeros( [self.pupilSize]*2 )
+            TTShape = numpy.zeros( [self.config.sim.pupilSize]*2 )
 
         return TTShape,slopes
 
@@ -418,9 +405,9 @@ class Sim(object):
             ndArray: the combined DM shape
         """
         t = time.time()
-        dmShape = numpy.zeros( [self.pupilSize]*2 )
+        dmShape = numpy.zeros( [self.config.sim.pupilSize]*2 )
         act=0
-        for dm in xrange(self.dmNo):
+        for dm in xrange(self.config.sim.nDM):
             dmShape += self.dms[dm].dmFrame(
                     dmCommands[act:act+self.dms[dm].acts],
                     self.gain, closed)
@@ -441,7 +428,7 @@ class Sim(object):
         """
         t = time.time()
 
-        for sci in xrange( self.sciNo ):
+        for sci in xrange( self.config.sim.nSci ):
             self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
             self.sciImgNo +=1
 
@@ -464,20 +451,19 @@ class Sim(object):
         self.correct=1
         self.go = True
 
-        for i in xrange(self.nIters):
+        for i in xrange(self.config.sim.nIters):
             if self.go:
-                logging.debug("Iteration %i",i)
+
+                #get next phase screens
+                t = time.time()
+                self.scrns = self.atmos.moveScrns()
+                self.Tatmos = time.time()-t
 
                 #Run Loop...
                 self.slopes = self.runWfs()
                 self.dmCommands = self.recon.reconstruct(self.slopes)
                 dmShape = self.runDM(self.dmCommands,closed=False)
                 self.runSciCams(dmShape)
-
-                #get next phase screens
-                t = time.time()
-                self.scrns = self.atmos.moveScrns()
-                self.Tatmos = time.time()-t
 
                 #Save Data
                 self.storeData(i)
@@ -489,7 +475,7 @@ class Sim(object):
                 sys.stdout.flush()
                 
                 if progressCallback!=None:
-                    progressCallback(i, self.nIters, "Open AO loop" )
+                    progressCallback(i, self.config.sim.nIters, "Open AO loop" )
                 self.addToGuiQueue()
             else:
                 break
@@ -510,16 +496,19 @@ class Sim(object):
         self.iters=1
         self.correct=1
         self.go = True
-        self.slopes = numpy.zeros( ( 2*self.totalSubaps) )
-        self.dmShapes = numpy.zeros( (self.nIters, self.pupilSize, self.pupilSize))
+        self.slopes = numpy.zeros( ( 2*self.config.sim.totalSubaps) )
+        self.dmShapes = numpy.zeros( (self.config.sim.nIters, self.config.sim.pupilSize, self.config.sim.pupilSize))
 
         #pylab.figure()
 
 
-        for i in xrange(self.nIters):
+        for i in xrange(self.config.sim.nIters):
             if self.go:
-                logging.debug("Iteration %i",i)
 
+                #Get next phase screens from atmos object.
+                t = time.time()
+                self.scrns = self.atmos.moveScrns()
+                self.Tatmos += time.time()-t
 
                 ttShape,self.slopes = self.runTipTilt(self.slopes)
                 self.dmCommands = self.recon.reconstruct(self.slopes)
@@ -530,10 +519,7 @@ class Sim(object):
                 #Useful to track progress externally
                 self.iters = i
 
-                #Get next phase screens from atmos object.
-                t = time.time()
-                self.scrns = self.atmos.moveScrns()
-                self.Tatmos += time.time()-t
+                
                 #saveData
                 self.storeData(i)
 
@@ -542,7 +528,7 @@ class Sim(object):
 
                 self.addToGuiQueue()
                 if progressCallback!=None:
-                    progressCallback(i, self.nIters, "Closed AO loop" )
+                    progressCallback(i, self.config.sim.nIters, "Closed AO loop" )
 
             else:
                 #Stop sim if "go"!=True
@@ -574,13 +560,13 @@ class Sim(object):
         Initialise the data structures which will be used to store data which will be saved or analysed once the simulation has ended. If the ``filePrefix = None``, no data is saved, other wise a directory called ``filePrefix`` is created, and data from simulation runs are saved in a time-stamped directory inside this.
         '''
 
-        if self.filePrefix!=None:
-            self.path = self.filePrefix +"/"+self.timeStamp()
+        if self.config.sim.filePrefix!=None:
+            self.path = self.config.sim.filePrefix +"/"+self.timeStamp()
             try:
                 os.mkdir( self.path )
             except OSError:
 
-                os.mkdir(self.filePrefix)
+                os.mkdir(self.config.sim.filePrefix)
                 os.mkdir(self.path)
 
             #Init WFS FP Saving
@@ -591,39 +577,44 @@ class Sim(object):
             shutil.copyfile( self.configFile, self.path+"/conf.py" )
 
         #Init Strehl Saving
-        if self.sciNo>0:
-            self.instStrehl = numpy.zeros( (self.sciNo, self.nIters) )
-            self.longStrehl = numpy.zeros( (self.sciNo, self.nIters) )
+        if self.config.sim.nSci>0:
+            self.instStrehl = numpy.zeros( (self.config.sim.nSci, self.config.sim.nIters) )
+            self.longStrehl = numpy.zeros( (self.config.sim.nSci, self.config.sim.nIters) )
 
         #Init science residual phase saving
         self.sciPhase = []
-        if self.saveSciRes and self.sciNo>0:
-            for sci in xrange(self.sciNo):
+        if self.config.sim.saveSciRes and self.config.sim.nSci>0:
+            for sci in xrange(self.config.sim.nSci):
                 self.sciPhase.append(
-                    numpy.empty( (self.nIters, self.pupilSize, self.pupilSize)))
+                    numpy.empty( (self.config.sim.nIters, self.config.sim.pupilSize, self.config.sim.pupilSize)))
 
         #Init WFS slopes data saving
-        if self.saveSlopes:
-            self.allSlopes = numpy.empty( (self.nIters, 2*self.totalSubaps) )
+        if self.config.sim.saveSlopes:
+            self.allSlopes = numpy.empty( (self.config.sim.nIters, 2*self.config.sim.totalSubaps) )
         else:
             self.allSlopes = None
 
         #Init DM Command Data saving
-        if self.saveDmCommands:
+        if self.config.sim.saveDmCommands:
             ttActs = 0
-            if self.tipTilt:
+            if self.config.sim.tipTilt:
                 ttActs = 2
-            self.allDmCommands = numpy.empty( (self.nIters, ttActs+self.totalActs))
+            self.allDmCommands = numpy.empty( (self.config.sim.nIters, ttActs+self.config.sim.totalActs))
 
         else:
             self.allDmCommands = None
 
         #Init LGS PSF Saving
-        if self.saveLgsPsf:
-            self.lgsPsfs = numpy.empty( (self.nIters, numpy.sum(self.LGSUplink),
-                                self.pupilSize,self.pupilSize) )
-                                # self.pxlsPerSubap[0]*self.subapOversamp[0],
-#                                 self.pxlsPerSubap[0]*self.subapOversamp[0]) )
+        if self.config.sim.saveLgsPsf:
+            self.lgsPsfs = []
+            for lgs in xrange(self.config.sim.nGS):
+                if self.config.wfs[lgs].lgsUplink:
+                    self.lgsPsfs.append(
+                            numpy.empty(self.config.sim.nIters, 
+                            self.config.sim.pupilSize, 
+                            self.config.sim.pupilSize)
+                            )
+            self.lgsPsfs = numpy.array(self.lgsPsfs)
 
         else:
             self.lgsPsfs = None
@@ -640,37 +631,37 @@ class Sim(object):
         Args:
             i(int): The system iteration number
         """
-        if self.saveSlopes:
+        if self.config.sim.saveSlopes:
             self.allSlopes[i] = self.slopes
 
-        if self.saveDmCommands:
+        if self.config.sim.saveDmCommands:
             act=0
-            if self.tipTilt:
+            if self.config.sim.tipTilt:
                 self.allDmCommands[i,:2] = self.TT.dmCommands
                 act=2
             self.allDmCommands[i,act:] = self.dmCommands
 
         #Quick bodge to save lgs psfs as images
         #FITS.Write(self.LGSs[0].psf1,self.path+"/lgsPsf_frame-%s.fits"%i)
-        if self.saveLgsPsf:
+        if self.config.sim.saveLgsPsf:
             lgs=0
-            for wfs in xrange(self.GSNo):
-                if self.LGSUplink[wfs]!=0:
-                    self.lgsPsfs[i,lgs] = self.LGSs[wfs].PSF
+            for wfs in xrange(self.config.sim.nGS):
+                if self.config.lgs[wfs].lgsUplink:
+                    self.lgsPsfs[lgs, i] = self.LGSs[wfs].PSF
                     lgs+=1
 
-        if self.sciNo>0:
-            for sci in xrange(self.sciNo):
+        if self.config.sim.nSci>0:
+            for sci in xrange(self.config.sim.nSci):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
             
-            if self.saveSciRes:
-                for sci in xrange(self.sciNo):
+            if self.config.sim.saveSciRes:
+                for sci in xrange(self.config.sim.nSci):
                     self.sciPhase[sci][i] = self.sciCams[sci].residual
 
-        if self.filePrefix!=None:
-            if self.saveWfsFrames:
-                for wfs in xrange(self.GSNo):
+        if self.config.sim.filePrefix!=None:
+            if self.config.sim.saveWfsFrames:
+                for wfs in xrange(self.config.sim.nGS):
                     pyfits.writeto(
                         self.path+"/wfsFPFrames/wfs-%d_frame-%d.fits"%(wfs,i),
                         self.wfss[wfs].wfsDetectorPlane     )
@@ -686,29 +677,29 @@ class Sim(object):
         Called once simulation has ended to save the data recorded during the simulation to disk in the directories created during initialisation.
         """
 
-        if self.filePrefix!=None:
+        if self.config.sim.filePrefix!=None:
 
-            if self.saveSlopes:
+            if self.config.sim.saveSlopes:
                 pyfits.writeto(self.path+"/slopes.fits", self.allSlopes)
 
-            if self.saveDmCommands:
+            if self.config.sim.saveDmCommands:
                 pyfits.writeto(self.path+"/dmCommands.fits", self.allDmCommands)
 
-            if self.saveLgsPsf:
+            if self.config.sim.saveLgsPsf:
                 pyfits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs)
 
 
-            if self.saveStrehl:
+            if self.config.sim.saveStrehl:
                 pyfits.writeto(self.path+"/instStrehl.fits", self.instStrehl)
                 pyfits.writeto(self.path+"/longStrehl.fits", self.longStrehl)  
 
-            if self.saveSciRes:
-                for i in xrange(self.sciNo):
+            if self.config.saveSciRes:
+                for i in xrange(self.config.sim.nSci):
                     pyfits.writeto(self.path+"/sciResidual_%02d.fits"%i,
                             self.sciPhase[i])
 
-            if self.saveSciPsf:
-                for i in xrange(self.sciNo):
+            if self.config.saveSciPsf:
+                for i in xrange(self.config.sim.nSci):
                     pyfits.writeto(self.path+"/sciPsf_%02d.fits"%i,
                                         self.sciImgs[i] )
                     
@@ -758,7 +749,7 @@ class Sim(object):
                 wfsFocalPlane = {}
                 wfsPhase = {}
                 lgsPsf = {}
-                for i in xrange(self.GSNo):
+                for i in xrange(self.config.sim.nGS):
                     wfsFocalPlane[i] = self.wfss[i].wfsDetectorPlane.copy().astype("float32")
                     try:
                         wfsPhase[i] = self.wfss[i].uncorrectedPhase.copy()
@@ -778,7 +769,7 @@ class Sim(object):
                     ttShape = None
 
                 dmShape = {}
-                for i in xrange(self.dmNo):
+                for i in xrange(self.config.sim.nDM):
                     try:
                         dmShape[i] = self.dms[i].dmShape.copy()
                     except AttributeError:
@@ -787,7 +778,7 @@ class Sim(object):
                 sciImg = {}
                 residual = {}
                 instSciImg = {}
-                for i in xrange(self.sciNo):
+                for i in xrange(self.config.sim.nSci):
                     try:
                         sciImg[i] = self.sciImgs[i].copy()
                     except AttributeError:

@@ -18,7 +18,6 @@ import numpy
 from . import confParse
 
 import time
-import threading
 import json
 import traceback
 #Python2/3 compatibility
@@ -27,7 +26,6 @@ try:
 except ImportError:
     import Queue as queue
 from argparse import ArgumentParser
-import logging
 import pylab
 import os
 try:
@@ -37,12 +35,11 @@ except ImportError:
 
 
 guiFile_path = os.path.abspath(os.path.realpath(__file__)+"/..")
-print(guiFile_path)
+
 class GUI(QtGui.QMainWindow):
     def __init__(self,sim,useOpenGL=False):
         self.app = QtGui.QApplication([])
         QtGui.QMainWindow.__init__(self)
-
 
         #self.window = QtGui.QMainWindow()
 
@@ -75,7 +72,6 @@ class GUI(QtGui.QMainWindow):
         self.gradient.restoreState(gradState)
 
         self.sim = sim
-        confFile = sim.configFile
 
         self.wfsPlots = {}
         self.dmPlots = {}
@@ -104,12 +100,13 @@ class GUI(QtGui.QMainWindow):
         self.colorList = ["b","g","r","c","m","y","k"]
         self.colorNo = 0
     
-        confParse.readParams(self.sim, confFile)
+        sim.readParams()
+        self.config = self.sim.config
         self.initPlots()
         self.show()
         self.init()
     
-       
+        
         
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
@@ -130,34 +127,35 @@ class GUI(QtGui.QMainWindow):
         self.wfsPlots = {}
         self.lgsPlots = {}
         self.phasePlots = {}
-        for wfs in range(self.sim.GSNo):
-            self.wfsPlots[wfs] = self.makeImageItem(self.ui.wfsLayout,
-                                                    self.sim.subaps[wfs]*self.sim.pxlsPerSubap[wfs])
-            self.phasePlots[wfs] = self.makeImageItem(self.ui.phaseLayout,self.sim.pupilSize)
-                                                      #self.sim.wfss[wfs].subapFOVSpacing*self.sim.subaps[wfs])
+        for wfs in range(self.config.sim.nGS):
+            self.wfsPlots[wfs] = self.makeImageItem(
+                    self.ui.wfsLayout, 
+                    self.config.wfs[wfs].subaps*self.config.wfs[wfs].pxlsPerSubap
+                    )
+            self.phasePlots[wfs] = self.makeImageItem(self.ui.phaseLayout,self.config.sim.pupilSize)
+                                                      
+            if self.config.lgs[wfs].lgsUplink == 1:
+                self.lgsPlots[wfs] = self.makeImageItem(
+                        self.ui.lgsLayout, self.config.sim.pupilSize)
 
-            if self.sim.LGSUplink[wfs] == 1:
-                self.lgsPlots[wfs] = self.makeImageItem(self.ui.lgsLayout,
-                                                        self.sim.pupilSize)
-                                                        #self.sim.pxlsPerSubap[wfs]*self.sim.subapOversamp[wfs])
 
-        if self.sim.tipTilt:
+        if self.config.sim.tipTilt:
             self.ttPlot = self.makeImageItem(self.ui.dmLayout,
-                                            self.sim.pupilSize)
+                                            self.config.sim.pupilSize)
             
         self.dmPlots = {}
-        for dm in range(self.sim.dmNo):
+        for dm in range(self.config.sim.nDM):
             self.dmPlots[dm] = self.makeImageItem(self.ui.dmLayout,
-                                                  self.sim.pupilSize)
+                                                  self.config.sim.pupilSize)
 
         self.sciPlots = {}
         self.resPlots = {}
-        for sci in range(self.sim.sciNo):
+        for sci in range(self.config.sim.nSci):
 
             self.sciPlots[sci] = self.makeImageItem(self.ui.sciLayout,
-                                                    self.sim.sciPxls[sci])
+                                                    self.config.sci[sci].pxls)
             self.resPlots[sci] = self.makeImageItem(self.ui.residualLayout,
-                                                    self.sim.pupilSize)
+                                                    self.config.sim.pupilSize)
         self.sim.guiQueue = self.updateQueue
         self.sim.guiLock = self.updateLock
         self.sim.gui = True
@@ -188,7 +186,7 @@ class GUI(QtGui.QMainWindow):
         self.updateLock.unlock()
         
         if plotDict:
-            for wfs in range(self.sim.GSNo):
+            for wfs in range(self.config.sim.nGS):
                 if plotDict["wfsFocalPlane"][wfs]!=None:
                     self.wfsPlots[wfs].setImage(
                         plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
@@ -205,12 +203,12 @@ class GUI(QtGui.QMainWindow):
             if plotDict["ttShape"]!=None:
                 self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
             
-            for dm in range(self.sim.dmNo):
+            for dm in range(self.config.sim.nDM):
                 if plotDict["dmShape"][dm] !=None:
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
                                             lut=self.LUT)
            
-            for sci in range(self.sim.sciNo):
+            for sci in range(self.config.sim.nSci):
                 if plotDict["sciImg"][sci]!=None:
                     if self.ui.instExpRadio.isChecked():
                         self.sciPlots[sci].setImage(
@@ -252,20 +250,20 @@ class GUI(QtGui.QMainWindow):
         for i in range(self.sim.scrnNo):
             pupilAxes[i] = pupilFig.add_subplot(2,
                                 numpy.ceil(self.sim.scrnNo/2.),i+1)
-            pupilAxes[i].imshow(numpy.zeros((   self.sim.pupilSize*2,
-                                                self.sim.pupilSize*2)),
+            pupilAxes[i].imshow(numpy.zeros((   self.config.sim.pupilSize*2,
+                                                self.config.sim.pupilSize*2)),
                                         origin="lower")
-            for wfs in range(self.sim.GSNo):
+            for wfs in range(self.config.sim.nGS):
                 print("wfs:%s"%wfs)
                 if self.sim.GSHeight[wfs]>self.sim.scrnHeights[i] or self.sim.GSHeight[wfs]==0:
                     cent = self.sim.wfss[wfs].metaPupilPos(
-    self.sim.scrnHeights[i])*self.sim.pxlScale+self.sim.pupilSize
+    self.sim.scrnHeights[i])*self.sim.pxlScale+self.config.sim.pupilSize
                     print(cent)
                     if self.sim.wfss[wfs].radii!=None:
                         radius = self.sim.wfss[wfs].radii[i]
                     
                     else:
-                        radius = self.sim.pupilSize/2.
+                        radius = self.config.sim.pupilSize/2.
                     print(radius)
                 
                     if self.sim.GSHeight[wfs]!=0:
@@ -296,14 +294,14 @@ class GUI(QtGui.QMainWindow):
         instStrehls = []
         longStrehls = []
         
-        for i in range(self.sim.sciNo):
+        for i in range(self.config.sim.nSci):
             instStrehls.append(100*self.sim.sciCams[i].instStrehl)
             longStrehls.append(100*self.sim.sciCams[i].longExpStrehl)
             
         self.ui.instStrehl.setText( "Instantaneous Strehl: "
-           +self.sim.sciNo*"%.1f%%  "%tuple(instStrehls))
+           +self.config.sim.nSci*"%.1f%%  "%tuple(instStrehls))
         self.ui.longStrehl.setText("Long Exposure Strehl: "
-           +self.sim.sciNo*"%.1f%%  "% tuple(longStrehls))
+           +self.config.sim.nSci*"%.1f%%  "% tuple(longStrehls))
 
         for plt in self.strehlPlts:
             for line in plt:
@@ -311,7 +309,7 @@ class GUI(QtGui.QMainWindow):
             del plt
             
         self.strehlPlts=[]
-        if self.sim.sciNo>0:
+        if self.config.sim.nSci>0:
             self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[0],
                     linestyle=":", color=self.colorList[self.colorNo]))
             self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[0],
@@ -336,6 +334,7 @@ class GUI(QtGui.QMainWindow):
         self.iThread = InitThread(self)
         self.iThread.finished.connect(self.initPlots)
         self.iThread.start()
+        self.config = self.sim.config
         
     def iMat(self):
         
@@ -418,8 +417,7 @@ class GUI(QtGui.QMainWindow):
 #Tidy up before closing the gui
     
     # def closeEvent(self, event):
-    #     self.stop()
-    #     event.accept()
+    #     del(self.app)
 
 
 ###########################################
@@ -437,13 +435,13 @@ class StatsThread(QtCore.QThread):
     def run(self):
         self.startTime = time.time()
         
-        while self.sim.iters+1 < self.sim.nIters and self.sim.go:
+        while self.sim.iters+1 < self.sim.config.sim.nIters and self.sim.go:
             time.sleep(1)
             iTime = time.time()
             try:
                 #Calculate and print running stats
                 itersPerSec = self.sim.iters / (iTime - self.startTime)
-                timeRemaining = (self.sim.nIters-self.sim.iters)/itersPerSec
+                timeRemaining = (self.sim.config.sim.nIters-self.sim.iters)/itersPerSec
                 self.updateStatsSignal.emit(itersPerSec, timeRemaining)
             except ZeroDivisionError:
                 pass
