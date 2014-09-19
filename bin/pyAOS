@@ -1,0 +1,70 @@
+#! /usr/bin/env python
+'''
+The python AO simulation startup script.
+either starts a command line or gui version of the simulation.
+'''
+
+
+from argparse import ArgumentParser
+import IPython
+import os.path
+import pyAOS
+from pyAOS import pyAOS_gui
+
+
+def runCmdSim(sim, newIMat=False, interactive = False):
+    '''
+    Runs the simulation 
+    '''
+    
+    if interactive:
+        sim.aoinit()
+        IPython.embed()
+        raise SystemExit
+    
+    
+    
+    else:
+        sim.aoinit()
+        sim.makeIMat(forceNew = newIMat)
+        sim.aoloop()
+    
+
+if __name__=="__main__":
+        
+    #Define parser and add arguments
+    parser = ArgumentParser()
+    parser.add_argument("configFile", nargs="?", action="store",
+            help="The AO config file you wish to simulate. Defaults to conf/testConf if none specified.")
+    parser.add_argument("--gui","-g", action="store_true", dest="gui",
+            help="Starts the AO gui to visualise your simulation")
+    
+    parser.add_argument("-gl", "--with-opengl", dest="gl",
+            action="store_true", help="Use opengl for gui plotting")
+    parser.add_argument("-i", "--interactive", dest="interactive", 
+                        action="store_true", help="Open sim using ipython interactive mode")
+    
+    
+    bin_path = os.path.abspath(os.path.realpath(__file__)+"/..")
+    print(bin_path)
+    #Finally, parse args
+    args = parser.parse_args()
+    
+    #default confFile
+    if args.configFile!=None:
+        configFile = args.configFile
+    else:
+        configFile = bin_path+"/../conf/testConf.py"
+
+    #Run sim with given args
+    
+    #init sim with conf file
+    sim = pyAOS.Sim(configFile)
+
+    #if gui start gui
+    if args.gui:
+        simGUI = pyAOS_gui.GUI(sim, useOpenGL=args.gl)
+        
+    else:
+        runCmdSim(sim, interactive=args.interactive)
+        
