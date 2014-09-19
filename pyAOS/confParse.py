@@ -1,244 +1,7 @@
 import numpy
-import logging
-import sys
-import traceback
 from . import logger
 
 log = logger.Logger()
-
-def readParams(sim, configFile):
-
-    '''
-    Loads all the parameter"/"+s from the config file
-    and stores then as data in the Sim class
-
-    Args:
-        sim (simObj): The simulation object, all paramaters will be given as attributes to this object.
-        configFile (string): The name of the simulation config file
-    '''
-
-
-    confFile = open(configFile)
-    exec(confFile.read(),globals())
-    confDict = parameters
-
-    #simulation params
-    sim.pupilSize = confDict["pupilSize"] #pupil size in pxls
-    try:
-        sim.filePrefix = confDict["filePrefix"]
-    except KeyError:
-        sim.filePrefix = None
-        
-    if sim.filePrefix!=None:
-        sim.filePrefix="data/"+sim.filePrefix
-
-    #Atmosphere Params
-    sim.scrnNo = confDict["scrnNo"]
-    sim.newScreens = confDict["newScreens"]
-    try:
-        sim.scrnNames = confDict["scrnNames"]
-    except KeyError:
-        sim.newScreens = True
-        sim.scrnNames= [None]*sim.scrnNo
-    sim.scrnHeights = confDict["scrnHeights"]
-    sim.scrnStrengths = confDict["scrnStrengths"]
-    sim.windSpeeds = confDict["windSpeeds"]
-    sim.windDirs = confDict["windDirs"]
-    
-    sim.wholeScrnSize = confDict["scrnSize"]
-    sim.r0 = confDict["r0"]
-    
-    try:
-        sim.learnAtmos = confDict["learnAtmos"]
-    except KeyError:
-        sim.learnAtmos = "scrns"
-        
-
-    #Telescope Params
-    sim.telDiam = confDict["telDiam"]
-    try:
-        sim.obs = confDict["obs"]
-    except KeyError:
-        sim.obs = 0
-    try:
-        sim.mask = confDict["mask"] #pupilmask
-    except KeyError:
-        sim.mask = "circle"
-        
-    #WFSs
-        
-    sim.GSNo = confDict["GSNo"]
-    sim.GSPositions = confDict["GSPositions"]
-    sim.GSHeight = confDict["GSHeight"]
-    sim.subaps = confDict["subaps"]
-    sim.pxlsPerSubap = confDict["pxlsPerSubap"]
-    sim.subapFOV = confDict["subapFOV"]
-    
-    try:
-        sim.wfsPropMode = confDict["wfsPropMode"]
-    except KeyError:
-        sim.wfsPropMode = ["geometric"]*sim.GSNo
-    
-    try:
-        sim.subapOversamp = confDict["subapOversamp"]
-    except KeyError:
-        sim.subapOversamp = 4    
-    
-    try:
-        sim.subapThreshold = confDict["subapThreshold"]
-    except KeyError:
-        sim.subapThreshold = 0.5
-    
-    try:
-        sim.waveLengths = confDict["waveLengths"]
-    except KeyError:
-        sim.waveLengths = [550e-9]*im.GSNo
-        
-    try:
-        sim.wfsFftProcs = confDict["wfsFftProcs"]
-    except KeyError:
-        sim.wfsFftProcs = 1
-
-    try:
-        sim.wfsPyfftw_FLAG = confDict["wfsPyfftw_FLAG"]
-    except KeyError:
-        sim.wfsPyfftw_FLAG = "FFTW_PATIENT"
-
-    try:
-        sim.mp_wfs = confDict["mp_wfs"]
-    except KeyError:
-        sim.mp_wfs = False
-
-    try:
-        sim.removeTT = confDict["removeTT"]
-    except KeyError:
-        sim.removeTT = numpy.array([False]*sim.GSNo)
-
-    try:
-        sim.wfsSNR = numpy.array(confDict["wfsSNR"])
-    except KeyError:
-        sim.wfsSNR = numpy.array( [0]*sim.GSNo )
-    try:
-        sim.angleEquivNoise = numpy.array(confDict["angleEquivNoise"])
-    except KeyError:
-        sim.angleEquivNoise = numpy.array([0]*sim.GSNo)
-
-    try:
-        sim.wfsBitDepth = numpy.array(confDict["wfsBitDepth"])
-    except KeyError:
-        sim.wfsBitDepth = numpy.array( [8]*sim.GSNo )
-
-
-    #LGS
-    try:
-        sim.LGSUplink = confDict["LGSUplink"]
-    except KeyError:
-        sim.LGSUplink = [0]*sim.GSNo
-        
-    sim.LGSPupilSize = confDict["LGSPupilSize"]
-    
-    sim.LGSFFTPadding = confDict["LGSFFTPadding"]
-    sim.LGSWL = confDict["LGSWL"]
-    try:
-        sim.lgsPropMode = confDict["lgsPropMode"]
-    except KeyError:
-        sim.lgsPropMode = ["geometric"]*sim.GSNo
-        
-    sim.lgsHeight = confDict["lgsHeight"]
-    try:
-        sim.lgsPyfftw_FLAG = confDict["lgsPyfftw_FLAG"]
-    except KeyError:
-        sim.lgsPyfftw_FLAG = "FFTW_MEASURE"
-
-    try:
-        sim.elongation = confDict["lgsElongation"]
-    except KeyError:
-        sim.elongation = 0
-
-    try:
-        sim.elongLayers = confDict["elongLayers"]
-    except KeyError:
-        sim.elongLayers = 10
-
-    try:
-        sim.lgsLaunchPos = confDict["lgsLaunchPos"]
-    except KeyError:
-        sim.lgsLaunchPos = numpy.array( [[0,0]]*sim.GSNo)
-
-    #DM Params
-    try:
-        sim.tipTilt = confDict["tipTilt"]
-    except KeyError:
-        sim.tipTilt = False
-
-    sim.ttGain = confDict["ttGain"]
-    sim.dmNo = confDict["dmNo"]
-    sim.dmTypes = confDict["dmTypes"]
-    sim.dmActs = confDict["dmActs"]
-    sim.dmCond = confDict["dmCond"]
-
-    #Science Params
-    sim.sciNo = confDict["sciNo"]
-    sim.sciPos = confDict["sciPos"]
-    sim.sciFOV = confDict["sciFOV"]
-    sim.sciWvls = confDict["sciWvls"]
-    sim.sciPxls = confDict["sciPxls"]
-    sim.sciOversamp = confDict["sciOversamp"]
-    try:
-        sim.sciPyfftw_FLAG = confDict["lgsPyfftw_FLAG"]
-    except KeyError:
-        sim.sciPyfftw_FLAG = "FFTW_MEASURE"
-
-
-    #Loop
-    sim.nIters = confDict["nIters"]
-    sim.loopTime = confDict["loopTime"]
-    sim.gain = confDict["gain"]
-    sim.aoloopMode = confDict["loopMode"]
-    sim.reconstructor = confDict["reconstructor"]
-    sim.learnIters = confDict["learnIters"]
-
-
-    #Set logging
-    sim.loggingMode = confDict["logging"]
-
-
-    #dataSaving
-    sim.saveSlopes = confDict["saveSlopes"]
-    sim.saveDmCommands = confDict["saveDmCommands"]
-    sim.saveLgsPsf = confDict["saveLgsPsf"]
-    try:
-        sim.saveLearn = confDict["saveLearn"]
-    except KeyError:
-        sim.saveLearn = False
-
-    try:
-        sim.saveStrehl = confDict["saveStrehl"]
-    except KeyError:
-        sim.saveStrehl = False
-
-    try:
-        sim.saveWfsFrames = confDict["saveWfsFrames"]
-    except KeyError:
-        sim.saveWfsFrames = False
-
-    try:
-        sim.saveSciPsf = confDict["saveSciPsf"]
-    except KeyError:
-        sim.saveSciPsf = True
-
-    try:
-        sim.saveSciRes = confDict["saveSciRes"]
-    except KeyError:
-        sim.saveSciRes = False
-
-    sim.go=False
-
-    sim.guiQueue = None
-    sim.guiLock = None
-    sim.waitingPlot = False
-
-
 
 
 #######################
@@ -266,6 +29,7 @@ class Configurator(object):
 
     def readfile(self):
 
+        #Exec the config file, which should contain a dict ``simConfiguration``
         with open(self.filename) as file_:
             exec(file_.read(), globals())
 
@@ -303,6 +67,18 @@ class Configurator(object):
             self.sci[sci].loadParams(self.configDict["Science"])
 
 
+        self.sim.pxlScale = float(self.sim.pupilSize)/self.tel.telDiam
+
+        #furthest out GS defines the sub-scrn size
+        gsPos = []
+        for gs in range(self.sim.nGS):
+            gsPos.append(self.wfs[gs].GSPosition)
+        maxGSPos = numpy.array(gsPos).max()
+        self.sim.scrnSize = numpy.ceil(
+                    2*self.sim.pxlScale*self.atmos.scrnHeights.max()
+                    *maxGSPos*numpy.pi/(3600.*180) 
+                    )+self.sim.pupilSize
+        log.print_("ScreenSize: {}".format(self.sim.scrnSize))
 class ConfigObj(object):
     def __init__(self):
 
@@ -358,6 +134,11 @@ class ConfigObj(object):
                 except KeyError:
                     self.warnAndDefault(param[0], param[1])
 
+    def calcParams(self):
+        """
+        Dummy method to be overidden if requiredParams
+        """
+        pass
 
 class SimConfig(ConfigObj):
 
@@ -371,26 +152,30 @@ class SimConfig(ConfigObj):
         self.requiredParams = [  "pupilSize",
                             "nIters",
                             "loopTime",
-                         ]
+                            ]
 
-        self.optionalParams = [  ("nGS", 0),
-                            ("nDM", 0),
-                            ("nSci", 0),
-                            ("gain", 0.6),
-                            ("aoloopMode", "closed"),
-                            ("reconstructor", "MVM"),
-                            ("filePrefix", None),
-                            ("saveSlopes", False),
-                            ("saveDmCommands", False),
-                            ("saveLgsPsf", False),
-                            ("saveLearn", False),
-                            ("saveStrehl", False),
-                            ("saveWfsFrames", False),
-                            ("saveSciPsf", False),
-                            ("saveSciRes", False),
-                            ("tipTilt", False),
-                            ("ttGain", 0.6),
-                            ("wfsMP", False),
+        self.optionalParams = [ ("nGS", 0),
+                                ("nDM", 0),
+                                ("nSci", 0),
+                                ("gain", 0.6),
+                                ("aoloopMode", "closed"),
+                                ("reconstructor", "MVM"),
+                                ("filePrefix", None),
+                                ("saveSlopes", False),
+                                ("saveDmCommands", False),
+                                ("saveLgsPsf", False),
+                                ("saveLearn", False),
+                                ("saveStrehl", False),
+                                ("saveWfsFrames", False),
+                                ("saveSciPsf", False),
+                                ("saveSciRes", False),
+                                ("tipTilt", False),
+                                ("ttGain", 0.6),
+                                ("wfsMP", False),
+                                ("verbosity", 2),
+                                ("logfile", None),
+                                ("learnIters", 0),
+                                ("learnAtmos", "random"),
                         ]
 
         self.initParams()
@@ -407,7 +192,7 @@ class AtmosConfig(ConfigObj):
                                 "r0",
                                 "windDirs",
                                 "windSpeeds",
-                                "scrnSize",
+                                "wholeScrnSize",
                                 ]
 
         self.optionalParams = [("scrnNames",None)]
@@ -424,19 +209,26 @@ class WfsConfig(ConfigObj):
         self.N = N
 
         self.requiredParams = [ "GSPosition",
-                                "wavelength"
+                                "wavelength",
+                                "subaps",
+                                "pxlsPerSubap",
+                                "subapFOV",
                             ]
 
-        self.optionalParams = [ ("propogagationMode", "geometric"),
-                                ("fftProcs", "1"),
-                                ("pyfftw_FLAG", "FFTW_PATIENT"),
-                                ("SNR", "0"),
-                                ("angleEquivNoise", "0"),
-                                ("bitDepth", "32"),
-                                ("removeTT", "False")
+        self.optionalParams = [ ("propagationMode", "geometric"),
+                                ("fftwThreads", 1),
+                                ("fftwFlag", "FFTW_PATIENT"),
+                                ("SNR", 0),
+                                ("angleEquivNoise", 0),
+                                ("bitDepth", 32),
+                                ("removeTT", "False"),
+                                ("angleEquivNoise", 0),
+                                ("subapOversamp", 2),
+                                ("GSHeight", 0),
+                                ("subapThreshold", 0.5),
                             ]
         self.initParams()
-        print("N:{}".format(N))
+
 
 class TelConfig(ConfigObj):
 
@@ -463,15 +255,16 @@ class LgsConfig(ConfigObj):
 
         self.requiredParams = [ ]
 
-        self.optionalParams = [ ("LgsUplink", False),
-                                ("LgsPupilSize", 0.3),
+        self.optionalParams = [ ("lgsUplink", False),
+                                ("lgsPupilDiam", 0.3),
                                 ("wavelength", 600e-9),
-                                ("propogagationMode", "physical"),
+                                ("propagationMode", "physical"),
                                 ("height", 90000),
-                                ("pyfftw_FLAG", "FFTW_PATIENT"),
+                                ("fftwFlag", "FFTW_PATIENT"),
+                                ("fftwThreads", 0),
                                 ("elongationDepth", 0),
                                 ("elongationLayers", 10),
-                                ("launchPosition",  [0,0])
+                                ("launchPosition",  numpy.array([0,0]))
                                 ]
 
 
@@ -514,7 +307,6 @@ class SciConfig(ConfigObj):
                                 ]
 
         self.initParams()
-
 
 
 def test():

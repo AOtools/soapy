@@ -13,55 +13,55 @@ except NameError:
     xrange = range
 
 class Reconstructor:
-    def __init__(   
-        self, dms, wfss, totalSlopes,dmNo, dmTypes,dmActs, dmCond, totalActs,
-        runWfs, atmos, learnAtmos, learnIters, filePrefix, saveLearn):
+    def __init__( self, simConfig, dms, wfss, atmos, runWfsFunc=None):
                 
         self.dms = dms
-        self.totalSlopes = totalSlopes
-        self.dmCond = dmCond
-        self.totalActs = totalActs
-        self.dmNo = dmNo
-        self.dmActs = dmActs
-        self.dmTypes = dmTypes
-        self.learnIters = learnIters
-        self.filePrefix=filePrefix
-        self.saveLearn = saveLearn
-        
+        self.wfss = wfss
+        self.simConfig = simConfig
+        self.atmos = atmos
+
+        self.learnIters = self.simConfig.learnIters
+
+        self.dmActs = []
+        self.dmConds = []
+        self.dmTypes = []
+        for dm in xrange(self.simConfig.nDM):
+            self.dmActs.append(self.dms[dm].dmConfig.dmActs)
+            self.dmConds.append(self.dms[dm].dmConfig.dmCond)
+            self.dmTypes.append(self.dms[dm].dmConfig.dmType)
+
         #2 functions used in case reconstructor requires more WFS data.
         #i.e. learn and apply
-        self.runWfs = runWfs
-        if learnAtmos == "random":
+        self.runWfs = runWfsFunc
+        if self.simConfig.learnAtmos == "random":
             self.moveScrns = atmos.randomScrns
         else:
             self.moveScrns = atmos.moveScrns
         self.wfss = wfss
                 
-        self.controlMatrix = numpy.zeros((self.totalSlopes, self.totalActs))
-        self.controlShape = (self.totalSlopes, self.totalActs)
-        
+        self.initControlMatrix()
+
         self.Trecon = 0
 
+    def initControlMatrix(self):
+
+        self.controlMatrix = numpy.zeros((self.simConfig.totalSlopes, self.simConfig.totalActs))
+        self.controlShape = (self.simConfig.totalSlopes, self.simConfig.totalActs)
+
     def saveCMat(self):
-        filename = self.filePrefix+"/cMat.fits"
+        filename = self.simConfig.filePrefix+"/cMat.fits"
         
         cMatHDU = pyfits.PrimaryHDU(self.controlMatrix)
-        cMatHDU.header["DMNO"] = self.dmNo
+        cMatHDU.header["DMNO"] = self.simConfig.nDM
         cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
         cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
-        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmCond)
+        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
         
         cMatHDU.writeto(filename, clobber=True)
-        # FITS.Write(self.controlMatrix,filename,
-#                     extraHeader=[   "DMNO    = %s"%self.dmNo,
-#                                     "DMACTS  = %s"%list(self.dmActs),
-#                                     "DMTYPE  = %s"%list(self.dmTypes),
-#                                     "DMCOND  = %s"%list(self.dmCond)
-#                                            ])   
 
     def loadCMat(self):
         
-        filename=self.filePrefix+"/cMat.fits"
+        filename=self.simConfig.filePrefix+"/cMat.fits"
         
         # cMatFile = FITS.Read(filename)
 #         header = cMatFile[0]["parsed"]
@@ -102,9 +102,9 @@ class Reconstructor:
     
     def saveIMat(self):
 
-        for dm in xrange(self.dmNo):
-            filenameIMat = self.filePrefix+"/iMat_dm%d.fits"%dm
-            filenameShapes = self.filePrefix+"/dmShapes_dm%d.fits"%dm
+        for dm in xrange(self.simConfig.nDM):
+            filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
+            filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
             
             pyfits.PrimaryHDU(self.dms[dm].iMat).writeto(filenameIMat,
                                                         clobber=True)
@@ -118,9 +118,9 @@ class Reconstructor:
                                               
     def loadIMat(self):
         
-        for dm in xrange(self.dmNo):
-            filenameIMat = self.filePrefix+"/iMat_dm%d.fits"%dm
-            filenameShapes = self.filePrefix+"/dmShapes_dm%d.fits"%dm
+        for dm in xrange(self.simConfig.nDM):
+            filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
+            filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
             
             #iMat = FITS.Read(filenameIMat)[1]
             #iMatShapes = FITS.Read(filenameShapes)[1]
@@ -146,8 +146,8 @@ class Reconstructor:
         return dmCommands
         
     def makeIMat(self,callback, progressCallback):
-        acts = 0
-        for dm in xrange(self.dmNo):
+ 
+        for dm in xrange(self.simConfig.nDM):
             logging.info("Creating Interaction Matrix on DM %d..."%dm)
             self.dms[dm].makeIMat(callback=callback, 
                                         progressCallback=progressCallback)
@@ -208,13 +208,14 @@ class MVM(Reconstructor):
         control matrix
         '''
         acts = 0
-        for dm in xrange(self.dmNo):
+        for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dmCond[dm])
+                dmCMat = numpy.linalg.pinv( dmIMat, 
+                                            self.dms[dm].dmConfig.dmCond)
             
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
@@ -239,12 +240,12 @@ class WooferTweeter(Reconstructor):
         and DM 1 (or 2 if TT used) is high order.
         '''
 
-        if self.dmNo==1:
+        if self.simConfig.nDM==1:
             logging.warning("Woofer Tweeter Reconstruction not valid for 1 dm.")
             return None
         acts = 0
         dmCMats = []
-        for dm in xrange(self.dmNo):
+        for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:
@@ -252,7 +253,7 @@ class WooferTweeter(Reconstructor):
             else:
                 dmCMat = numpy.linalg.pinv(dmIMat, self.dmCond[dm])
             
-            if dm != self.dmNo-1:
+            if dm != self.simConfig.nDM-1:
                 self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
                 acts+=self.dms[dm].acts
             
@@ -263,13 +264,13 @@ class WooferTweeter(Reconstructor):
             
         #This it the matrix which converts from Low order DM commands
         #to high order DM commands, via slopes
-        lowToHighTransform = self.dms[self.dmNo-2].iMat.T.dot( dmCMats[-2].T )
+        lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
         print(lowToHighTransform.shape)
 
-        highOrderCMat = dmCMats[-1].T.dot( numpy.identity(self.totalSlopes) - \
+        highOrderCMat = dmCMats[-1].T.dot( numpy.identity(self.simConfig.totalSlopes) - \
                             lowToHighTransform )
                             
-        self.controlMatrix[:,acts:acts+self.dms[self.dmNo-1].acts] = highOrderCMat.T
+        self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
  
     
 class LearnAndApply(Reconstructor):
@@ -283,17 +284,15 @@ class LearnAndApply(Reconstructor):
     Only works for 1 DM at present
     '''
     
-    def __init__(self, dms, wfss, totalSlopes,dmNo,
-                dmTypes,dmActs, dmCond,totalActs,runWfs, atmos, learnAtmos,
-                learnIters, filePrefix, saveLearn):
-                
-        Reconstructor.__init__(self, dms, wfss, totalSlopes,dmNo,
-                dmTypes,dmActs, dmCond,totalActs,runWfs, atmos, learnAtmos, 
-                learnIters, filePrefix, saveLearn)
-        
-        self.controlShape = (   self.totalSlopes-2*wfss[0].activeSubaps,
-                                self.totalActs )
-                
+
+    def initControlMatrix(self):
+        self.controlShape = (   
+                        self.simConfig.totalSlopes-2*self.wfss[0].activeSubaps,
+                        self.simConfig.totalActs 
+                        )
+            
+        self.controlMatrix = numpy.empty( (2*self.wfss[0].activeSubaps,
+                                            self.simConfig.totalActs) )
     
     def learn(self,callback=None, progressCallback=None):
         '''
@@ -302,7 +301,7 @@ class LearnAndApply(Reconstructor):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.empty( (self.learnIters,self.totalSlopes) )
+        self.learnSlopes = numpy.empty( (self.learnIters,self.simConfig.totalSlopes) )
         for i in xrange(self.learnIters):
             self.learnIter=i            
             logging.debug("Learn Iteration %i",i)
@@ -318,10 +317,10 @@ class LearnAndApply(Reconstructor):
             if progressCallback!=None:
                progressCallback(i,self.learnIters, "Performing Learn") 
             
-        if self.saveLearn:
-            #FITS.Write(self.learnSlopes,self.filePrefix+"/learn.fits")
+        if self.simConfig.saveLearn:
+            #FITS.Write(self.learnSlopes,self.simConfig.filePrefix+"/learn.fits")
             pyfits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.filePrefix+"/learn.fits",clobber=True )
+                            self.simConfig.filePrefix+"/learn.fits",clobber=True )
 
 
     def calcCMat(self,callback=None, progressCallback=None):
@@ -330,8 +329,7 @@ class LearnAndApply(Reconstructor):
         to create a CMat.
         '''
 
-        self.controlMatrix = numpy.empty( (2*self.wfss[0].activeSubaps,
-                                            self.totalActs) )
+        
         logging.info("Performing Learn....")
         self.learn(callback, progressCallback)
         logging.info("Done. Creating Tomographic Reconstructor...")
@@ -353,7 +351,7 @@ class LearnAndApply(Reconstructor):
         
         #Same code as in "MVM" class to create dm-slopes reconstructor.
         acts = 0
-        for dm in xrange(self.dmNo):
+        for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:
@@ -378,116 +376,6 @@ class LearnAndApply(Reconstructor):
                             slopes[2*self.wfss[0].activeSubaps:])
         
         return dmCommands          
-    
-class LearnAndApply_NGSTT(Reconstructor):
-    '''
-    Class to perform a simply learn and apply algorithm, where
-    "learn" slopes are recorded, and an interaction matrix between off-axis 
-    and on-axis WFS is computed from these slopes. 
-    
-    Assumes that on-axis sensor is WFS 0
-    
-    This reconstructor performs L&A on the LGS slopes, but does a simple
-    interaction matrix with the last WFS, which is assumed to be a low order
-    Tip Tilt correcting NGS 
-    
-    Only works for 1 DM at present
-    
-    ***
-    Doesn't work!
-    ***
-    '''
-    
-    def __init__(self, dms, wfss, totalSlopes,dmNo,
-                dmTypes,dmActs, dmCond,totalActs,runWfs,moveScrns, learnIters,
-                filePrefix, saveLearn):
-                
-        Reconstructor.__init__(self, dms, wfss, totalSlopes,dmNo,
-                dmTypes,dmActs, dmCond,totalActs,runWfs,moveScrns, learnIters,
-                filePrefix, saveLearn)
-        
-        self.controlShape = (   self.totalSlopes-2*wfss[0].activeSubaps,
-                                self.totalActs )
-                
-    
-    def learn(self,callback=None):
-        '''
-        Takes "self.learnFrames" WFS frames, and computes the tomographic
-        reconstructor for the system. This method uses the "truth" sensor, and
-        assumes that this is WFS0
-        '''
-
-        self.learnSlopes = numpy.empty( (self.learnIters,self.totalSlopes) )
-        for i in xrange(self.learnIters):
-            self.learnIter=i            
-            logging.debug("Learn Iteration %i",i)
-            
-            scrns = self.moveScrns()
-            self.learnSlopes[i] = self.runWfs(scrns)
-            
-            sys.stdout.write("\rLearn Frame: %d    "%i)
-            sys.stdout.flush()
-            
-            if callback!=None:
-                callback()
-            
-        if self.saveLearn:
-            #FITS.Write(self.learnSlopes,self.filePrefix+"/learn.fits")
-            pyfits.PrimaryHDU(self.learnSlopes).writeto(
-                                    self.filePrefix+"/learn.fits",clobber=True)
-
-    def calcCMat(self,callback=None):
-        '''
-        Uses the slopes recorded in the "learn" and DM interaction matrices
-        to create a CMat.
-        '''
-
-        self.controlMatrix = numpy.empty( (2*self.wfss[0].activeSubaps,
-                                            self.totalActs) )
-        logging.info("Performing Learn....")
-        self.learn(callback)
-        logging.info("Done. Creating Tomographic Reconstructor...")
-        
-        self.covMat = numpy.cov(self.learnSlopes.T)
-        Conoff = self.covMat[   :2*self.wfss[0].activeSubaps,
-                                2*self.wfss[0].activeSubaps:     ]
-        Coffoff = self.covMat[  2*self.wfss[0].activeSubaps:,
-                                2*self.wfss[0].activeSubaps:    ]
-        
-        iCoffoff = numpy.linalg.inv(Coffoff)
-        
-        self.tomoRecon = Conoff.dot(iCoffoff)
-        logging.info("Done. Creating full reconstructor....")
-        
-        #Same code as in "MVM" class to create dm-slopes reconstructor.
-        acts = 0
-        for dm in xrange(self.dmNo):
-            dmIMat = self.dms[dm].iMat
-            
-            if dmIMat.shape[0]==dmIMat.shape[1]:
-                dmCMat = numpy.inv(dmIMat)
-            else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dmCond[dm])
-            
-            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-            acts += self.dms[dm].acts
-
-        
-        self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
-        logging.info("Done.")
-        
-    def reconstruct(self,slopes):
-        
-        logging.debug("LA Reconstruction - slopes Shape: %s"%slopes[2*self.wfss[0].activeSubaps:].shape)
-        logging.debug("LA Reconstruction - Reconstructor Shape: %s,%s"%self.controlMatrix.shape)
-        
-        dmCommands = self.controlMatrix.T.dot(
-                            slopes[2*self.wfss[0].activeSubaps:])
-        
-        return dmCommands          
-    
-    
-
 
 
 #####################################
@@ -508,10 +396,10 @@ class ANN(Reconstructor):
 
         nSlopes = self.wfss[0].activeSubaps*2 
 
-        self.controlShape = (nSlopes, self.totalActs)
-        self.controlMatrix = numpy.zeros((nSlopes, self.totalActs))
+        self.controlShape = (nSlopes, self.simConfig.totalActs)
+        self.controlMatrix = numpy.zeros((nSlopes, self.simConfig.totalActs))
         acts = 0
-        for dm in xrange(self.dmNo):
+        for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:
@@ -564,7 +452,7 @@ class LearnAndApplyLGS(Reconstructor):
         FRAMES = 10
         
         onAxisSize = self.wfss[0].activeSubaps*2
-        offAxisSize = self.totalSlopes - self.wfss[0].activeSubaps*2
+        offAxisSize = self.simConfig.totalSlopes - self.wfss[0].activeSubaps*2
         
         self.onSlopes = numpy.empty( (self.learnIters+FRAMES,onAxisSize) )
         self.offSlopes = numpy.empty( (self.learnIters+FRAMES,
@@ -591,7 +479,7 @@ class LearnAndApplyLGS(Reconstructor):
         to create a CMat.
         '''
         self.controlMatrix = numpy.empty( (2*self.wfss[0].activeSubaps,
-                                            self.totalActs) )
+                                            self.simConfig.totalActs) )
         logging.info("Performing Learn....")
         self.learn()
         logging.info("Done. Creating Tomographic Reconstructor...")
@@ -604,7 +492,7 @@ class LearnAndApplyLGS(Reconstructor):
         
         #Same code as in "MVM" class to create dm-slopes reconstructor.
         acts = 0
-        for dm in xrange(self.dmNo):
+        for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:

@@ -6,7 +6,7 @@ or both. The verbosity can also be adjusted between 0 and 3, where all is logged
 """
 import inspect
 
-LOGGING_LEVEL = 3
+LOGGING_LEVEL = 0
 LOGGING_FILE = None
 
 class Logger(object):
@@ -61,7 +61,7 @@ class Logger(object):
 		curframe = inspect.currentframe()
 		calframe = inspect.getouterframes(curframe, 2)
 
-		logMessage = calframe[2][1]+" - "+calframe[2][3] + ": " + message
+		logMessage = calframe[2][1].split("/")[-1]+" - "+calframe[2][3] + ": " + message
 		if self.loggingFile:
 			with open(self.filename, "w") as File:
 				File.write(logMessage+"\n")
@@ -87,8 +87,8 @@ class Logger(object):
 		"""
 		
 		if self.verbosity>=2:
-			self._printMessage("Info: {0}".format(message))
-		
+			#self._printMessage("Info: {0}".format(message))
+			print(message)
 		else:
 			pass
 
