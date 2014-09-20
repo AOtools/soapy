@@ -570,7 +570,7 @@ class Sim(object):
                 os.mkdir(self.path)
 
             #Init WFS FP Saving
-            if self.saveWfsFrames:
+            if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
 
 

@@ -10,7 +10,7 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  None,
+    "filePrefix"    :  "testing",
     "pupilSize"     :   128, #this is the phase SAMPLING size
                             #(not number of detector pxls)
     "nGS"           :   1,
@@ -39,14 +39,14 @@ simConfiguration = {
     },
 
 "Atmosphere":{
-    "scrnNo"        :  1,
+    "scrnNo"        :  4,
     "scrnHeights"   :   numpy.array([0,5000,10000,25000]),
     "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
     "windDirs"      :   numpy.array([0,45,90,135]),
     "windSpeeds"    :   numpy.array([10,10,15,20]),
     "newScreens"    :   True, #Bool
-    "wholeScrnSize" :   512,
-    "r0"            :   0.15,
+    "wholeScrnSize" :   1024,
+    "r0"            :   0.16,
     },
 
 "Telescope":{
@@ -81,7 +81,7 @@ simConfiguration = {
 
 "LGS":{
     "lgsPupilSize"  :   0.5, #Metres
-    "lgsUplink"     :   numpy.array([   1 ]*5),
+    "lgsUplink"     :   numpy.array([   0 ]*5),
     "wavelength"         :   numpy.array([   600e-9  ]*5),
     "propogationMode" :   ["physical"]*5,
     "height"     :   numpy.array([90000]*5),
