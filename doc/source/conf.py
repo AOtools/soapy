@@ -21,8 +21,8 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
             return Mock()
 
-MOCK_MODULES = ['scipy', 'pyfftw', 'ipython', 'scipy.fftpack','scipy.interpolate',
-                'pyfits', 'PyQt4','scipy.ndimage','scipy.optimize', 'scipy.lib.blas.fblas']
+MOCK_MODULES = ['pyfftw', 'ipython','pyfits', 'PyQt4']
+#'scipy.ndimage','scipy.optimize', 'scipy.lib.blas.fblas','scipy.fftpack','scipy.interpolate','scipy']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -47,7 +47,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-#    'sphinxcontrib.napoleon'
+    'sphinxcontrib.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
