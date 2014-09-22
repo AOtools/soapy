@@ -22,7 +22,7 @@ class Mock(MagicMock):
             return Mock()
 
 MOCK_MODULES = ['scipy', 'pyfftw', 'ipython', 'scipy.fftpack','scipy.interpolate',
-                'pyfits', 'PyQt4','scipy.ndimage','scipy.optimize', 'dasp_util']
+                'pyfits', 'PyQt4','scipy.ndimage','scipy.optimize', 'scipy.lib.blas.fblas']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # If extensions (or modules to document with autodoc) are in another directory,
