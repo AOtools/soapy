@@ -13,7 +13,17 @@ Contents:
 
    intro.rst
    install.rst
-   module.rst
+   Configuration.rst
+   sim.rst
+   atmos.rst
+   wfs.rst
+   lgs.rst
+   dms.rst
+   recon.rst
+   science.rst
+   utils.rst
+
+
 
 
 
