@@ -9,9 +9,9 @@ setup(
     scripts=['bin/pyAOS'],
     description='A tomographic astronomical adaptive optics simulation with realistic laser guide star propagation.',
     long_description=open('README.md').read(),
-    install_requires=[
-        "numpy >= 1.8.0",
-        "scipy >= 0.14.0",
-        "pyfits >= 3.3",
-    ],
+    # install_requires=[
+    #     "numpy >= 1.8.0",
+    #     "scipy >= 0.14.0",
+    #     "pyfits >= 3.3",
+    # ],
 )
