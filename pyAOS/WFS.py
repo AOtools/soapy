@@ -41,7 +41,7 @@ class WFS(object):
         self.subapDiam = self.telDiam/self.wfsConfig.subaps
         
         self.LGS = LGS
-        if (self.lgsConfig.height!=0 and 
+        if (self.LGS.lgsConfig.height!=0 and 
                 self.LGS.lgsConfig.elongationDepth!=0):
 
             self.elong = LGS.lgsConfig.elongationDepth
