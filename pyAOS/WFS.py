@@ -27,13 +27,6 @@ class WFS(object):
 
     def __init__(self, simConfig, wfsConfig, atmosConfig, mask, LGS=None):
 
-        # subaps, pupilSize, GSPos,
-        #          pxlScale, scrnHeights, mask, subapThreshold,
-        #          GSHeight, pxlsPerSubap, subapOversamp, subapFOV,
-        #          waveLength, telDiam, LGS, elongation,
-        #          elongLayers, fftProcs, pyfftw_FLAG, pyfftw_THREADS,
-        #          lgsLaunchPos, phsWvl, removeTT, SNR, AEN, bitDepth, 
-        #          propMethod, scrns):
 
         self.simConfig = simConfig
         self.wfsConfig = wfsConfig
@@ -522,6 +515,8 @@ class WFS(object):
         self.calculateSlopes()
 
         return self.slopes
+
+
 
 class ShackHartmannWfs(WFS):
     """Class to simulate a Shack-Hartmann WFS"""

@@ -216,7 +216,7 @@ class atmos:
                          self.scrnSize, (self.pxlScale**(-1.)), L0, l0)
         return scrns
 
-#Kolmogorov Phase Screen generation code, shamlessly stolen from Dr. Tim Butterly,
+#Kolmogorov Phase Screen generation code, shamlessly copied from Dr. Tim Butterly,
 #CfAI, Durham University.
 
 def powspec(x,y):                                       # 2D Kolmogorov PSD function

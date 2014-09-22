@@ -12,6 +12,8 @@ Contents:
    :maxdepth: 2
 
    intro.rst
+   install.rst
+   module.rst
 
 
 

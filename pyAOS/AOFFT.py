@@ -1,7 +1,7 @@
 '''
 A Module to perform FFTs, wrapping a variety of FFT Backends in a common
 interface.
-Currently supports either pyfftw (requires FFTW3) or the scipy fftpack.
+Currently supports either pyfftw (requires FFTW3), the scipy fftpack or some GPU algorithms
 '''
 
 import numpy
