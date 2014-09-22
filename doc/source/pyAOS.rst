@@ -35,14 +35,6 @@ pyAOS.DM module
     :undoc-members:
     :show-inheritance:
 
-pyAOS.FITS module
------------------
-
-.. automodule:: pyAOS.FITS
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pyAOS.LGS module
 ----------------
 
@@ -83,30 +75,6 @@ pyAOS.aoSimLib module
     :undoc-members:
     :show-inheritance:
 
-pyAOS.aoToolsLib module
------------------------
-
-.. automodule:: pyAOS.aoToolsLib
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyAOS.aotools module
---------------------
-
-.. automodule:: pyAOS.aotools
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyAOS.aotools2 module
----------------------
-
-.. automodule:: pyAOS.aotools2
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pyAOS.atmosphere module
 -----------------------
 
@@ -131,10 +99,10 @@ pyAOS.confParse module
     :undoc-members:
     :show-inheritance:
 
-pyAOS.make_gammas module
-------------------------
+pyAOS.logger module
+-------------------
 
-.. automodule:: pyAOS.make_gammas
+.. automodule:: pyAOS.logger
     :members:
     :undoc-members:
     :show-inheritance:
@@ -159,14 +127,6 @@ pyAOS.pyAOS_gui module
 ----------------------
 
 .. automodule:: pyAOS.pyAOS_gui
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyAOS.util module
------------------
-
-.. automodule:: pyAOS.util
     :members:
     :undoc-members:
     :show-inheritance:
