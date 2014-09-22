@@ -14,7 +14,7 @@
 
 import mock
  
-MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'pylab', 'scipy.interpolate', 'pyfftw', 'ipython']
+MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'pylab', 'scipy.interpolate', 'pyfftw', 'ipython','pyfits']
 for mod_name in MOCK_MODULES:
 sys.modules[mod_name] = mock.Mock()
 
