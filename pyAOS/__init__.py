@@ -693,12 +693,12 @@ class Sim(object):
                 pyfits.writeto(self.path+"/instStrehl.fits", self.instStrehl)
                 pyfits.writeto(self.path+"/longStrehl.fits", self.longStrehl)  
 
-            if self.config.saveSciRes:
+            if self.config.sim.saveSciRes:
                 for i in xrange(self.config.sim.nSci):
                     pyfits.writeto(self.path+"/sciResidual_%02d.fits"%i,
                             self.sciPhase[i])
 
-            if self.config.saveSciPsf:
+            if self.config.sim.saveSciPsf:
                 for i in xrange(self.config.sim.nSci):
                     pyfits.writeto(self.path+"/sciPsf_%02d.fits"%i,
                                         self.sciImgs[i] )

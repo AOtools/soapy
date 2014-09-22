@@ -4,7 +4,7 @@ import logging
 import scipy.ndimage
 import scipy.optimize
 
-from . import AOFFT, aoSimLib, zerns
+from . import AOFFT, aoSimLib#, zerns
 from .opticalPropagationLib import angularSpectrum
 
 #xrange now just "range" in python3. 
@@ -41,13 +41,18 @@ class WFS(object):
         self.subapDiam = self.telDiam/self.wfsConfig.subaps
         
         self.LGS = LGS
-        if self.LGS:
+        if (self.lgsConfig.height!=0 and 
+                self.LGS.lgsConfig.elongationDepth!=0):
+
             self.elong = LGS.lgsConfig.elongationDepth
             self.elongLayers = LGS.lgsConfig.elongationLayers
-            self.lgsLaunchPos = LGS.lgsConfig.launchPosition
         else:
             self.elong = 0
             self.elongLayers = 0
+
+        if self.LGS:
+            self.lgsLaunchPos = LGS.lgsConfig.launchPosition
+        else:
             self.lgsLaunchPos = None
 
         self.angleEquivNoise = (wfsConfig.angleEquivNoise * 
@@ -93,7 +98,7 @@ class WFS(object):
 
 
         if self.elong!=0:
-            self.elongZs = zerns.zernikeArray([1,2,3], self.simConfig.pupilSize)
+            self.elongZs = aoSimLib.zernikeArray([1,2,3], self.simConfig.pupilSize)
             self.elongRadii={}
             self.elongPhaseAdditions = numpy.empty( (self.elongLayers,
                                             self.simConfig.pupilSize, self.simConfig.pupilSize))

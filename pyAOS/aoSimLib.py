@@ -233,3 +233,97 @@ def simpleCentroid(img,threshold_frac=0):
 
 
 
+def zernike(j, N):
+    """
+     Creates the Zernike polynomial with mode index j, where i = 1 corresponds to piston  
+     """
+    n,m = zernIndex(j);
+
+    coords = numpy.linspace(-1,1,N)
+    X,Y = numpy.meshgrid(coords,coords)
+    R = numpy.sqrt(X**2 + Y**2)
+    theta = numpy.arctan2(Y,X)
+
+    if m==0:
+        Z = numpy.sqrt(n+1)*zernikeRadialFunc(n,0,R);
+    else:
+        if j%2==0: # j is even
+                Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n,m,R) * numpy.cos(m*theta)
+        else:   #i is odd
+                Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n,m,R) * numpy.sin(m*theta)
+
+
+    return Z*circle(N/2., N)
+
+
+
+def zernikeRadialFunc(n, m, r):
+    """
+    Fucntion to calculate the Zernike radial function
+    """
+
+    R = numpy.zeros(r.shape)
+    for i in xrange(0,((n-m)/2)+1):
+
+        R += r**(n-2*i) * (((-1)**(i))*numpy.math.factorial(n-i)) / ( numpy.math.factorial(i) * numpy.math.factorial(0.5*(n+m)-i) * numpy.math.factorial(0.5*(n-m)-i) )
+
+    return R
+
+
+
+def zernIndex(j,sign=0):
+    """
+    returns the [n,m] list giving the radial order n and azimutal order
+    of the zernike polynomial of index j
+    if sign is set, will also return a 1 for cos, -1 for sine or 0 when m==0.
+    """
+    n = int((-1.+numpy.sqrt(8*(j-1)+1))/2.)
+    p = (j-(n*(n+1))/2.)
+    k = n%2
+    m = int((p+k)/2.)*2 - k
+    if sign==0:
+        return [n,m]
+    else:#determine whether is sine or cos term.
+        if m!=0:
+            if j%2==0:
+                s=1
+            else:
+                s=-1
+
+        else:
+            s=0
+        return [n,m,s]
+
+
+
+def zernikeArray(J, N):
+    """
+    Creates an array of Zernike Polynomials
+    
+    Args:
+        maxJ (int or list): Max Zernike polynomial to create, or list of zernikes J indices to create
+        N (int): size of created arrays
+
+    Returns:
+        ndarray: array of Zerkike Polynomials
+    """
+    #If list, make those Zernikes
+    try:
+        nJ = len(J)
+        Zs = numpy.empty((nJ, N, N))
+        for i in xrange(nJ):
+            Zs[i] = zernike(J[i], N)
+
+    #Else, cast to int and create up to that number
+    except TypeError:
+
+        maxJ = int(numpy.round(J))
+        N = int(numpy.round(N))
+
+        Zs = numpy.empty((maxJ, N, N))
+
+        for j in xrange(1,maxJ+1):
+            Zs[j-1] = zernike(j, N)
+
+    return Zs
+

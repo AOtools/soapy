@@ -78,9 +78,9 @@ class Reconstructor:
             dmNo = int(header["DMNO"])
             exec("dmActs = numpy.array(%s)"%cMatHDU.header["DMACTS"])
             exec("dmTypes = %s"%header["DMTYPE"])
-            exec("dmCond = numpy.array(%s)"%header["DMCOND"])
+            exec("dmConds = numpy.array(%s)"%header["DMCOND"])
             
-            if (dmCond==self.dmCond).all()==False:
+            if (dmConds==self.dmConds).all()==False:
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if (dmActs==self.dmActs).all() !=True or dmTypes != self.dmTypes or dmNo != dmNo:
                 logging.warning("loaded control matrix may not be compatibile with \
@@ -131,7 +131,7 @@ class Reconstructor:
             if iMat.shape != (self.dms[dm].acts,2*self.dms[dm].totalSubaps):
                 logging.warning("interaction matrix does not match required required size.")
                 raise Exception
-            if iMatShapes.shape[-1]!=self.dms[dm].pupilSize:
+            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.pupilSize:
                 logging.warning("loaded DM shapes are not same size as current pupil.")
                 raise Exception
             else:

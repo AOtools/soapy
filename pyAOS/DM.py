@@ -1,5 +1,5 @@
 import numpy
-from . import zerns, aoSimLib
+from . import aoSimLib#,zerns 
 import logging
 import sys
 try:
@@ -108,7 +108,7 @@ class zernike(DM):
         interaction Matrix
         '''
 
-        shapes = zerns.zernikeArray(int(self.acts+2),int(self.simConfig.pupilSize))[2:]
+        shapes = aoSimLib.zernikeArray(int(self.acts+2),int(self.simConfig.pupilSize))[2:]
 
         self.iMatShapes = shapes*self.mask
 
@@ -133,7 +133,6 @@ class peizo(DM):
     def makeIMatShapes(self):
 
         shapes = numpy.zeros( (self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize) )
-        zoomFactor = float(self.simConfig.pupilSize)/float(self.xActs)
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]
