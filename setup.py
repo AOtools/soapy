@@ -12,5 +12,6 @@ setup(
     install_requires=[
         "numpy >= 1.8.0",
         "scipy >= 0.14.0",
+        "pyfits >= 3.3",
     ],
 )
