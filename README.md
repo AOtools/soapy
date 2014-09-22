@@ -54,3 +54,11 @@ again, pyqtgraph must be downloaded from http://www.pyqtgraph.org and installed 
 For any OS (including Windows), python distributions exist which include lots of python packages useful for science. A couple of good examples are Enthought Canopy (https://www.enthought.com), which is free for academics, and Anaconda (https://store.continuum.io/cshop/anaconda/) which is also free.
 
 A lot of python packages are listed on https://pypi.python.org/pypi. Usually when python is installed, a script called ``easy_install`` is installed also, which can be used to get any package on pypi with ``easy_install <package>``.
+
+#Recent Changes
+
+Configuration for the simulation has been completely re-written. Originially, the simulation passed all parameters to objects individually, which got a bit confusing with loads of parameters. 
+
+Now configuration objects exist, which contain the configuration of the system. A new parser has been written and there is a new configuration file style. The configuration objects all exist in the namespace ``sim.config``. They are sub-classed into configuration for different modules, so parameters global to the simulation can be accessed with ``sim.config.sim.<param>``. Each WFS, LGS, DM and Science object has its own config object associated, in this case ``sim.config.wfs`` is a list of config objects, so params can be accessed with ``sim.config.wfs[0].<param>``.
+
+This is a big change in the simulation and involves changes lots of stuff internally, so there is a reasonable chance that there might be a few bugs associated with this where I havent changed the code for specific configurations. 
