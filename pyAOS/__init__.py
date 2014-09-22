@@ -131,24 +131,7 @@ class Sim(object):
         else:
             self.runWfs = self.runWfs_noMP
 
-        #Init LGS module
-        log.info("Initialising LGS...")
-        self.LGSs = {}
-        for i in xrange(self.config.sim.nGS):
-            if self.config.lgs[i].lgsUplink != 0:
-                
-                if  (   self.config.lgs[i].propagationMode=="phys" or 
-                        self.config.lgs[i].propagationMode=="physical"):
-                    LGS.LGS = LGS.PhysicalLGS
-                    
-                else:
-                    LGS.LGS = LGS.GeometricLGS
-                    
-                self.LGSs[i] = LGS.LGS( self.config.sim, self.config.wfs[i], 
-                                        self.config.lgs[i], self.config.atmos
-                                        )
-            else:
-                self.LGSs[i] = None
+
 
         #init WFSs
         log.info("Initialising WFSs....")
@@ -158,7 +141,7 @@ class Sim(object):
         for wfs in xrange(self.config.sim.nGS):
             self.wfss[wfs]=WFS.ShackHartmannWfs(    
                     self.config.sim, self.config.wfs[wfs], 
-                    self.config.atmos, self.mask, self.LGSs[wfs])
+                    self.config.atmos, self.config.lgs[wfs], self.mask)
 
             self.config.sim.totalSubaps += self.wfss[wfs].activeSubaps
 
@@ -297,12 +280,6 @@ class Sim(object):
 
         for wfs in wfsList:
 
-            if self.config.lgs[wfs].lgsUplink!=0:
-                tlgs=time.time()
-                self.LGSs[wfs].LGSPSF(self.scrns)
-                self.Tlgs +=time.time()-tlgs
-
-            #self.wfss[wfs].frame(self.scrns)
             slopes[s:s+self.wfss[wfs].activeSubaps*2] = \
                     self.wfss[wfs].frame(self.scrns,dmShape)
             s += self.wfss[wfs].activeSubaps*2
@@ -340,8 +317,9 @@ class Sim(object):
 
             wfsQueues.append(Queue())
             wfsProcs.append(Process(target=multiWfs,
-                    args=[ self.scrns,self.wfss[wfs],self.LGSs[wfs],dmShape,
-                                                        wfsQueues[wfs]]))
+                    args=[ self.scrns, self.wfss[wfs], dmShape,
+                            wfsQueues[wfs]
+                            ]))
         for wfs in xrange(self.config.sim.nGS):
             wfsProcs[wfs].start()
 
@@ -354,7 +332,7 @@ class Sim(object):
                         wfsQueues[wfs].get()
 
             if lgsPsf!=None:
-                self.LGSs[wfs].psf1 = lgsPsf
+                self.wfss[wfs].LGS.psf1 = lgsPsf
 
             wfsProcs[wfs].join()
             s += self.wfss[wfs].activeSubaps*2
@@ -642,12 +620,11 @@ class Sim(object):
             self.allDmCommands[i,act:] = self.dmCommands
 
         #Quick bodge to save lgs psfs as images
-        #FITS.Write(self.LGSs[0].psf1,self.path+"/lgsPsf_frame-%s.fits"%i)
         if self.config.sim.saveLgsPsf:
             lgs=0
             for wfs in xrange(self.config.sim.nGS):
                 if self.config.lgs[wfs].lgsUplink:
-                    self.lgsPsfs[lgs, i] = self.LGSs[wfs].PSF
+                    self.lgsPsfs[lgs, i] = self.wfss[wfs].LGS.PSF
                     lgs+=1
 
         if self.config.sim.nSci>0:
@@ -758,7 +735,7 @@ class Sim(object):
                         pass
 
                     try:
-                        lgsPsf[i] = self.LGSs[i].psf1.copy()
+                        lgsPsf[i] = self.wfss[i].LGS.psf1.copy()
                     except AttributeError:
                         lgsPsf[i] = None
                         pass
@@ -814,7 +791,7 @@ class Sim(object):
 
 
 #Functions used by MP stuff
-def multiWfs(scrns, wfsObj, lgsObj, dmShape, queue):
+def multiWfs(scrns, wfsObj, dmShape, queue):
     """
     Function to run the WFS in multiprocessing mode.
 
@@ -829,14 +806,14 @@ def multiWfs(scrns, wfsObj, lgsObj, dmShape, queue):
     """
 
     lgsPsf = None
-    if lgsObj!=None:
-        lgsObj.LGSPSF(scrns)
-        lgsPsf = lgsObj.psf1
-
 
     slopes = wfsObj.frame(scrns, dmShape)
 
-    queue.put([slopes,wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf])
+    if wfsObj.lgsConfig.lgsUplink:
+        lgsPsf = wfsObj.LGS.psf1
+
+    queue.put([ slopes,wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, 
+                lgsPsf])
 
 if __name__ == "__main__":
 

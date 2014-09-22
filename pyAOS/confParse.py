@@ -226,6 +226,7 @@ class WfsConfig(ConfigObj):
                                 ("subapOversamp", 2),
                                 ("GSHeight", 0),
                                 ("subapThreshold", 0.5),
+                                ("lgs",False),
                             ]
         self.initParams()
 

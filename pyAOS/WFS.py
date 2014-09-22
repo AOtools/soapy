@@ -4,7 +4,7 @@ import logging
 import scipy.ndimage
 import scipy.optimize
 
-from . import AOFFT, aoSimLib#, zerns
+from . import AOFFT, aoSimLib, LGS
 from .opticalPropagationLib import angularSpectrum
 
 #xrange now just "range" in python3. 
@@ -25,12 +25,13 @@ class WFS(object):
 
     '''
 
-    def __init__(self, simConfig, wfsConfig, atmosConfig, mask, LGS=None):
+    def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
 
 
         self.simConfig = simConfig
         self.wfsConfig = wfsConfig
         self.atmosConfig = atmosConfig
+        self.lgsConfig = lgsConfig
 
         self.centMethod = "simple"
         self.mask = mask
@@ -40,20 +41,36 @@ class WFS(object):
         self.telDiam = simConfig.pupilSize/simConfig.pxlScale
         self.subapDiam = self.telDiam/self.wfsConfig.subaps
         
-        self.LGS = LGS
-        if (self.LGS.lgsConfig.height!=0 and 
-                self.LGS.lgsConfig.elongationDepth!=0):
 
-            self.elong = LGS.lgsConfig.elongationDepth
-            self.elongLayers = LGS.lgsConfig.elongationLayers
+        if wfsConfig.lgs:
+
+                
+            if  (self.lgsConfig.propagationMode=="phys" or 
+                    self.lgsConfig.propagationMode=="physical"):
+                LGSClass = LGS.PhysicalLGS
+                        
+            else:
+                LGSClass = LGS.GeometricLGS
+                        
+            self.LGS = LGSClass( self.simConfig, wfsConfig, self.lgsConfig,
+                                    self.atmosConfig
+                                    )
         else:
-            self.elong = 0
-            self.elongLayers = 0
+            self.LGS = None
+
+        
+        self.lgsLaunchPos = None
+        self.elong=0
+        self.elongLayers = 0
 
         if self.LGS:
-            self.lgsLaunchPos = LGS.lgsConfig.launchPosition
-        else:
-            self.lgsLaunchPos = None
+            self.lgsLaunchPos = self.lgsConfig.launchPosition
+            if (self.lgsConfig.height!=0 and 
+                    self.lgsConfig.elongationDepth!=0):
+                self.elong = self.LGS.lgsConfig.elongationDepth
+                self.elongLayers = self.LGS.lgsConfig.elongationLayers
+
+
 
         self.angleEquivNoise = (wfsConfig.angleEquivNoise * 
                         float(wfsConfig.pxlsPerSubap)/wfsConfig.subapFOV )
@@ -98,10 +115,12 @@ class WFS(object):
 
 
         if self.elong!=0:
-            self.elongZs = aoSimLib.zernikeArray([1,2,3], self.simConfig.pupilSize)
+            self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
             self.elongRadii={}
-            self.elongPhaseAdditions = numpy.empty( (self.elongLayers,
-                                            self.simConfig.pupilSize, self.simConfig.pupilSize))
+            self.elongPhaseAdditions = numpy.empty( 
+                    (self.elongLayers,self.simConfig.pupilSize, 
+                    self.simConfig.pupilSize))
+
             for i in xrange(self.elongLayers):
                 self.elongRadii[i] = self.findMetaPupilSize(
                                                     float(self.elongHeights[i]))
@@ -144,7 +163,7 @@ class WFS(object):
                 THREADS=wfsConfig.fftwThreads, 
                 fftw_FLAGS=(wfsConfig.fftwFlag,))
 
-        if self.LGS!=None:
+        if self.lgsConfig.lgsUplink:
             self.iFFT = AOFFT.FFT(
                     inputSize = (self.activeSubaps,
                                         self.subapFFTPadding,
@@ -297,7 +316,7 @@ class WFS(object):
         #Define these to make it easier
         h = self.elongHeights[elongLayer]
         dh = h-self.wfsConfig.GSHeight
-        H = self.wfsConfig.GSHeight
+        H = self.lgsConfig.height
         d = self.lgsLaunchPos * self.telDiam/2.
         D = self.telDiam
         theta = (d.astype("float")/H) - self.wfsConfig.GSPosition
@@ -538,6 +557,7 @@ class ShackHartmannWfs(WFS):
         with the subap focal plane.
         '''
 
+        self.LGS.LGSPSF(self.scrns)
 
         self.lgs_iFFT.inputData[:] = self.LGS.PSF
         self.iFFTLGSPSF = self.lgs_iFFT()
@@ -630,7 +650,7 @@ class ShackHartmannWfs(WFS):
         '''
 
         #If required, convolve with LGS PSF
-        if self.LGS != None and self.iMat!=True:
+        if self.LGS and self.lgsConfig.lgsUplink and self.iMat!=True:
             self.LGSUplink()
 
         #bins back down to correct size and then
