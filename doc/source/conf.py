@@ -15,7 +15,7 @@
 import sys
 import os
 
-import mock
+import unittest.mock as mock
  
 MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'pylab', 'scipy.interpolate', 'pyfftw', 'ipython','pyfits']
 for mod_name in MOCK_MODULES:
