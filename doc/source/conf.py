@@ -14,12 +14,15 @@
 
 import sys
 import os
+from unittest.mock import MagicMock
 
-import unittest.mock as mock
- 
-MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'pylab', 'scipy.interpolate', 'pyfftw', 'ipython','pyfits']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
+
+MOCK_MODULES = ['scipy', 'pyfftw', 'ipython', 'scipy.fftpack','scipy.interpolate', 'pyfits', 'PyQt4']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
