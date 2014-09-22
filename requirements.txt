@@ -1,1 +1,1 @@
-pip install pyfits
+pyfits
