@@ -1,3 +1,28 @@
+#Copyright Durham University and Andrew Reeves
+#2014
+
+# This file is part of pyAOS.
+
+#     pyAOS is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+
+#     pyAOS is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+
+#     You should have received a copy of the GNU General Public License
+#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+The pyAOS Wavefront Sensor module.
+
+This module contains a number of classes which simulate different adaptive optics wavefront sensor (WFS) types. All wavefront sensor classes can inherit from the base ``WFS`` class. The class provides the methods required to calculate phase over a WFS pointing in a given WFS direction. This leaves the new class to create methods which deal with creating the focal plane and making a measurement. To make use of the base-classes ``
+
+"""
+
 import numpy
 import numpy.random
 import logging

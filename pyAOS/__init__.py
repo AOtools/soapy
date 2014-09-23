@@ -1,6 +1,26 @@
 #! /usr/bin/env python
+
+#Copyright Durham University and Andrew Reeves
+#2014
+
+# This file is part of pyAOS.
+
+#     pyAOS is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+
+#     pyAOS is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+
+#     You should have received a copy of the GNU General Public License
+#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+
+
 '''
-The main Simulation module
+The main pyAOS Simulation module
 
 This module contains the `Sim` class, which can be used to run an end-to-end simulation. Initally, a configuration file is read, the system is initialised, interaction and command matrices calculated and finally a loop run. The simulation outputs some information to the console during the simulation.
 
@@ -33,8 +53,14 @@ Examples:
 
     Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to `data/filePrefix` (if it is not set to `None`). Data can also be accessed from the simulation class, e.g. `sim.allSlopes`, `sim.longStrehl`
 
-'''
 
+:Author:
+    Andrew Reeves
+
+:Version:
+    0.3
+
+'''
 
 #sim imports
 from . import atmosphere, logger
@@ -63,6 +89,8 @@ try:
     xrange
 except NameError:
     xrange = range
+
+__version__ = 0.3
 
 
 class Sim(object):
@@ -828,8 +856,7 @@ def multiWfs(scrns, wfsObj, dmShape, queue):
 
     Args:
         scrns (list): list of the phase screens over the WFS 
-        wfsObj (WFS object): the WFS object being run
-        lgsObj (LGS object): the LGS object corresponding to this WFS 
+        wfsObj (WFS object): the WFS object being run 
         dmShape (ndArray):  shape of system DMs for WFS phase correction
         queue (Queue object): a multiprocessing Queue object used to pass data back to host process.
     """
