@@ -240,7 +240,7 @@ class atmos:
                                             numpy.arange(self.wholeScrnSize),
                                             self.wholeScrns[i])
             if self.scrnPos[i][1] < 0:
-                log.debug("pos < 0: rolling Phase Screen Y")
+                logger.debug("pos < 0: rolling Phase Screen Y")
 
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                     int(self.wholeScrnSize-self.scrnPos[i][1]-self.scrnSize),
