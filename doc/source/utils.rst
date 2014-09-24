@@ -36,3 +36,11 @@ pyAOS.opticalPropagationLib module
     :undoc-members:
     :show-inheritance:
 
+pyAOS.confParse module
+----------------------
+
+.. automodule:: pyAOS.confParse
+    :noindex:
+    :members:
+    :undoc-members:
+    :show-inheritance:

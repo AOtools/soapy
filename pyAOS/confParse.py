@@ -180,22 +180,22 @@ class ConfigObj(object):
 
     def calcParams(self):
         """
-        Dummy method to be overidden if requiredParams
+        Dummy method to be overidden if required
         """
         pass
 
 
 class SimConfig(ConfigObj):
     """
-    Configuration parameters for the entire simulation
+    Configuration parameters relavent for the entire simulation. These should be held in the ``Sim`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
 
     Required:
         =============   ===================
         **Parameter**   **Description** 
         -------------   -------------------
-        pupilSize       Number of phase points across the simulation pupil
-        nIters          Number of iteration to run simulation
-        loopTime        Time between simulation frames (1/framerate)
+        pupilSize       int: Number of phase points across the simulation pupil
+        nIters          int: Number of iteration to run simulation
+        loopTime        float: Time between simulation frames (1/framerate)
         =============   ===================
 
 
@@ -203,25 +203,56 @@ class SimConfig(ConfigObj):
         ==================  =================================   ===============
         **Parameter**       **Description**                         **Default**
         ------------------  ---------------------------------   ---------------
-        ``nGS``             Number of Guide Stars and WFS       ``0``
-        ``nDM``             Number of deformable Mirrors        ``0``
-        ``nSci``            Number of Science Cameras           ``0``
-        ``gain``            loop gain of system                 ``0.6``
-        ``aoloopMode``      loop "open" or "closed"             '`"closed"``
-        ``reconstructor``   name of reconstructor class to 
-                            use. See ``reconstructor`` module
+        ``nGS``             int: Number of Guide Stars and 
+                            WFS                                 ``0``
+        ``nDM``             int: Number of deformable Mirrors   ``0``
+        ``nSci``            int: Number of Science Cameras      ``0``
+        ``gain``            float: loop gain of system          ``0.6``
+        ``aoloopMode``      string: loop "open" or "closed"     ``"closed"``
+        ``reconstructor``   string: name of reconstructor 
+                            class to use. See 
+                            ``reconstructor`` module
                             for available reconstructors.       ``"MVM"``
-        ``filePrefix``      directory name to store 
+        ``filePrefix``      string: directory name to store 
                             simulation data                     ``None``
-        ``tipTilt``         Does system use tip-tilt Mirror     ``False``
-        ``ttGain``          loop gain of tip-tilt Mirror        ``0.6``
+        ``tipTilt``         bool: Does system use tip-tilt 
+                            Mirror                              ``False``
+        ``ttGain``          float: loop gain of tip-tilt 
+                            Mirror                              ``0.6``
+        ``wfsMP``           bool: Each WFS uses its own 
+                            process                             ``False``
+        ``verbosity``       int: debug output for the 
+                            simulation ranging from 0 
+                            (no-ouput) to 3 (all debug 
+                            output)                             ``2``
+        ``logfile``         string: name of file to store 
+                            logging data,                       ``None``
+        ``learnIters``      int: Number of `learn` iterations
+                            for Learn & Apply reconstructor     ``0``
+        ``learnAtmos``      string: if ``random``, then 
+                            random phase screens used for 
+                            `learn`                             ``random``
         ==================  =================================   ===============
 
-    Data Saving (all default to ``False``):
-
+    Data Saving (all default to False):
+        ======================      ===================
+        **Parameter**               **Description** 
+        ----------------------      -------------------
+        ``saveSlopes``              Save all WFS slopes. Accessed from sim with
+                                    ``sim.allSlopes``
+        ``saveDmCommands``          Saves all DM Commands. Accessed from sim
+                                    with ``sim.allDmCommands``
+        ``saveWfsFrames``           Saves all WFS pixel data. Saves to disk a
+                                    after every frame to avoid using too much 
+                                    memory
+        ``saveStrehl``              Saves the science camera Strehl Ratio. 
+                                    Accessed from sim with ``sim.longStrehl``
+                                    and ``sim.instStrehl``
+        ``saveSciPsf``              Saves the science PSF.
+        ``saveSciRes``              Save Science residual phase
+        ======================      ===================
 
     """
-
 
     def __init__(self):
         """
@@ -263,6 +294,33 @@ class SimConfig(ConfigObj):
 
 
 class AtmosConfig(ConfigObj):
+    """
+    Configuration parameters characterising the atmosphere. These should be held in the ``Atmosphere`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+
+    Required:
+        ==================      ===================
+        **Parameter**           **Description** 
+        ------------------      -------------------
+        ``scrnNo``              int: Number of turbulence layers
+        ``scrnHeights``         list, int: Phase screen heights in metres
+        ``scrnStrength``        list, float: Relative layer scrnStrength
+        ``windDirs``            list, float: Wind directions in degrees.
+        ``windSpeeds``          list, float: Wind velocities in m/s
+        ``r0``                  float: integrated seeing strength 
+                                (metres at 550nm)
+        ``wholeScrnSize``       int: Size of the phase screens to store in the
+                                ``atmosphere`` object
+        ==================      ===================
+
+    Optional:
+        ==================  =================================   ===========
+        **Parameter**       **Description**                     **Default**
+        ------------------  ---------------------------------   -----------
+        ``scrnNames``       list, string: filenames of phase
+                            if loading from fits files. If 
+                            ``None`` will make new screens.     ``None``
+        ==================  =================================   ===========    
+    """
 
     def __init__(self):
         super(AtmosConfig, self).__init__()
@@ -284,7 +342,27 @@ class AtmosConfig(ConfigObj):
 class WfsConfig(ConfigObj):
 
     def __init__(self, N):
+        """
+        Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
 
+        Required:
+            ==================      ===================
+            **Parameter**           **Description** 
+            ------------------      -------------------
+
+            ==================      ===================
+
+        Optional:
+            ==================  =================================   ===========
+            **Parameter**       **Description**                     **Default**
+            ------------------  ---------------------------------   -----------
+            ``scrnNames``       list, string: filenames of phase
+                                if loading from fits files. If 
+                                ``None`` will make new screens.     ``None``
+            ==================  =================================   =========== 
+
+
+        """
         super(WfsConfig, self).__init__()
 
         self.N = N
@@ -313,7 +391,27 @@ class WfsConfig(ConfigObj):
 
 
 class TelConfig(ConfigObj):
+    """
+        Configuration parameters characterising the Telescope. These should be held in the ``Tel`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
 
+    Required:
+        =============   ===================
+        **Parameter**   **Description** 
+        -------------   -------------------
+        ``telDiam``     float: Diameter of telescope pupil in metres
+        =============   ===================
+
+    Optional:
+        ==================  =================================   ===========
+        **Parameter**       **Description**                     **Default**
+        ------------------  ---------------------------------   -----------
+        ``obs``             float: Diameter of central
+                            obscuration                         ``0``
+        ``mask``            string: Shape of pupil (only 
+                            accepts ``circle`` currently)       ``circle``
+        ==================  =================================   ===========  
+
+    """
     def __init__(self):
 
         super(TelConfig, self).__init__()

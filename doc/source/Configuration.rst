@@ -1,47 +1,37 @@
 Configuration
 *************
 
-Configuration of the system is handled by the ``confParse`` module. Documentation for available parameters is in the relevant configuration objects documentation, below.
+Configuration of the system is handled by the ``confParse`` module. This module reads the simulation parameters from a given configuration file. This file must contain a ``simConfiguration`` dictionary, which contains sub-dictionaries for each simulation sub-module. Where a sub-module consists of multiple components i.e. Wave-front sensors, parameters must be given as lists at least as long as the number of components. Example configuration files can be found in the ``conf`` directory of the pyAOS package.
 
-confParse module
----------------
+Below is a list of all possible simulation parameters.
 
-.. automodule:: pyAOS.confParse
-
-.. autoclass:: pyAOS.confParse.Configurator
-	:members:
-
-
+Simulation Parameters
+---------------------
 .. autoclass:: pyAOS.confParse.SimConfig
 	:members:
 
+Telescope Parameters
+--------------------
 
 .. autoclass:: pyAOS.confParse.TelConfig
 
-    :undoc-members:
-    :show-inheritance:
-
+Atmosphere Parameters
+---------------------
 .. autoclass:: pyAOS.confParse.AtmosConfig
 
-    :undoc-members:
-    :show-inheritance:
-
+Wave-front Sensor Parameters
+----------------------------
 .. autoclass:: pyAOS.confParse.WfsConfig
 
-    :undoc-members:
-    :show-inheritance:
-
+Laser Guide Star Parameters
+---------------------------
 .. autoclass:: pyAOS.confParse.LgsConfig
 
-    :undoc-members:
-    :show-inheritance:
-
+Deformable Mirror Parameters
+----------------------------
 .. autoclass:: pyAOS.confParse.DmConfig
 
-    :undoc-members:
-    :show-inheritance:
-
+Science Camera Parameters
+-------------------------
 .. autoclass:: pyAOS.confParse.SciConfig
 
-    :undoc-members:
-    :show-inheritance:
