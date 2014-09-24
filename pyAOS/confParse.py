@@ -15,6 +15,15 @@
 
 #     You should have received a copy of the GNU General Public License
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+"""
+A module to generate configuration objects for the pyAOS, given a parameter file.
+
+This module defines a number of classes, which when instantiated, create objects used to configure the entire simulation, or just submodules. All configuration objects are stored in the ``Configurator`` object which deals with loading parameters from file, checking some potential conflicts and using parameters to calculate some other parameters used in parts of the simulation.
+
+The ``ConfigObj`` provides a base class used by other module configuration objects, and provides methods to read the parameters from the dictionary read from file, and set defaults if appropriate. Each other module in the system has its own configuration object, and for components such as wave-front sensors (WFSs), Deformable Mirrors (DMs), Laser Guide Stars (LGSs) and Science Cameras,  lists of the config objects for each component are created.
+
+
+"""
 
 import numpy
 from . import logger
@@ -31,6 +40,21 @@ class ConfigurationError(Exception):
 
 
 class Configurator(object):
+    """
+    The configuration class holding all simulation configuration information
+
+    This class is used to load the parameter dictionary from file, instantiate each configuration object and calculate some other parameters from the parameters given.
+    
+    The configuration file given to this class must contain a python dictionary, named ``simConfiguration``. This must contain other dictionaries for each sub-module of the system, ``Sim``, ``Atmosphere``, ``Telescope``, ``WFS``, ``LGS``, ``DM``, ``Science``. For the final 4 sub-dictionaries, each entry must be formatted as a list (or numpy array) where each value corresponds to that component. 
+
+    The number of components on the module will only depend on the number set in the ``Sim`` dict. For example, if ``nGS`` is set to 2 in ``Sim``, then in the ``WFS`` dict, each parameters must have at least 2 entries, e.g. ``subaps : [10,10]``. If the parameter has more than 2 entries, then only the first 2 will be noted and any others discarded. 
+
+    Descriptions of the available parameters for each sub-module are given in that that config classes documentation
+
+    Args:
+        filename (string): The name of the configuration file
+
+    """
 
     def __init__(self, filename):
         self.filename = filename
@@ -97,6 +121,8 @@ class Configurator(object):
                     *maxGSPos*numpy.pi/(3600.*180) 
                     )+self.sim.pupilSize
         log.print_("ScreenSize: {}".format(self.sim.scrnSize))
+
+
 class ConfigObj(object):
     def __init__(self):
 
@@ -158,7 +184,44 @@ class ConfigObj(object):
         """
         pass
 
+
 class SimConfig(ConfigObj):
+    """
+    Configuration parameters for the entire simulation
+
+    Required:
+        =============   ===================
+        **Parameter**   **Description** 
+        -------------   -------------------
+        pupilSize       Number of phase points across the simulation pupil
+        nIters          Number of iteration to run simulation
+        loopTime        Time between simulation frames (1/framerate)
+        =============   ===================
+
+
+    Optional:
+        ==================  =================================   ===============
+        **Parameter**       **Description**                         **Default**
+        ------------------  ---------------------------------   ---------------
+        ``nGS``             Number of Guide Stars and WFS       ``0``
+        ``nDM``             Number of deformable Mirrors        ``0``
+        ``nSci``            Number of Science Cameras           ``0``
+        ``gain``            loop gain of system                 ``0.6``
+        ``aoloopMode``      loop "open" or "closed"             '`"closed"``
+        ``reconstructor``   name of reconstructor class to 
+                            use. See ``reconstructor`` module
+                            for available reconstructors.       ``"MVM"``
+        ``filePrefix``      directory name to store 
+                            simulation data                     ``None``
+        ``tipTilt``         Does system use tip-tilt Mirror     ``False``
+        ``ttGain``          loop gain of tip-tilt Mirror        ``0.6``
+        ==================  =================================   ===============
+
+    Data Saving (all default to ``False``):
+
+
+    """
+
 
     def __init__(self):
         """

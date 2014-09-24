@@ -16,7 +16,11 @@
 #     You should have received a copy of the GNU General Public License
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 '''
-A module containing functions used in AoSim
+A module containing useful functions used throughout pyAOS
+
+:Author:
+    Andrew Reeves
+
 '''
 
 import numpy
@@ -28,6 +32,19 @@ def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
     '''
     Convolves 2, 2 dimensional arrays
+
+    Uses the AOFFT library to do fast convolution of 2, 2-dimensional numpy ndarrays. The FFT mode, and some parameters can be set in the arguments.
+
+    Args:
+        img1 (ndarray): 1st array to be convolved
+        img2 (ndarray): 2nd array to be convolved
+        mode (string, optional): The fft mode used, defaults to fftw
+        fftw_FLAGS (tuple, optional): flags for fftw, defaults to ("FFTW_MEASURE",)
+        threads (int, optional): Number of threads used if mode is fftw
+    
+    Returns:
+        ndarray : The convolved 2-dimensional array
+
     '''
     #Check arrays are same size
     if img1.shape!=img2.shape:
@@ -52,65 +69,51 @@ def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
     return numpy.fft.fftshift(fFFT().real)
     
     
-def circle(radius, diameter, centre_offset=(0,0)):
-    
-    diameter = int(numpy.round(diameter))
+def circle(radius, size, centre_offset=(0,0)):
+    """
+    Create a 2-dimensional array equal to 1 in a circle and 0 outside
 
-    coords = numpy.linspace(-diameter/2.,diameter/2.,diameter)
+    Args:
+        radius (float): The radius in pixels of the circle
+        size (int): The size of the the array for the circle
+        centre_offset (tuple): The coords of the centre of the circle
+
+    Returns:
+        ndarray : The circle array 
+    """
+    size = int(numpy.round(size))
+
+    coords = numpy.linspace(-size/2.,size/2.,size)
     x,y = numpy.meshgrid(coords,coords)
     x-=centre_offset[0]
     y-=centre_offset[1]
 
     mask = x*x + y*y <= radius*radius+0.5
     
-    C = numpy.zeros((diameter, diameter))
+    C = numpy.zeros((size, size))
     C[mask] = 1
     return C
 
-def circleOld(radius, diameter, centre_offset=(0,0)):
-    '''
-    creates an array of size (diameter,diameter) of zeros
-    with a circle shape of ones with radius <radius>
-    Uses a fast algorithm which splits circle into quads
-    '''
-    #make sure parameters are int
-    diameter = int(numpy.round(diameter))
 
-    #Create mesh of radius quadrant
-    quad_coords = numpy.linspace(0,radius,radius)
-    X,Y = numpy.meshgrid(quad_coords,quad_coords)
-    quad_r2_mesh = X**2 + Y**2
-
-    #Find the points inside this quad less than(or equal to) the radius
-    r2 = radius**2
-    r_coords = numpy.where( quad_r2_mesh <= r2)
-
-    #Set these points to 1
-    circleQuad = numpy.zeros( (radius, radius) )
-    circleQuad[r_coords] = 1.
-
-    #Create an array of zeros,
-    #then fits flipped quads into it in the right place
-    circle = numpy.zeros((diameter, diameter))
-    circle[diameter/2.+centre_offset[0]: diameter/2.+centre_offset[0]+radius,
-           diameter/2.+centre_offset[1]: diameter/2.+centre_offset[1]+radius] \
-                   = circleQuad
-    circle[diameter/2.+centre_offset[0]: diameter/2.+centre_offset[0]+radius,
-           diameter/2.+centre_offset[1]-radius: diameter/2.+centre_offset[1]] \
-                   = numpy.fliplr(circleQuad)
-    circle[diameter/2.+centre_offset[0]-radius: diameter/2.+centre_offset[0],
-           diameter/2.+centre_offset[1]: diameter/2.+centre_offset[1]+radius] \
-                   = numpy.flipud(circleQuad)
-    circle[diameter/2.+centre_offset[0]-radius: diameter/2.+centre_offset[0],
-           diameter/2.+centre_offset[1]-radius: diameter/2.+centre_offset[1]] \
-                   = numpy.flipud(numpy.fliplr(circleQuad))
-
-    return circle
 
 #Interpolation
 ###############################################
 
 def zoom(array, newSize, order=3):
+    """
+    A Class to zoom 2-dimensional arrays using interpolation
+
+    Uses the scipy `RectBivariateSpline` interpolation routine to zoom into an array. Can cope with real of complex data.
+
+    Args:
+        array (ndarray): 2-dimensional array to zoom
+        newSize (tuple): the new size of the required array
+        order (int, optional): Order of interpolation to use. default is 3
+
+    Returns:
+        ndarray : zoom array of new size.
+    """
+    
 
     try:
         xSize = newSize[0]
@@ -141,22 +144,6 @@ def zoom(array, newSize, order=3):
 
 
 
-
-class InterpZoom(object):
-
-    def __init__(self, size, newSize):
-
-        self.coordsX = numpy.arange(size[0])
-        self.coordsY = numpy.arange(size[1])
-
-        self.newCoordsX = numpy.linspace(0,size[0],newSize[0])
-        self.newCoordsY = numpy.linspace(0,size[1],newSize[1])
-
-    def __call__(self, array):
-
-        interpObj = interp2d(self.coordsY,self.coordsX, array, copy=False)
-
-        return interpObj(self.newCoordsX, self.newCoordsY)
 
 
 #######################

@@ -3,14 +3,6 @@ Utilities
 
 Modules containing some functions and classes commonly used throughout the simulation.
 
-pyAOS.confParse module
-----------------------
-
-.. automodule:: pyAOS.confParse
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pyAOS.logger module
 -------------------
 

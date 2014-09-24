@@ -20,7 +20,7 @@ Contents:
    lgs.rst
    dms.rst
    recon.rst
-   science.rst
+   sci.rst
    utils.rst
 
 

@@ -479,7 +479,7 @@ class Sim(object):
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Open loop, i.e., the WFSs are executed before the DM with no DM information being sent back to the WFSs.
 
         Args:
-            progressCallback (func): a function which is called after every iteration, can be used to output status information
+            progressCallback (func, optional): a function which is called after every iteration, can be used to output status information
         '''
         
         self.iters=1
@@ -526,7 +526,7 @@ class Sim(object):
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Closed loop, i.e., the DM shape is computed before WFS slopes, and feedback from the DM is given to the WFSs.
 
         Args:
-            progressCallback (func): a function which is called after every iteration, can be used to output status information
+            progressCallback (func, optional): a function which is called after every iteration, can be used to output status information
         '''
         self.iters=1
         self.correct=1

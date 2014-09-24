@@ -16,7 +16,39 @@
 #     You should have received a copy of the GNU General Public License
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-#import FITS
+"""
+The pyAOS module simulating the atmosphere.
+
+Contains an ``atmos`` object, which can be used to create or load a specified number of phase screens corresponding to atmospheric turbulence layers. The layers can then be moved wiht the ``moveScrns`` method, at a specified wind velocity and direction, where the screen is interpolated if it does not fall on an integer number of pixels. Alternatively, random screens with the same statistics as the global phase screens can be generated using the ``randomScrns`` method.
+
+The module also contains a number of functions used to create the phase screens, many of these are ported from the book `Numerical Simulation of Optical Propagation`, Schmidt, 2010.
+
+Examples:
+    
+    To get the configuration objects::
+        
+        from pyAOS import confParse, atmosphere
+
+        config = confParse.Configurator("sh_8x8.py")
+        config.readfile()
+        config.loadSimParams() 
+
+    Initialise the amosphere (creating or loading phase screens)::
+
+        atmosphere = atmosphere.atmos(config.sim, config.atmos)
+
+    Run the atmosphere for 10 time steps::
+
+        for i in range(10):
+            phaseScrns = atmosphere.moveScrns()
+            
+    or create 10 sets of random screens::
+
+        for i in range(10):
+            randomPhaseScrns = atmosphere.randomScrns()
+
+"""
+
 import pyfits
 import numpy
 import time
@@ -34,14 +66,19 @@ except NameError:
     xrange = range
 
 class atmos:
-    def __init__(self, simConfig, atmosConfig):
-        '''
-        New class to replace old rubbish phase screen module.
-        Can Generate new screens or load some from file.
-        allows different r0 to be set for each screen.
+    '''
+    Class to simulate atmosphere above an AO system.
 
-        Returns the first sim scrns sized phase screen
-        '''
+    On initialisation of the object, new phase screens can be created, or others loaded from ``.fits`` file. The atmosphere is created with parameters given in ``simConfig`` and ``atmosConfig``. These are pyAOS configuration objects, which can be created by the :ref:``confParse`` module, or could be created manually. If created manually, check the :ref: ``confParse`` section to see which attributes the configuration objects must contain.
+
+    If loaded from file, the screens should have a header with the parameter ``R0`` specifying the r0 fried parameter of the screen in pixels.
+
+    The method ``moveScrns`` can be called on each iteration of the AO system to move the scrns forward by one time step. The size of this is defined by parameters given in 
+
+    The method ``randomScrns`` returns a set of random phase screens with the smame statistics as the ``atmos`` object.
+    '''
+    def __init__(self, simConfig, atmosConfig):
+
         self.scrnSize = simConfig.scrnSize
         self.windDirs = atmosConfig.windDirs
         self.windSpeeds = atmosConfig.windSpeeds
@@ -159,6 +196,12 @@ class atmos:
 
 
     def moveScrns(self):
+        """
+        Moves the phase screens one time-step, defined by the atmosphere object parameters.
+
+        Returns:
+            dict : a dictionary containing the new set of phase screens
+        """
 
         scrns={}
         for i in self.wholeScrns:
@@ -224,6 +267,12 @@ class atmos:
         return scrns
 
     def randomScrns(self, subharmonics=True, L0=30., l0=0.01):
+        """
+        Generated random phase screens defined by the atmosphere object parameters.
+
+        Returns:
+            dict : a dictionary containing the new set of phase screens
+        """
 
         scrns = {}
         for i in xrange(self.scrnNo):
@@ -291,16 +340,16 @@ def ft_sh_phase_screen(r0, N, delta, L0, l0):
     sub-harmonics to augment tip-tilt modes
     
     Args:
-    r0 (float): r0 parameter of scrn in metres
-    N (int): Size of phase scrn in pxls
-    delta (float): size in Metres of each pxl
-    L0 (float): Size of outer-scale in metres
-    l0 (float): inner scale in metres
+        r0 (float): r0 parameter of scrn in metres
+        N (int): Size of phase scrn in pxls
+        delta (float): size in Metres of each pxl
+        L0 (float): Size of outer-scale in metres
+        l0 (float): inner scale in metres
 
 
     Returns:
     
-    ndarray: numpy array representing phase screen
+        ndarray: numpy array representing phase screen
     '''
     R = random.SystemRandom(time.time())
     seed = int(R.random()*100000)
