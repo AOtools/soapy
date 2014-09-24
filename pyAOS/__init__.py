@@ -147,8 +147,8 @@ class Sim(object):
             #self.readParams()
             confParse.readParams(self, self.configFile)
 
-        logger.verbosity = self.config.sim.verbosity
-        logger.filename = self.config.sim.logfile
+        logger.setLoggingLevel(self.config.sim.verbosity)
+        logger.setLoggingFile(self.config.sim.logfile)
 
 
         #calculate some params from read ones

@@ -25,6 +25,7 @@ import inspect
 
 LOGGING_LEVEL = 3
 LOGGING_FILE = None
+STATUS_FUNC = None
 
 def setLoggingLevel(level):
 	global LOGGING_LEVEL
@@ -33,6 +34,10 @@ def setLoggingLevel(level):
 def setLoggingFile(logFile):
 	global LOGGING_FILE
 	LOGGING_FILE = logFile
+
+def setStatusFunc(func):
+	global STATUS_FUNC
+	STATUS_FUNC = func
 
 def _printMessage(message):
 	"""
