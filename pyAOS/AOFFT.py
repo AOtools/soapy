@@ -23,7 +23,7 @@ Currently supports either pyfftw (requires FFTW3), the scipy fftpack or some GPU
 '''
 
 import numpy
-import logging
+from . import logger
 from multiprocessing import cpu_count,Process,Queue,Pipe
 
 
@@ -72,7 +72,7 @@ class FFT(object):
                         self.reikna_thread = reikna_api.Thread.create()
                         self.FFTMODE="gpu"
                     except:
-                        logging.warning("no reikna opencl available. \
+                        logger.warning("no reikna opencl available. \
                                             will try cuda")
                         mode = "gpu_cuda"
                 if mode=="gpu_cuda":
@@ -81,11 +81,11 @@ class FFT(object):
                         self.reikna_thread = reikna_api.Thread.create()
                         self.FFTMODE="gpu"
                     except:
-                        logging.warning("no cuda available. \
+                        logger.warning("no cuda available. \
                                 Switching to pyfftw")
                         mode = "pyfftw"
             else:
-                logging.warning("No gpu algorithms available\
+                logger.warning("No gpu algorithms available\
                         switching to pyfftw")
                 mode = "pyfftw"
 
@@ -93,7 +93,7 @@ class FFT(object):
             if PYFFTW_AVAILABLE:
                 self.FFTMODE = "pyfftw"
             else:
-                logging.warning("No pyfftw available. \
+                logger.warning("No pyfftw available. \
                                 Defaulting to scipy.fftpack")
                 mode = "scipy"
 
@@ -101,7 +101,7 @@ class FFT(object):
             if SCIPY_AVAILABLE:
                 self.FFTMODE = "scipy"
             else:
-                logging.warning("No scipy available - fft won't function.")
+                logger.warning("No scipy available - fft won't function.")
 
 
         if self.FFTMODE=="gpu":
@@ -115,10 +115,10 @@ class FFT(object):
             self.outputData_dev = self.reikna_thread.array(inputSize,
                                                      dtype=dtype)
 
-            logging.info("Generating and compiling reikna gpu fft plan...")
+            logger.info("Generating and compiling reikna gpu fft plan...")
             reikna_ft = reikna.fft.FFT(inputData_dev, axes=axes)
             self.reikna_ft_c = reikna_ft.compile(self.reikna_thread)
-            logging.info("Done!")
+            logger.info("Done!")
 
         if self.FFTMODE=="pyfftw":
             if THREADS==None:
@@ -136,7 +136,7 @@ class FFT(object):
                                 dtype)
             self.outputData[:] = numpy.zeros( inputSize,dtype=dtype)
 
-            logging.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS (currently set to: %s)."%fftw_FLAGS)
+            logger.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS (currently set to: %s)."%fftw_FLAGS)
             if direction=="FORWARD":
                 self.fftwPlan = pyfftw.FFTW(self.inputData,self.outputData,
                                 axes=axes, threads=THREADS,flags=fftw_FLAGS)
@@ -144,7 +144,7 @@ class FFT(object):
                 self.fftwPlan = pyfftw.FFTW(self.inputData,self.outputData,
                                 direction='FFTW_BACKWARD', axes=axes,
                                 threads=THREADS,flags=fftw_FLAGS)
-            logging.info("Done!")
+            logger.info("Done!")
 
 
         elif self.FFTMODE=="scipy":

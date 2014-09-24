@@ -14,24 +14,34 @@ Telescope Parameters
 --------------------
 
 .. autoclass:: pyAOS.confParse.TelConfig
-
+	:members:
+	
 Atmosphere Parameters
 ---------------------
+
 .. autoclass:: pyAOS.confParse.AtmosConfig
+	:members:
 
 Wave-front Sensor Parameters
 ----------------------------
+
 .. autoclass:: pyAOS.confParse.WfsConfig
+	:members:
 
 Laser Guide Star Parameters
 ---------------------------
+
 .. autoclass:: pyAOS.confParse.LgsConfig
+	:members:
 
 Deformable Mirror Parameters
 ----------------------------
+
 .. autoclass:: pyAOS.confParse.DmConfig
+	:members:
 
 Science Camera Parameters
 -------------------------
-.. autoclass:: pyAOS.confParse.SciConfig
 
+.. autoclass:: pyAOS.confParse.SciConfig
+	:members:

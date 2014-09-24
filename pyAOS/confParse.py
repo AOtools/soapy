@@ -28,9 +28,6 @@ The ``ConfigObj`` provides a base class used by other module configuration objec
 import numpy
 from . import logger
 
-log = logger.Logger()
-
-
 #######################
 #New style configuration stuff
 ###
@@ -79,31 +76,31 @@ class Configurator(object):
 
     def loadSimParams(self):
 
-        log.debug("Load Sim Params...")
+        logger.debug("Load Sim Params...")
         self.sim.loadParams(self.configDict["Sim"])
 
-        log.debug("Load Atmosphere Params...")
+        logger.debug("Load Atmosphere Params...")
         self.atmos.loadParams(self.configDict["Atmosphere"])
 
-        log.debug("Load Telescope Params...")
+        logger.debug("Load Telescope Params...")
         self.tel.loadParams(self.configDict["Telescope"])
 
-        log.debug("Load WFS Params...")
+        logger.debug("Load WFS Params...")
         for wfs in range(self.sim.nGS):
             self.wfs.append(WfsConfig(wfs))
             self.wfs[wfs].loadParams(self.configDict["WFS"])
 
-        log.debug("Load LGS Params")
+        logger.debug("Load LGS Params")
         for lgs in range(self.sim.nGS):
             self.lgs.append(LgsConfig(lgs))
             self.lgs[lgs].loadParams(self.configDict["LGS"])
 
-        log.debug("Load DM Params")
+        logger.debug("Load DM Params")
         for dm in range(self.sim.nDM):
             self.dm.append(DmConfig(dm))
             self.dm[dm].loadParams(self.configDict["DM"])
 
-        log.debug("Load Science Params")
+        logger.debug("Load Science Params")
         for sci in range(self.sim.nSci):
             self.sci.append(SciConfig(sci))
             self.sci[sci].loadParams(self.configDict["Science"])
@@ -115,12 +112,19 @@ class Configurator(object):
         gsPos = []
         for gs in range(self.sim.nGS):
             gsPos.append(self.wfs[gs].GSPosition)
-        maxGSPos = numpy.array(gsPos).max()
+        for sci in range(self.sim.nSci):
+            gsPos.append(self.sci[sci].position)
+
+        if len(gsPos)!=0:
+            maxGSPos = numpy.array(gsPos).max()
+        else:
+            maxGSPos = 0
+
         self.sim.scrnSize = numpy.ceil(
                     2*self.sim.pxlScale*self.atmos.scrnHeights.max()
                     *maxGSPos*numpy.pi/(3600.*180) 
                     )+self.sim.pupilSize
-        log.print_("ScreenSize: {}".format(self.sim.scrnSize))
+        logger.print_("ScreenSize: {}".format(self.sim.scrnSize))
 
 
 class ConfigObj(object):
@@ -131,14 +135,14 @@ class ConfigObj(object):
     def warnAndExit(self, param):
 
         message = "{0} not set!".format(param)
-        log.warning(message)
+        logger.warning(message)
         raise ConfigurationError(message)
 
     def warnAndDefault(self, param, newValue):
         message = "{0} not set, default to {1}".format(param, newValue)
         self.__setattr__(param, newValue)
 
-        log.info(message)
+        logger.info(message)
 
     def initParams(self):
         for param in self.requiredParams:
@@ -340,29 +344,54 @@ class AtmosConfig(ConfigObj):
 
 
 class WfsConfig(ConfigObj):
+    """
+    Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
 
+    Required:
+        ==================      ===================
+        **Parameter**           **Description** 
+        ------------------      -------------------
+        ``GSPosition``          tuple: position of GS on-sky in arc-secs
+        ``wavelength``          float: wavelength of GS light in metres
+        ``subaps``              int: number of SH sub-apertures
+        ``pxlsPerSubap``        int: number of pixels per sub-apertures
+        ``subapFOV``            float: Field of View of sub-aperture in
+                                arc-secs
+        ==================      ===================
+
+    Optional:
+        =================== =================================  ===========
+        **Parameter**       **Description**                    **Default**
+        ------------------- ---------------------------------  -----------
+        ``propagationMode`` string: Mode of light propogation 
+                            from GS. Can be "physical" or 
+                            "geometric".                       ``"geometric"``
+        ``bitDepth``        int: bitdepth of WFS detector       ``32``
+        ``removeTT``        bool: if True, remove TT signal
+                            from WFS slopes before
+                            reconstruction.                    ``False``
+        ``subapOversamp``   int: Multiplied by the number of
+                            of phase points required for FOV 
+                            to increase fidelity from FFT.      ``2``
+        ``GSHeight``        float: Height of GS beacon. ``0``
+                            if at infinity.                     ``0``
+        ``subapThreshold``  float: How full should subap be 
+                            to be used for wavefront sensing?   ``0.5``
+        ``lgs``             bool: is WFS an LGS?                ``False``
+        ``angleEquivNoise`` float: width of gaussian noise 
+                            added to slopes measurements
+                            in arc-secs                        ``0``
+        ``fftwThreads``     int: number of threads for fftw 
+                            to use. If ``0``, will use 
+                            system processor number.           ``1``
+        ``fftwFlag``         string: Flag to pass to FFTW 
+                            when preparing plan.               ``FFTW_PATIENT``
+        =================== =================================  =========== 
+
+
+        """
     def __init__(self, N):
-        """
-        Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
 
-        Required:
-            ==================      ===================
-            **Parameter**           **Description** 
-            ------------------      -------------------
-
-            ==================      ===================
-
-        Optional:
-            ==================  =================================   ===========
-            **Parameter**       **Description**                     **Default**
-            ------------------  ---------------------------------   -----------
-            ``scrnNames``       list, string: filenames of phase
-                                if loading from fits files. If 
-                                ``None`` will make new screens.     ``None``
-            ==================  =================================   =========== 
-
-
-        """
         super(WfsConfig, self).__init__()
 
         self.N = N
@@ -427,7 +456,41 @@ class TelConfig(ConfigObj):
     
 
 class LgsConfig(ConfigObj):
+    """
+        Configuration parameters characterising the Laser Guide Stars. These should be held in the ``LGS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
 
+
+    Optional:
+        ==================== =================================   ===========
+        **Parameter**        **Description**                     **Default**
+        -------------------- ---------------------------------   -----------
+        ``lgsUplink``        bool: Include LGS uplink effects    ``False``
+        ``lgsPupilDiam``     float: Diameter of LGS launch 
+                             aperture in metres.                 ``0.3``
+        ``wavelength``       float: Wavelength of laser beam 
+                             in metres                           ``600e-9``
+        ``propagationMode``  string: Mode of light propogation 
+                             from GS. Can be "physical" or 
+                             "geometric"                         ``"phsyical"``
+        ``height``           float: Height to use physical 
+                             propogation of LGS (does not 
+                             effect cone-effect) in metres       ``90000``
+        ``elongationDepth``  float: 
+                             Depth of LGS elongation in metres   ``0``
+        ``elongationLayers`` int:
+                             Number of layers to simulate for 
+                             elongation.                         ``10``
+        ``launchPosition``   tuple: The launch position of 
+                             the LGS in units of the pupil, 
+                             where ``(0,0)`` is the centre.      ``(0,0)``
+        ``fftwThreads``      int: number of threads for fftw 
+                             to use. If ``0``, will use 
+                             system processor number.             ``1``
+        ``fftwFlag``         string: Flag to pass to FFTW 
+                             when preparing plan.                 ``FFTW_PATIENT``
+        ==================== =================================   ===========  
+
+    """
     def __init__(self, N):
         super(LgsConfig, self).__init__()
 
@@ -452,7 +515,26 @@ class LgsConfig(ConfigObj):
 
 
 class DmConfig(ConfigObj):
+    """
+    Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a DM. Any entries above ``sim.nDM`` will be ignored.
 
+    Required:
+        ==================      ============================================
+        **Parameter**           **Description** 
+        ------------------      --------------------------------------------
+        ``dmType``              string: Type of DM. This must the name of a 
+                                class in the ``DM`` module.
+        ``dmActs``              int: Number independent DM shapes. e.g., for 
+                                stack-array DMs this is number of actuators, 
+                                for Zernike DMs this is number of Zernike 
+                                modes.
+        ``dmCond``              float: The conditioning parameter used in the 
+                                pseudo inverse of the interaction matrix. this
+                                is performed by 
+                                `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
+        ==================      ============================================
+
+        """
     def __init__(self, N):
         super(DmConfig, self).__init__()
 
@@ -470,7 +552,37 @@ class DmConfig(ConfigObj):
 
 
 class SciConfig(ConfigObj):
+    """
+    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a science camera. Any entries above ``sim.nSci`` will be ignored.
 
+    Required:
+        ==================      ============================================
+        **Parameter**           **Description** 
+        ------------------      --------------------------------------------
+        ``position``            tuple: The position of the science camera
+                                in the field in arc-seconds
+        ``FOV``                 float: The field of fiew of the science
+                                detector in arc-seconds 
+        ``wavelength``          float: The wavelength of the science 
+                                detector light
+        ``pxls``                int: Number of pixels in the science detector
+        ==================      ============================================
+
+    Optional:
+        ==================== =================================   ===========
+        **Parameter**        **Description**                     **Default**
+        -------------------- ---------------------------------   -----------
+        ``oversamp``         int: Multiplied by the number of
+                             of phase points required for FOV 
+                             to increase fidelity from FFT.      ``2``
+        ``fftwThreads``      int: number of threads for fftw 
+                             to use. If ``0``, will use 
+                             system processor number.             ``1``
+        ``fftwFlag``         string: Flag to pass to FFTW 
+                             when preparing plan.                 ``FFTW_MEASURE``            
+        ==================== =================================   ===========   
+
+    """
     def __init__(self, N):
 
         super(SciConfig, self).__init__()
@@ -483,7 +595,8 @@ class SciConfig(ConfigObj):
                                 "pxls",
                                 ]
         self.optionalParams = [ ("oversamp", 2),
-                                ("pyfftw_FLAG", "FFTW_MEASURE"),
+                                ("fftwFlag", "FFTW_ESTIMATE"),
+                                ("fftwThreads", 1)
                                 ]
 
         self.initParams()

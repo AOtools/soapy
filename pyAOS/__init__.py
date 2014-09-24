@@ -139,8 +139,6 @@ class Sim(object):
 
         Initialises and passes relevant data to sim objects. This does important pre-run tasks, such as creating or loading phase screens, determining WFS geometry, setting propagation modes and pre-allocating data arrays used later in the simulation.
         '''
-        global log
-        log = logger.Logger()
 
         #Read params if they haven't been read before
         try:
@@ -149,8 +147,8 @@ class Sim(object):
             #self.readParams()
             confParse.readParams(self, self.configFile)
 
-        log.verbosity = self.config.sim.verbosity
-        log.filename = self.config.sim.logfile
+        logger.verbosity = self.config.sim.verbosity
+        logger.filename = self.config.sim.logfile
 
 
         #calculate some params from read ones
@@ -159,13 +157,8 @@ class Sim(object):
         self.pxlScale = self.config.sim.pupilSize/float(
                                     self.config.tel.telDiam)  # pxls per Metre
 
-
-
-
-
-
         #Init Pupil Mask
-        log.info("Creating mask...")
+        logger.info("Creating mask...")
         if self.config.tel.mask == "circle":
             self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
                                         self.config.sim.pupilSize)
@@ -181,7 +174,7 @@ class Sim(object):
         #Find if WFSs should each have own process
         if self.config.sim.wfsMP:
 
-            log.info("Setting fftwThreads to 1 as WFS MP")
+            logger.info("Setting fftwThreads to 1 as WFS MP")
             for wfs in xrange(self.config.sim.nGS):
                 self.config.wfs[wfs].fftwThreads = 1
             self.runWfs = self.runWfs_MP
@@ -191,7 +184,7 @@ class Sim(object):
 
 
         #init WFSs
-        log.info("Initialising WFSs....")
+        logger.info("Initialising WFSs....")
         self.wfss = {}
         self.config.sim.totalSubaps = 0
 
@@ -202,13 +195,13 @@ class Sim(object):
 
             self.config.sim.totalSubaps += self.wfss[wfs].activeSubaps
 
-            log.info("WFS {0}: {1} active sub-apertures".format(wfs,
+            logger.info("WFS {0}: {1} active sub-apertures".format(wfs,
                      len(self.wfss[wfs].subapCoords)))
         self.config.sim.totalSlopes = 2*self.config.sim.totalSubaps
 
 
         #init DMs
-        log.info("Initialising DMs...")
+        logger.info("Initialising DMs...")
         if self.config.sim.tipTilt:
             self.TT = DM.TT(self.config.sim.pupilSize, self.wfss[0], self.mask)
 
@@ -227,12 +220,12 @@ class Sim(object):
                                                     self.dms[dm].acts) )
             self.config.sim.totalActs+=self.dms[dm].acts
 
-            log.info("DM %d: %d active actuators"%(dm,self.dms[dm].acts))
-        log.info("%d total DM Actuators"%self.config.sim.totalActs)
+            logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].acts))
+        logger.info("%d total DM Actuators"%self.config.sim.totalActs)
 
 
         #init Reconstructor
-        log.info("Initialising Reconstructor...")
+        logger.info("Initialising Reconstructor...")
         reconObj = eval("RECON."+self.config.sim.reconstructor)
         self.recon = reconObj(  self.config.sim, self.dms, 
                                 self.wfss, self.atmos, self.runWfs
@@ -240,7 +233,7 @@ class Sim(object):
 
 
         #init Science Cameras
-        log.info("Initialising Science Cams...")
+        logger.info("Initialising Science Cams...")
         self.sciCams = {}
         self.sciImgs = {}
         self.sciImgNo=0
@@ -254,7 +247,7 @@ class Sim(object):
 
 
         #Init data storage
-        log.info("Initialise Data Storage...")
+        logger.info("Initialise Data Storage...")
         self.initSaveData()
 
         
@@ -271,7 +264,7 @@ class Sim(object):
         self.Tatmos = 0
 
 
-        log.info("Initialisation Complete!")
+        logger.info("Initialisation Complete!")
 
 
     def makeIMat(self,forceNew=False, progressCallback=None):
@@ -291,9 +284,9 @@ class Sim(object):
             progressCallback (func): function called to report progress of interaction matrix construction
         """
         t = time.time()
-        log.info("Making interaction Matrices...")
+        logger.info("Making interaction Matrices...")
         if self.config.sim.tipTilt:
-            log.info("Generating Tip Tilt IMat")
+            logger.info("Generating Tip Tilt IMat")
             self.TT.makeIMat(self.addToGuiQueue,
                                     progressCallback=progressCallback)
 

@@ -133,13 +133,12 @@ class WFS(object):
 
         #LGS Elongation##############################
         #If LGS find meta pupil sizes for each phase screen
-        elongSpacing = float(self.elong)/(self.elongLayers-1)
-        self.elongHeights = numpy.arange(self.wfsConfig.GSHeight-self.elong/2.,
-                        self.wfsConfig.GSHeight+self.elong/2.+elongSpacing,
-                           elongSpacing)
-
-
         if self.elong!=0:
+            self.elongHeights = numpy.linspace(
+                    self.wfsConfig.GSHeight-self.elong/2.,
+                    self.wfsConfig.GSHeight+self.elong/2.,
+                    self.elongLayers
+                    )
             self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
             self.elongRadii={}
             self.elongPhaseAdditions = numpy.empty( 

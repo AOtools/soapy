@@ -26,6 +26,7 @@ class scienceCam:
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 
+        print("In Sci Object")
 
         self.simConfig = simConfig
         self.telConfig = telConfig
@@ -33,28 +34,39 @@ class scienceCam:
         self.atmosConfig = atmosConfig
         self.mask = mask
 
+        print("Got config")
 
         self.FOVrad = self.sciConfig.FOV * numpy.pi / (180.*3600)
+        print("calced FOVRad")
         self.FOVPxlNo = numpy.round( self.telConfig.telDiam * self.FOVrad/self.sciConfig.wavelength)
-
+        print("calced FOVPxlNo")
         self.scaleFactor = float(self.FOVPxlNo)/self.simConfig.pupilSize
+        print("calced Scale factor")
+        print(self.mask.shape)
+        print(self.FOVPxlNo)
+
         self.scaledMask = numpy.round(aoSimLib.zoom(self.mask,self.FOVPxlNo))
         
+        print("Start initing FFT")
 
         #Init FFT object
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.oversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding<self.FOVPxlNo:
+                print("changing FFTPadding")
                 self.sciConfig.oversamp+=1
                 self.FFTPadding\
                         =self.sciConfig.pxls*self.sciConfig.oversamp
             logging.info("SCI FFT Padding less than FOV size... Setting oversampling to %d"%self.sciConfig.oversamp)
 
+        print("Get AOFFT obj")
+
         self.FFT = AOFFT.FFT(inputSize=(self.FFTPadding,self.FFTPadding),
                             axes=(0,1),
                             mode="pyfftw",
                             dtype="complex64",
-                            fftw_FLAGS=("FFTW_MEASURE",))
+                            fftw_FLAGS=(sciConfig.fftwFlag,),
+                            THREADS=sciConfig.fftwThreads)
 
                             
         #Calculate ideal PSF for purposes of strehl calculation

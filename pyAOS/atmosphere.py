@@ -57,8 +57,6 @@ import scipy.fftpack as fft
 from . import AOFFT, logger
 import scipy.interpolate
 
-global log
-
 
 try:
     xrange
@@ -88,8 +86,6 @@ class atmos:
         self.r0 = atmosConfig.r0
         self.looptime = simConfig.loopTime
 
-        self.log = logger.Logger()
-
         atmosConfig.scrnStrengths /= (
                             atmosConfig.scrnStrengths[:self.scrnNo].sum())
 
@@ -113,12 +109,12 @@ class atmos:
 
         #If required, generate some new Kolmogorov phase screens
         if new==True:
-            self.log.info("Generating Phase Screens")
+            logger.info("Generating Phase Screens")
             for i in xrange(self.scrnNo):
                 #self.wholeScrns[i]=phscrn(self.wholeScrnSize,
                 #                          self.pxlScale*self.scrnStrengths[i]
                 #                                             ).astype("float32")
-                self.log.info("Generate Phase Screen {0}  with r0: {1}, size: {2}, delta: {3}".format(i,self.scrnStrengths[i], self.wholeScrnSize,1./self.pxlScale))
+                logger.info("Generate Phase Screen {0}  with r0: {1}, size: {2}, delta: {3}".format(i,self.scrnStrengths[i], self.wholeScrnSize,1./self.pxlScale))
                 self.wholeScrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], 
                             self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
@@ -126,7 +122,7 @@ class atmos:
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
         #Otherwise, load some others from FITS file
         else:
-            self.log.info("Loading Phase Screens")
+            logger.info("Loading Phase Screens")
 
             for i in xrange(self.scrnNo):
                 fitsHDU = pyfits.open(self.screenNames[i])[0]
@@ -145,12 +141,12 @@ class atmos:
                                             (r0/self.pxlScale))**(-5./6.))
 
                 except KeyError:
-                    self.log.info("no r0 info found in screen header - will assume its ok as it is")
+                    logger.info("no r0 info found in screen header - will assume its ok as it is")
 
 
 
             if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
-                self.log.info("Requested phase screen has different size to that input in config file.")
+                logger.info("Requested phase screen has different size to that input in config file.")
 
             self.wholeScrnSize = self.wholeScrns[i].shape[0]
             if self.wholeScrnSize < self.scrnSize:
@@ -210,7 +206,7 @@ class atmos:
             #reaches the edge - rolls it round and starts again.
             #X direction
             if (self.scrnPos[i][0] + self.scrnSize) >= self.wholeScrnSize:
-                self.log.debug("pos > scrnSize: rolling phase screen X")
+                logger.debug("pos > scrnSize: rolling phase screen X")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                                 int(-self.scrnPos[i][0]),axis=0)
                 self.scrnPos[i][0] = 0
@@ -222,7 +218,7 @@ class atmos:
                                             self.wholeScrns[i])
 
             if self.scrnPos[i][0] < 0:
-                self.log.debug("pos < 0: rolling phase screen X")
+                logger.debug("pos < 0: rolling phase screen X")
 
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                             int(self.wholeScrnSize-self.scrnPos[i][0]-self.scrnSize),axis=0)
@@ -234,7 +230,7 @@ class atmos:
                                             self.wholeScrns[i])
             #Y direction
             if (self.scrnPos[i][1] + self.scrnSize) >= self.wholeScrnSize:
-                self.log.debug("pos > scrnSize: rolling Phase Screen Y")
+                logger.debug("pos > scrnSize: rolling Phase Screen Y")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                                 int(-self.scrnPos[i][1]),axis=1)
                 self.scrnPos[i][1] = 0
