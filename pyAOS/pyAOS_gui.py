@@ -13,10 +13,10 @@ from matplotlib.figure import Figure
 from PyQt4 import QtGui,QtCore
 import pyqtgraph
 from .AOGUIui import Ui_MainWindow
+from . import logger
+
 import sys
 import numpy
-from . import confParse
-
 import time
 import json
 import traceback
@@ -41,7 +41,7 @@ class GUI(QtGui.QMainWindow):
         self.app = QtGui.QApplication([])
         QtGui.QMainWindow.__init__(self)
 
-        #self.window = QtGui.QMainWindow()
+        #logger.setStatusFunc(self.progressUpdate)
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -470,7 +470,7 @@ class IMatThread(QtCore.QThread):
 
     def run(self):
         self.guiObj.makingIMat=True
-        
+        logger.setStatusFunc(self.progressUpdate)
         try:
             self.sim.makeIMat(forceNew=self.guiObj.ui.newCMat.isChecked(),
                                     progressCallback=self.progressUpdate)
@@ -498,7 +498,7 @@ class LoopThread(QtCore.QThread):
 
 
     def run(self):
-        
+        logger.setStatusFunc(self.progressUpdate)
         try:
             self.guiObj.loopRunning=True
             self.sim.aoloop(self.progressUpdate)#self.update)

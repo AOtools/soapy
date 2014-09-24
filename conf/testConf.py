@@ -35,7 +35,7 @@ simConfiguration = {
     "ttGain"        :   0.9,
     "wfsMP"            :   False,
 
-    "verbosity"     :   3,
+    "verbosity"     :   2,
     },
 
 "Atmosphere":{

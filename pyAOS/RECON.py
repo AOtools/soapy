@@ -18,7 +18,7 @@
 
 import numpy
 import pyfits
-import logging
+from . import logger
 import traceback
 import sys
 import time
@@ -90,7 +90,7 @@ class Reconstructor:
         
         
         try:
-            dmActs = dmTypes = dmCond = None
+            dmActs = dmTypes = dmConds = None
             
             
             dmNo = int(header["DMNO"])
@@ -101,19 +101,19 @@ class Reconstructor:
             if (dmConds==self.dmConds).all()==False:
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if (dmActs==self.dmActs).all() !=True or dmTypes != self.dmTypes or dmNo != dmNo:
-                logging.warning("loaded control matrix may not be compatibile with \
+                logger.warning("loaded control matrix may not be compatibile with \
                                 the current simulation. Will try anyway....")
                                 
             #cMat = cMatFile[1]
             cMat = cMatHDU.data
             
         except KeyError:
-            logging.warning("loaded control matrix header has not created by this ao sim. Will load anyway.....")
+            logger.warning("loaded control matrix header has not created by this ao sim. Will load anyway.....")
             #cMat = cMatFile[1]
             cMat = cMatHDU.data
             
         if cMat.shape != self.controlShape:
-            logging.warning("designated control matrix does not match the expected shape")
+            logger.warning("designated control matrix does not match the expected shape")
             raise Exception
         else:
             self.controlMatrix = cMat
@@ -147,10 +147,10 @@ class Reconstructor:
             iMatShapes = pyfits.open(filenameShapes)[0].data
             
             if iMat.shape != (self.dms[dm].acts,2*self.dms[dm].totalSubaps):
-                logging.warning("interaction matrix does not match required required size.")
+                logger.warning("interaction matrix does not match required required size.")
                 raise Exception
             if iMatShapes.shape[-1]!=self.dms[dm].simConfig.pupilSize:
-                logging.warning("loaded DM shapes are not same size as current pupil.")
+                logger.warning("loaded DM shapes are not same size as current pupil.")
                 raise Exception
             else:
                 self.dms[dm].iMat = iMat
@@ -166,7 +166,7 @@ class Reconstructor:
     def makeIMat(self,callback, progressCallback):
  
         for dm in xrange(self.simConfig.nDM):
-            logging.info("Creating Interaction Matrix on DM %d..."%dm)
+            logger.info("Creating Interaction Matrix on DM %d..."%dm)
             self.dms[dm].makeIMat(callback=callback, 
                                         progressCallback=progressCallback)
 
@@ -179,36 +179,36 @@ class Reconstructor:
         if loadIMat:
             try:
                 self.loadIMat()
-                logging.info("Interaction Matrices loaded successfully")
+                logger.info("Interaction Matrices loaded successfully")
             except:
                 traceback.print_exc()
-                logging.warning("Load Interaction Matrices failed - will create new one.")
+                logger.warning("Load Interaction Matrices failed - will create new one.")
                 self.makeIMat(callback=callback,    
                          progressCallback=progressCallback)
                 self.saveIMat()
-                logging.info("Interaction Matrices Done")
+                logger.info("Interaction Matrices Done")
                 
         else:
             
             self.makeIMat(callback=callback, progressCallback=progressCallback)
-            logging.info("Interaction Matrices Done")
+            logger.info("Interaction Matrices Done")
             
         
         if loadCMat:
             try:
                 self.loadCMat()
-                logging.info("Command Matrix Loaded Successfully")
+                logger.info("Command Matrix Loaded Successfully")
             except:
                 traceback.print_exc()
-                logging.warning("Load Command Matrix failed - will create new one")
+                logger.warning("Load Command Matrix failed - will create new one")
                 
                 self.calcCMat(callback, progressCallback)
                 self.saveCMat()
-                logging.info("Command Matrix Generated!")
+                logger.info("Command Matrix Generated!")
         else:
-            logging.info("Creating Command Matrix")
+            logger.info("Creating Command Matrix")
             self.calcCMat(callback, progressCallback)
-            logging.info("Command Matrix Generated!")
+            logger.info("Command Matrix Generated!")
             
 
 
@@ -259,7 +259,7 @@ class WooferTweeter(Reconstructor):
         '''
 
         if self.simConfig.nDM==1:
-            logging.warning("Woofer Tweeter Reconstruction not valid for 1 dm.")
+            logger.warning("Woofer Tweeter Reconstruction not valid for 1 dm.")
             return None
         acts = 0
         dmCMats = []
@@ -322,7 +322,7 @@ class LearnAndApply(Reconstructor):
         self.learnSlopes = numpy.empty( (self.learnIters,self.simConfig.totalSlopes) )
         for i in xrange(self.learnIters):
             self.learnIter=i            
-            logging.debug("Learn Iteration %i",i)
+            logger.debug("Learn Iteration %i",i)
             
             scrns = self.moveScrns()
             self.learnSlopes[i] = self.runWfs(scrns)
@@ -348,9 +348,9 @@ class LearnAndApply(Reconstructor):
         '''
 
         
-        logging.info("Performing Learn....")
+        logger.info("Performing Learn....")
         self.learn(callback, progressCallback)
-        logging.info("Done. Creating Tomographic Reconstructor...")
+        logger.info("Done. Creating Tomographic Reconstructor...")
         
         if progressCallback!=None:
             progressCallback(1,1, "Calculating Covariance Matrices")
@@ -365,7 +365,7 @@ class LearnAndApply(Reconstructor):
         iCoffoff = numpy.linalg.inv(Coffoff)
         
         self.tomoRecon = Conoff.dot(iCoffoff)
-        logging.info("Done. Creating full reconstructor....")
+        logger.info("Done. Creating full reconstructor....")
         
         #Same code as in "MVM" class to create dm-slopes reconstructor.
         acts = 0
@@ -383,12 +383,12 @@ class LearnAndApply(Reconstructor):
         if progressCallback:
             progressCallback(1,1, "Creating full reconstructor")
         self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
-        logging.info("Done.")
+        logger.info("Done.")
         
     def reconstruct(self,slopes):
         
-        logging.debug("LA Reconstruction - slopes Shape: %s"%slopes[2*self.wfss[0].activeSubaps:].shape)
-        logging.debug("LA Reconstruction - Reconstructor Shape: %s,%s"%self.controlMatrix.shape)
+        logger.debug("LA Reconstruction - slopes Shape: %s"%slopes[2*self.wfss[0].activeSubaps:].shape)
+        logger.debug("LA Reconstruction - Reconstructor Shape: %s,%s"%self.controlMatrix.shape)
         
         dmCommands = self.controlMatrix.T.dot(
                             slopes[2*self.wfss[0].activeSubaps:])
@@ -479,7 +479,7 @@ class LearnAndApplyLGS(Reconstructor):
         
         for i in xrange(self.learnIters+FRAMES):
             self.learnIter = i
-            logging.debug("Learn Iteration %i",i)
+            logger.debug("Learn Iteration %i",i)
             scrns = self.moveScrns()
             slopes = self.runWfs(scrns)
             
@@ -498,14 +498,14 @@ class LearnAndApplyLGS(Reconstructor):
         '''
         self.controlMatrix = numpy.empty( (2*self.wfss[0].activeSubaps,
                                             self.simConfig.totalActs) )
-        logging.info("Performing Learn....")
+        logger.info("Performing Learn....")
         self.learn()
-        logging.info("Done. Creating Tomographic Reconstructor...")
+        logger.info("Done. Creating Tomographic Reconstructor...")
         onAxisSlopes = self.onSlopes
         iOffAxisSlopes = numpy.linalg.pinv(self.offSlopes)
         
         tomoRecon = onAxisSlopes.T.dot(iOffAxisSlopes.T)
-        logging.info("Done. Creating full reconstructor....")
+        logger.info("Done. Creating full reconstructor....")
         
         
         #Same code as in "MVM" class to create dm-slopes reconstructor.
@@ -523,12 +523,12 @@ class LearnAndApplyLGS(Reconstructor):
 
         
         self.controlMatrix = (self.controlMatrix.T.dot(tomoRecon)).T
-        logging.info("Done.")
+        logger.info("Done.")
         
     def reconstruct(self,slopes):
         
-        logging.debug("LA Reconstruction - slopes Shape: %s"%slopes[2*self.wfss[0].activeSubaps:].shape)
-        logging.debug("LA Reconstruction - Reconstructor Shape: %s,%s"%self.controlMatrix.shape)
+        logger.debug("LA Reconstruction - slopes Shape: %s"%slopes[2*self.wfss[0].activeSubaps:].shape)
+        logger.debug("LA Reconstruction - Reconstructor Shape: %s,%s"%self.controlMatrix.shape)
 
         self.slopesBuffer[0] = slopes[self.wfss[0].activeSubaps*2:]
         

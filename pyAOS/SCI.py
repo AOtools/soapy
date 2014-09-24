@@ -17,7 +17,7 @@
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-import logging
+from . import logger
 
 from . import aoSimLib, AOFFT
 
@@ -34,16 +34,11 @@ class scienceCam:
         self.atmosConfig = atmosConfig
         self.mask = mask
 
-
-
         self.FOVrad = self.sciConfig.FOV * numpy.pi / (180.*3600)
 
         self.FOVPxlNo = numpy.round( self.telConfig.telDiam * self.FOVrad/self.sciConfig.wavelength)
 
         self.scaleFactor = float(self.FOVPxlNo)/self.simConfig.pupilSize
-
-        print(self.mask.shape)
-        print(self.FOVPxlNo)
 
         self.scaledMask = numpy.round(aoSimLib.zoom(self.mask,self.FOVPxlNo))
 
@@ -51,26 +46,23 @@ class scienceCam:
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.oversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding<self.FOVPxlNo:
-                print("changing FFTPadding")
                 self.sciConfig.oversamp+=1
                 self.FFTPadding\
                         =self.sciConfig.pxls*self.sciConfig.oversamp
-            logging.info("SCI FFT Padding less than FOV size... Setting oversampling to %d"%self.sciConfig.oversamp)
+            logger.info("SCI FFT Padding less than FOV size... Setting oversampling to %d"%self.sciConfig.oversamp)
 
 
         self.FFT = AOFFT.FFT(inputSize=(self.FFTPadding,self.FFTPadding),
-                            axes=(0,1),
-                            mode="pyfftw",
-                            dtype="complex64",
-                            fftw_FLAGS=(sciConfig.fftwFlag,),
-                            THREADS=sciConfig.fftwThreads)
+                        axes=(0,1), mode="pyfftw", dtype="complex64",
+                        fftw_FLAGS=(sciConfig.fftwFlag,"FFTW_DESTROY_INPUT"),
+                        THREADS=sciConfig.fftwThreads)
 
                             
         #Calculate ideal PSF for purposes of strehl calculation
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
                                             =(numpy.exp(1j*self.scaledMask)
                                                     *self.scaledMask)
-        fp = abs(numpy.fft.fftshift(self.FFT()))**2
+        fp = abs(AOFFT.ftShift2d(self.FFT()))**2
         binFp = aoSimLib.binImgs(fp,self.sciConfig.oversamp)
         self.psfMax = binFp.max()        
         self.longExpStrehl = 0
@@ -102,7 +94,7 @@ class scienceCam:
         '''
 
         sciCent = self.metaPupilPos(height) * self.simConfig.pxlScale
-        logging.debug("SciCents:(%i,%i)"%(sciCent[0],sciCent[1]))
+        logger.debug("SciCents:(%i,%i)"%(sciCent[0],sciCent[1]))
 
         scrnX,scrnY=scrn.shape
 
@@ -153,7 +145,7 @@ class scienceCam:
         eField = numpy.exp(1j*phs)*self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
-        focalPlane = numpy.fft.fftshift( self.FFT() )
+        focalPlane = AOFFT.ftShift2d( self.FFT() )
 
         focalPlane = numpy.abs(focalPlane)**2
 

@@ -22,8 +22,9 @@ Contains a ``Logger`` object, which can either, print information, save to file
 or both. The verbosity can also be adjusted between 0 and 3, where all is logged when verbosity is 3, debugging and warning information is logged when verbosity is 2, warnings logged when verbosity is 1 and nothing is logged when verbosity is 0. 
 """
 import inspect
+import sys
 
-LOGGING_LEVEL = 3
+LOGGING_LEVEL = 1
 LOGGING_FILE = None
 STATUS_FUNC = None
 
@@ -38,6 +39,15 @@ def setLoggingFile(logFile):
 def setStatusFunc(func):
 	global STATUS_FUNC
 	STATUS_FUNC = func
+
+
+def statusMessage(i, maxIter, message):
+	if not STATUS_FUNC:
+		sys.stdout.flush()
+		sys.stdout.write("\r{0} of {1}: {2}".format(i,maxIter, message))
+
+	else:
+		STATUS_FUNC(i, maxIter, message)
 
 def _printMessage(message):
 	"""

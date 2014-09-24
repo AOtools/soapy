@@ -25,11 +25,10 @@ This module contains a number of classes which simulate different adaptive optic
 
 import numpy
 import numpy.random
-import logging
 import scipy.ndimage
 import scipy.optimize
 
-from . import AOFFT, aoSimLib, LGS
+from . import AOFFT, aoSimLib, LGS, logger
 from .opticalPropagationLib import angularSpectrum
 
 #xrange now just "range" in python3. 
@@ -176,7 +175,7 @@ class WFS(object):
                 self.subapFFTPadding\
                         =self.wfsConfig.pxlsPerSubap2*self.wfsConfig.subapOversamp
 
-            logging.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.wfsConfig.subapOversamp)
+            logger.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.wfsConfig.subapOversamp)
 
 
 
@@ -185,7 +184,7 @@ class WFS(object):
                 self.activeSubaps, self.subapFFTPadding, self.subapFFTPadding),
                 axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
                 THREADS=wfsConfig.fftwThreads, 
-                fftw_FLAGS=(wfsConfig.fftwFlag,))
+                fftw_FLAGS=(wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
 
         if self.lgsConfig.lgsUplink:
             self.iFFT = AOFFT.FFT(
@@ -194,7 +193,7 @@ class WFS(object):
                                         self.subapFFTPadding),
                     axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
                     THREADS=wfsConfig.fftwThreads, 
-                    fftw_FLAGS=(wfsConfig.fftwFlag,)
+                    fftw_FLAGS=(wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
             self.lgs_iFFT = AOFFT.FFT(
@@ -202,7 +201,7 @@ class WFS(object):
                                 self.subapFFTPadding),
                     axes=(0,1), mode="pyfftw",dtype=CDTYPE,
                     THREADS=wfsConfig.fftwThreads, 
-                    fftw_FLAGS=(wfsConfig.fftwFlag,)
+                    fftw_FLAGS=(wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
         ######################################################
@@ -594,7 +593,7 @@ class ShackHartmannWfs(WFS):
 
         #back to Focal Plane.
         self.FFT.inputData[:] = self.iFFTFPSubapsArray
-        self.FPSubapArrays[:] = numpy.fft.fftshift( self.FFT(), axes=(1,2)).real
+        self.FPSubapArrays[:] = AOFFT.ftShift2d( self.FFT() ).real
 
         # self.FPSubapArrays[:] = (numpy.fft.fftshift(
         #             numpy.fft.fft2( self.iFFTFPSubapsArray), axes=(1,2))).real
@@ -660,9 +659,6 @@ class ShackHartmannWfs(WFS):
         self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
                         ,:int(round(self.subapFOVSpacing))] \
                 = self.subapArrays*numpy.exp(1j*(self.XTilt+self.YTilt))
-
-        #self.FPSubapArrays += numpy.abs(numpy.fft.fftshift(self.FFT(),
-        #                                axes=(1,2)))**2
 
         self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
 

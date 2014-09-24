@@ -499,11 +499,12 @@ class Sim(object):
                 self.iters = i
 
 
-                sys.stdout.write("\rLoop Frame: %d    "%i)
-                sys.stdout.flush()
-                
+                logger.statusMessage(i, self.config.sim.nIters, 
+                                    "Open AO Loop")
+
                 if progressCallback!=None:
-                    progressCallback(i, self.config.sim.nIters, "Open AO loop" )
+                    progressCallback(i, self.config.sim.nIters, 
+                                    "Open AO loop" )
                 self.addToGuiQueue()
             else:
                 break
@@ -551,12 +552,13 @@ class Sim(object):
                 #saveData
                 self.storeData(i)
 
-                sys.stdout.write("\rLoop Frame: %d    "%i)
-                sys.stdout.flush()
+                logger.statusMessage(i, self.config.sim.nIters, 
+                                    "Closed AO Loop")
 
                 self.addToGuiQueue()
-                if progressCallback!=None:
-                    progressCallback(i, self.config.sim.nIters, "Closed AO loop" )
+                # if progressCallback!=None:
+                #     progressCallback(i, self.config.sim.nIters, 
+                #                 "Closed AO loop" )
 
             else:
                 #Stop sim if "go"!=True

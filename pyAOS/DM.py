@@ -16,8 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
-from . import aoSimLib#,zerns 
-import logging
+from . import aoSimLib, logger
 import sys
 try:
     xrange
@@ -68,7 +67,7 @@ class DM:
                                            self.iMatShapes[i])#/
                                             #self.wfss[wfs].waveLength)
 
-               logging.debug("DM IMat act: %i"%i)
+               logger.debug("DM IMat act: %i"%i)
 
                self.dmShape = self.iMatShapes[i]
                
@@ -76,14 +75,12 @@ class DM:
 
                    callback() 
                
-               L = logging.getLogger()
-               if L.level<=30:
-                   sys.stdout.write("\rPoking actuator %d    "%i)
-                   sys.stdout.flush()
+               logger.statusMessage(i, self.iMatShapes.shape[0],
+                        "Generating {} Actuator DM iMat".format(self.acts))
                    
-               if progressCallback!=None:
-                   progressCallback(i, self.iMatShapes.shape[0],
-                       "Generating %d Actuator DM iMat"%self.acts)
+               # if progressCallback!=None:
+               #     progressCallback(i, self.iMatShapes.shape[0],
+               #         "Generating %d Actuator DM iMat"%self.acts)
                 
                
        self.iMat = iMat

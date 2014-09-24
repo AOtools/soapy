@@ -136,7 +136,7 @@ class FFT(object):
                                 dtype)
             self.outputData[:] = numpy.zeros( inputSize,dtype=dtype)
 
-            logger.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS (currently set to: %s)."%fftw_FLAGS)
+            logger.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS (currently set to: {})".format(fftw_FLAGS))
             if direction=="FORWARD":
                 self.fftwPlan = pyfftw.FFTW(self.inputData,self.outputData,
                                 axes=axes, threads=THREADS,flags=fftw_FLAGS)
@@ -285,12 +285,12 @@ def ftShift2d(inputData, outputData=None):
 
 class Convolve(object):
     
-    def __init__(self, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",), threads=0):
+    def __init__(self, shape, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",), threads=0):
         #Initialise FFT objects
-        self.fFFT = AOFFT.FFT(img1.shape, axes=(0,1), mode=mode,
+        self.fFFT = FFT(shape, axes=(0,1), mode=mode,
                         dtype="complex64",direction="FORWARD", 
                         fftw_FLAGS=fftw_FLAGS, THREADS=threads) 
-        self.iFFT = AOFFT.FFT(img1.shape, axes=(0,1), mode=mode,
+        self.iFFT = FFT(shape, axes=(0,1), mode=mode,
                         dtype="complex64",direction="BACKWARD",
                         fftw_FLAGS=fftw_FLAGS, THREADS=threads)
 

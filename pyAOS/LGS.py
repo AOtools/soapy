@@ -17,7 +17,7 @@
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
 from .import aoSimLib, AOFFT
-import logging
+from . import logger
 from . import opticalPropagationLib as O
 
 import scipy.optimize
@@ -68,12 +68,13 @@ class LGSObj(object):
                 axes=(0,1),mode="pyfftw",
                 dtype = "complex64",direction="FORWARD", 
                 THREADS=lgsConfig.fftwThreads, 
-                fftw_FLAGS=(lgsConfig.fftwFlag,)
+                fftw_FLAGS=(lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
         self.iFFT = AOFFT.FFT((simConfig.pupilSize,simConfig.pupilSize),
                 axes=(0,1),mode="pyfftw",
                 dtype="complex64",direction="BACKWARD", 
-                THREADS=lgsConfig.fftwThreads, fftw_FLAGS=(lgsConfig.fftwFlag,)
+                THREADS=lgsConfig.fftwThreads, 
+                fftw_FLAGS=(lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
         
  
@@ -116,7 +117,7 @@ class LGSObj(object):
             inputSize=(self.LGSFFTPadding, self.LGSFFTPadding), axes=(0,1),
             mode="pyfftw", dtype="complex64", 
             THREADS=self.lgsConfig.fftwThreads,
-            fftw_FLAGS=(self.lgsConfig.fftwFlag,))
+            fftw_FLAGS=(self.lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
             
         #Make new mask
         self.geoMask = aoSimLib.circle(self.LGSFOVOversize/2.,
@@ -151,7 +152,7 @@ class LGSObj(object):
         y1 = int(round(scrnY/2. + GSCent[1] - self.simConfig.pupilSize/2.))
         y2 = int(round(scrnY/2. + GSCent[1] + self.simConfig.pupilSize/2.))
 
-        logging.debug("LGS MetaPupil Coords: %i:%i,%i:%i"%(x1,x2,y1,y2))
+        logger.debug("LGS MetaPupil Coords: %i:%i,%i:%i"%(x1,x2,y1,y2))
 
         metaPupil = scrn[ x1:x2, y1:y2 ].copy()
 
@@ -223,7 +224,7 @@ class GeometricLGS(LGSObj):
             inputSize=(self.LGSFFTPadding, self.LGSFFTPadding), axes=(0,1),
             mode="pyfftw", dtype="complex64", 
             THREADS=self.lgsConfig.fftwThreads,
-            fftw_FLAGS=(self.lgsConfig.fftwFlag,))
+            fftw_FLAGS=(self.lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
             
         #Make new mask
         self.geoMask = aoSimLib.circle(self.LGSFOVOversize/2.,
@@ -284,7 +285,7 @@ class GeometricLGS(LGSObj):
         
         self.geoFFT.inputData[  :self.LGSFOVOversize,
                                 :self.LGSFOVOversize] = self.EField
-        fPlane = abs(numpy.fft.fftshift(self.geoFFT())**2)
+        fPlane = abs(AOFFT.ftShift2d(self.geoFFT())**2)
         
         #Crop to required FOV
         crop = self.subapFFTPadding*0.5/ self.fovOversize
