@@ -10,6 +10,8 @@ pyAOS doesn't have too many requirements in terms of external libraries, though 
 Required
 --------
 
+    ::
+
    	``numpy``
     ``scipy``
     ``pyfits``
@@ -18,15 +20,20 @@ Required
 Recommended
 -----------
 
-^^^^^^^^^^^^^^^^
-for performance::
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
+for performance
+^^^^^^^^^^^^^^^
+
+    ::
+
     pyfftw (Highly Recommended!)
 
 ^^^^^^^    
-for gui::
+for gui
 ^^^^^^^
 
+    ::
+    
     PyQt4
     pyqtgraph (http://www.pyqtgraph.org)
     matplotlib
