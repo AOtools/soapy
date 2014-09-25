@@ -111,9 +111,7 @@ class atmos:
         if new==True:
             logger.info("Generating Phase Screens")
             for i in xrange(self.scrnNo):
-                #self.wholeScrns[i]=phscrn(self.wholeScrnSize,
-                #                          self.pxlScale*self.scrnStrengths[i]
-                #                                             ).astype("float32")
+
                 logger.info("Generate Phase Screen {0}  with r0: {1}, size: {2}, delta: {3}".format(i,self.scrnStrengths[i], self.wholeScrnSize,1./self.pxlScale))
                 self.wholeScrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], 
