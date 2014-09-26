@@ -295,7 +295,7 @@ class GeometricLGS(LGSObj):
                         self.LGSFFTPadding*0.5 + crop    ]
                         
         #now bin to size of wfs
-        LGS.PSF = aoSimLib.binImgs(fPlane, self.padFactor)
+        self.PSF = aoSimLib.binImgs(fPlane, self.padFactor)
 
 class PhysicalLGS(LGSObj):
     

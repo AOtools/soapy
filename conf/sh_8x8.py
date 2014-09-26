@@ -75,7 +75,7 @@ simConfiguration = {
     "FOV"           :   [3.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
-    "oversamp"      :   [4],
+    "oversamp"      :   [2],
     }
 
 
