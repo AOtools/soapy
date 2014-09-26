@@ -106,8 +106,6 @@ class GUI(QtGui.QMainWindow):
         self.show()
         self.init()
     
-        
-        
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
 
@@ -332,6 +330,7 @@ class GUI(QtGui.QMainWindow):
         self.ui.progressBar.setValue(2)
 
         self.iThread = InitThread(self)
+        self.iThread.updateProgressSignal.connect(self.progressUpdate)
         self.iThread.finished.connect(self.initPlots)
         self.iThread.start()
         self.config = self.sim.config
@@ -403,13 +402,22 @@ class GUI(QtGui.QMainWindow):
             self.updateTime = int(numpy.round(1000./float(self.ui.updateTimeSpin.value())))
             self.updateTimer.setInterval(self.updateTime)
 
-    def progressUpdate(self, i, maxIter, message):
+    def progressUpdate(self, message, i="", maxIter=""):
+
+
+        if i!="" and maxIter!="":
+            percent = int(round(100*(float(i)/float(maxIter))))
+            self.ui.progressBar.setValue(percent)
+            self.ui.progressLabel.setText(
+                    "{0}: Iteration {1} of {2}".format(message, i, maxIter))
+
+        else:
+            if i!="":
+                message+=" {}".format(i)
+            self.ui.progressLabel.setText(message)
+
+
         
-        percent = int(round(100*(float(i)/maxIter)))
-        
-        self.ui.progressBar.setValue(percent)
-        self.ui.progressLabel.setText("%s: Iteration %d of %d" %
-                                        (message, i, maxIter))
 
 
 ###############################################
@@ -447,21 +455,24 @@ class StatsThread(QtCore.QThread):
                 pass
 
 class InitThread(QtCore.QThread):
-
+    updateProgressSignal = QtCore.pyqtSignal(str,str,str)
     def __init__(self,guiObj):
         QtCore.QThread.__init__(self)
         self.guiObj = guiObj
         self.sim = guiObj.sim
-
+        
     def run(self):
-
+        logger.setStatusFunc(self.progressUpdate)
         if self.sim.go:
             self.guiObj.stop()
 
         self.sim.aoinit()
 
+    def progressUpdate(self, message, i="", maxIter=""):
+        self.updateProgressSignal.emit(message, i, maxIter)
+
 class IMatThread(QtCore.QThread):
-    updateProgressSignal = QtCore.pyqtSignal(int,int,str)
+    updateProgressSignal = QtCore.pyqtSignal(str,str,str)
     
     def __init__(self,guiObj):
         self.sim = guiObj.sim
@@ -469,6 +480,7 @@ class IMatThread(QtCore.QThread):
         QtCore.QThread.__init__(self)
 
     def run(self):
+        print("initing..")
         self.guiObj.makingIMat=True
         logger.setStatusFunc(self.progressUpdate)
         try:
@@ -482,11 +494,11 @@ class IMatThread(QtCore.QThread):
             traceback.print_exc()
 
 
-    def progressUpdate(self,i, maxIter, message):
-        self.updateProgressSignal.emit(i+1, maxIter, message)
+    def progressUpdate(self, message, i="", maxIter=""):
+        self.updateProgressSignal.emit(message, str(i), str(maxIter))
 
 class LoopThread(QtCore.QThread):
-    updateProgressSignal = QtCore.pyqtSignal(int,int,str)
+    updateProgressSignal = QtCore.pyqtSignal(str,str,str)
     
     def __init__(self,guiObj):
 
@@ -511,8 +523,9 @@ class LoopThread(QtCore.QThread):
             traceback.print_exc()
             
     
-    def progressUpdate(self, i, maxIter, message):
-        self.updateProgressSignal.emit(i+1, maxIter, message)
+    def progressUpdate(self, message, i="", maxIter=""):
+
+        self.updateProgressSignal.emit(message, str(i), str(maxIter))
 
 
 class IPythonConsole:

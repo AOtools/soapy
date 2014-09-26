@@ -47,7 +47,7 @@ def statusMessage(i, maxIter, message):
 		sys.stdout.write("\r{0} of {1}: {2}".format(i,maxIter, message))
 
 	else:
-		STATUS_FUNC(i, maxIter, message)
+		STATUS_FUNC(message, i, maxIter)
 
 def _printMessage(message):
 	"""
@@ -64,6 +64,10 @@ def _printMessage(message):
 	if LOGGING_FILE:
 		with open(LOGGING_FILE, "w") as File:
 			File.write(logMessage+"\n")
+
+	if STATUS_FUNC:
+		STATUS_FUNC(message)
+
 	print(logMessage)
 
 def print_(message):
@@ -87,6 +91,8 @@ def info(message):
 	
 	if LOGGING_LEVEL==2:
 			print(message)
+			if STATUS_FUNC:
+				STATUS_FUNC(message)
 	elif LOGGING_LEVEL>=3:
 			_printMessage(message)
 	else:

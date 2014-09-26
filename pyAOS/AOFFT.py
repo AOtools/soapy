@@ -24,7 +24,7 @@ Currently supports either pyfftw (requires FFTW3), the scipy fftpack or some GPU
 
 import numpy
 from . import logger
-from multiprocessing import cpu_count,Process,Queue,Pipe
+from multiprocessing import cpu_count,Process,Queue
 
 
 try:
@@ -57,10 +57,13 @@ class FFT(object):
      '''
 
     def __init__(self,inputSize, axes=(-1,),mode="pyfftw",dtype="complex64",
-                    direction="FORWARD",fftw_FLAGS=("FFTW_MEASURE",),
-                    THREADS=None):
+                    direction="FORWARD",fftw_FLAGS=("FFTW_MEASURE","FFTW_DESTROY_INPUT"),
+                    THREADS=None, loggingLevel=None):
         self.axes = axes
         self.direction=direction
+
+        if loggingLevel:
+            logger.setLoggingLevel(loggingLevel)
 
         if mode=="gpu" or mode=="gpu_ocl" or mode=="gpu_cuda":
             if mode == "gpu":

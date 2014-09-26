@@ -15,6 +15,9 @@
 
 #     You should have received a copy of the GNU General Public License
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+"""
+The module simulating Deformable Mirrors in pyAOS
+"""
 import numpy
 from . import aoSimLib, logger
 import sys

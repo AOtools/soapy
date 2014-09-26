@@ -595,7 +595,7 @@ class SciConfig(ConfigObj):
                                 "pxls",
                                 ]
         self.optionalParams = [ ("oversamp", 2),
-                                ("fftwFlag", "FFTW_ESTIMATE"),
+                                ("fftwFlag", "FFTW_MEASURE"),
                                 ("fftwThreads", 1)
                                 ]
 

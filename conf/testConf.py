@@ -70,7 +70,6 @@ simConfiguration = {
 
     "subapFOV"      :   numpy.array([4.0]*5), #arcsecs
 
-    "subapOversamp" :  numpy.array([4]*5),
     "wavelength"    :   numpy.array( [ 600e-9] *5),
     "subapThreshold":   [0.7,]*5,
     "bitDepth"      :   numpy.array([8]*5),

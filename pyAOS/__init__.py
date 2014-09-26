@@ -709,28 +709,33 @@ class Sim(object):
         if self.config.sim.filePrefix!=None:
 
             if self.config.sim.saveSlopes:
-                pyfits.writeto(self.path+"/slopes.fits", self.allSlopes)
+                pyfits.writeto(self.path+"/slopes.fits", self.allSlopes,
+                                clobber=True)
 
             if self.config.sim.saveDmCommands:
-                pyfits.writeto(self.path+"/dmCommands.fits", self.allDmCommands)
+                pyfits.writeto(self.path+"/dmCommands.fits", 
+                            self.allDmCommands, clobber=True)
 
             if self.config.sim.saveLgsPsf:
-                pyfits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs)
+                pyfits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs, 
+                                clobber=True)
 
 
             if self.config.sim.saveStrehl:
-                pyfits.writeto(self.path+"/instStrehl.fits", self.instStrehl)
-                pyfits.writeto(self.path+"/longStrehl.fits", self.longStrehl)  
+                pyfits.writeto(self.path+"/instStrehl.fits", self.instStrehl,
+                                clobber=True)
+                pyfits.writeto(self.path+"/longStrehl.fits", self.longStrehl, 
+                                clobber=True)  
 
             if self.config.sim.saveSciRes:
                 for i in xrange(self.config.sim.nSci):
                     pyfits.writeto(self.path+"/sciResidual_%02d.fits"%i,
-                            self.sciPhase[i])
+                                self.sciPhase[i], clobber=True)
 
             if self.config.sim.saveSciPsf:
                 for i in xrange(self.config.sim.nSci):
                     pyfits.writeto(self.path+"/sciPsf_%02d.fits"%i,
-                                        self.sciImgs[i] )
+                                        self.sciImgs[i], clobber=True )
                     
 
     def timeStamp(self):

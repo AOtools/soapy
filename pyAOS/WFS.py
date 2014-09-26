@@ -250,6 +250,8 @@ class WFS(object):
                                                         dtype=CDTYPE)
 
 
+##################################################################
+#Centre spot in sub-aperture after FFT
     def optimiseTilt(self):
         '''
         Finds the optimimum correction tilt to apply to each
@@ -270,6 +272,7 @@ class WFS(object):
         self.XTilt = A*X
         self.YTilt = A*Y
 
+
     def optFunc(self,A,X,O):
         '''
         Function the <optimiseTilt> function uses to optimise
@@ -279,6 +282,7 @@ class WFS(object):
         slopes = self.oneSubap(O)
 
         return abs(slopes[1])
+
 
     def oneSubap(self,phs):
         '''
@@ -294,8 +298,10 @@ class WFS(object):
         slope = aoSimLib.simpleCentroid(FPDetector, self.cent_threshold)
         slope -= self.wfsConfig.pxlsPerSubap2/2.
         return slope
+#######################################################################
 
-
+############################################################
+#Initialisation routines
 
     def findMetaPupilSize(self,GSHeight):
         '''
@@ -383,10 +389,11 @@ class WFS(object):
         GSCent=numpy.tan(GSPos)*height
 
         return GSCent
+#############################################################
 
-
-
-    def metaPupilPhase(self,scrn,height, radii=None):
+#############################################################
+#Phase stacking routines for a WFS frame
+    def metaPupilPhase(self, scrn, height, radii=None):
         '''
         Returns the phase across a metaPupil 
         at some height and angular offset in arcsec.
@@ -404,10 +411,12 @@ class WFS(object):
 
             raise ValueError( "GS seperation requires larger screen size" )
 
-        metaPupil=scrn[ int(round(scrnX/2.+GSCent[0]-self.simConfig.pupilSize/2.0)):
-                            int(round(scrnX/2.+GSCent[0]+self.simConfig.pupilSize/2.0)),
-                        int(round(scrnY/2.+GSCent[1]-self.simConfig.pupilSize/2.0)):
-                            int(round(scrnY/2.+GSCent[1]+self.simConfig.pupilSize/2.0))]
+        metaPupil=scrn[ 
+                int(round(scrnX/2.+GSCent[0]-self.simConfig.pupilSize/2.0)):
+                int(round(scrnX/2.+GSCent[0]+self.simConfig.pupilSize/2.0)),
+                int(round(scrnY/2.+GSCent[1]-self.simConfig.pupilSize/2.0)):
+                int(round(scrnY/2.+GSCent[1]+self.simConfig.pupilSize/2.0))
+                ]
 
         if self.wfsConfig.GSHeight!=0:
             if radii!=0:
@@ -417,7 +426,8 @@ class WFS(object):
                         int(round(self.simConfig.pupilSize/2. +radii)),
                         int(round(self.simConfig.pupilSize/2.-radii)):
                         int(round(self.simConfig.pupilSize/2. + radii))],
-                                        (self.simConfig.pupilSize,self.simConfig.pupilSize))
+                    (self.simConfig.pupilSize,self.simConfig.pupilSize)
+                    )
 
         return metaPupil
 
@@ -485,7 +495,7 @@ class WFS(object):
         #If not already at ground, propagate the rest of the way.
         if self.atmosConfig.scrnHeights[0]!=0:
             angularSpectrum(self.EField, self.wfsConfig.wavelength, delta, delta, ht)
-
+######################################################
 
     def readNoise(self, dPlaneArray):
 
@@ -571,66 +581,7 @@ class ShackHartmannWfs(WFS):
     def photonNoise(self):
 
         '''Photon Noise'''
-        pass
-
-
-    def LGSUplink(self):
-        '''
-        A method to deal with convolving the LGS PSF
-        with the subap focal plane.
-        '''
-
-        self.LGS.LGSPSF(self.scrns)
-
-        self.lgs_iFFT.inputData[:] = self.LGS.PSF
-        self.iFFTLGSPSF = self.lgs_iFFT()
-
-        self.iFFT.inputData[:] = self.FPSubapArrays
-        self.iFFTFPSubapsArray = self.iFFT()
-
-        #Do convolution
-        self.iFFTFPSubapsArray *= self.iFFTLGSPSF
-
-        #back to Focal Plane.
-        self.FFT.inputData[:] = self.iFFTFPSubapsArray
-        self.FPSubapArrays[:] = AOFFT.ftShift2d( self.FFT() ).real
-
-        # self.FPSubapArrays[:] = (numpy.fft.fftshift(
-        #             numpy.fft.fft2( self.iFFTFPSubapsArray), axes=(1,2))).real
-        #       
-        self.FPSubapArrays[:] = self.FPSubapArrays[:,::-1,::-1]
-
-    def calculateSlopes(self):
-        '''
-        returns wfs slopes from wfsFocalPlane
-        '''
-
-        #Sort out FP into subaps
-        subapArrays = numpy.empty( (self.activeSubaps,  self.wfsConfig.pxlsPerSubap,
-                                                        self.wfsConfig.pxlsPerSubap) )
-
-        for i in xrange(self.activeSubaps):
-            x,y = self.detectorSubapCoords[i]
-            x = int(x)
-            y = int(y)
-            subapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
-                                                    y:y+self.wfsConfig.pxlsPerSubap ]
-
-        #Use self made function which processes all subaps at same time
-        slopes=aoSimLib.simpleCentroid(subapArrays,self.cent_threshold)
-        #shift slopes relative to subap centre
-        slopes-=self.wfsConfig.pxlsPerSubap/2.0
-        
-        if self.wfsConfig.removeTT:
-            slopes = (slopes.T - slopes.mean(1)).T
-        
-        self.slopes=slopes.reshape(self.activeSubaps*2)
-        
-        if self.angleEquivNoise and not self.iMat:
-            self.slopes += numpy.random.normal(0,self.angleEquivNoise, 
-                                                        2*self.activeSubaps)
-        
-        return self.slopes
+        raise NotImplementedError
 
 
 
@@ -638,13 +589,12 @@ class ShackHartmannWfs(WFS):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
         '''
-        #create an array of individual subap EFields
-        # self.scaledWfsPhase = aoSimLib.zoom( self.wfsPhase,
-                                    # self.wfsConfig.subaps*self.subapFOVSpacing)
-        
+
+        #Scale phase (EField) to correct size for FOV
         self.scaledEField = aoSimLib.zoom( self.EField, 
                 self.wfsConfig.subaps*self.subapFOVSpacing) * self.scaledMask 
 
+        #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
             x,y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
@@ -661,6 +611,7 @@ class ShackHartmannWfs(WFS):
                 = self.subapArrays*numpy.exp(1j*(self.XTilt+self.YTilt))
 
         self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
+
 
     def makeFocalPlane(self):
         '''
@@ -725,6 +676,65 @@ class ShackHartmannWfs(WFS):
             self.photonNoise()
             self.readNoise(self.wfsDetectorPlane)
 
+
+    def LGSUplink(self):
+        '''
+        A method to deal with convolving the LGS PSF
+        with the subap focal plane.
+        '''
+
+        self.LGS.LGSPSF(self.scrns)
+
+        self.lgs_iFFT.inputData[:] = self.LGS.PSF
+        self.iFFTLGSPSF = self.lgs_iFFT()
+
+        self.iFFT.inputData[:] = self.FPSubapArrays
+        self.iFFTFPSubapsArray = self.iFFT()
+
+        #Do convolution
+        self.iFFTFPSubapsArray *= self.iFFTLGSPSF
+
+        #back to Focal Plane.
+        self.FFT.inputData[:] = self.iFFTFPSubapsArray
+        self.FPSubapArrays[:] = AOFFT.ftShift2d( self.FFT() ).real
+
+        # self.FPSubapArrays[:] = (numpy.fft.fftshift(
+        #             numpy.fft.fft2( self.iFFTFPSubapsArray), axes=(1,2))).real
+        #       
+        self.FPSubapArrays[:] = self.FPSubapArrays[:,::-1,::-1]
+
+
+    def calculateSlopes(self):
+        '''
+        returns wfs slopes from wfsFocalPlane
+        '''
+
+        #Sort out FP into subaps
+        subapArrays = numpy.empty( (self.activeSubaps,  self.wfsConfig.pxlsPerSubap,
+                                                        self.wfsConfig.pxlsPerSubap) )
+
+        for i in xrange(self.activeSubaps):
+            x,y = self.detectorSubapCoords[i]
+            x = int(x)
+            y = int(y)
+            subapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
+                                                    y:y+self.wfsConfig.pxlsPerSubap ]
+
+        #Use self made function which processes all subaps at same time
+        slopes=aoSimLib.simpleCentroid(subapArrays,self.cent_threshold)
+        #shift slopes relative to subap centre
+        slopes-=self.wfsConfig.pxlsPerSubap/2.0
+        
+        if self.wfsConfig.removeTT:
+            slopes = (slopes.T - slopes.mean(1)).T
+        
+        self.slopes=slopes.reshape(self.activeSubaps*2)
+        
+        if self.angleEquivNoise and not self.iMat:
+            self.slopes += numpy.random.normal(0,self.angleEquivNoise, 
+                                                        2*self.activeSubaps)
+        
+        return self.slopes
 
 def pyrimid(phs):
 
