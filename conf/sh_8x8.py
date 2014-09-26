@@ -53,7 +53,7 @@ simConfiguration = {
     "subaps"        :   [8],
     "pxlsPerSubap"  :   [10],
     "subapFOV"      :   [4.0],
-    "subapOversamp" :   [4],
+    "subapOversamp" :   [2],
     "wavelength"    :   [600e-9],
     "bitDepth"      :   [8],
     "lgs"           :   [False],
