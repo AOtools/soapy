@@ -90,7 +90,7 @@ try:
 except NameError:
     xrange = range
 
-__version__ = 0.3
+__version__ = 0.5
 
 
 class Sim(object):
