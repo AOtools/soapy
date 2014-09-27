@@ -11,7 +11,7 @@ simConfiguration = {
 
 "Sim":{
     "filePrefix"    :  "sh_8x8",
-    "pupilSize"     :   128, 
+    "pupilSize"     :   64, 
     "nGS"           :   1,
     "nDM"           :   1,
     "nSci"          :   1,
@@ -52,8 +52,8 @@ simConfiguration = {
     "GSHeight"      :   [0],
     "subaps"        :   [8],
     "pxlsPerSubap"  :   [10],
-    "subapFOV"      :   [4.0],
-    "subapOversamp" :   [2],
+    "subapFOV"      :   [2.0],
+    "subapOversamp" :   [3],
     "wavelength"    :   [600e-9],
     "bitDepth"      :   [8],
     "lgs"           :   [False],

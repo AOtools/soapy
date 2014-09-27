@@ -133,6 +133,34 @@ class Sim(object):
 
         self.gain = self.config.sim.gain
 
+    def calcParams(self):
+        """
+        Calculates some parameters from the configuration parameters.
+        """
+        self.config.sim.pxlScale = (float(self.config.sim.pupilSize)/
+                                        self.config.tel.telDiam)
+
+        #furthest out GS defines the sub-scrn size
+        gsPos = []
+        for gs in range(self.config.sim.nGS):
+            gsPos.append(self.config.wfs[gs].GSPosition)
+        for sci in range(self.config.sim.nSci):
+            gsPos.append(self.config.sci[sci].position)
+
+        if len(gsPos)!=0:
+            maxGSPos = numpy.array(gsPos).max()
+        else:
+            maxGSPos = 0
+
+        self.config.sim.scrnSize = numpy.ceil(
+                2*self.config.sim.pxlScale*self.config.atmos.scrnHeights.max()
+                *maxGSPos*numpy.pi/(3600.*180) 
+                )+self.config.sim.pupilSize
+
+        logger.info("Pixel Scale: {0:.2f}".format(self.config.sim.pxlScale))
+        logger.info("subScreenSize: {}".format(self.config.sim.scrnSize))
+
+
     def aoinit(self):
         '''
         Initialises all simulation objects.
@@ -154,8 +182,7 @@ class Sim(object):
         #calculate some params from read ones
         #calculated
         self.aoloop = eval("self."+self.config.sim.aoloopMode)
-        self.pxlScale = self.config.sim.pupilSize/float(
-                                    self.config.tel.telDiam)  # pxls per Metre
+        self.calcParams()
 
         #Init Pupil Mask
         logger.info("Creating mask...")

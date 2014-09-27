@@ -474,7 +474,7 @@ class WFS(object):
         self.EField *= numpy.exp(1j*phase1)
         
         #Loop through remaining scrns in reverse order - update ht accordingly
-        for i in xrange(scrnNo)[::-1]:
+        for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
             ht -= z
