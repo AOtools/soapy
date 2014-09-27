@@ -103,9 +103,9 @@ class WFS(object):
 
         if (wfsConfig.propagationMode=="physical" or 
                 wfsConfig.propagationMode=="phys"):
-            self.WfsPhase = self.WfsPhasePhysical
+            self.makePhase = self.makePhasePhysical
         else:
-            self.WfsPhase = self.WfsPhaseGeo
+            self.makePhase = self.makePhaseGeo
             
         
         #Centroiding threshold (as fraction of max value in subap)
@@ -231,8 +231,8 @@ class WFS(object):
                                                 self.detectorPxls   ),
                                                dtype = self.dPlaneType )
 
-        self.wfsPhase = numpy.zeros( [self.simConfig.pupilSize]*2 )
-        self.scaledWfsPhase = numpy.zeros([ self.wfsConfig.subaps*self.subapFOVSpacing]*2)
+        self.wfsPhase = numpy.zeros( [self.simConfig.pupilSize]*2, dtype=DTYPE)
+
         self.subapArrays=numpy.empty((self.activeSubaps,
                                       self.subapFOVSpacing,
                                       self.subapFOVSpacing),
@@ -246,7 +246,7 @@ class WFS(object):
                                           self.subapFFTPadding),dtype=DTYPE)
         
         #For Fresnel Propagation
-        self.Efield = numpy.zeros((self.simConfig.pupilSize, self.simConfig.pupilSize),
+        self.EField = numpy.zeros((self.simConfig.pupilSize, self.simConfig.pupilSize),
                                                         dtype=CDTYPE)
 
 
@@ -338,7 +338,7 @@ class WFS(object):
             self.subapCoords*(self.detectorPxls/float(self.simConfig.pupilSize) ) )
 
 
-    def elongPhaseAddition(self,elongLayer):
+    def calcElongPhaseAddition(self,elongLayer):
 
         #Calculate the path difference between the central GS height and the
         #elongation "layer"
@@ -377,7 +377,7 @@ class WFS(object):
         return phaseAddition
 
 
-    def metaPupilPos(self,height):
+    def getMetaPupilPos(self,height):
         '''
         Finds the centre of a metapupil at a given height, when offset by a given angle in arcsecs
         '''
@@ -393,14 +393,14 @@ class WFS(object):
 
 #############################################################
 #Phase stacking routines for a WFS frame
-    def metaPupilPhase(self, scrn, height, radii=None):
+    def getMetaPupilPhase(self, scrn, height, radii=None):
         '''
         Returns the phase across a metaPupil 
         at some height and angular offset in arcsec.
         Interpolates if cone effect is required
         '''
 
-        GSCent = self.metaPupilPos(height) * self.simConfig.pxlScale
+        GSCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
         scrnX,scrnY=scrn.shape
 
         if (scrnX/2.+GSCent[0]-self.simConfig.pupilSize/2.0)<0 \
@@ -432,25 +432,25 @@ class WFS(object):
         return metaPupil
 
 
-    def WfsPhaseGeo(self, radii=None):
+    def makePhaseGeo(self, radii=None):
         '''
         Creates the total phase on a wavefront sensor which 
         is offset by a given angle
         '''
-        self.wfsPhase[:] = 0
+        
         for i in self.scrns:
             if radii:
-                phase = self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i],
+                phase = self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i],
                         radii[i])
             else:
-                phase = self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
+                phase = self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
             
             self.wfsPhase += phase
             
-        self.EField = numpy.exp(1j*self.wfsPhase)
+        self.EField[:] = numpy.exp(1j*self.wfsPhase)
 
 
-    def WfsPhasePhysical(self, radii=None, initialEField=None):
+    def makePhasePhysical(self, radii=None, initialEField=None):
         '''
         Finds total WFS complex amplitude by propagating light down
         phase scrns'''
@@ -463,13 +463,13 @@ class WFS(object):
         if initialEField==None:
             self.EField[:] = self.mask
         else:
-            self.EField = initialEField
+            self.EField[:] = initialEField*self.mask
         
         #Get initial Phase for highest scrn and turn to efield
         if radii:
-            phase1 = self.metaPupilPhase(self.scrns[scrnNo], ht, radii[scrnNo])
+            phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht, radii[scrnNo])
         else:
-            phase1 = self.metaPupilPhase(self.scrns[scrnNo], ht)
+            phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht)
         
         self.EField *= numpy.exp(1j*phase1)
         
@@ -479,15 +479,15 @@ class WFS(object):
             z = ht - self.atmosConfig.scrnHeights[i]
             ht -= z
             #Do ASP for last layer to next
-            self.EField = angularSpectrum(self.EField, self.wfsConfig.wavelength, delta,
+            self.EField[:] = angularSpectrum(self.EField, self.wfsConfig.wavelength, delta,
                             delta, z )
             
             #Get phase for this layer
             if radii:
-                phase = self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i],
+                phase = self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i],
                         radii[i])
             else:
-                phase = self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
+                phase = self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
             
             #Add add phase from this layer
             self.EField *= numpy.exp(1j*phase)
@@ -521,9 +521,9 @@ class WFS(object):
         removeTT = self.wfsConfig.removeTT
         self.wfsConfig.removeTT=False
 
-        self.FPSubapArrays[:] = 0
-        self.EField = numpy.exp(1j*phs)
-        self.WfsFocalPlane()
+        self.zeroData()
+        self.EField[:] =  numpy.exp(1j*phs)
+        self.calcFocalPlane()
         self.makeFocalPlane()
         self.calculateSlopes()
         
@@ -532,6 +532,10 @@ class WFS(object):
         
         return self.slopes
 
+    def zeroData(self):
+        self.EField[:] = 0
+        self.FPSubapArrays[:] = 0
+        self.wfsPhase[:] = 0
 
     def frame(self,scrns,correction=None):
         '''
@@ -543,28 +547,27 @@ class WFS(object):
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.r0Scale
 
-        self.FPSubapArrays[:] = 0
+        self.zeroData()
 
         if self.elong==0:
 
-            self.WfsPhase(self.radii)
+            self.makePhase(self.radii)
             self.uncorrectedPhase = self.wfsPhase.copy()
             if correction!=None:
                 self.EField *= numpy.exp(-1j*correction)
-            self.WfsFocalPlane()
+            self.calcFocalPlane()
 
 
         if self.elong!=0:
 
             for i in xrange(self.elongLayers):
 
-                self.WfsPhase(self.elongRadii[i])
+                self.makePhase(self.elongRadii[i])
                 self.uncorrectedPhase = self.wfsPhase
-                #self.wfsPhase += self.elongPhaseAdditions[i]
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if correction!=None:
                     self.EField *= numpy.exp(-1j*correction)
-                self.WfsFocalPlane()
+                self.calcFocalPlane()
 
         self.makeFocalPlane()
         #Any noise must go in here.
@@ -573,10 +576,29 @@ class WFS(object):
 
         return self.slopes
 
+    def photoNoise(self):
+        pass
+
+    def calcFocalPlane(self):
+        pass
+
+    def makeFocalPlane(self):
+        pass
+
+    def LGSUplink(self):
+        pass
+
+    def calculateSlopes(self):
+        pass
+
 
 
 class ShackHartmannWfs(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
+
+    def zeroData(self):
+        super(ShackHartmannWfs,self).zeroData()
+        self.wfsDetectorPlane[:] = 0
 
     def photonNoise(self):
 
@@ -585,7 +607,7 @@ class ShackHartmannWfs(WFS):
 
 
 
-    def WfsFocalPlane(self):
+    def calcFocalPlane(self):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
         '''
@@ -629,11 +651,11 @@ class ShackHartmannWfs(WFS):
         self.binnedFPSubapArrays[:] = aoSimLib.binImgs(self.FPSubapArrays,
                                                         self.wfsConfig.subapOversamp)
 
-        self.binnedFPSubapArrays = self.maxFlux* (self.binnedFPSubapArrays.T/
+        self.binnedFPSubapArrays[:] = self.maxFlux* (self.binnedFPSubapArrays.T/
                                             self.binnedFPSubapArrays.max((1,2))
                                                                          ).T
 
-        self.wfsDetectorPlane[:] = 0
+        
 
         for i in xrange(self.activeSubaps):
 
@@ -735,6 +757,7 @@ class ShackHartmannWfs(WFS):
                                                         2*self.activeSubaps)
         
         return self.slopes
+
 
 def pyrimid(phs):
 
