@@ -140,14 +140,14 @@ class WFS(object):
                     )
             self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
             self.elongRadii={}
-            self.elongPhaseAdditions = numpy.empty( 
+            self.calcElongPhaseAdditions = numpy.empty( 
                     (self.elongLayers,self.simConfig.pupilSize, 
                     self.simConfig.pupilSize))
 
             for i in xrange(self.elongLayers):
                 self.elongRadii[i] = self.findMetaPupilSize(
                                                     float(self.elongHeights[i]))
-                self.elongPhaseAdditions[i] = self.elongPhaseAddition(i)
+                self.calcElongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
 
 
 
@@ -564,7 +564,7 @@ class WFS(object):
 
                 self.makePhase(self.elongRadii[i])
                 self.uncorrectedPhase = self.wfsPhase
-                self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
+                self.EField *= numpy.exp(1j*self.calcElongPhaseAdditions[i])
                 if correction!=None:
                     self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane()
