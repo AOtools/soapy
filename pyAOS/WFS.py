@@ -66,13 +66,14 @@ class WFS(object):
         self.subapDiam = self.telDiam/self.wfsConfig.subaps
         
 
-        if wfsConfig.lgs:
 
-                
+
+        #######################################################
+        #LGS Initialisation
+        if wfsConfig.lgs:     
             if  (self.lgsConfig.propagationMode=="phys" or 
                     self.lgsConfig.propagationMode=="physical"):
-                LGSClass = LGS.PhysicalLGS
-                        
+                LGSClass = LGS.PhysicalLGS         
             else:
                 LGSClass = LGS.GeometricLGS
                         
@@ -82,25 +83,49 @@ class WFS(object):
         else:
             self.LGS = None
 
-        
         self.lgsLaunchPos = None
         self.elong=0
         self.elongLayers = 0
-
         if self.LGS:
             self.lgsLaunchPos = self.lgsConfig.launchPosition
-            if (self.lgsConfig.height!=0 and 
+
+            #LGS Elongation##############################
+            if (self.wfsConfig.GSHeight!=0 and 
                     self.lgsConfig.elongationDepth!=0):
                 self.elong = self.LGS.lgsConfig.elongationDepth
                 self.elongLayers = self.LGS.lgsConfig.elongationLayers
 
+                #Get Heights of elong layers
+                self.elongHeights = numpy.linspace(
+                    self.wfsConfig.GSHeight-self.elong/2.,
+                    self.wfsConfig.GSHeight+self.elong/2.,
+                    self.elongLayers
+                    )
+                #Calculate the zernikes to add
+                self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
 
-
+                #Calculate the radii of the metapupii at for different elong 
+                #Layer heights
+                #Also calculate the required phase addition for each layer
+                self.elongRadii={}
+                self.elongPhaseAdditions = numpy.empty( 
+                    (self.elongLayers,self.simConfig.pupilSize, 
+                    self.simConfig.pupilSize))
+                for i in xrange(self.elongLayers):
+                    self.elongRadii[i] = self.findMetaPupilSize(
+                                                float(self.elongHeights[i]))
+                    self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
+            #If GS at infinity cant do elongation
+            elif (self.wfsConfig.GSHeight==0 and 
+                    self.lgsConfig.elongationDepth!=0):
+                logger.warning("Not able to implement lgs Elongation as GS at infinity")
+        #Done LGS
+        ##############################################
+        
         self.angleEquivNoise = (wfsConfig.angleEquivNoise * 
                         float(wfsConfig.pxlsPerSubap)/wfsConfig.subapFOV )
         
         #Choose propagation method
-
         if (wfsConfig.propagationMode=="physical" or 
                 wfsConfig.propagationMode=="phys"):
             self.makePhase = self.makePhasePhysical
@@ -129,26 +154,6 @@ class WFS(object):
         self.detectorPxls = self.wfsConfig.pxlsPerSubap*self.wfsConfig.subaps
         self.subapFOVSpacing *= self.SUBAP_OVERSIZE
         self.wfsConfig.pxlsPerSubap2 = self.SUBAP_OVERSIZE*self.wfsConfig.pxlsPerSubap
-
-        #LGS Elongation##############################
-        #If LGS find meta pupil sizes for each phase screen
-        if self.elong!=0:
-            self.elongHeights = numpy.linspace(
-                    self.wfsConfig.GSHeight-self.elong/2.,
-                    self.wfsConfig.GSHeight+self.elong/2.,
-                    self.elongLayers
-                    )
-            self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
-            self.elongRadii={}
-            self.calcElongPhaseAdditions = numpy.empty( 
-                    (self.elongLayers,self.simConfig.pupilSize, 
-                    self.simConfig.pupilSize))
-
-            for i in xrange(self.elongLayers):
-                self.elongRadii[i] = self.findMetaPupilSize(
-                                                    float(self.elongHeights[i]))
-                self.calcElongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
-
 
 
         if self.wfsConfig.GSHeight!=0:
@@ -533,8 +538,8 @@ class WFS(object):
         return self.slopes
 
     def zeroData(self):
+        print("Zero data WFS")
         self.EField[:] = 0
-        self.FPSubapArrays[:] = 0
         self.wfsPhase[:] = 0
 
     def frame(self,scrns,correction=None):
@@ -562,9 +567,11 @@ class WFS(object):
 
             for i in xrange(self.elongLayers):
 
+                super(ShackHartmannWfs,self).zeroData()
+
                 self.makePhase(self.elongRadii[i])
                 self.uncorrectedPhase = self.wfsPhase
-                self.EField *= numpy.exp(1j*self.calcElongPhaseAdditions[i])
+                self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if correction!=None:
                     self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane()
@@ -598,7 +605,9 @@ class ShackHartmannWfs(WFS):
 
     def zeroData(self):
         super(ShackHartmannWfs,self).zeroData()
+        print("Zero data SH")
         self.wfsDetectorPlane[:] = 0
+        self.FPSubapArrays[:] = 0
 
     def photonNoise(self):
 
