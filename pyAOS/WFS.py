@@ -538,7 +538,6 @@ class WFS(object):
         return self.slopes
 
     def zeroData(self):
-        print("Zero data WFS")
         self.EField[:] = 0
         self.wfsPhase[:] = 0
 
@@ -605,7 +604,6 @@ class ShackHartmannWfs(WFS):
 
     def zeroData(self):
         super(ShackHartmannWfs,self).zeroData()
-        print("Zero data SH")
         self.wfsDetectorPlane[:] = 0
         self.FPSubapArrays[:] = 0
 
