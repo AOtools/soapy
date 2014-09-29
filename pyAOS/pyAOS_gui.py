@@ -513,7 +513,7 @@ class LoopThread(QtCore.QThread):
         logger.setStatusFunc(self.progressUpdate)
         try:
             self.guiObj.loopRunning=True
-            self.sim.aoloop(self.progressUpdate)#self.update)
+            self.sim.aoloop()
             self.guiObj.loopRunning=False
             self.guiObj.stop()
         except:

@@ -116,7 +116,7 @@ class DM:
         return self.dmShape
 
 
-class zernike(DM):
+class Zernike(DM):
 
 
     def makeIMatShapes(self):
@@ -130,7 +130,7 @@ class zernike(DM):
         self.iMatShapes = shapes*self.mask
 
 
-class peizo(DM):
+class Piezo(DM):
 
 
     def getActiveActs(self):
@@ -162,22 +162,23 @@ class peizo(DM):
         self.iMatShapes = (shapes * self.mask) #*self.wvl
 
 
-
 class TT:
 
-    def __init__(self,pupilSize, wfs, mask):
-        self.simConfig.pupilSize = pupilSize
+    def __init__(self, pupilSize, wfs, mask):
+        self.pupilSize = pupilSize
         self.mask = mask
         self.dmCommands = numpy.zeros(2)
         self.wfs = wfs
-        
-        self.wvl = wfs.waveLength
+        self.wvl = wfs.wfsConfig.wavelength
         
         self.makeIMatShapes()
 
+    def getActiveActs(self):
+        return 2
+
     def makeIMatShapes(self):
 
-        coords = numpy.arange(-1, 1, 2./self.simConfig.pupilSize) + 1./self.simConfig.pupilSize
+        coords = numpy.arange(-1, 1, 2./self.pupilSize) + 1./self.pupilSize
 
         X,Y = numpy.meshgrid( coords, coords ) 
 
@@ -198,7 +199,7 @@ class TT:
             if callback !=None:
                 callback()
             if progressCallback!=None:
-                progressCallback(i, 2, "Tip-Tilt Mirror")
+                progressCallback(str(i), str(2), "Tip-Tilt Mirror")
 
         self.iMat = iMat
         self.controlMatrix = numpy.linalg.inv(iMat)

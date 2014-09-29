@@ -133,32 +133,35 @@ class Sim(object):
 
         self.gain = self.config.sim.gain
 
-    def calcParams(self):
-        """
-        Calculates some parameters from the configuration parameters.
-        """
-        self.config.sim.pxlScale = (float(self.config.sim.pupilSize)/
-                                        self.config.tel.telDiam)
+    # def calcParams(self):
+    #     """
+    #     Calculates some parameters from the configuration parameters.
+    #     """
+    #     self.config.sim.pxlScale = (float(self.config.sim.pupilSize)/
+    #                                     self.config.tel.telDiam)
 
-        #furthest out GS defines the sub-scrn size
-        gsPos = []
-        for gs in range(self.config.sim.nGS):
-            gsPos.append(self.config.wfs[gs].GSPosition)
-        for sci in range(self.config.sim.nSci):
-            gsPos.append(self.config.sci[sci].position)
+    #     #furthest out GS defines the sub-scrn size
+    #     gsPos = []
+    #     for gs in range(self.config.sim.nGS):
+    #         gsPos.append(self.config.wfs[gs].GSPosition)
+    #     for sci in range(self.config.sim.nSci):
+    #         gsPos.append(self.config.sci[sci].position)
 
-        if len(gsPos)!=0:
-            maxGSPos = numpy.array(gsPos).max()
-        else:
-            maxGSPos = 0
+    #     if len(gsPos)!=0:
+    #         maxGSPos = numpy.array(gsPos).max()
+    #     else:
+    #         maxGSPos = 0
 
-        self.config.sim.scrnSize = numpy.ceil(
-                2*self.config.sim.pxlScale*self.config.atmos.scrnHeights.max()
-                *maxGSPos*numpy.pi/(3600.*180) 
-                )+self.config.sim.pupilSize
+    #     self.config.sim.scrnSize = numpy.ceil(
+    #             2*self.config.sim.pxlScale*self.config.atmos.scrnHeights.max()
+    #             *maxGSPos*numpy.pi/(3600.*180) 
+    #             )+self.config.sim.pupilSize
 
-        logger.info("Pixel Scale: {0:.2f}".format(self.config.sim.pxlScale))
-        logger.info("subScreenSize: {}".format(self.config.sim.scrnSize))
+
+
+
+    #     logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.config.sim.pxlScale))
+    #     logger.info("subScreenSize: {}".format(self.config.sim.scrnSize))
 
 
     def aoinit(self):
@@ -182,7 +185,7 @@ class Sim(object):
         #calculate some params from read ones
         #calculated
         self.aoloop = eval("self."+self.config.sim.aoloopMode)
-        self.calcParams()
+        self.config.calcParams()
 
         #Init Pupil Mask
         logger.info("Creating mask...")
@@ -235,7 +238,10 @@ class Sim(object):
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
+        self.dmAct1 = []
+        self.dmShape = numpy.zeros( [self.config.sim.pupilSize]*2 )
         for dm in xrange(self.config.sim.nDM):
+            self.dmAct1.append(self.config.sim.totalActs)
             dmObj = eval( "DM."+self.config.dm[dm].dmType)
 
             self.dms[dm] = dmObj(
@@ -435,7 +441,7 @@ class Sim(object):
 
         if self.config.sim.tipTilt:
             #calculate the shape of TT Mirror
-            TTShape = self.TT.dmFrame(slopes,self.ttGain,closed)
+            TTShape = self.TT.dmFrame(slopes,self.config.sim.ttGain,closed)
 
             #Then remove TT signal from slopes
             xySlopes = slopes.reshape(2,self.TT.wfs.activeSubaps)
@@ -460,17 +466,19 @@ class Sim(object):
             ndArray: the combined DM shape
         """
         t = time.time()
-        dmShape = numpy.zeros( [self.config.sim.pupilSize]*2 )
-        act=0
+        self.dmShape[:] = 0
+
         for dm in xrange(self.config.sim.nDM):
-            dmShape += self.dms[dm].dmFrame(
-                    dmCommands[act:act+self.dms[dm].acts],
-                    self.gain, closed)
-            act+=self.dms[dm].acts
+            if self.config.dm[dm].closed==closed:
+                self.dmShape += self.dms[dm].dmFrame(
+    dmCommands[self.dmAct1[dm]:self.dmAct1[dm]+self.dms[dm].acts],
+    self.gain, closed
+    )
+
+
 
         self.Tdm += time.time()-t
-        return dmShape
-
+        return self.dmShape
 
     def runSciCams(self,dmShape=None):
         """
@@ -492,14 +500,67 @@ class Sim(object):
 
         self.Tsci +=time.time()-t
 
-    def open(self, progressCallback=None):
+    def loop(self):
+        """
+        Main AO Loop - loop open
+
+        Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Open loop, i.e., the WFSs are executed before the DM with no DM information being sent back to the WFSs.
+        """
+        
+        self.iters=1
+        self.correct=1
+        self.go = True
+        self.slopes = numpy.zeros( ( 2*self.config.sim.totalSubaps) )
+
+        for i in xrange(self.config.sim.nIters):
+            if self.go:
+
+                #get next phase screens
+                t = time.time()
+                self.scrns = self.atmos.moveScrns()
+                self.Tatmos = time.time()-t
+
+                #Run Loop...
+
+                #Run a closed loop tip-tilt mirror if set
+                ttShape,self.slopes = self.runTipTilt(self.slopes)
+
+                #Get dmCommands from reconstructor
+                self.dmCommands = self.recon.reconstruct(self.slopes)
+
+                #Get dmShape from closed loop DMs
+                dmShape = self.runDM(self.dmCommands, closed=True).copy()
+
+                #Run WFS, with closed loop DM shape applied
+                self.slopes = self.runWfs(dmShape=dmShape)
+
+                #Get DM shape for open loop DMs, add to closed loop DM shape
+                dmShape += self.runDM(self.dmCommands, closed=False)
+
+                #Pass whole combine DM shapes to science target
+                self.runSciCams(dmShape)
+                
+                #Save Data
+                self.storeData(i)
+
+                self.iters = i
+
+                logger.statusMessage(i, self.config.sim.nIters, 
+                                    "AO Loop")
+
+                self.addToGuiQueue()
+            else:
+                break
+
+        self.saveData()
+        self.finishUp()
+
+
+    def open(self):
         '''
         Main AO Loop - loop open
 
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Open loop, i.e., the WFSs are executed before the DM with no DM information being sent back to the WFSs.
-
-        Args:
-            progressCallback (func, optional): a function which is called after every iteration, can be used to output status information
         '''
         
         self.iters=1
@@ -529,9 +590,6 @@ class Sim(object):
                 logger.statusMessage(i, self.config.sim.nIters, 
                                     "Open AO Loop")
 
-                if progressCallback!=None:
-                    progressCallback(i, self.config.sim.nIters, 
-                                    "Open AO loop" )
                 self.addToGuiQueue()
             else:
                 break
@@ -553,7 +611,6 @@ class Sim(object):
         self.correct=1
         self.go = True
         self.slopes = numpy.zeros( ( 2*self.config.sim.totalSubaps) )
-        self.dmShapes = numpy.zeros( (self.config.sim.nIters, self.config.sim.pupilSize, self.config.sim.pupilSize))
 
         #pylab.figure()
 
@@ -583,9 +640,6 @@ class Sim(object):
                                     "Closed AO Loop")
 
                 self.addToGuiQueue()
-                # if progressCallback!=None:
-                #     progressCallback(i, self.config.sim.nIters, 
-                #                 "Closed AO loop" )
 
             else:
                 #Stop sim if "go"!=True
@@ -721,10 +775,7 @@ class Sim(object):
                     pyfits.writeto(
                         self.path+"/wfsFPFrames/wfs-%d_frame-%d.fits"%(wfs,i),
                         self.wfss[wfs].wfsDetectorPlane     )
-                    # FITS.Write(
-#                         self.wfss[wfs].wfsDetectorPlane,
-#   self.path+"/wfsFPFrames/wfs-%d_frame-%d.fits"%(wfs,i))
-                
+
 
     def saveData(self):
         """

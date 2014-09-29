@@ -106,6 +106,36 @@ class Configurator(object):
             self.sci[sci].loadParams(self.configDict["Science"])
 
 
+    def calcParams(self):
+        """
+        Calculates some parameters from the configuration parameters.
+        """
+        self.sim.pxlScale = (float(self.sim.pupilSize)/
+                                    self.tel.telDiam)
+
+        #furthest out GS defines the sub-scrn size
+        gsPos = []
+        for gs in range(self.sim.nGS):
+            gsPos.append(self.wfs[gs].GSPosition)
+        for sci in range(self.sim.nSci):
+            gsPos.append(self.sci[sci].position)
+
+        if len(gsPos)!=0:
+            maxGSPos = numpy.array(gsPos).max()
+        else:
+            maxGSPos = 0
+
+        self.sim.scrnSize = numpy.ceil(
+                2*self.sim.pxlScale*self.atmos.scrnHeights.max()
+                *maxGSPos*numpy.pi/(3600.*180) 
+                )+self.sim.pupilSize
+
+
+
+
+        logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
+        logger.info("subScreenSize: {}".format(self.sim.scrnSize))
+
 class ConfigObj(object):
     def __init__(self):
 
@@ -522,6 +552,7 @@ class DmConfig(ConfigObj):
         self.requiredParams = [ "dmType",
                                 "dmActs",
                                 "dmCond",
+                                "closed",
                                 ]
 
 

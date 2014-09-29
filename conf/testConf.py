@@ -10,32 +10,25 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "testing",
-    "pupilSize"     :   128, #this is the phase SAMPLING size
-                            #(not number of detector pxls)
+    "filePrefix"    :  "sh_8x8",
+    "pupilSize"     :   64, 
     "nGS"           :   1,
     "nDM"           :   1,
     "nSci"          :   1,
-
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
     "gain"          :   0.6,
-    "aoloopMode"      :   "closed", #Can be "closedSCAO" or "openSCAO" so far...
-    "reconstructor" :   "MVM", #Can be "MVM", "WooferTweeter, LearnAndApply1"
- 
-    "learnIters"    :   1000, #Only applicable if reconstructor is 
+    "aoloopMode"    :   "loop", 
+    "reconstructor" :   "MVM", 
+
+    "verbosity"     :   2,
 
     "saveCMat"      :   False,
     "saveSlopes"    :   True,
     "saveDmCommands":   False,
     "saveLgsPsf"    :   False,
     "saveSciPsf"    :   True,
-
-    "tipTilt"       :   False,
-    "ttGain"        :   0.9,
-    "wfsMP"            :   False,
-
-    "verbosity"     :   2,
+    "tipTilt"       :   True,
     },
 
 "Atmosphere":{
@@ -56,51 +49,35 @@ simConfiguration = {
     },
 
 "WFS":{
-    "GSPosition"   :   numpy.array([    [0,0]   ,
-                                        [0,-20],
-                                        [-20,0],
-                                        [20,0],
-                                        [0,20]
-                                                ]),
-    "GSHeight"      :   numpy.array([0 ]*5),
-    "wfsPropMode"   :   ["geo"]*5,
-    "subaps"        :   numpy.array([8]*5),
-
-    "pxlsPerSubap"  :   numpy.array([14]*5),
-
-    "subapFOV"      :   numpy.array([4.0]*5), #arcsecs
-
-    "wavelength"    :   numpy.array( [ 600e-9] *5),
-    "subapThreshold":   [0.7,]*5,
-    "bitDepth"      :   numpy.array([8]*5),
-    "SNR"           :   numpy.array([0]*5),
-    "removeTT"      :   numpy.array([0,0,0,0,0]),
-    "angleEquivNoise":  numpy.array([0]*5), #arcsecs
+    "GSPosition"    :   [(0,0)],
+    "GSHeight"      :   [0],
+    "subaps"        :   [8],
+    "pxlsPerSubap"  :   [10],
+    "subapFOV"      :   [2.0],
+    "subapOversamp" :   [3],
+    "wavelength"    :   [600e-9],
+    "bitDepth"      :   [8],
+    "lgs"           :   [False],
     },
 
 "LGS":{
-    "lgsPupilSize"  :   0.5, #Metres
-    "lgsUplink"     :   numpy.array([   0 ]*5),
-    "wavelength"         :   numpy.array([   600e-9  ]*5),
-    "propogationMode" :   ["physical"]*5,
-    "height"     :   numpy.array([90000]*5),
-    "elongationDepth" :   [0,]*5,
-    "elongationLayers"   :   [10,]*5,
+
     },
 
 "DM":{
 
-    "dmType"        :   [ "peizo","peizo"], #peizo,TT or zernike so far...
-    "dmActs"        :   numpy.array( [9**2,33**2]),
-    "dmCond"        :   numpy.array( [0.05, 0.05] ),
+    "dmType"        :   ["Piezo"],
+    "dmActs"        :   [9**2],
+    "dmCond"        :   [0.05],
+    "closed"        :   [True],
     },
 
 "Science":{
-    "position"        :   numpy.array( [ [0,0], [0,0],[0,0],[0,0] ] ),
-    "FOV"        :   numpy.array( [3.0]*4), #Arcsecs
-    "wavelength"       :   numpy.array( [ 1500e-9, 800e-9, 1000e-9, 1500e-9]),
-    "pxls"       :   numpy.array( [128]*4),
-    "oversamp"   :   numpy.array( [4]*4 ),
+    "position"      :   [(0,0)],
+    "FOV"           :   [3.0],
+    "wavelength"    :   [1.65e-6],
+    "pxls"          :   [128],
+    "oversamp"      :   [2],
     }
 
 

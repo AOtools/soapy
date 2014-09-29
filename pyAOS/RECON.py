@@ -227,10 +227,11 @@ class MVM(Reconstructor):
         '''
         acts = 0
         for dm in xrange(self.simConfig.nDM):
+            # if self.dms[0].dmConfig.dmType!="TT":
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:
-                dmCMat = numpy.inv(dmIMat)
+                dmCMat = numpy.linalg.inv(dmIMat)
             else:
                 dmCMat = numpy.linalg.pinv( dmIMat, 
                                             self.dms[dm].dmConfig.dmCond)
@@ -277,10 +278,7 @@ class WooferTweeter(Reconstructor):
             
             dmCMats.append(dmCMat)
             
-            
-            
-            
-        #This it the matrix which converts from Low order DM commands
+        #This is the matrix which converts from Low order DM commands
         #to high order DM commands, via slopes
         lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
         print(lowToHighTransform.shape)
