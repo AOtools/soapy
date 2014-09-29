@@ -65,7 +65,7 @@ simConfiguration = {
 
 "DM":{
 
-    "dmType"        :   [ "peizo"],
+    "dmType"        :   [ "Piezo"],
     "dmActs"        :   [9**2],
     "dmCond"        :   [0.05],
     "closed"        :   [True],
