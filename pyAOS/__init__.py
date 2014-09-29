@@ -184,7 +184,7 @@ class Sim(object):
 
         #calculate some params from read ones
         #calculated
-        self.aoloop = eval("self."+self.config.sim.aoloopMode)
+        self.aoloop = self.loop#eval("self."+self.config.sim.aoloopMode)
         self.config.calcParams()
 
         #Init Pupil Mask
