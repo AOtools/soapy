@@ -221,7 +221,6 @@ class SimConfig(ConfigObj):
         ``nDM``             int: Number of deformable Mirrors   ``0``
         ``nSci``            int: Number of Science Cameras      ``0``
         ``gain``            float: loop gain of system          ``0.6``
-        ``aoloopMode``      string: loop "open" or "closed"     ``"closed"``
         ``reconstructor``   string: name of reconstructor 
                             class to use. See 
                             ``reconstructor`` module
@@ -283,7 +282,6 @@ class SimConfig(ConfigObj):
                                 ("nDM", 0),
                                 ("nSci", 0),
                                 ("gain", 0.6),
-                                ("aoloopMode", "closed"),
                                 ("reconstructor", "MVM"),
                                 ("filePrefix", None),
                                 ("saveSlopes", False),
@@ -541,9 +539,18 @@ class DmConfig(ConfigObj):
                                 pseudo inverse of the interaction matrix. this
                                 is performed by 
                                 `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
+
         ==================      ============================================
 
+    Optional:
+        ==================== =================================   ===========
+        **Parameter**        **Description**                     **Default**
+        -------------------- ---------------------------------   -----------
+        ``closed``           Is DM closed loop of WFS?           ``True``
+        ==================== =================================   ===========  
         """
+
+
     def __init__(self, N):
         super(DmConfig, self).__init__()
 
@@ -552,11 +559,12 @@ class DmConfig(ConfigObj):
         self.requiredParams = [ "dmType",
                                 "dmActs",
                                 "dmCond",
-                                "closed",
+
                                 ]
 
 
         self.optionalParams = [ 
+                                ("closed",True),
                                 ]
         self.initParams()
 
