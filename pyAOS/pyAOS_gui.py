@@ -59,10 +59,7 @@ class GUI(QtGui.QMainWindow):
         self.ui.instExpRadio.clicked.connect(self.update)
         self.ui.longExpRadio.clicked.connect(self.update)
         
-        #Setup stats plot
-        self.resultPlot = matplotlibWidget()
-        self.ui.plotLayout.addWidget(self.resultPlot)
-        
+
         #Initialise Colour chooser
         self.gradient = pyqtgraph.GradientWidget(orientation="bottom")
         self.gradient.sigGradientChanged.connect(self.changeLUT)
@@ -95,6 +92,8 @@ class GUI(QtGui.QMainWindow):
         self.initThread = None
         self.iMatThread = None
         self.loopThread = None
+
+        self.resultPlot = None
 
         #Required for plotting colors
         self.colorList = ["b","g","r","c","m","y","k"]
@@ -161,7 +160,7 @@ class GUI(QtGui.QMainWindow):
         #Set initial gain
         self.ui.gainSpin.setValue( self.sim.gain )
 
-        self.initStrehlPlot()
+#       self.initStrehlPlot()
         
         self.ui.progressBar.setValue( 100)
         self.statsThread = StatsThread(self.sim)
@@ -219,8 +218,8 @@ class GUI(QtGui.QMainWindow):
                     self.resPlots[sci].setImage(
                                 plotDict["residual"][sci], lut=self.LUT)
             
-            
-            self.updateStrehls()
+            if self.loopRunning:
+                self.updateStrehls()
             
             self.app.processEvents()
 
@@ -243,19 +242,23 @@ class GUI(QtGui.QMainWindow):
 
     def plotPupilOverlap(self):
         print("printPlotOverlap")
-        pupilFig = pylab.figure()
-        pupilAxes = {}
-        for i in range(self.sim.scrnNo):
-            pupilAxes[i] = pupilFig.add_subplot(2,
-                                numpy.ceil(self.sim.scrnNo/2.),i+1)
-            pupilAxes[i].imshow(numpy.zeros((   self.config.sim.pupilSize*2,
+
+        if self.resultPlot:
+            self.resultPlot.setParent(None)
+        scrnNo = self.sim.config.atmos.scrnNo
+        self.resultPlot = OverlapWidget(scrnNo)
+        self.ui.plotLayout.addWidget(self.resultPlot)
+        
+        for i in range(scrnNo):
+
+            self.resultPlot.canvas.axes[i].imshow(numpy.zeros((   self.config.sim.pupilSize*2,
                                                 self.config.sim.pupilSize*2)),
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
                 print("wfs:%s"%wfs)
-                if self.sim.GSHeight[wfs]>self.sim.scrnHeights[i] or self.sim.GSHeight[wfs]==0:
-                    cent = self.sim.wfss[wfs].metaPupilPos(
-    self.sim.scrnHeights[i])*self.sim.pxlScale+self.config.sim.pupilSize
+                if self.sim.config.wfs[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfs[wfs].GSHeight==0:
+                    cent = self.sim.wfss[wfs].getMetaPupilPos(
+    self.sim.config.atmos.scrnHeights[i])*self.sim.config.sim.pxlScale+self.config.sim.pupilSize
                     print(cent)
                     if self.sim.wfss[wfs].radii!=None:
                         radius = self.sim.wfss[wfs].radii[i]
@@ -264,17 +267,21 @@ class GUI(QtGui.QMainWindow):
                         radius = self.config.sim.pupilSize/2.
                     print(radius)
                 
-                    if self.sim.GSHeight[wfs]!=0:
+                    if self.sim.config.wfs[wfs].GSHeight!=0:
                         colour="r"
                     else:
                         colour="g"
                     
                     circ = pylab.Circle(cent,radius=radius,alpha=0.4,fc=colour)
-                    pupilAxes[i].add_patch(circ)
-            pylab.draw()
+                    self.resultPlot.canvas.axes[i].add_patch(circ)
+
 
     def initStrehlPlot(self):
         #init plot
+        if self.resultPlot:
+            self.resultPlot.setParent(None)
+        self.resultPlot = PlotWidget()
+        self.ui.plotLayout.addWidget(self.resultPlot)
         
         self.strehlAxes = self.resultPlot.canvas.ax
         self.strehlAxes.set_xlabel("Iterations",fontsize="xx-small")
@@ -343,6 +350,8 @@ class GUI(QtGui.QMainWindow):
             running = False
 
         if running == False:
+
+            self.plotPupilOverlap()
             print("making IMat")
             self.ui.progressLabel.setText("Generating DM Shapes...")
             self.ui.progressBar.setValue(10)
@@ -354,6 +363,8 @@ class GUI(QtGui.QMainWindow):
 
     def run(self):
         
+        self.initStrehlPlot()
+
         self.startTime = time.time()
         self.ui.progressLabel.setText("Running AO Loop")
         self.ui.progressBar.setValue(0)
@@ -392,7 +403,6 @@ class GUI(QtGui.QMainWindow):
     def changeLUT(self):
         self.LUT = self.gradient.getLookupTable(256)
 
-
     def gainChanged(self):
         self.sim.gain = self.ui.gainSpin.value()
 
@@ -403,7 +413,6 @@ class GUI(QtGui.QMainWindow):
             self.updateTimer.setInterval(self.updateTime)
 
     def progressUpdate(self, message, i="", maxIter=""):
-
 
         if i!="" and maxIter!="":
             percent = int(round(100*(float(i)/float(maxIter))))
@@ -417,9 +426,6 @@ class GUI(QtGui.QMainWindow):
             self.ui.progressLabel.setText(message)
 
 
-        
-
-
 ###############################################
 
 #Tidy up before closing the gui
@@ -429,8 +435,6 @@ class GUI(QtGui.QMainWindow):
 
 
 ###########################################
-
-
 
 
 class StatsThread(QtCore.QThread):
@@ -495,7 +499,10 @@ class IMatThread(QtCore.QThread):
 
 
     def progressUpdate(self, message, i="", maxIter=""):
-        self.updateProgressSignal.emit(message, str(i), str(maxIter))
+        i = str(i)
+        maxIter = str(maxIter)
+        message = str(message)
+        self.updateProgressSignal.emit(message, i, maxIter)
 
 class LoopThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
@@ -565,7 +572,28 @@ class IPythonConsole:
         self.kernel.shell.write(message)
         self.kernel.shell.ex("")
         
-class MplCanvas(FigureCanvas):
+class OverlapCanvas(FigureCanvas):
+    def __init__(self, nAxes):
+        self.fig = Figure(facecolor="white", frameon=False)
+        self.axes=[]
+        for i in range(nAxes):
+            self.axes.append(self.fig.add_subplot(2, numpy.ceil(nAxes/2.),i+1))
+
+        FigureCanvas.__init__(self, self.fig)
+        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+
+class OverlapWidget(QtGui.QWidget):
+ 
+    def __init__(self, nAxes, parent = None):
+        QtGui.QWidget.__init__(self, parent)
+        self.canvas = OverlapCanvas(nAxes)
+        self.vbl = QtGui.QVBoxLayout()
+        self.vbl.addWidget(self.canvas)
+        self.setLayout(self.vbl)
+
+
+class PlotCanvas(FigureCanvas):
  
     def __init__(self):
         self.fig = Figure(facecolor="white", frameon=False)
@@ -576,11 +604,11 @@ class MplCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
  
  
-class matplotlibWidget(QtGui.QWidget):
+class PlotWidget(QtGui.QWidget):
  
     def __init__(self, parent = None):
         QtGui.QWidget.__init__(self, parent)
-        self.canvas = MplCanvas()
+        self.canvas = PlotCanvas()
         self.vbl = QtGui.QVBoxLayout()
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)

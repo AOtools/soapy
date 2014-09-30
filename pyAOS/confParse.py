@@ -388,6 +388,9 @@ class WfsConfig(ConfigObj):
         ``angleEquivNoise`` float: width of gaussian noise 
                             added to slopes measurements
                             in arc-secs                        ``0``
+        ``centThreshold``   float: Centroiding threshold as
+                            a fraction of the max subap
+                            value.                             ``0.1``
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
@@ -422,6 +425,7 @@ class WfsConfig(ConfigObj):
                                 ("GSHeight", 0),
                                 ("subapThreshold", 0.5),
                                 ("lgs",False),
+                                ("centThreshold",0.1),
                             ]
         self.initParams()
 
@@ -546,7 +550,7 @@ class DmConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
-        ``closed``           Is DM closed loop of WFS?           ``True``
+        ``closed``           bool:Is DM closed loop of WFS?       ``True``
         ==================== =================================   ===========  
         """
 

@@ -299,16 +299,15 @@ class LearnAndApply(Reconstructor):
     
     Only works for 1 DM at present
     '''
-    
 
     def initControlMatrix(self):
-        self.controlShape = (   
-                        self.simConfig.totalSlopes-2*self.wfss[0].activeSubaps,
-                        self.simConfig.totalActs 
-                        )
-            
-        self.controlMatrix = numpy.empty( (2*self.wfss[0].activeSubaps,
-                                            self.simConfig.totalActs) )
+
+        # self.controlShape = (   
+        #                 self.simConfig.totalSlopes-2*self.wfss[0].activeSubaps,
+        #                 self.simConfig.totalActs 
+        #                 )
+        self.controlShape = (2*self.wfss[0].activeSubaps, self.simConfig.totalActs)
+        self.controlMatrix = numpy.empty( self.controlShape )
     
     def learn(self,callback=None, progressCallback=None):
         '''
@@ -320,18 +319,18 @@ class LearnAndApply(Reconstructor):
         self.learnSlopes = numpy.empty( (self.learnIters,self.simConfig.totalSlopes) )
         for i in xrange(self.learnIters):
             self.learnIter=i            
-            logger.debug("Learn Iteration %i",i)
+
             
             scrns = self.moveScrns()
             self.learnSlopes[i] = self.runWfs(scrns)
             
-            sys.stdout.write("\rLearn Frame: %d    "%i)
+            sys.stdout.write("\rLearn Frame: {}".format(i))
             sys.stdout.flush()
             
             if callback!=None:
                 callback()
             if progressCallback!=None:
-               progressCallback(i,self.learnIters, "Performing Learn") 
+               progressCallback("Performing Learn", i, self.learnIters ) 
             
         if self.simConfig.saveLearn:
             #FITS.Write(self.learnSlopes,self.simConfig.filePrefix+"/learn.fits")
@@ -345,7 +344,6 @@ class LearnAndApply(Reconstructor):
         to create a CMat.
         '''
 
-        
         logger.info("Performing Learn....")
         self.learn(callback, progressCallback)
         logger.info("Done. Creating Tomographic Reconstructor...")
@@ -358,12 +356,12 @@ class LearnAndApply(Reconstructor):
                                 2*self.wfss[0].activeSubaps:     ]
         Coffoff = self.covMat[  2*self.wfss[0].activeSubaps:,
                                 2*self.wfss[0].activeSubaps:    ]
-        if progressCallback:
-            progressCallback(1,1, "Inverting offoff Covariance Matrix")
-        iCoffoff = numpy.linalg.inv(Coffoff)
+        
+        logger.info("Inverting offoff Covariance Matrix")
+        iCoffoff = numpy.linalg.pinv(Coffoff)
         
         self.tomoRecon = Conoff.dot(iCoffoff)
-        logger.info("Done. Creating full reconstructor....")
+        logger.info("Done. \nCreating full reconstructor....")
         
         #Same code as in "MVM" class to create dm-slopes reconstructor.
         acts = 0
@@ -373,18 +371,25 @@ class LearnAndApply(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dmCond[dm])
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
             
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
         
-        if progressCallback:
-            progressCallback(1,1, "Creating full reconstructor")
+
         self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
         logger.info("Done.")
         
+
     def reconstruct(self,slopes):
-        
+        """
+        Determine DM commands using previously made 
+        reconstructor from slopes. 
+        Args:
+            slopes (ndarray): array of slopes to reconstruct from
+        Returns:
+            ndarray: array to comands to be sent to DM 
+        """
         logger.debug("LA Reconstruction - slopes Shape: %s"%slopes[2*self.wfss[0].activeSubaps:].shape)
         logger.debug("LA Reconstruction - Reconstructor Shape: %s,%s"%self.controlMatrix.shape)
         

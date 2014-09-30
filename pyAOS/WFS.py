@@ -133,8 +133,7 @@ class WFS(object):
             self.makePhase = self.makePhaseGeo
             
         
-        #Centroiding threshold (as fraction of max value in subap)
-        self.cent_threshold = 0.2
+        
 
         self.iMat=False
 
@@ -273,6 +272,7 @@ class WFS(object):
 
         res = scipy.optimize.minimize(self.optFunc,0,args=(X,O),tol=0.1,
                                 options={"maxiter":6})
+
         A = res["x"]
         self.XTilt = A*X
         self.YTilt = A*Y
@@ -300,7 +300,8 @@ class WFS(object):
 
         FPDetector = aoSimLib.binImgs(FP,self.wfsConfig.subapOversamp)
 
-        slope = aoSimLib.simpleCentroid(FPDetector, self.cent_threshold)
+        slope = aoSimLib.simpleCentroid(FPDetector, 
+                    self.wfsConfig.centThreshold)
         slope -= self.wfsConfig.pxlsPerSubap2/2.
         return slope
 #######################################################################
@@ -750,7 +751,9 @@ class ShackHartmannWfs(WFS):
                                                     y:y+self.wfsConfig.pxlsPerSubap ]
 
         #Use self made function which processes all subaps at same time
-        slopes=aoSimLib.simpleCentroid(subapArrays,self.cent_threshold)
+        slopes=aoSimLib.simpleCentroid(
+                    subapArrays, self.wfsConfig.centThreshold
+                    )
         #shift slopes relative to subap centre
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
         

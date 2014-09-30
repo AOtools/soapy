@@ -20,14 +20,14 @@ The module simulating Deformable Mirrors in pyAOS
 """
 import numpy
 from . import aoSimLib, logger
-import sys
+
 try:
     xrange
 except NameError:
     xrange = range
 
 class DM:
-    def __init__ (self, simConfig, dmConfig, wfss, mask):
+    def __init__ (self, simConfig, dmConfig, wfss, mask, wfslist=[0]):
 
         self.simConfig = simConfig
         self.dmConfig = dmConfig
@@ -40,8 +40,9 @@ class DM:
        
         #find the total number of WFS subaps, and make imat
         #placeholder
+        self.wfslist = wfslist
         self.totalSubaps = 0
-        for wfs in wfss:
+        for wfs in self.wfslist:
             self.totalSubaps += self.wfss[wfs].activeSubaps
            
     def getActiveActs(self):
@@ -54,7 +55,7 @@ class DM:
         return self.acts
 
 
-    def makeIMat(self,wfsList=[0], callback=None, progressCallback=None ):
+    def makeIMat(self, callback=None, progressCallback=None ):
        '''
        makes IMat
        '''
@@ -63,7 +64,7 @@ class DM:
        iMat = numpy.zeros( (self.iMatShapes.shape[0],2*self.totalSubaps) )
 
        subap=0
-       for wfs in wfsList:
+       for wfs in self.wfslist:
            for i in xrange(self.iMatShapes.shape[0]):
                iMat[i,subap:subap+(2*self.wfss[wfs].activeSubaps)] =\
                        self.wfss[wfs].iMatFrame(

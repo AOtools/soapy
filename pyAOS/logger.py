@@ -49,7 +49,7 @@ def statusMessage(i, maxIter, message):
 	else:
 		STATUS_FUNC(message, i, maxIter)
 
-def _printMessage(message):
+def _printMessage(message, level=3):
 	"""
 	Internal function to add debug info to message and print
 
@@ -57,18 +57,21 @@ def _printMessage(message):
 		message(str): The message to log
 	"""
 
-	curframe = inspect.currentframe()
-	calframe = inspect.getouterframes(curframe, 2)
+	if LOGGING_LEVEL>=level:
+		if LOGGING_LEVEL>2 or level==1:
+			curframe = inspect.currentframe()
+			calframe = inspect.getouterframes(curframe, 2)
+			message = calframe[2][1].split("/")[-1]+" - "+calframe[2][3] + ": " + message
 
-	logMessage = calframe[2][1].split("/")[-1]+" - "+calframe[2][3] + ": " + message
-	if LOGGING_FILE:
-		with open(LOGGING_FILE, "w") as File:
-			File.write(logMessage+"\n")
+		if LOGGING_FILE:
+			with open(LOGGING_FILE, "w") as File:
+				File.write(message+"\n")
 
-	if STATUS_FUNC:
-		STATUS_FUNC(message)
 
-	print(logMessage)
+		if STATUS_FUNC:
+			STATUS_FUNC(message)
+
+		print(message)
 
 def print_(message):
 	"""
@@ -89,15 +92,7 @@ def info(message):
 		message (string): The message to log
 	"""
 	
-	if LOGGING_LEVEL==2:
-			print(message)
-			if STATUS_FUNC:
-				STATUS_FUNC(message)
-	elif LOGGING_LEVEL>=3:
-			_printMessage(message)
-	else:
-		pass
-
+	_printMessage(message, 2)
 
 def debug(message):
 	"""
@@ -106,11 +101,7 @@ def debug(message):
 	Args:
 		message (string): The message to log
 	"""
-	if LOGGING_LEVEL>=3:
-		_printMessage("Debug: {0}".format(message))
-	
-	else:
-		pass
+	_printMessage(message, 3)
 
 def warning(message):
 	"""
@@ -119,10 +110,7 @@ def warning(message):
 	Args:
 		message (string): The message to log
 	"""
-	if LOGGING_LEVEL>=1:
-		_printMessage("WARNING: {0}".format(message))		
-	else:
-		pass
+	_printMessage(message,1)
 
 
 
