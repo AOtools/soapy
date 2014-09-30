@@ -484,9 +484,11 @@ class WFS(object):
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
             ht -= z
+            
             #Do ASP for last layer to next
-            self.EField[:] = angularSpectrum(self.EField, self.wfsConfig.wavelength, delta,
-                            delta, z )
+            self.EField[:] = angularSpectrum(
+                        self.EField, self.wfsConfig.wavelength, 
+                        delta, delta, z )
             
             #Get phase for this layer
             if radii:
@@ -757,9 +759,9 @@ class ShackHartmannWfs(WFS):
         #shift slopes relative to subap centre
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
         
-        if self.wfsConfig.removeTT:
+        if self.wfsConfig.removeTT==True:
             slopes = (slopes.T - slopes.mean(1)).T
-        
+
         self.slopes=slopes.reshape(self.activeSubaps*2)
         
         if self.angleEquivNoise and not self.iMat:

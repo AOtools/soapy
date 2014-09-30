@@ -41,8 +41,6 @@ class GUI(QtGui.QMainWindow):
         self.app = QtGui.QApplication([])
         QtGui.QMainWindow.__init__(self)
 
-        #logger.setStatusFunc(self.progressUpdate)
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -99,6 +97,9 @@ class GUI(QtGui.QMainWindow):
         self.colorList = ["b","g","r","c","m","y","k"]
         self.colorNo = 0
     
+        self.resultPlot = PlotWidget()
+        self.ui.plotLayout.addWidget(self.resultPlot)
+
         sim.readParams()
         self.config = self.sim.config
         self.initPlots()
@@ -241,7 +242,6 @@ class GUI(QtGui.QMainWindow):
         
 
     def plotPupilOverlap(self):
-        print("printPlotOverlap")
 
         if self.resultPlot:
             self.resultPlot.setParent(None)
@@ -255,17 +255,15 @@ class GUI(QtGui.QMainWindow):
                                                 self.config.sim.pupilSize*2)),
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
-                print("wfs:%s"%wfs)
                 if self.sim.config.wfs[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfs[wfs].GSHeight==0:
                     cent = self.sim.wfss[wfs].getMetaPupilPos(
     self.sim.config.atmos.scrnHeights[i])*self.sim.config.sim.pxlScale+self.config.sim.pupilSize
-                    print(cent)
+
                     if self.sim.wfss[wfs].radii!=None:
                         radius = self.sim.wfss[wfs].radii[i]
                     
                     else:
                         radius = self.config.sim.pupilSize/2.
-                    print(radius)
                 
                     if self.sim.config.wfs[wfs].GSHeight!=0:
                         colour="r"

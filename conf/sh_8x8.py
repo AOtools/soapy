@@ -20,6 +20,8 @@ simConfiguration = {
     "gain"          :   0.6,
     "aoloopMode"    :   "closed", 
     "reconstructor" :   "MVM", 
+    "tipTilt"       :   True,
+    "tipTiltClosed" :   True,
 
     "verbosity"     :   2,
 
@@ -52,7 +54,7 @@ simConfiguration = {
     "GSHeight"      :   [0],
     "subaps"        :   [8],
     "pxlsPerSubap"  :   [10],
-    "subapFOV"      :   [2.0],
+    "subapFOV"      :   [3.0],
     "subapOversamp" :   [3],
     "wavelength"    :   [600e-9],
     "bitDepth"      :   [8],

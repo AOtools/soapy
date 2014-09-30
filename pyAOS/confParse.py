@@ -330,6 +330,10 @@ class AtmosConfig(ConfigObj):
         ``scrnNames``       list, string: filenames of phase
                             if loading from fits files. If 
                             ``None`` will make new screens.     ``None``
+        ``subHarmonics``    bool: Use sub-harmonic screen
+                            generation algorithm for better
+                            tip-tilt statistics - useful
+                            for small phase screens.             ``False``
         ==================  =================================   ===========    
     """
 
@@ -345,7 +349,9 @@ class AtmosConfig(ConfigObj):
                                 "wholeScrnSize",
                                 ]
 
-        self.optionalParams = [("scrnNames",None)]
+        self.optionalParams = [ ("scrnNames",None),
+                                ("subHarmonics",False),
+                                ]
 
         self.initParams()
 
@@ -425,7 +431,7 @@ class WfsConfig(ConfigObj):
                                 ("GSHeight", 0),
                                 ("subapThreshold", 0.5),
                                 ("lgs",False),
-                                ("centThreshold",0.1),
+                                ("centThreshold",0.3),
                             ]
         self.initParams()
 

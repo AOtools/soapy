@@ -183,7 +183,7 @@ class TT:
 
         X,Y = numpy.meshgrid( coords, coords ) 
 
-        self.iMatShapes = numpy.array( [X*self.mask,Y*self.mask] )# * self.wvl
+        self.iMatShapes = 30* numpy.array( [X*self.mask,Y*self.mask] )# * self.wvl
 
     def makeIMat(self, callback=None, progressCallback=None):
 
@@ -199,14 +199,12 @@ class TT:
 
             if callback !=None:
                 callback()
-            if progressCallback!=None:
-                progressCallback(str(i), str(2), "Tip-Tilt Mirror")
 
         self.iMat = iMat
-        self.controlMatrix = numpy.linalg.inv(iMat)
+        self.controlMatrix = numpy.linalg.pinv(iMat)
         return iMat
 
-    def dmFrame(self, slopes, gain, closed = True):
+    def dmFrame(self, slopes, gain, closed=False):
 
         #Get new commands from slopes
         meanSlopes = slopes.reshape(2,self.wfs.activeSubaps).mean(1)

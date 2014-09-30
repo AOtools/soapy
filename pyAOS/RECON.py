@@ -17,6 +17,7 @@
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
+import scipy
 import pyfits
 from . import logger
 import traceback
@@ -233,7 +234,7 @@ class MVM(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv( dmIMat, 
+                dmCMat = scipy.linalg.pinv( dmIMat, 
                                             self.dms[dm].dmConfig.dmCond)
             
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat

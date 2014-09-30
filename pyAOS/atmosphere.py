@@ -113,7 +113,12 @@ class atmos:
             for i in xrange(self.scrnNo):
 
                 logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
-                self.wholeScrns[i] = ft_sh_phase_screen(
+                if atmosConfig.subHarmonics:
+                    self.wholeScrns[i] = ft_sh_phase_screen(
+                            self.scrnStrengths[i], 
+                            self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
+                else:
+                    self.wholeScrns[i] = ft_phase_screen(
                             self.scrnStrengths[i], 
                             self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
 
@@ -387,60 +392,6 @@ class Screen(object):
 
         return self.interpObj(xCoords, yCoords)
     subScrnCoords = property(_getScrnCoords)
-
-
-
-#Kolmogorov Phase Screen generation code, shamlessly copied from Dr. Tim Butterly,
-#CfAI, Durham University.
-
-def powspec(x,y):                                       # 2D Kolmogorov PSD function
-    r=numpy.sqrt( (x+.000001)**2 + ((y)+.000001)**2 )
-    amp=r**(-11./3.)
-    return amp
-
-
-def phscrn(n,r0):
-
-    mx0=numpy.fromfunction(powspec,(n/2+1,n/2+1))    # Create PSD array
-    mx0=numpy.sqrt(mx0)
-    mx0[0,0]=0.
-    mx0=mx0.astype(numpy.float32)
-
-    mx1=numpy.zeros((n,n),numpy.float32)
-    mx1[:n/2+1,:n/2+1] = mx0[:n/2+1,:n/2+1]
-    mx1[:n/2,n/2+1:n] = mx0[:n/2,-2:-n/2-1:-1]
-    mx1[n/2+1:n,:n/2] = mx0[-2:-n/2-1:-1,:n/2]
-    mx1[n/2:n,n/2:n] = mx0[-1:-n/2-1:-1,-1:-n/2-1:-1]
-    del mx0
-
-    R = random.SystemRandom(time.time())
-    seed = int(R.random()*10000)
-    numpy.random.seed(seed)
-
-    mx2=numpy.zeros((n,n),numpy.complex64) # Random complex variable, normal distbn
-    mx2.real=numpy.random.normal(0.,1.,(n,n))
-
-    mx2.imag=numpy.random.normal(0.,1.,(n,n))
-    mx2=mx2.astype(numpy.complex64)
-
-    mx3=numpy.zeros((n,n),numpy.complex64)        # Convert to Hermitian array
-    mx3[0:n/2+1,:] = mx2[0:n/2+1,:]
-    mx3[n/2+1:n,1:n] = numpy.conjugate(mx2[-n/2-1:-n:-1,-1:-n:-1])
-    mx3[0,n/2+1:n]=numpy.conjugate(mx2[0,-n/2-1:-n:-1])
-    mx3[n/2+1:n,0]=numpy.conjugate(mx2[-n/2-1:-n:-1,0])
-    del mx2
-
-    mx4=mx1*mx3
-    del mx1                                                    # Times by PSD and do FFT
-    phs=(numpy.fft.fft2(mx4)).real
-
-    const=(0.1517/(numpy.sqrt(2.))) * ((float(n)/r0)**(5./6.))   # Use factor 0.1517 (=sqrt(0.023) as per Brent, with sqrt(2)
-    #print const
-    phs=phs*const                                   # probably because we use a 2 sided PSD and he doesn't
-    del mx4
-    phs=phs.astype(numpy.float32)
-
-    return phs
 
 
 def ft_sh_phase_screen(r0, N, delta, L0, l0):

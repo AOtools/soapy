@@ -133,36 +133,6 @@ class Sim(object):
 
         self.gain = self.config.sim.gain
 
-    # def calcParams(self):
-    #     """
-    #     Calculates some parameters from the configuration parameters.
-    #     """
-    #     self.config.sim.pxlScale = (float(self.config.sim.pupilSize)/
-    #                                     self.config.tel.telDiam)
-
-    #     #furthest out GS defines the sub-scrn size
-    #     gsPos = []
-    #     for gs in range(self.config.sim.nGS):
-    #         gsPos.append(self.config.wfs[gs].GSPosition)
-    #     for sci in range(self.config.sim.nSci):
-    #         gsPos.append(self.config.sci[sci].position)
-
-    #     if len(gsPos)!=0:
-    #         maxGSPos = numpy.array(gsPos).max()
-    #     else:
-    #         maxGSPos = 0
-
-    #     self.config.sim.scrnSize = numpy.ceil(
-    #             2*self.config.sim.pxlScale*self.config.atmos.scrnHeights.max()
-    #             *maxGSPos*numpy.pi/(3600.*180) 
-    #             )+self.config.sim.pupilSize
-
-
-
-
-    #     logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.config.sim.pxlScale))
-    #     logger.info("subScreenSize: {}".format(self.config.sim.scrnSize))
-
 
     def aoinit(self):
         '''
@@ -439,18 +409,22 @@ class Sim(object):
             ndArray: TT corrected slopes
         """
 
+        self.dmShape[:] = 0
         if self.config.sim.tipTilt:
             #calculate the shape of TT Mirror
-            TTShape = self.TT.dmFrame(slopes,self.config.sim.ttGain,closed)
+            self.dmShape += self.TT.dmFrame(slopes,self.config.sim.ttGain)
 
             #Then remove TT signal from slopes
             xySlopes = slopes.reshape(2,self.TT.wfs.activeSubaps)
             xySlopes = (xySlopes.T - xySlopes.mean(1)).T
             slopes = xySlopes.reshape(self.TT.wfs.activeSubaps*2)
-        else:
-            TTShape = numpy.zeros( [self.config.sim.pupilSize]*2 )
+            
+            # #if not in closed loop of WFS, don't subtract TT from slopes
+            # if not closed:
+            #     xySlopes = slopes.reshape(2,self.TT.wfs.activeSubaps)
+            #     slopes[:] = (xySlopes.T - xySlopes.mean(1)).flatten()
 
-        return TTShape,slopes
+        return self.dmShape, slopes
 
 
     def runDM(self,dmCommands,closed=True):
@@ -474,8 +448,6 @@ class Sim(object):
     dmCommands[self.dmAct1[dm]:self.dmAct1[dm]+self.dms[dm].acts],
     self.gain, closed
     )
-
-
 
         self.Tdm += time.time()-t
         return self.dmShape
@@ -512,6 +484,10 @@ class Sim(object):
         self.go = True
         self.slopes = numpy.zeros( ( 2*self.config.sim.totalSubaps) )
 
+        closedCorrection = numpy.zeros(self.dmShape.shape)
+        openCorrection = closedCorrection.copy()
+
+
         for i in xrange(self.config.sim.nIters):
             if self.go:
 
@@ -520,25 +496,29 @@ class Sim(object):
                 self.scrns = self.atmos.moveScrns()
                 self.Tatmos = time.time()-t
 
-                #Run Loop...
+                #Reset correction
+                closedCorrection[:] = 0
+                openCorrection[:] = 0
 
-                #Run a closed loop tip-tilt mirror if set
-                ttShape,self.slopes = self.runTipTilt(self.slopes)
+                #Run Loop...
 
                 #Get dmCommands from reconstructor
                 self.dmCommands = self.recon.reconstruct(self.slopes)
 
                 #Get dmShape from closed loop DMs
-                dmShape = self.runDM(self.dmCommands, closed=True).copy()
+                closedCorrection += self.runDM(self.dmCommands, closed=True)
 
                 #Run WFS, with closed loop DM shape applied
-                self.slopes = self.runWfs(dmShape=dmShape)
+                self.slopes = self.runWfs(dmShape=closedCorrection)
 
                 #Get DM shape for open loop DMs, add to closed loop DM shape
-                dmShape += self.runDM(self.dmCommands, closed=False)
+                openCorrection += self.runDM(self.dmCommands, closed=False)
+
+                #Run a tip-tilt mirror if set
+                ttShape, self.slopes = self.runTipTilt(self.slopes)
 
                 #Pass whole combine DM shapes to science target
-                self.runSciCams(dmShape)
+                self.runSciCams(openCorrection+closedCorrection+ttShape)
                 
                 #Save Data
                 self.storeData(i)
