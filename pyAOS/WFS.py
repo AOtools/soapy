@@ -270,8 +270,8 @@ class WFS(object):
         O =numpy.ones( (self.subapFOVSpacing, self.subapFOVSpacing) )
         self.YTilt = Y
 
-        res = scipy.optimize.minimize(self.optFunc,0,args=(X,O),tol=0.1,
-                                options={"maxiter":6})
+        res = scipy.optimize.minimize(self.optFunc,-1,args=(X,O),tol=0.01,
+                                options={"maxiter":100})
 
         A = res["x"]
         self.XTilt = A*X
@@ -556,8 +556,8 @@ class WFS(object):
 
         self.zeroData()
 
+        #If no elongation
         if self.elong==0:
-
             self.makePhase(self.radii)
             self.uncorrectedPhase = self.wfsPhase.copy()
             if correction!=None:
@@ -565,10 +565,9 @@ class WFS(object):
             self.calcFocalPlane()
 
 
+        #If LGS elongation simulated
         if self.elong!=0:
-
             for i in xrange(self.elongLayers):
-
                 super(ShackHartmannWfs,self).zeroData()
 
                 self.makePhase(self.elongRadii[i])
@@ -579,8 +578,6 @@ class WFS(object):
                 self.calcFocalPlane()
 
         self.makeFocalPlane()
-        #Any noise must go in here.
-
         self.calculateSlopes()
 
         return self.slopes

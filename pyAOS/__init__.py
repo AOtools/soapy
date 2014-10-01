@@ -113,19 +113,21 @@ class Sim(object):
         if not configFile:
             configFile = "conf/testConf.py"
 
-        self.configFile = configFile
-        self.readParams()
+        self.readParams(configFile)
 
         self.guiQueue = None
         self.go = False
 
-    def readParams(self):
-        '''
+    def readParams(self, configFile=None):
+        """
         Reads configuration file parameters
 
         Calls the radParams function in confParse to read, parse and if required
         set reasonable defaults to AO parameters
-        '''
+        """
+
+        if configFile:
+            self.configFile = configFile
 
         self.config = confParse.Configurator(self.configFile)
         self.config.readfile()
@@ -145,8 +147,7 @@ class Sim(object):
         try:
             self.config.sim.pupilSize
         except:
-            #self.readParams()
-            confParse.readParams(self, self.configFile)
+            self.readParams()
 
         logger.setLoggingLevel(self.config.sim.verbosity)
         logger.setLoggingFile(self.config.sim.logfile)
@@ -484,8 +485,8 @@ class Sim(object):
         self.go = True
         self.slopes = numpy.zeros( ( 2*self.config.sim.totalSubaps) )
 
-        closedCorrection = numpy.zeros(self.dmShape.shape)
-        openCorrection = closedCorrection.copy()
+        self.closedCorrection = numpy.zeros(self.dmShape.shape)
+        self.openCorrection = self.closedCorrection.copy()
 
 
         for i in xrange(self.config.sim.nIters):
@@ -497,8 +498,8 @@ class Sim(object):
                 self.Tatmos = time.time()-t
 
                 #Reset correction
-                closedCorrection[:] = 0
-                openCorrection[:] = 0
+                self.closedCorrection[:] = 0
+                self.openCorrection[:] = 0
 
                 #Run Loop...
 
@@ -506,19 +507,19 @@ class Sim(object):
                 self.dmCommands = self.recon.reconstruct(self.slopes)
 
                 #Get dmShape from closed loop DMs
-                closedCorrection += self.runDM(self.dmCommands, closed=True)
+                self.closedCorrection += self.runDM(self.dmCommands, closed=True)
 
                 #Run WFS, with closed loop DM shape applied
-                self.slopes = self.runWfs(dmShape=closedCorrection)
+                self.slopes = self.runWfs(dmShape=self.closedCorrection)
 
                 #Get DM shape for open loop DMs, add to closed loop DM shape
-                openCorrection += self.runDM(self.dmCommands, closed=False)
+                self.openCorrection += self.runDM(self.dmCommands, closed=False)
 
                 #Run a tip-tilt mirror if set
                 ttShape, self.slopes = self.runTipTilt(self.slopes)
 
                 #Pass whole combine DM shapes to science target
-                self.runSciCams(openCorrection+closedCorrection+ttShape)
+                self.runSciCams(self.openCorrection+self.closedCorrection+ttShape)
                 
                 #Save Data
                 self.storeData(i)

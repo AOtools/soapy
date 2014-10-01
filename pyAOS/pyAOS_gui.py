@@ -50,14 +50,16 @@ class GUI(QtGui.QMainWindow):
         self.ui.initButton.clicked.connect(self.init)
         self.ui.iMatButton.clicked.connect(self.iMat)
         self.ui.stopButton.clicked.connect(self.stop)
-        self.ui.paramButton.clicked.connect(self.read)
+
+        self.ui.reloadParamsAction.activated.connect(self.read)
+        self.ui.loadParamsAction.activated.connect(self.readParamFile)
+
         self.ui.gainSpin.valueChanged.connect(self.gainChanged)
         
         #Ensure update is called if sci button pressed
         self.ui.instExpRadio.clicked.connect(self.update)
         self.ui.longExpRadio.clicked.connect(self.update)
         
-
         #Initialise Colour chooser
         self.gradient = pyqtgraph.GradientWidget(orientation="bottom")
         self.gradient.sigGradientChanged.connect(self.changeLUT)
@@ -108,6 +110,18 @@ class GUI(QtGui.QMainWindow):
     
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
+
+
+####################################
+#Load Param file methods
+    def readParamFile(self):
+
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
+                '/home')
+    
+        self.sim.readParams(fname)
+        self.config = self.sim.config
+        self.initPlots()
 
 ################################################################
 #Plot Methods
