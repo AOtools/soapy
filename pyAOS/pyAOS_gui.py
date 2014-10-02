@@ -51,8 +51,8 @@ class GUI(QtGui.QMainWindow):
         self.ui.iMatButton.clicked.connect(self.iMat)
         self.ui.stopButton.clicked.connect(self.stop)
 
-        self.ui.reloadParamsAction.activated.connect(self.read)
-        self.ui.loadParamsAction.activated.connect(self.readParamFile)
+        self.ui.reloadParamsAction.triggered.connect(self.read)
+        self.ui.loadParamsAction.triggered.connect(self.readParamFile)
 
         self.ui.gainSpin.valueChanged.connect(self.gainChanged)
         
