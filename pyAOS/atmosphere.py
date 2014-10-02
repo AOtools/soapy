@@ -124,7 +124,7 @@ class atmos:
             logger.info("Loading Phase Screens")
 
             for i in xrange(self.scrnNo):
-                fitsHDU = pyfits.open(self.atmosConf.scrnNames[i])[0]
+                fitsHDU = pyfits.open(self.atmosConfig.scrnNames[i])[0]
                 self.wholeScrns[i] = fitsHDU.data.astype("float32")
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
