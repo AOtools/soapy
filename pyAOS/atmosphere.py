@@ -92,11 +92,6 @@ class atmos:
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *atmosConfig.scrnStrengths)**(-3./5.) )
 
-        if not atmosConfig.scrnNames:
-            new = True
-        else:
-            new = False
-
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
 
@@ -108,7 +103,7 @@ class atmos:
         scrnSize = int(round(self.scrnSize))
 
         #If required, generate some new Kolmogorov phase screens
-        if new==True:
+        if not atmosConfig.scrnNames:
             logger.info("Generating Phase Screens")
             for i in xrange(self.scrnNo):
 
@@ -123,15 +118,15 @@ class atmos:
                             self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
+
         #Otherwise, load some others from FITS file
         else:
             logger.info("Loading Phase Screens")
 
             for i in xrange(self.scrnNo):
-                fitsHDU = pyfits.open(self.screenNames[i])[0]
+                fitsHDU = pyfits.open(self.atmosConf.scrnNames[i])[0]
                 self.wholeScrns[i] = fitsHDU.data.astype("float32")
-                # self.wholeScrns[i] = (FITS.Read(screenNames[i])[1]
-#                                        ).astype("float32")
+
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
                 #Do the loaded scrns tell us how strong they are?

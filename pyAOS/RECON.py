@@ -82,9 +82,6 @@ class Reconstructor:
         
         filename=self.simConfig.filePrefix+"/cMat.fits"
         
-        # cMatFile = FITS.Read(filename)
-#         header = cMatFile[0]["parsed"]
-        
         cMatHDU = pyfits.open(filename)[0]
         cMatHDU.verify("fix")
         header = cMatHDU.header
@@ -130,9 +127,6 @@ class Reconstructor:
             pyfits.PrimaryHDU(self.dms[dm].iMatShapes).writeto(filenameShapes,
                                                         clobber=True)
             
-            
-            # FITS.Write(self.dms[dm].iMat,filenameIMat)
-            #FITS.Write(self.dms[dm].iMatShapes,filenameShapes)
     
                                               
     def loadIMat(self):
@@ -140,9 +134,6 @@ class Reconstructor:
         for dm in xrange(self.simConfig.nDM):
             filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
             filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
-            
-            #iMat = FITS.Read(filenameIMat)[1]
-            #iMatShapes = FITS.Read(filenameShapes)[1]
             
             iMat = pyfits.open(filenameIMat)[0].data
             iMatShapes = pyfits.open(filenameShapes)[0].data
@@ -228,7 +219,6 @@ class MVM(Reconstructor):
         '''
         acts = 0
         for dm in xrange(self.simConfig.nDM):
-            # if self.dms[0].dmConfig.dmType!="TT":
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:
@@ -391,8 +381,6 @@ class LearnAndApply(Reconstructor):
         Returns:
             ndarray: array to comands to be sent to DM 
         """
-        logger.debug("LA Reconstruction - slopes Shape: %s"%slopes[2*self.wfss[0].activeSubaps:].shape)
-        logger.debug("LA Reconstruction - Reconstructor Shape: %s,%s"%self.controlMatrix.shape)
         
         dmCommands = self.controlMatrix.T.dot(
                             slopes[2*self.wfss[0].activeSubaps:])
