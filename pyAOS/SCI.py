@@ -127,7 +127,6 @@ class scienceCam:
         for i in self.scrns:
 
             phase=self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
-            #print("phase Shape:",phase.shape)
 
             totalPhase+=phase
         totalPhase *= self.mask
@@ -151,8 +150,6 @@ class scienceCam:
 
         self.focalPlane = aoSimLib.binImgs( focalPlane , self.sciConfig.oversamp )
 
-
-
     def frame(self,scrns,phaseCorrection=None):
 
         self.scrns = scrns
@@ -166,7 +163,6 @@ class scienceCam:
         self.calcFocalPlane()
 
         self.instStrehl =  self.focalPlane.max()/self.psfMax
-
 
         return self.focalPlane
 

@@ -391,6 +391,9 @@ class WfsConfig(ConfigObj):
         ``subapThreshold``  float: How full should subap be 
                             to be used for wavefront sensing?   ``0.5``
         ``lgs``             bool: is WFS an LGS?                ``False``
+        ``centMethod``      string: Method used for 
+                            Centroiding. Can be `simple` or
+                            `brightestPxl`                      ``simple``
         ``angleEquivNoise`` float: width of gaussian noise 
                             added to slopes measurements
                             in arc-secs                        ``0``
@@ -432,6 +435,7 @@ class WfsConfig(ConfigObj):
                                 ("subapThreshold", 0.5),
                                 ("lgs",False),
                                 ("centThreshold",0.3),
+                                ("centMethod", "simple"),
                             ]
         self.initParams()
 

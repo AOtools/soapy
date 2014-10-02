@@ -273,7 +273,11 @@ class WFS(object):
         res = scipy.optimize.minimize(self.optFunc,-1,args=(X,O),tol=0.01,
                                 options={"maxiter":100})
 
+        if abs(res["fun"])>0.1:
+            logger.warning("Unable to centre WFS spots - try lowering centThreshold")
+
         A = res["x"]
+
         self.XTilt = A*X
         self.YTilt = A*Y
 
@@ -749,10 +753,16 @@ class ShackHartmannWfs(WFS):
             subapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
                                                     y:y+self.wfsConfig.pxlsPerSubap ]
 
-        #Use self made function which processes all subaps at same time
-        slopes=aoSimLib.simpleCentroid(
+        if self.wfsConfig.centMethod=="brightestPxl":
+            slopes = aoSimLib.brtPxlCentroid(
+                    subapArrays, (self.wfsConfig.centThreshold*
+                                (self.wfsConfig.pxlsPerSubap**2))
+                                            )
+        else:
+            slopes=aoSimLib.simpleCentroid(
                     subapArrays, self.wfsConfig.centThreshold
-                    )
+                     )
+
         #shift slopes relative to subap centre
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
         

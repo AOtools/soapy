@@ -234,7 +234,28 @@ def simpleCentroid(img,threshold_frac=0):
 
     return numpy.array([y_centroid,x_centroid])
 
+def brtPxlCentroid(img, nPxls):
+    """
+    Centroids using brightest Pixel Algorithm
+    (A. G. Basden et al, 2011)
 
+    Finds the nPxlsth brightest pixel, subtracts that value from frame, 
+    sets anything below 0 to 0, and finally takes centroid
+    """
+
+    if len(img.shape)==2:
+        pxlValue = numpy.sort(img.flatten())[-nPxls]
+        img-=pxlValue
+        img.clip(0, img.max())
+
+    elif len(img.shape)==3:
+        pxlValues = numpy.sort(
+                        img.reshape(img.shape[0], img.shape[-1]*img.shape[-2])
+                        )[:,-nPxls]
+        img[:] = (img.T - pxlValues).T
+        img.clip(0, img.max())
+
+    return simpleCentroid(img)
 
 
 def zernike(j, N):
