@@ -151,7 +151,7 @@ class Sim(object):
 
         logger.setLoggingLevel(self.config.sim.verbosity)
         logger.setLoggingFile(self.config.sim.logfile)
-
+        logger.info("Starting Sim: {}".format(self.timeStamp()))
 
         #calculate some params from read ones
         #calculated
@@ -204,7 +204,7 @@ class Sim(object):
         #init DMs
         logger.info("Initialising DMs...")
         if self.config.sim.tipTilt:
-            self.TT = DM.TT(self.config.sim.pupilSize, self.wfss[0], self.mask)
+            self.TT = DM.TT1(self.config.sim.pupilSize, self.wfss[0], self.mask)
 
         self.dms = {}
         self.dmActCommands = {}
@@ -419,11 +419,6 @@ class Sim(object):
             xySlopes = slopes.reshape(2,self.TT.wfs.activeSubaps)
             xySlopes = (xySlopes.T - xySlopes.mean(1)).T
             slopes = xySlopes.reshape(self.TT.wfs.activeSubaps*2)
-            
-            # #if not in closed loop of WFS, don't subtract TT from slopes
-            # if not closed:
-            #     xySlopes = slopes.reshape(2,self.TT.wfs.activeSubaps)
-            #     slopes[:] = (xySlopes.T - xySlopes.mean(1)).flatten()
 
         return self.dmShape, slopes
 
@@ -446,9 +441,9 @@ class Sim(object):
         for dm in xrange(self.config.sim.nDM):
             if self.config.dm[dm].closed==closed:
                 self.dmShape += self.dms[dm].dmFrame(
-    dmCommands[self.dmAct1[dm]:self.dmAct1[dm]+self.dms[dm].acts],
-    self.gain, closed
-    )
+                        dmCommands[ self.dmAct1[dm]:
+                                    self.dmAct1[dm]+self.dms[dm].acts],
+                        self.gain, closed)
 
         self.Tdm += time.time()-t
         return self.dmShape

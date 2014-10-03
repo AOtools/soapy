@@ -144,7 +144,7 @@ class atmos:
 
 
             if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
-                logger.info("Requested phase screen has different size to that input in config file.")
+                logger.info("Requested phase screen has different size to that input in config file....loading anyway")
 
             self.wholeScrnSize = self.wholeScrns[i].shape[0]
             if self.wholeScrnSize < self.scrnSize:

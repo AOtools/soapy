@@ -126,7 +126,7 @@ class Zernike(DM):
         interaction Matrix
         '''
 
-        shapes = aoSimLib.zernikeArray(int(self.acts+2),int(self.simConfig.pupilSize))[2:]
+        shapes = self.dmConfig.iMatValue*aoSimLib.zernikeArray(int(self.acts+2),int(self.simConfig.pupilSize))[2:]
 
         self.iMatShapes = shapes*self.mask
 
@@ -158,12 +158,63 @@ class Piezo(DM):
             shape = numpy.zeros( (self.xActs,self.xActs) )
             shape[x,y] = 1
 
-            shapes[i] = 5 * aoSimLib.zoom(shape,
+            shapes[i] = self.dmConfig.iMatValue * aoSimLib.zoom(shape,
                     (self.simConfig.pupilSize,self.simConfig.pupilSize), order=1)
         self.iMatShapes = (shapes * self.mask) #*self.wvl
 
 
-class TT:
+class TT(DM):
+
+    def getActiveActs(self):
+        return 2
+
+
+    def makeIMatShapes(self):
+
+        coords = self.dmConfig.iMatValue*numpy.linspace(-1,1,self.simConfig.pupilSize)
+        self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
+
+
+    def makeIMat(self, callback=None, progressCallback=None ):
+        '''
+        makes IMat
+        '''
+        self.makeIMatShapes()
+
+        iMat = numpy.zeros( (2,2) )
+
+        self.wfs = self.wfss[self.wfslist[0]]
+
+        slopesToTT = numpy.zeros((self.wfs.activeSubaps*2, 2))
+        slopesToTT[:self.wfs.activeSubaps, 0] = 1./self.wfs.activeSubaps
+        slopesToTT[self.wfs.activeSubaps:, 1] = 1./self.wfs.activeSubaps
+
+
+        for i in xrange(self.iMatShapes.shape[0]):
+            
+            slopes = self.wfs.iMatFrame(self.iMatShapes[i])
+            iMat[i,:] = slopes.reshape(2,self.wfs.activeSubaps).mean(1)
+
+            logger.debug("DM IMat act: %i"%i)
+
+            self.dmShape = self.iMatShapes[i]
+           
+            if callback!=None:
+                callback() 
+           
+            logger.statusMessage(i, self.iMatShapes.shape[0],
+                    "Generating {} Actuator DM iMat".format(self.acts))
+
+               
+        self.iMat = iMat.dot(numpy.linalg.pinv(slopesToTT))
+        #self.iMat = iMat
+        return self.iMat
+
+
+
+
+
+class TT1:
 
     def __init__(self, pupilSize, wfs, mask):
         self.pupilSize = pupilSize
@@ -179,7 +230,7 @@ class TT:
 
     def makeIMatShapes(self):
 
-        coords = numpy.arange(-1, 1, 2./self.pupilSize) + 1./self.pupilSize
+        coords = numpy.linspace(-1, 1, self.pupilSize)
 
         X,Y = numpy.meshgrid( coords, coords ) 
 

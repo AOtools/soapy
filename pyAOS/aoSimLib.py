@@ -253,7 +253,7 @@ def brtPxlCentroid(img, nPxls):
                         img.reshape(img.shape[0], img.shape[-1]*img.shape[-2])
                         )[:,-nPxls]
         img[:] = (img.T - pxlValues).T
-        img.clip(0, img.max())
+        img.clip(0, img.max(), out=img)
 
     return simpleCentroid(img)
 

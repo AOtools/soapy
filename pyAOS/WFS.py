@@ -743,25 +743,26 @@ class ShackHartmannWfs(WFS):
         '''
 
         #Sort out FP into subaps
-        subapArrays = numpy.empty( (self.activeSubaps,  self.wfsConfig.pxlsPerSubap,
+        self.centSubapArrays = numpy.empty( (self.activeSubaps,  self.wfsConfig.pxlsPerSubap,
                                                         self.wfsConfig.pxlsPerSubap) )
 
         for i in xrange(self.activeSubaps):
             x,y = self.detectorSubapCoords[i]
             x = int(x)
             y = int(y)
-            subapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
+            self.centSubapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
                                                     y:y+self.wfsConfig.pxlsPerSubap ]
 
         if self.wfsConfig.centMethod=="brightestPxl":
             slopes = aoSimLib.brtPxlCentroid(
-                    subapArrays, (self.wfsConfig.centThreshold*
+                    self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
                                             )
         else:
             slopes=aoSimLib.simpleCentroid(
-                    subapArrays, self.wfsConfig.centThreshold
+                    self.centSubapArrays, self.wfsConfig.centThreshold
                      )
+
 
         #shift slopes relative to subap centre
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
@@ -769,12 +770,17 @@ class ShackHartmannWfs(WFS):
         if self.wfsConfig.removeTT==True:
             slopes = (slopes.T - slopes.mean(1)).T
 
-        self.slopes=slopes.reshape(self.activeSubaps*2)
+        self.slopes = slopes.reshape(self.activeSubaps*2)
         
         if self.angleEquivNoise and not self.iMat:
             self.slopes += numpy.random.normal(0,self.angleEquivNoise, 
                                                         2*self.activeSubaps)
-        
+
+        if (self.slopes.max()>self.wfsConfig.pxlsPerSubap/2
+                or self.slopes.min()<-1*self.wfsConfig.pxlsPerSubap/2):
+            print(self.slopes)
+            raise Exception("Whoa - something crazy going on!")
+
         return self.slopes
 
 

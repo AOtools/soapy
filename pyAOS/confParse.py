@@ -561,6 +561,8 @@ class DmConfig(ConfigObj):
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
         ``closed``           bool:Is DM closed loop of WFS?       ``True``
+        ``iMatValue``        float: Value to push actuators
+                             when making iMat                    ``10``
         ==================== =================================   ===========  
         """
 
@@ -579,6 +581,7 @@ class DmConfig(ConfigObj):
 
         self.optionalParams = [ 
                                 ("closed",True),
+                                ("iMatValue",10),
                                 ]
         self.initParams()
 

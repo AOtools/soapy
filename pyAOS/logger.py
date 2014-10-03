@@ -64,7 +64,7 @@ def _printMessage(message, level=3):
 			message = calframe[2][1].split("/")[-1]+" - "+calframe[2][3] + ": " + message
 
 		if LOGGING_FILE:
-			with open(LOGGING_FILE, "w") as File:
+			with open(LOGGING_FILE, "a") as File:
 				File.write(message+"\n")
 
 

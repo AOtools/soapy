@@ -148,12 +148,6 @@ class Reconstructor:
                 self.dms[dm].iMat = iMat
                 self.dms[dm].iMatShapes = iMatShapes
     
-
-    def reconstruct(self,slopes):
-        t=time.time()
-        dmCommands = self.controlMatrix.T.dot(slopes)
-        self.Trecon += time.time()-t
-        return dmCommands
         
     def makeIMat(self,callback, progressCallback):
  
@@ -202,33 +196,47 @@ class Reconstructor:
             self.calcCMat(callback, progressCallback)
             logger.info("Command Matrix Generated!")
             
+    def reconstruct(self,slopes):
+        t=time.time()
+
+        dmCommands = self.controlMatrix.T.dot(slopes)
+
+        self.Trecon += time.time()-t
+        return dmCommands
 
 
-class MVM(Reconstructor):
-    '''
-    Reconstructs by using DM interaction Matrices to create a control 
-    Matrix. 
-    Treats each DM seperately, so all DMs try to correct all turbulence.
-    '''
+# class MVM(Reconstructor):
+#     '''
+#     Reconstructs by using DM interaction Matrices to create a control 
+#     Matrix. 
+#     Treats each DM seperately, so all DMs try to correct all turbulence.
+#     '''
     
 
-    def calcCMat(self,callback=None, progressCallback=None):
-        '''
-        Uses DM object makeIMat methods, then inverts each to create a 
-        control matrix
-        '''
-        acts = 0
-        for dm in xrange(self.simConfig.nDM):
-            dmIMat = self.dms[dm].iMat
+#     def calcCMat(self,callback=None, progressCallback=None):
+#         '''
+#         Uses DM object makeIMat methods, then inverts each to create a 
+#         control matrix
+#         '''
+#         acts = 0
+#         for dm in xrange(self.simConfig.nDM):
+
+#             dmIMat = self.dms[dm].iMat
+
+#             if dmIMat.shape[0]==dmIMat.shape[1]:
+#                 dmCMat = numpy.linalg.pinv(dmIMat)
+#             else:
+#                 dmCMat = scipy.linalg.pinv( dmIMat, 
+#                                             self.dms[dm].dmConfig.dmCond)
             
-            if dmIMat.shape[0]==dmIMat.shape[1]:
-                dmCMat = numpy.linalg.inv(dmIMat)
-            else:
-                dmCMat = scipy.linalg.pinv( dmIMat, 
-                                            self.dms[dm].dmConfig.dmCond)
-            
-            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-            acts += self.dms[dm].acts
+#             if self.dms[dm].dmConfig.dmType=="TT":
+#                 slopesToTT = numpy.zeros((self.dms[dm].wfs.activeSubaps*2, 2))
+#                 slopesToTT[:self.dms[dm].wfs.activeSubaps, 0] = 1./self.dms[dm].wfs.activeSubaps
+#                 slopesToTT[self.dms[dm].wfs.activeSubaps:, 1] = 1./self.dms[dm].wfs.activeSubaps
+#                 dmCMat = slopesToTT.dot(dmCMat)
+
+#             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+#             acts += self.dms[dm].acts
     
         
             
@@ -259,9 +267,16 @@ class WooferTweeter(Reconstructor):
             dmIMat = self.dms[dm].iMat
             
             if dmIMat.shape[0]==dmIMat.shape[1]:
-                dmCMat = numpy.inv(dmIMat)
+                dmCMat = numpy.linalg.pinv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dmCond[dm])
+                dmCMat = numpy.linalg.pinv(
+                                    dmIMat, self.dms[dm].dmConfig.dmCond)
+
+            # if self.dms[dm].dmConfig.dmType=="TT":
+            #     slopesToTT = numpy.zeros((self.dms[dm].wfs.activeSubaps*2, 2))
+            #     slopesToTT[:self.dms[dm].wfs.activeSubaps, 0] = 1./self.dms[dm].wfs.activeSubaps
+            #     slopesToTT[self.dms[dm].wfs.activeSubaps:, 1] = 1./self.dms[dm].wfs.activeSubaps
+            #     dmCMat = slopesToTT.dot(dmCMat)
             
             if dm != self.simConfig.nDM-1:
                 self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
@@ -272,14 +287,55 @@ class WooferTweeter(Reconstructor):
         #This is the matrix which converts from Low order DM commands
         #to high order DM commands, via slopes
         lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
-        print(lowToHighTransform.shape)
 
-        highOrderCMat = dmCMats[-1].T.dot( numpy.identity(self.simConfig.totalSlopes) - \
-                            lowToHighTransform )
+        highOrderCMat = dmCMats[-1].T.dot( 
+                numpy.identity(self.simConfig.totalSlopes)-lowToHighTransform)
                             
         self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
  
-    
+
+
+class MVM(Reconstructor):
+
+
+    def calcCMat(self,callback=None, progressCallback=None):
+        '''
+        Uses DM object makeIMat methods, then inverts each to create a 
+        control matrix
+        '''
+        acts = 0
+        for dm in xrange(self.simConfig.nDM):
+
+            dmIMat = self.dms[dm].iMat
+
+            if dmIMat.shape[0]==dmIMat.shape[1]:
+                dmCMat = numpy.linalg.pinv(dmIMat)
+            else:
+                dmCMat = scipy.linalg.pinv( dmIMat, 
+                                            self.dms[dm].dmConfig.dmCond)
+
+            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+            acts += self.dms[dm].acts
+
+    def reconstruct(self, slopes):
+        #If theres a TT mirror, remove the TT from the slopes and get TT commands
+
+        if self.dms[0].dmConfig.dmType=="TT":
+            ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
+            ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
+            slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
+            slopes[self.wfss[0].activeSubaps:] -= ttMean[1]
+
+            #get dm commands for the calculated on axis slopes
+            dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
+
+            return numpy.append(ttCommands, dmCommands)
+
+        #get dm commands for the calculated on axis slopes
+        dmCommands = self.controlMatrix.T.dot(slopes)
+        return dmCommands
+
+
 class LearnAndApply(Reconstructor):
     '''
     Class to perform a simply learn and apply algorithm, where
@@ -293,10 +349,6 @@ class LearnAndApply(Reconstructor):
 
     def initControlMatrix(self):
 
-        # self.controlShape = (   
-        #                 self.simConfig.totalSlopes-2*self.wfss[0].activeSubaps,
-        #                 self.simConfig.totalActs 
-        #                 )
         self.controlShape = (2*self.wfss[0].activeSubaps, self.simConfig.totalActs)
         self.controlMatrix = numpy.empty( self.controlShape )
     
@@ -368,7 +420,8 @@ class LearnAndApply(Reconstructor):
             acts += self.dms[dm].acts
         
 
-        self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
+
+        #self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
         logger.info("Done.")
         
 
@@ -381,11 +434,26 @@ class LearnAndApply(Reconstructor):
         Returns:
             ndarray: array to comands to be sent to DM 
         """
-        
-        dmCommands = self.controlMatrix.T.dot(
-                            slopes[2*self.wfss[0].activeSubaps:])
-        
-        return dmCommands          
+
+        #Retreive pseudo on-axis slopes from tomo reconstructor
+        slopes = self.tomoRecon.dot(slopes[2*self.wfss[0].activeSubaps:])
+
+        if self.dms[0].dmConfig.dmType=="TT":
+            ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
+            ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
+            slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
+            slopes[self.wfss[0].activeSubaps:] -= ttMean[1]
+
+            #get dm commands for the calculated on axis slopes
+            dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
+
+            return numpy.append(ttCommands, dmCommands)
+
+        #get dm commands for the calculated on axis slopes
+        dmCommands = self.controlMatrix.T.dot(slopes)
+        return dmCommands
+
+            
 
 
 #####################################

@@ -10,16 +10,18 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8",
+    "filePrefix"    :  None,
+    "logfile"       :   "testConf.log",
     "pupilSize"     :   64, 
     "nGS"           :   1,
-    "nDM"           :   1,
+    "nDM"           :   2,
     "nSci"          :   1,
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
     "gain"          :   0.6,
-    "aoloopMode"    :   "loop", 
-    "reconstructor" :   "MVM", 
+    "reconstructor" :   "TTRecon", 
+    "tipTilt"       :   False,
+
 
     "verbosity"     :   2,
 
@@ -28,7 +30,6 @@ simConfiguration = {
     "saveDmCommands":   False,
     "saveLgsPsf"    :   False,
     "saveSciPsf"    :   True,
-    "tipTilt"       :   True,
     },
 
 "Atmosphere":{
@@ -53,11 +54,13 @@ simConfiguration = {
     "GSHeight"      :   [0],
     "subaps"        :   [8],
     "pxlsPerSubap"  :   [10],
-    "subapFOV"      :   [2.0],
+    "subapFOV"      :   [3.0],
     "subapOversamp" :   [3],
     "wavelength"    :   [600e-9],
     "bitDepth"      :   [8],
     "lgs"           :   [False],
+    "centMethod"    :   ["brightestPxl"],
+    "centThreshold" :   [0.1],
     },
 
 "LGS":{
@@ -66,11 +69,26 @@ simConfiguration = {
 
 "DM":{
 
-    "dmType"        :   ["Piezo"],
-    "dmActs"        :   [9**2],
-    "dmCond"        :   [0.05],
-    "closed"        :   [True],
+    "dmType"        :   ["TT",     "Piezo"],
+    "dmActs"        :   [2,         9**2],
+    "dmCond"        :   [1e-15,      0.05],
+    "closed"        :   [False,      False],
+    "iMatValue"     :   [50,        10  ]
     },
+
+# "DM":{
+#     "dmType"        : ["TT"],
+#     "dmActs"        : [2],
+#     "dmCond"        : [1e-9],
+#     "closed"        : [True],
+#     },
+  
+# "DM":{
+#    "dmType"        :     ["Piezo"],
+#    "dmActs"        :     [ 9**2],
+#    "dmCond"        :     [  0.05],
+#    "closed"        :     [  False],
+#    },
 
 "Science":{
     "position"      :   [(0,0)],
