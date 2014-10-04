@@ -374,6 +374,9 @@ class Sim(object):
                     args=[ self.scrns, self.wfss[wfs], dmShape,
                             wfsQueues[wfs]
                             ]))
+            wfsProcs[wfs].daemon = True
+
+            
         for wfs in xrange(self.config.sim.nGS):
             wfsProcs[wfs].start()
 
@@ -531,95 +534,6 @@ class Sim(object):
         self.saveData()
         self.finishUp()
 
-
-    def open(self):
-        '''
-        Main AO Loop - loop open
-
-        Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Open loop, i.e., the WFSs are executed before the DM with no DM information being sent back to the WFSs.
-        '''
-        
-        self.iters=1
-        self.correct=1
-        self.go = True
-
-        for i in xrange(self.config.sim.nIters):
-            if self.go:
-
-                #get next phase screens
-                t = time.time()
-                self.scrns = self.atmos.moveScrns()
-                self.Tatmos = time.time()-t
-
-                #Run Loop...
-                self.slopes = self.runWfs()
-                self.dmCommands = self.recon.reconstruct(self.slopes)
-                dmShape = self.runDM(self.dmCommands,closed=False)
-                self.runSciCams(dmShape)
-
-                #Save Data
-                self.storeData(i)
-
-                self.iters = i
-
-
-                logger.statusMessage(i, self.config.sim.nIters, 
-                                    "Open AO Loop")
-
-                self.addToGuiQueue()
-            else:
-                break
-
-        self.saveData()
-        self.finishUp()
-
-
-    def closed(self, progressCallback=None):
-        '''
-        Main AO Loop - closed open
-
-        Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Closed loop, i.e., the DM shape is computed before WFS slopes, and feedback from the DM is given to the WFSs.
-
-        Args:
-            progressCallback (func, optional): a function which is called after every iteration, can be used to output status information
-        '''
-        self.iters=1
-        self.correct=1
-        self.go = True
-        self.slopes = numpy.zeros( ( 2*self.config.sim.totalSubaps) )
-
-        #pylab.figure()
-
-
-        for i in xrange(self.config.sim.nIters):
-            if self.go:
-
-                #Get next phase screens from atmos object.
-                t = time.time()
-                self.scrns = self.atmos.moveScrns()
-                self.Tatmos += time.time()-t
-
-                ttShape,self.slopes = self.runTipTilt(self.slopes)
-                self.dmCommands = self.recon.reconstruct(self.slopes)
-                dmShape = self.runDM(self.dmCommands) + ttShape
-                self.runSciCams(dmShape)
-                self.slopes = self.runWfs(dmShape=dmShape)
-
-                #Useful to track progress externally
-                self.iters = i
-
-                
-                #saveData
-                self.storeData(i)
-
-                logger.statusMessage(i, self.config.sim.nIters, 
-                                    "Closed AO Loop")
-
-                self.addToGuiQueue()
-
-            else:
-                #Stop sim if "go"!=True
-                break
 
         #Finally save data after loop is over.
         self.saveData()

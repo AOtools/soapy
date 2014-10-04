@@ -56,7 +56,7 @@ import random
 import scipy.fftpack as fft
 from . import AOFFT, logger
 import scipy.interpolate
-
+#from multiprocessing import Pool
 
 try:
     xrange
@@ -188,6 +188,11 @@ class atmos:
             self.xCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][0]
             self.yCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][1]
 
+        self.FFTRandom = AOFFT.FFT( 
+                inputSize=( self.scrnSize, self.scrnSize), axes=(0,1), 
+                            fftw_FLAGS=("FFTW_PATIENT","FFTW_DESTROY_INPUT"),
+                            THREADS=4, direction="BACKWARD"
+                            )
 
     def moveScrns(self):
         """
@@ -271,15 +276,24 @@ class atmos:
         scrns = {}
         for i in xrange(self.scrnNo):
             if subharmonics:
-                scrns[i] = ft_sh_phase_screen(self.scrnStrengths[i],
-                         self.scrnSize, (self.pxlScale**(-1.)), L0, l0)
+                scrns[i] = ft_sh_phase_screen(
+                        self.scrnStrengths[i], self.scrnSize, 
+                        (self.pxlScale**(-1.)), L0, l0, self.FFTRandom
+                        )
+
+        # pool = Pool(2)
+        # args = []
+        # for i in xrange(self.scrnNo):
+        #     args.append((self.scrnStrengths[i], self.scrnSize, 
+        #                 self.pxlScale**(-1.), L0, l0))
+
+
+        # scrns = pool.map(pool_ft_sh_phase_screen, args)
+
         return scrns
 
 
 class Screen(object):
-
-
-
 
     def __init__(self, scrn, subscrnSize, order=3):
 
@@ -389,7 +403,12 @@ class Screen(object):
     subScrnCoords = property(_getScrnCoords)
 
 
-def ft_sh_phase_screen(r0, N, delta, L0, l0):
+def pool_ft_sh_phase_screen(args):
+
+    return ft_sh_phase_screen(*args)
+
+
+def ft_sh_phase_screen(r0, N, delta, L0, l0, FFT=None):
     '''
     Creates a random phase screen with Von Karmen statistics with added
     sub-harmonics to augment tip-tilt modes
@@ -401,9 +420,7 @@ def ft_sh_phase_screen(r0, N, delta, L0, l0):
         L0 (float): Size of outer-scale in metres
         l0 (float): inner scale in metres
 
-
     Returns:
-    
         ndarray: numpy array representing phase screen
     '''
     R = random.SystemRandom(time.time())
@@ -412,7 +429,7 @@ def ft_sh_phase_screen(r0, N, delta, L0, l0):
 
     D = N*delta
     # high-frequency screen from FFT method
-    phs_hi = ft_phase_screen(r0, N, delta, L0, l0)
+    phs_hi = ft_phase_screen(r0, N, delta, L0, l0, FFT)
 
     # spatial grid [m]
     coords = numpy.arange(-N/2,N/2)*delta
@@ -461,19 +478,19 @@ def ft_sh_phase_screen(r0, N, delta, L0, l0):
 
     return phs
 
-def ft2(g,delta):
-    G = fft.fftshift(fft.fft2(fft.fftshift(g))) * delta**2
-    return G
 
-
-def ift2(G,delta_f):
+def ift2(G, delta_f ,FFT=None):
 
     N = G.shape[0]
-    g = fft.ifftshift( fft.ifft2( fft.fftshift(G))) * (N * delta_f)**2
+
+    if FFT:
+        g = AOFFT.ftShift2d( FFT( AOFFT.ftShift2d(G) ) ) * (N * delta_f)**2
+    else:
+        g = fft.ifftshift( fft.ifft2( fft.fftshift(G) ) ) * (N * delta_f)**2
 
     return g
 
-def ft_phase_screen(r0, N, delta, L0, l0):
+def ft_phase_screen(r0, N, delta, L0, l0, FFT=None):
 
     delta = float(delta)
     r0 = float(r0)
@@ -484,41 +501,24 @@ def ft_phase_screen(r0, N, delta, L0, l0):
     seed = int(R.random()*100000)
     numpy.random.seed(seed)
 
-
-    #print(N*delta)
-
     del_f = 1./(N*delta)
-    #print(del_f)
 
     fx = numpy.arange(-N/2.,N/2.) * del_f
-    #print(fx.max())
+
     (fx,fy) = numpy.meshgrid(fx,fx)
     f = numpy.sqrt(fx**2 + fy**2)
-
-    #print(f.max())
-   #print(f.min())
 
     fm = 5.92/l0/(2*numpy.pi)
     f0 = 1./L0
 
-    #print(fm,f0)
     PSD_phi  = (0.023*r0**(-5./3.) * numpy.exp(-1*((f/fm)**2)) /
                 ( ( (f**2) + (f0**2) )**(11./6) ) )
 
     PSD_phi[(N/2),(N/2)] = 0
 
-
     cn = ( (numpy.random.normal(size=(N,N)) + 1j* numpy.random.normal(size=(N,N)) )
                 * numpy.sqrt(PSD_phi)*del_f )
 
-    #make sure everything that isn't needed is deleted.
-    #probably not required....
-    del(fx)
-    del(fy)
-    del(f)
-    del(PSD_phi)
-
-    phs = ift2(cn,1).real
-    del(cn)
+    phs = ift2(cn,1, FFT).real
 
     return phs

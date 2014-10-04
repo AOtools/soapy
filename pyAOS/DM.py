@@ -189,7 +189,6 @@ class TT(DM):
         slopesToTT[:self.wfs.activeSubaps, 0] = 1./self.wfs.activeSubaps
         slopesToTT[self.wfs.activeSubaps:, 1] = 1./self.wfs.activeSubaps
 
-
         for i in xrange(self.iMatShapes.shape[0]):
             
             slopes = self.wfs.iMatFrame(self.iMatShapes[i])
@@ -207,11 +206,7 @@ class TT(DM):
 
                
         self.iMat = iMat.dot(numpy.linalg.pinv(slopesToTT))
-        #self.iMat = iMat
         return self.iMat
-
-
-
 
 
 class TT1:
@@ -243,7 +238,6 @@ class TT1:
         for i in xrange(2):
             self.dmShape = self.iMatShapes[i]
             slopes = self.wfs.iMatFrame(self.iMatShapes[i]
-                                            #/self.wfs.waveLength
                                             ).reshape(2,
                                             self.wfs.activeSubaps)
             iMat[i] = slopes.mean(1)

@@ -28,10 +28,6 @@ The ``ConfigObj`` provides a base class used by other module configuration objec
 import numpy
 from . import logger
 
-#######################
-#New style configuration stuff
-###
-
 class ConfigurationError(Exception):
     pass
 

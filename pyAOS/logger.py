@@ -44,10 +44,15 @@ def setStatusFunc(func):
 def statusMessage(i, maxIter, message):
 	if not STATUS_FUNC:
 		sys.stdout.flush()
-		sys.stdout.write("\r{0} of {1}: {2}".format(i,maxIter, message))
+		sys.stdout.write("\r{0} of {1}: {2}".format(i+1,maxIter, message))
 
 	else:
 		STATUS_FUNC(message, i, maxIter)
+
+	if i+1==maxIter:
+		if not STATUS_FUNC:
+			sys.stdout.flush()
+			sys.stdout.write("\n")
 
 def _printMessage(message, level=3):
 	"""
@@ -66,7 +71,6 @@ def _printMessage(message, level=3):
 		if LOGGING_FILE:
 			with open(LOGGING_FILE, "a") as File:
 				File.write(message+"\n")
-
 
 		if STATUS_FUNC:
 			STATUS_FUNC(message)

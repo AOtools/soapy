@@ -19,7 +19,7 @@ simConfiguration = {
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
     "gain"          :   0.6,
-    "reconstructor" :   "TTRecon", 
+    "reconstructor" :   "MVM", 
     "tipTilt"       :   False,
 
 
