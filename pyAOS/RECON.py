@@ -303,12 +303,11 @@ class LearnAndApply(Reconstructor):
     and on-axis WFS is computed from these slopes. 
     
     Assumes that on-axis sensor is WFS 0
-    
     '''
 
     def saveCMat(self):
         cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
-        tomoMatFilename = self.simConfig.filePredix+"/tomoMat.fits"
+        tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
 
         cMatHDU = pyfits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
@@ -331,9 +330,9 @@ class LearnAndApply(Reconstructor):
         header = cMatHDU.header
         
         #Load tomo reconstructor
-        tomoMat = pyfits.getData(tomoFilename)
+        tomoMat = pyfits.getdata(tomoFilename)
         #And check its teh right size
-        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalSlopes - 2*self.wfss[0].ativeSubaps):
+        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalSlopes - 2*self.wfss[0].activeSubaps):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:

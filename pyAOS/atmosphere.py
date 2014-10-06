@@ -188,11 +188,11 @@ class atmos:
             self.xCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][0]
             self.yCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][1]
 
-        self.FFTRandom = AOFFT.FFT( 
-                inputSize=( self.scrnSize, self.scrnSize), axes=(0,1), 
-                            fftw_FLAGS=("FFTW_PATIENT","FFTW_DESTROY_INPUT"),
-                            THREADS=4, direction="BACKWARD"
-                            )
+        # self.FFTRandom = AOFFT.FFT( 
+        #         inputSize=( self.scrnSize, self.scrnSize), axes=(0,1), 
+        #                     fftw_FLAGS=("FFTW_PATIENT","FFTW_DESTROY_INPUT"),
+        #                     THREADS=4, direction="BACKWARD"
+        #                     )
 
     def moveScrns(self):
         """
@@ -278,8 +278,7 @@ class atmos:
             if subharmonics:
                 scrns[i] = ft_sh_phase_screen(
                         self.scrnStrengths[i], self.scrnSize, 
-                        (self.pxlScale**(-1.)), L0, l0, self.FFTRandom
-                        )
+                        (self.pxlScale**(-1.)), L0, l0)
 
         # pool = Pool(2)
         # args = []
