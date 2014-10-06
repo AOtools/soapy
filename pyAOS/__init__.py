@@ -371,22 +371,21 @@ class Sim(object):
 
             wfsQueues.append(Queue())
             wfsProcs.append(Process(target=multiWfs,
-                    args=[ self.scrns, self.wfss[wfs], dmShape,
-                            wfsQueues[wfs]
-                            ]))
+                    args=[  self.scrns, self.wfss[wfs], dmShape, 
+                            wfsQueues[wfs]])
+                    )
             wfsProcs[wfs].daemon = True
-
-            
-        for wfs in xrange(self.config.sim.nGS):
             wfsProcs[wfs].start()
 
         for wfs in xrange(self.config.sim.nGS):
 
+            res = wfsQueues[wfs].get()
+
+
             (slopes[s:s+self.wfss[wfs].activeSubaps*2],
                     self.wfss[wfs].wfsDetectorPlane,
                     self.wfss[wfs].uncorrectedPhase,
-                    lgsPsf) = \
-                        wfsQueues[wfs].get()
+                    lgsPsf) = res
 
             if lgsPsf!=None:
                 self.wfss[wfs].LGS.psf1 = lgsPsf
@@ -396,7 +395,6 @@ class Sim(object):
 
         self.Twfs+=time.time()-t_wfs
         return slopes
-
 
 
     def runTipTilt(self,slopes,closed=True):
@@ -829,18 +827,19 @@ def multiWfs(scrns, wfsObj, dmShape, queue):
         queue (Queue object): a multiprocessing Queue object used to pass data back to host process.
     """
 
-    lgsPsf = None
-
     slopes = wfsObj.frame(scrns, dmShape)
 
     if wfsObj.lgsConfig.lgsUplink:
         lgsPsf = wfsObj.LGS.psf1
+    else:
+        lgsPsf = None
 
-    queue.put([ slopes,wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, 
-                lgsPsf])
+    res = [ slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
+
+    queue.put(res)
+
 
 if __name__ == "__main__":
-
 
     parser = ArgumentParser()
     parser.add_argument("configFile",nargs="?",action="store")

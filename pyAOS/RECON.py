@@ -157,10 +157,8 @@ class Reconstructor:
                                         progressCallback=progressCallback)
 
         
-        
-    def makeCMat(self,loadIMat=True,loadCMat=True, callback=None, 
+    def makeCMat(self,loadIMat=True, loadCMat=True, callback=None, 
                         progressCallback=None):
-        
         
         if loadIMat:
             try:
@@ -178,7 +176,6 @@ class Reconstructor:
             
             self.makeIMat(callback=callback, progressCallback=progressCallback)
             logger.info("Interaction Matrices Done")
-            
         
         if loadCMat:
             try:
@@ -195,7 +192,8 @@ class Reconstructor:
             logger.info("Creating Command Matrix")
             self.calcCMat(callback, progressCallback)
             logger.info("Command Matrix Generated!")
-            
+       
+
     def reconstruct(self,slopes):
         t=time.time()
 
@@ -204,41 +202,6 @@ class Reconstructor:
         self.Trecon += time.time()-t
         return dmCommands
 
-
-# class MVM(Reconstructor):
-#     '''
-#     Reconstructs by using DM interaction Matrices to create a control 
-#     Matrix. 
-#     Treats each DM seperately, so all DMs try to correct all turbulence.
-#     '''
-    
-
-#     def calcCMat(self,callback=None, progressCallback=None):
-#         '''
-#         Uses DM object makeIMat methods, then inverts each to create a 
-#         control matrix
-#         '''
-#         acts = 0
-#         for dm in xrange(self.simConfig.nDM):
-
-#             dmIMat = self.dms[dm].iMat
-
-#             if dmIMat.shape[0]==dmIMat.shape[1]:
-#                 dmCMat = numpy.linalg.pinv(dmIMat)
-#             else:
-#                 dmCMat = scipy.linalg.pinv( dmIMat, 
-#                                             self.dms[dm].dmConfig.dmCond)
-            
-#             if self.dms[dm].dmConfig.dmType=="TT":
-#                 slopesToTT = numpy.zeros((self.dms[dm].wfs.activeSubaps*2, 2))
-#                 slopesToTT[:self.dms[dm].wfs.activeSubaps, 0] = 1./self.dms[dm].wfs.activeSubaps
-#                 slopesToTT[self.dms[dm].wfs.activeSubaps:, 1] = 1./self.dms[dm].wfs.activeSubaps
-#                 dmCMat = slopesToTT.dot(dmCMat)
-
-#             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-#             acts += self.dms[dm].acts
-    
-        
             
 class WooferTweeter(Reconstructor):
     '''
@@ -271,12 +234,6 @@ class WooferTweeter(Reconstructor):
             else:
                 dmCMat = numpy.linalg.pinv(
                                     dmIMat, self.dms[dm].dmConfig.dmCond)
-
-            # if self.dms[dm].dmConfig.dmType=="TT":
-            #     slopesToTT = numpy.zeros((self.dms[dm].wfs.activeSubaps*2, 2))
-            #     slopesToTT[:self.dms[dm].wfs.activeSubaps, 0] = 1./self.dms[dm].wfs.activeSubaps
-            #     slopesToTT[self.dms[dm].wfs.activeSubaps:, 1] = 1./self.dms[dm].wfs.activeSubaps
-            #     dmCMat = slopesToTT.dot(dmCMat)
             
             if dm != self.simConfig.nDM-1:
                 self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
@@ -344,14 +301,76 @@ class LearnAndApply(Reconstructor):
     
     Assumes that on-axis sensor is WFS 0
     
-    Only works for 1 DM at present
     '''
+
+    def saveCMat(self):
+        cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
+        tomoMatFilename = self.simConfig.filePredix+"/tomoMat.fits"
+
+        cMatHDU = pyfits.PrimaryHDU(self.controlMatrix)
+        cMatHDU.header["DMNO"] = self.simConfig.nDM
+        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
+        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
+        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
+        
+        tomoMatHDU = pyfits.PrimaryHDU(self.tomoRecon)
+
+        tomoMatHDU.writeto(tomoMatFilename, clobber=True)
+        cMatHDU.writeto(cMatFilename, clobber=True)
+
+    def loadCMat(self):
+        
+        filename=self.simConfig.filePrefix+"/cMat.fits"
+        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+
+        cMatHDU = pyfits.open(filename)[0]
+        cMatHDU.verify("fix")
+        header = cMatHDU.header
+        
+        #Load tomo reconstructor
+        tomoMat = pyfits.getData(tomoFilename)
+        #And check its teh right size
+        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalSlopes - 2*self.wfss[0].ativeSubaps):
+            logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
+            raise Exception
+        else:
+            self.tomoRecon = tomoMat
+
+
+        try:
+            dmActs = dmTypes = dmConds = None
+            
+            dmNo = int(header["DMNO"])
+            exec("dmActs = numpy.array(%s)"%cMatHDU.header["DMACTS"])
+            exec("dmTypes = %s"%header["DMTYPE"])
+            exec("dmConds = numpy.array(%s)"%header["DMCOND"])
+            
+            if (dmConds==self.dmConds).all()==False:
+                raise Exception("DM conditioning Parameter changed - will make new control matrix")
+            if (dmActs==self.dmActs).all() !=True or dmTypes != self.dmTypes or dmNo != dmNo:
+                logger.warning("loaded control matrix may not be compatibile with \
+                                the current simulation. Will try anyway....")
+                                
+            cMat = cMatHDU.data
+            
+        except KeyError:
+            logger.warning("loaded control matrix header has not created by this ao sim. Will load anyway.....")
+            #cMat = cMatFile[1]
+            cMat = cMatHDU.data
+            
+        if cMat.shape != self.controlShape:
+            logger.warning("designated control matrix does not match the expected shape")
+            raise Exception
+        else:
+            self.controlMatrix = cMat
+
 
     def initControlMatrix(self):
 
         self.controlShape = (2*self.wfss[0].activeSubaps, self.simConfig.totalActs)
         self.controlMatrix = numpy.empty( self.controlShape )
     
+
     def learn(self,callback=None, progressCallback=None):
         '''
         Takes "self.learnFrames" WFS frames, and computes the tomographic
@@ -363,7 +382,6 @@ class LearnAndApply(Reconstructor):
         for i in xrange(self.learnIters):
             self.learnIter=i            
 
-            
             scrns = self.moveScrns()
             self.learnSlopes[i] = self.runWfs(scrns)
             
