@@ -49,6 +49,9 @@ class Reconstructor:
             self.dmConds.append(self.dms[dm].dmConfig.dmCond)
             self.dmTypes.append(self.dms[dm].dmConfig.dmType)
 
+        self.dmConds = numpy.array(self.dmConds)
+        self.dmActs = numpy.array(self.dmActs)
+
         #2 functions used in case reconstructor requires more WFS data.
         #i.e. learn and apply
         self.runWfs = runWfsFunc
@@ -345,6 +348,9 @@ class LearnAndApply(Reconstructor):
             exec("dmTypes = %s"%header["DMTYPE"])
             exec("dmConds = numpy.array(%s)"%header["DMCOND"])
             
+            logger.info("Loaded dmConds: {}".format(dmConds))
+            logger.info("Current dmConds: {}".format(self.dmConds))
+
             if (dmConds==self.dmConds).all()==False:
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if (dmActs==self.dmActs).all() !=True or dmTypes != self.dmTypes or dmNo != dmNo:
