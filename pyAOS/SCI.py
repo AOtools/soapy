@@ -155,11 +155,11 @@ class scienceCam:
         self.scrns = scrns
         self.calcPupilPhase()
 
-        if phaseCorrection!=None:
+        if numpy.all(phaseCorrection):
             self.residual = self.phase - (phaseCorrection)#/self.sciConfig.wavelength)
-
         else:
             self.residual = self.phase
+            
         self.calcFocalPlane()
 
         self.instStrehl =  self.focalPlane.max()/self.psfMax

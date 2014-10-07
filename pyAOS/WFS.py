@@ -131,9 +131,6 @@ class WFS(object):
             self.makePhase = self.makePhasePhysical
         else:
             self.makePhase = self.makePhaseGeo
-            
-        
-        
 
         self.iMat=False
 
@@ -548,6 +545,7 @@ class WFS(object):
         self.EField[:] = 0
         self.wfsPhase[:] = 0
 
+
     def frame(self,scrns,correction=None):
         '''
         Runs one WFS frame
@@ -577,7 +575,7 @@ class WFS(object):
                 self.makePhase(self.elongRadii[i])
                 self.uncorrectedPhase = self.wfsPhase
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
-                if correction!=None:
+                if numpy.all(correction):
                     self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane()
 
@@ -631,10 +629,11 @@ class ShackHartmannWfs(WFS):
         for i in xrange(self.activeSubaps):
             x,y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
-            self.subapArrays[i] = self.scaledEField[int(x):
+            self.subapArrays[i] = self.scaledEField[
+                                    int(x):
                                     int(x+self.subapFOVSpacing) ,
-                                              int(y):
-                                              int(y+self.subapFOVSpacing)]
+                                    int(y):
+                                    int(y+self.subapFOVSpacing)]
 
         #do the fft to all subaps at the same time
         # and convert into intensity

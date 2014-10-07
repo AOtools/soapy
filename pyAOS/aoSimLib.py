@@ -114,7 +114,6 @@ def zoom(array, newSize, order=3):
         ndarray : zoom array of new size.
     """
     
-
     try:
         xSize = newSize[0]
         ySize = newSize[1]
@@ -141,9 +140,6 @@ def zoom(array, newSize, order=3):
                 numpy.arange(array.shape[1]), array, kx=order, ky=order)
 
         return interpObj(coordsX,coordsY)
-
-
-
 
 
 #######################
