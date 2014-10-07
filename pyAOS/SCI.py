@@ -155,8 +155,8 @@ class scienceCam:
         self.scrns = scrns
         self.calcPupilPhase()
 
-        if numpy.all(phaseCorrection):
-            self.residual = self.phase - (phaseCorrection)#/self.sciConfig.wavelength)
+        if phaseCorrection!=None:
+            self.residual = self.phase - (phaseCorrection)
         else:
             self.residual = self.phase
             

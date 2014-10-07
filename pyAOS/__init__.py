@@ -483,7 +483,7 @@ class Sim(object):
 
         self.closedCorrection = numpy.zeros(self.dmShape.shape)
         self.openCorrection = self.closedCorrection.copy()
-
+        self.dmCommands = numpy.empty( self.config.sim.totalActs )
 
         for i in xrange(self.config.sim.nIters):
             if self.go:
@@ -500,7 +500,8 @@ class Sim(object):
                 #Run Loop...
 
                 #Get dmCommands from reconstructor
-                self.dmCommands = self.recon.reconstruct(self.slopes)
+                if self.config.sim.nDM:
+                    self.dmCommands[:] = self.recon.reconstruct(self.slopes)
 
                 #Get dmShape from closed loop DMs
                 self.closedCorrection += self.runDM(self.dmCommands, closed=True)
@@ -509,7 +510,8 @@ class Sim(object):
                 self.slopes = self.runWfs(dmShape=self.closedCorrection)
 
                 #Get DM shape for open loop DMs, add to closed loop DM shape
-                self.openCorrection += self.runDM(self.dmCommands, closed=False)
+                self.openCorrection += self.runDM(  self.dmCommands, 
+                                                    closed=False)
 
                 #Run a tip-tilt mirror if set
                 ttShape, self.slopes = self.runTipTilt(self.slopes)
@@ -528,10 +530,6 @@ class Sim(object):
                 self.addToGuiQueue()
             else:
                 break
-
-        self.saveData()
-        self.finishUp()
-
 
         #Finally save data after loop is over.
         self.saveData()

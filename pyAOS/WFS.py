@@ -733,7 +733,7 @@ class ShackHartmannWfs(WFS):
         # self.FPSubapArrays[:] = (numpy.fft.fftshift(
         #             numpy.fft.fft2( self.iFFTFPSubapsArray), axes=(1,2))).real
         #       
-        self.FPSubapArrays[:] = self.FPSubapArrays[:,::-1,::-1]
+        #self.FPSubapArrays[:] = self.FPSubapArrays[:,::-1,::-1]
 
 
     def calculateSlopes(self):
