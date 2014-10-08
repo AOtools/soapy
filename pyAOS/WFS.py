@@ -457,7 +457,7 @@ class WFS(object):
         self.EField[:] = numpy.exp(1j*self.wfsPhase)
 
 
-    def makePhasePhysical(self, radii=None, initialEField=None):
+    def makePhasePhysical(self, radii=None):
         '''
         Finds total WFS complex amplitude by propagating light down
         phase scrns'''
@@ -465,12 +465,6 @@ class WFS(object):
         scrnNo = len(self.scrns)-1
         ht = self.atmosConfig.scrnHeights[scrnNo]
         delta = (self.simConfig.pxlScale)**-1. #Grid spacing
-        
-        #If initialEField, use that
-        if initialEField==None:
-            self.EField[:] = self.mask
-        else:
-            self.EField[:] = initialEField*self.mask
         
         #Get initial Phase for highest scrn and turn to efield
         if radii:
@@ -484,6 +478,7 @@ class WFS(object):
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
+            print("Propogate: {0}m, from {1}m to {2}m".format(z,ht,ht-z))
             ht -= z
             
             #Do ASP for last layer to next
@@ -503,7 +498,13 @@ class WFS(object):
         
         #If not already at ground, propagate the rest of the way.
         if self.atmosConfig.scrnHeights[0]!=0:
-            angularSpectrum(self.EField, self.wfsConfig.wavelength, delta, delta, ht)
+            print("Propogate: {0}m to Ground.".format(ht))
+            self.EField[:] = angularSpectrum(
+                    self.EField, self.wfsConfig.wavelength, delta, delta, ht
+                                            )
+        #Multiply EField by aperture
+        self.EField*=self.mask
+
 ######################################################
 
     def readNoise(self, dPlaneArray):
@@ -665,7 +666,6 @@ class ShackHartmannWfs(WFS):
                                             self.binnedFPSubapArrays.max((1,2))
                                                                          ).T
 
-        
 
         for i in xrange(self.activeSubaps):
 

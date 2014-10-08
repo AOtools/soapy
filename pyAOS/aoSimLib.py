@@ -179,23 +179,23 @@ def binImgs(data,n):
 
     if len(data.shape)==2:
         shape[-1]/=n
-        binnedImgTmp = numpy.zeros( shape )
+        binnedImgTmp = numpy.zeros( shape, dtype=data.dtype )
         for i in range(n):
             binnedImgTmp += data[:,i::n]
         shape[-2]/=n
-        binnedImg = numpy.zeros( shape )
+        binnedImg = numpy.zeros( shape, dtype=data.dtype )
         for i in range(n):
             binnedImg += binnedImgTmp[i::n,:]
 
         return binnedImg
     else:
         shape[-1]/=n
-        binnedImgTmp = numpy.zeros ( shape )
+        binnedImgTmp = numpy.zeros ( shape, dtype=data.dtype )
         for i in range(n):
             binnedImgTmp += data[...,i::n]
 
         shape[-2] /= n
-        binnedImg = numpy.zeros( shape )
+        binnedImg = numpy.zeros( shape, dtype=data.dtype )
         for i in range(n):
             binnedImg += binnedImgTmp[...,i::n,:]
 

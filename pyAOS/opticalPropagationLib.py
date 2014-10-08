@@ -6,22 +6,31 @@ of optical proagation
 '''
 
 import numpy
+from . import aoSimLib
 
-
-def ft2(g,delta):
-    G = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(g))) * delta**2
-    
+def ft2(g, delta, padFactor=1):
+    padFactor = int(padFactor)
+    G = numpy.fft.fftshift(
+            numpy.fft.fft2(
+                    numpy.fft.fftshift(g),
+                    s=(padFactor*g.shape[0],padFactor*g.shape[1])
+                            )
+                             ) * delta**2
     return G
 
-def ift2(G,delta_f):
+def ift2(G, delta_f, padFactor=1):
     N = G.shape[0]
-    g = numpy.fft.ifftshift(numpy.fft.ifft2(numpy.fft.ifftshift(G)))*\
-            (N * delta_f)*2
+    g = numpy.fft.ifftshift(
+            numpy.fft.ifft2(
+                    numpy.fft.ifftshift(G),
+                    s=( padFactor*G.shape[0], padFactor*G.shape[1])
+                            )
+                            ) * (N * delta_f)*2
 
     return g
 
 
-def angularSpectrum(Uin,wvl,d1,d2,z):
+def angularSpectrum(Uin,wvl,d1,d2,z,):
     N = Uin.shape[0] #Assumes Uin is square.
     k = 2*numpy.pi/wvl     #optical wavevector
 
@@ -29,7 +38,7 @@ def angularSpectrum(Uin,wvl,d1,d2,z):
                              d1*numpy.arange(-N/2,N/2))
     r1sq = (x1**2 + y1**2) + 1e-10
 
-        #Spatial Frequencies (of source plane)
+    #Spatial Frequencies (of source plane)
     df1 = 1. / (N*d1)
     fX,fY = numpy.meshgrid(df1*numpy.arange(-N/2,N/2),
                            df1*numpy.arange(-N/2,N/2))
@@ -51,8 +60,9 @@ def angularSpectrum(Uin,wvl,d1,d2,z):
     Q3 = numpy.exp(1j * k/2. * (m-1)/(m*z) * r2sq)
 
     #Compute propagated field
-    Uout = Q3 * ift2( Q2 * ft2(Q1 * Uin/m,d1),df1 )
+    Uout = Q3 * ift2( Q2 * ft2(Q1 * Uin/m,d1), df1)
     return Uout
+
 
 def oneStepFresnel(Uin,wvl,d1,z):
 
