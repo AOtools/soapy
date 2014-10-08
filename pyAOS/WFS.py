@@ -19,7 +19,7 @@
 """
 The pyAOS Wavefront Sensor module.
 
-This module contains a number of classes which simulate different adaptive optics wavefront sensor (WFS) types. All wavefront sensor classes can inherit from the base ``WFS`` class. The class provides the methods required to calculate phase over a WFS pointing in a given WFS direction. This leaves the new class to create methods which deal with creating the focal plane and making a measurement. To make use of the base-classes ``
+This module contains a number of classes which simulate different adaptive optics wavefront sensor (WFS) types. All wavefront sensor classes can inherit from the base ``WFS`` class. The class provides the methods required to calculate phase over a WFS pointing in a given WFS direction. This leaves the7 new class to create methods which deal with creating the focal plane and making a measurement. To make use of the base-classes ``
 
 """
 
@@ -478,7 +478,6 @@ class WFS(object):
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
-            print("Propogate: {0}m, from {1}m to {2}m".format(z,ht,ht-z))
             ht -= z
             
             #Do ASP for last layer to next
@@ -498,7 +497,6 @@ class WFS(object):
         
         #If not already at ground, propagate the rest of the way.
         if self.atmosConfig.scrnHeights[0]!=0:
-            print("Propogate: {0}m to Ground.".format(ht))
             self.EField[:] = angularSpectrum(
                     self.EField, self.wfsConfig.wavelength, delta, delta, ht
                                             )
@@ -534,7 +532,7 @@ class WFS(object):
         self.zeroData()
         self.EField[:] =  numpy.exp(1j*phs)
         self.calcFocalPlane()
-        self.makeFocalPlane()
+        self.makeDetectorPlane()
         self.calculateSlopes()
         
         self.wfsConfig.removeTT = removeTT
@@ -580,7 +578,7 @@ class WFS(object):
                     self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane()
 
-        self.makeFocalPlane()
+        self.makeDetectorPlane()
         self.calculateSlopes()
 
         return self.slopes
@@ -591,7 +589,7 @@ class WFS(object):
     def calcFocalPlane(self):
         pass
 
-    def makeFocalPlane(self):
+    def makeDetectorPlane(self):
         pass
 
     def LGSUplink(self):
@@ -646,7 +644,7 @@ class ShackHartmannWfs(WFS):
         self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
 
 
-    def makeFocalPlane(self):
+    def makeDetectorPlane(self):
         '''
         if required, will convolve final psf with LGS psf, then bins
         psf down to detector size. Finally puts back into wfsFocalPlane Array
@@ -665,7 +663,6 @@ class ShackHartmannWfs(WFS):
         self.binnedFPSubapArrays[:] = self.maxFlux* (self.binnedFPSubapArrays.T/
                                             self.binnedFPSubapArrays.max((1,2))
                                                                          ).T
-
 
         for i in xrange(self.activeSubaps):
 
@@ -783,28 +780,44 @@ class ShackHartmannWfs(WFS):
         return self.slopes
 
 
-def pyrimid(phs):
+class Pyrimid(WFS):
 
-    shapeX,shapeY = phs.shape
-    quads = numpy.empty( (4,shapeX/2.,shapeX/2.), dtype="complex64")
-    EField = numpy.exp(1j*phs) * aoSimLib.circle(shapeX/2,shapeX)
-    FP = numpy.fft.fftshift(numpy.fft.fft2(EField))
-    n=0
-    for x in xrange(2):
-        for y in xrange(2):
-            quads[n] = FP[x*shapeX/2 : (x+1)*shapeX/2,
-                        y*shapeX/2 : (y+1)*shapeX/2]
-            n+=1
+    def calcFocalPlane(self):
+        '''
+        takes the calculated pupil phase, and uses FFT
+        to transform to the focal plane, and scales for correct FOV.
+        '''
 
-    PPupilPlane = abs(numpy.fft.ifft2(quads))**2
+        phs = aoSimLib.zoom(self.EField, self.FOVPxlNo) *self.r0Scale
 
-    allPupilPlane = numpy.empty( (shapeX,shapeY) )
-    allPupilPlane[:shapeX/2.,:shapeY/2] = PPupilPlane[0]
-    allPupilPlane[shapeX/2.:,:shapeY/2] = PPupilPlane[1]
-    allPupilPlane[:shapeX/2.,shapeY/2:] = PPupilPlane[2]
-    allPupilPlane[shapeX/2.:,shapeY/2:] = PPupilPlane[3]
+        eField = numpy.exp(1j*phs)*self.scaledMask
 
-    return allPupilPlane
+        self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
+        focalPlane = AOFFT.ftShift2d( self.FFT() )
+
+        focalPlane = numpy.abs(focalPlane)**2
+
+        self.focalPlane = aoSimLib.binImgs( focalPlane , self.sciConfig.oversamp )
+
+    def makeDetectorPlane(self):
+
+        shapeX,shapeY = self.focalPlane.shape
+        quads = numpy.empty( (4,shapeX/2.,shapeX/2.), dtype="complex64")
+        n=0
+        for x in xrange(2):
+            for y in xrange(2):
+                quads[n] = self.focalPlane[ x*shapeX/2 : (x+1)*shapeX/2,
+                                            y*shapeX/2 : (y+1)*shapeX/2]
+                n+=1
+
+        PPupilPlane = abs(  numpy.fft.fftshift(numpy.fft.ifft2(quads),
+                            axes=(1,2)))**2
+
+        self.wfsDetectorPlane = numpy.empty( (shapeX,shapeY) )
+        self.wfsDetectorPlane[:shapeX/2.,:shapeY/2] = PPupilPlane[0]
+        self.wfsDetectorPlane[shapeX/2.:,:shapeY/2] = PPupilPlane[1]
+        self.wfsDetectorPlane[:shapeX/2.,shapeY/2:] = PPupilPlane[2]
+        self.wfsDetectorPlane[shapeX/2.:,shapeY/2:] = PPupilPlane[3]
 
 
 

@@ -27,6 +27,12 @@ import numpy
 from scipy.interpolate import interp2d,RectBivariateSpline
 from . import AOFFT
 
+#xrange now just "range" in python3. 
+#Following code means fastest implementation used in 2 and 3
+try:
+    xrange
+except NameError:
+    xrange = range
 
 def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
