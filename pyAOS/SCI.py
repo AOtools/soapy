@@ -155,7 +155,7 @@ class scienceCam:
         self.scrns = scrns
         self.calcPupilPhase()
 
-        if phaseCorrection!=None:
+        if numpy.any(phaseCorrection):
             self.residual = self.phase - (phaseCorrection)
         else:
             self.residual = self.phase
