@@ -372,6 +372,8 @@ class WfsConfig(ConfigObj):
         =================== =================================  ===========
         **Parameter**       **Description**                    **Default**
         ------------------- ---------------------------------  -----------
+        ``type``            string: Which WFS object to load
+                            from WFS.py?                        ``ShackHartmann``
         ``propagationMode`` string: Mode of light propogation 
                             from GS. Can be "physical" or 
                             "geometric".                       ``"geometric"``
@@ -432,6 +434,7 @@ class WfsConfig(ConfigObj):
                                 ("lgs",False),
                                 ("centThreshold",0.3),
                                 ("centMethod", "simple"),
+                                ("type", "ShackHartmann")
                             ]
         self.initParams()
 

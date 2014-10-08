@@ -780,24 +780,27 @@ class ShackHartmannWfs(WFS):
         return self.slopes
 
 
-class Pyrimid(WFS):
+class Pyramid(WFS):
+
+    def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
+        
+        super(Pyramid,self).__init__(simConfig, wfsConfig, atmosConfig, lgsConfig, mask)
+        self.FFT = AOFFT.FFT(   [2*self.FOVPxlNo,]*2, axes=(0,1), 
+                                mode="pyfftw", 
+                                fftw_FLAGS=("FFTW_DESTROY_INPUT",
+                                            wfsConfig.fftwFlag),
+                                fftwThreads=wfsConfig.fftwThreads
+                                )
+
+
 
     def calcFocalPlane(self):
         '''
         takes the calculated pupil phase, and uses FFT
         to transform to the focal plane, and scales for correct FOV.
         '''
-
-        phs = aoSimLib.zoom(self.EField, self.FOVPxlNo) *self.r0Scale
-
-        eField = numpy.exp(1j*phs)*self.scaledMask
-
-        self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
-        focalPlane = AOFFT.ftShift2d( self.FFT() )
-
-        focalPlane = numpy.abs(focalPlane)**2
-
-        self.focalPlane = aoSimLib.binImgs( focalPlane , self.sciConfig.oversamp )
+        self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = self.EField
+        self.focalPlane = abs(AOFFT.ftShift2d( self.FFT() ))**2
 
     def makeDetectorPlane(self):
 
@@ -810,14 +813,16 @@ class Pyrimid(WFS):
                                             y*shapeX/2 : (y+1)*shapeX/2]
                 n+=1
 
-        PPupilPlane = abs(  numpy.fft.fftshift(numpy.fft.ifft2(quads),
+        PPupilPlanes = abs(  numpy.fft.fftshift(numpy.fft.ifft2(quads),
                             axes=(1,2)))**2
 
         self.wfsDetectorPlane = numpy.empty( (shapeX,shapeY) )
-        self.wfsDetectorPlane[:shapeX/2.,:shapeY/2] = PPupilPlane[0]
-        self.wfsDetectorPlane[shapeX/2.:,:shapeY/2] = PPupilPlane[1]
-        self.wfsDetectorPlane[:shapeX/2.,shapeY/2:] = PPupilPlane[2]
-        self.wfsDetectorPlane[shapeX/2.:,shapeY/2:] = PPupilPlane[3]
+        self.wfsDetectorPlane[:shapeX/2.,:shapeY/2] = PPupilPlanes[0]
+        self.wfsDetectorPlane[shapeX/2.:,:shapeY/2] = PPupilPlanes[1]
+        self.wfsDetectorPlane[:shapeX/2.,shapeY/2:] = PPupilPlanes[2]
+        self.wfsDetectorPlane[shapeX/2.:,shapeY/2:] = PPupilPlanes[3]
 
+    def calculateSlopes(self):
+        self.slopes = self.wfsDetectorPlane.flatten()
 
 
