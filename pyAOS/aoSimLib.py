@@ -290,7 +290,7 @@ def zernikeRadialFunc(n, m, r):
     """
 
     R = numpy.zeros(r.shape)
-    for i in xrange(0,((n-m)/2)+1):
+    for i in xrange(0,int((n-m)/2)+1):
 
         R += r**(n-2*i) * (((-1)**(i))*numpy.math.factorial(n-i)) / ( numpy.math.factorial(i) * numpy.math.factorial(0.5*(n+m)-i) * numpy.math.factorial(0.5*(n-m)-i) )
 
