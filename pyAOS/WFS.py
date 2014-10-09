@@ -915,7 +915,7 @@ class Pyramid(WFS):
 
         res = scipy.optimize.minimize(self.fpTilt, -0.1, args=(tiltFix,), tol=0.01,
                                 options={"maxiter":100})
-        print res
+        print(res)
 
         if abs(res["fun"])>0.1:
             logger.warning("Unable to centre WFS")
