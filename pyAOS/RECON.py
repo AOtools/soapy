@@ -130,8 +130,7 @@ class Reconstructor:
             pyfits.PrimaryHDU(self.dms[dm].iMatShapes).writeto(filenameShapes,
                                                         clobber=True)
             
-    
-                                              
+                            
     def loadIMat(self):
         
         for dm in xrange(self.simConfig.nDM):
