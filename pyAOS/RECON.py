@@ -99,9 +99,9 @@ class Reconstructor:
             exec("dmTypes = %s"%header["DMTYPE"])
             exec("dmConds = numpy.array(%s)"%header["DMCOND"])
             
-            if (dmConds==self.dmConds).all()==False:
+            if not numpy.all(dmConds==self.dmConds):
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
-            if (dmActs==self.dmActs).all() !=True or dmTypes != self.dmTypes or dmNo != dmNo:
+            if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:
                 logger.warning("loaded control matrix may not be compatibile with \
                                 the current simulation. Will try anyway....")
                                 
@@ -141,7 +141,7 @@ class Reconstructor:
             iMat = pyfits.open(filenameIMat)[0].data
             iMatShapes = pyfits.open(filenameShapes)[0].data
             
-            if iMat.shape != (self.dms[dm].acts,2*self.dms[dm].totalSubaps):
+            if iMat.shape!=(self.dms[dm].acts,2*self.dms[dm].totalSubaps):
                 logger.warning("interaction matrix does not match required required size.")
                 raise Exception
             if iMatShapes.shape[-1]!=self.dms[dm].simConfig.pupilSize:
@@ -321,53 +321,19 @@ class LearnAndApply(Reconstructor):
         cMatHDU.writeto(cMatFilename, clobber=True)
 
     def loadCMat(self):
-        
-        filename=self.simConfig.filePrefix+"/cMat.fits"
-        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+            
+        super(LearnAndApply, self).loadCMat()
 
-        cMatHDU = pyfits.open(filename)[0]
-        cMatHDU.verify("fix")
-        header = cMatHDU.header
-        
         #Load tomo reconstructor
+        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
         tomoMat = pyfits.getdata(tomoFilename)
-        #And check its teh right size
+
+        #And check its the right size
         if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalSlopes - 2*self.wfss[0].activeSubaps):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:
             self.tomoRecon = tomoMat
-
-
-        try:
-            dmActs = dmTypes = dmConds = None
-            
-            dmNo = int(header["DMNO"])
-            exec("dmActs = numpy.array(%s)"%cMatHDU.header["DMACTS"])
-            exec("dmTypes = %s"%header["DMTYPE"])
-            exec("dmConds = numpy.array(%s)"%header["DMCOND"])
-            
-            logger.info("Loaded dmConds: {}".format(dmConds))
-            logger.info("Current dmConds: {}".format(self.dmConds))
-
-            if (dmConds==self.dmConds).all()==False:
-                raise Exception("DM conditioning Parameter changed - will make new control matrix")
-            if (dmActs==self.dmActs).all() !=True or dmTypes != self.dmTypes or dmNo != dmNo:
-                logger.warning("loaded control matrix may not be compatibile with \
-                                the current simulation. Will try anyway....")
-                                
-            cMat = cMatHDU.data
-            
-        except KeyError:
-            logger.warning("loaded control matrix header has not created by this ao sim. Will load anyway.....")
-            #cMat = cMatFile[1]
-            cMat = cMatHDU.data
-            
-        if cMat.shape != self.controlShape:
-            logger.warning("designated control matrix does not match the expected shape")
-            raise Exception
-        else:
-            self.controlMatrix = cMat
 
 
     def initControlMatrix(self):

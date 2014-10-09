@@ -190,7 +190,8 @@ class Sim(object):
         self.config.sim.totalSubaps = 0
 
         for wfs in xrange(self.config.sim.nGS):
-            self.wfss[wfs]=WFS.ShackHartmannWfs(    
+            wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
+            self.wfss[wfs]=wfsClass(    
                     self.config.sim, self.config.wfs[wfs], 
                     self.config.atmos, self.config.lgs[wfs], self.mask)
 

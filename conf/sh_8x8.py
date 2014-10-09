@@ -32,7 +32,7 @@ simConfiguration = {
 
 "Atmosphere":{
     "scrnNo"        :  4,
-    "scrnHeights"   :   numpy.array([0,5000,10000,25000]),
+    "scrnHeights"   :   numpy.array([0,5000,10000,15000]),
     "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
     "windDirs"      :   numpy.array([0,45,90,135]),
     "windSpeeds"    :   numpy.array([10,10,15,20]),

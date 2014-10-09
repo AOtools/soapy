@@ -246,7 +246,6 @@ class WFS(object):
                                           self.subapFFTPadding,
                                           self.subapFFTPadding),dtype=DTYPE)
         
-        #For Fresnel Propagation
         self.EField = numpy.zeros((self.simConfig.pupilSize, self.simConfig.pupilSize),
                                                         dtype=CDTYPE)
 
@@ -727,11 +726,6 @@ class ShackHartmannWfs(WFS):
         self.FFT.inputData[:] = self.iFFTFPSubapsArray
         self.FPSubapArrays[:] = AOFFT.ftShift2d( self.FFT() ).real
 
-        # self.FPSubapArrays[:] = (numpy.fft.fftshift(
-        #             numpy.fft.fft2( self.iFFTFPSubapsArray), axes=(1,2))).real
-        #       
-        #self.FPSubapArrays[:] = self.FPSubapArrays[:,::-1,::-1]
-
 
     def calculateSlopes(self):
         '''
@@ -785,13 +779,48 @@ class Pyramid(WFS):
     def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
         
         super(Pyramid,self).__init__(simConfig, wfsConfig, atmosConfig, lgsConfig, mask)
-        self.FFT = AOFFT.FFT(   [2*self.FOVPxlNo,]*2, axes=(0,1), 
-                                mode="pyfftw", 
+        
+
+        self.FOVrad = self.wfsConfig.subapFOV * numpy.pi / (180.*3600)
+        self.FOVPxlNo = numpy.round( self.telDiam * self.FOVrad/self.wfsConfig.wavelength)
+
+        self.FOV_OVERSAMP = 4
+        self.FFT = AOFFT.FFT(   [self.FOV_OVERSAMP*self.FOVPxlNo,]*2, 
+                                axes=(0,1), mode="pyfftw", 
                                 fftw_FLAGS=("FFTW_DESTROY_INPUT",
                                             wfsConfig.fftwFlag),
-                                fftwThreads=wfsConfig.fftwThreads
+                                THREADS=wfsConfig.fftwThreads
                                 )
 
+        #Find sizes of detector planes
+        while (self.wfsConfig.pxlsPerSubap*self.wfsConfig.subapOversamp
+                    < self.FOVPxlNo):
+            self.wfsConfig.subapOversamp+=1
+
+        self.paddedDetectorPxls = 2*self.wfsConfig.pxlsPerSubap*self.wfsConfig.subapOversamp
+        self.detectorPxls = 2*self.wfsConfig.pxlsPerSubap
+
+
+        self.iFFTPadding = self.FOV_OVERSAMP*(self.wfsConfig.subapOversamp*self.wfsConfig.pxlsPerSubap)
+
+        self.iFFT = AOFFT.FFT(
+                    [4, self.iFFTPadding, self.iFFTPadding],
+                    axes=(1,2), mode="pyfftw", THREADS = wfsConfig.fftwThreads,
+                    fftw_FLAGS=("FFTW_DESTROY_INPUT", wfsConfig.fftwFlag),
+                    direction="BACKWARD"
+                    )
+
+        #Allocate arrays 
+        self.paddedDetectorPlane = numpy.empty([self.paddedDetectorPxls]*2,
+                                                dtype="float32")
+        self.wfsDetectorPlane = numpy.empty([self.detectorPxls]*2,
+                                            dtype="float32")
+
+        self.activeSubaps = self.wfsConfig.pxlsPerSubap**2
+
+        self.scaledMask = aoSimLib.zoom(self.mask, self.FOVPxlNo)
+        #self.optimiseTiltPyramid()
+        self.calcTiltCorrect()
 
 
     def calcFocalPlane(self):
@@ -799,30 +828,138 @@ class Pyramid(WFS):
         takes the calculated pupil phase, and uses FFT
         to transform to the focal plane, and scales for correct FOV.
         '''
-        self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = self.EField
-        self.focalPlane = abs(AOFFT.ftShift2d( self.FFT() ))**2
+        self.EField*=self.tiltFix
+        self.scaledEField = aoSimLib.zoom(self.EField, self.FOVPxlNo)*self.scaledMask
+
+        self.FFT.inputData[ :self.FOVPxlNo,
+                            :self.FOVPxlNo ] = self.scaledEField
+        self.focalPlane = AOFFT.ftShift2d( self.FFT() ).copy()
+
 
     def makeDetectorPlane(self):
 
         shapeX,shapeY = self.focalPlane.shape
-        quads = numpy.empty( (4,shapeX/2.,shapeX/2.), dtype="complex64")
+        self.quads = numpy.empty(   (4,shapeX/2.,shapeX/2.),
+                                    dtype=self.focalPlane.dtype)
         n=0
         for x in xrange(2):
             for y in xrange(2):
-                quads[n] = self.focalPlane[ x*shapeX/2 : (x+1)*shapeX/2,
-                                            y*shapeX/2 : (y+1)*shapeX/2]
+                self.quads[n] = self.focalPlane[x*shapeX/2 : (x+1)*shapeX/2,
+                                                y*shapeX/2 : (y+1)*shapeX/2]
                 n+=1
 
-        PPupilPlanes = abs(  numpy.fft.fftshift(numpy.fft.ifft2(quads),
-                            axes=(1,2)))**2
 
-        self.wfsDetectorPlane = numpy.empty( (shapeX,shapeY) )
-        self.wfsDetectorPlane[:shapeX/2.,:shapeY/2] = PPupilPlanes[0]
-        self.wfsDetectorPlane[shapeX/2.:,:shapeY/2] = PPupilPlanes[1]
-        self.wfsDetectorPlane[:shapeX/2.,shapeY/2:] = PPupilPlanes[2]
-        self.wfsDetectorPlane[shapeX/2.:,shapeY/2:] = PPupilPlanes[3]
+        self.iFFT.inputData[:,
+                            :0.5*self.FOV_OVERSAMP*self.FOVPxlNo,
+                            :0.5*self.FOV_OVERSAMP*self.FOVPxlNo] = self.quads
+        self.pupilImages = abs(AOFFT.ftShift2d(self.iFFT()))**2
+
+        size = self.paddedDetectorPxls/2
+        pSize = self.iFFTPadding/2.
+
+        for x in range(2):
+            for y in range(2):
+                self.paddedDetectorPlane[
+                        x*size:(x+1)*size,
+                        y*size:(y+1)*size] = self.pupilImages[
+                                                2*x+y,
+                                                pSize:
+                                                pSize+size,
+                                                pSize:
+                                                pSize+size]
+
+        self.wfsDetectorPlane[:] = aoSimLib.binImgs(
+                        self.paddedDetectorPlane,
+                        self.wfsConfig.subapOversamp 
+                        )
 
     def calculateSlopes(self):
-        self.slopes = self.wfsDetectorPlane.flatten()
 
+        xDiff = (self.wfsDetectorPlane[ :self.wfsConfig.pxlsPerSubap,:]-
+                    self.wfsDetectorPlane[  self.wfsConfig.pxlsPerSubap:,:]) 
+        xSlopes = (xDiff[:,:self.wfsConfig.pxlsPerSubap]
+                    +xDiff[:,self.wfsConfig.pxlsPerSubap:])
+
+        yDiff = (self.wfsDetectorPlane[:, :self.wfsConfig.pxlsPerSubap]-
+                    self.wfsDetectorPlane[:, self.wfsConfig.pxlsPerSubap:]) 
+        ySlopes = (yDiff[:self.wfsConfig.pxlsPerSubap, :]
+                    +yDiff[self.wfsConfig.pxlsPerSubap:, :])
+
+
+        self.slopes = numpy.append(xSlopes.flatten(), ySlopes.flatten())
+
+
+
+
+    #Tilt optimisation
+    ################################
+    def fpTilt(self, A, phs):
+
+        self.zeroData()
+        self.tiltFix = numpy.exp(1j*A*phs.copy())
+        self.EField[:] = self.mask*numpy.ones([self.simConfig.pupilSize]*2)
+        self.calcFocalPlane()
+        cent = aoSimLib.simpleCentroid(abs(self.focalPlane)**2)
+        shape = self.focalPlane.shape[0]
+
+        cent -= shape/2.
+
+        return abs(cent).sum()
+
+
+    def optimiseTiltPyramid(self):
+
+        coords = numpy.linspace(-1,1,self.simConfig.pupilSize)
+        X,Y = numpy.meshgrid(coords,coords)
+        tiltFix = X+Y
+
+        res = scipy.optimize.minimize(self.fpTilt, -0.1, args=(tiltFix,), tol=0.01,
+                                options={"maxiter":100})
+        print res
+
+        if abs(res["fun"])>0.1:
+            logger.warning("Unable to centre WFS")
+        A = res["x"]
+
+        self.tiltFix = numpy.exp(1j*A*tiltFix)
+
+    def calcTiltCorrect(self):
+        """
+        Calculates the required tilt to add to avoid the PSF being centred on 
+        only 1 pixel
+        """
+        #Angle we need to correct 
+        theta = self.subapFOVrad/ (2*self.FOV_OVERSAMP*self.FOVPxlNo)
+
+        A = theta*self.telDiam/(2*self.wfsConfig.wavelength)
+
+        coords = numpy.linspace(-1,1,self.simConfig.pupilSize)
+        X,Y = numpy.meshgrid(coords,coords)
+
+        self.tiltFix = numpy.exp(1j*A*(X+Y))
+
+
+
+def pyramid(phs):
+
+    shapeX,shapeY = phs.shape
+    quads = numpy.empty( (4,shapeX/2.,shapeX/2.), dtype="complex64")
+    EField = numpy.exp(1j*phs) * aoSimLib.circle(shapeX/2,shapeX)
+    FP = numpy.fft.fftshift(numpy.fft.fft2(EField))
+    n=0
+    for x in xrange(2):
+        for y in xrange(2):
+            quads[n] = FP[x*shapeX/2 : (x+1)*shapeX/2,
+                        y*shapeX/2 : (y+1)*shapeX/2]
+            n+=1
+
+    PPupilPlane = abs(numpy.fft.ifft2(quads))**2
+
+    allPupilPlane = numpy.empty( (shapeX,shapeY) )
+    allPupilPlane[:shapeX/2.,:shapeY/2] = PPupilPlane[0]
+    allPupilPlane[:shapeX/2.:,shapeY/2:] = PPupilPlane[1]
+    allPupilPlane[shapeX/2.:,:shapeY/2] = PPupilPlane[2]
+    allPupilPlane[shapeX/2.:,shapeY/2:] = PPupilPlane[3]
+
+    return allPupilPlane
 

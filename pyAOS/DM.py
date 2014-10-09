@@ -81,10 +81,7 @@ class DM:
                
                logger.statusMessage(i, self.iMatShapes.shape[0],
                         "Generating {} Actuator DM iMat".format(self.acts))
-                   
-               # if progressCallback!=None:
-               #     progressCallback(i, self.iMatShapes.shape[0],
-               #         "Generating %d Actuator DM iMat"%self.acts)
+
                 
                
        self.iMat = iMat
