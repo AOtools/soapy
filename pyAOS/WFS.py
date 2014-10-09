@@ -599,7 +599,7 @@ class WFS(object):
 
 
 
-class ShackHartmannWfs(WFS):
+class ShackHartmann(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
     def zeroData(self):
