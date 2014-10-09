@@ -568,7 +568,7 @@ class WFS(object):
         #If LGS elongation simulated
         if self.elong!=0:
             for i in xrange(self.elongLayers):
-                super(ShackHartmannWfs,self).zeroData()
+                super(ShackHartmann,self).zeroData()
 
                 self.makePhase(self.elongRadii[i])
                 self.uncorrectedPhase = self.wfsPhase
@@ -603,7 +603,7 @@ class ShackHartmann(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
     def zeroData(self):
-        super(ShackHartmannWfs,self).zeroData()
+        super(ShackHartmann,self).zeroData()
         self.wfsDetectorPlane[:] = 0
         self.FPSubapArrays[:] = 0
 
