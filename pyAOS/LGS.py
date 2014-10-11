@@ -18,18 +18,17 @@
 import numpy
 from .import aoSimLib, AOFFT
 from . import logger
-from . import opticalPropagationLib as O
 
 import scipy.optimize
 
-
-#xrange now just "range" in python3. 
+#xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
 try:
     xrange
 except NameError:
     xrange = range
-    
+
+
 class LGSObj(object):
     '''
     A class to simulate the propogation of a laser up through turbulence.
@@ -38,30 +37,28 @@ class LGSObj(object):
     it assumes that the laser is focussed at the height it is propogated to.
     '''
 
-
     def __init__(self, simConfig, wfsConfig, lgsConfig, atmosConfig):
-
 
         self.simConfig = simConfig
         self.wfsConfig = wfsConfig
         self.lgsConfig = lgsConfig
         self.atmosConfig = atmosConfig
 
-        self.LGSPupilSize = int(numpy.round(lgsConfig.lgsPupilDiam 
+        self.LGSPupilSize = int(numpy.round(lgsConfig.lgsPupilDiam
                                             * self.simConfig.pxlScale))
 
-        
         #Phase power scaling factor for lgs wavelength
         phsWvl = 550e-9
-        self.r0scale = phsWvl/ self.lgsConfig.wavelength
+        self.r0scale = phsWvl / self.lgsConfig.wavelength
 
-        self.mask = aoSimLib.circle(self.LGSPupilSize/2,self.simConfig.pupilSize)
+        self.mask = aoSimLib.circle(self.LGSPupilSize/2,
+                                    self.simConfig.pupilSize)
         self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
             self.pupilPos[i] = self.metaPupilPos(
-                        self.atmosConfig.scrnHeights[i]
-                        )
+                self.atmosConfig.scrnHeights[i]
+                )
 
         self.FFT = AOFFT.FFT(
                 (simConfig.pupilSize, simConfig.pupilSize), 
@@ -76,18 +73,17 @@ class LGSObj(object):
                 THREADS=lgsConfig.fftwThreads, 
                 fftw_FLAGS=(lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
-        
- 
+
 
     def setWFSParams(self, subapFOVRad, subapOversamp, subapFFTPadding):
-        
+
         self.subapFOVRad = subapFOVRad
         self.subapOversamp = subapOversamp
         self.subapFFTPadding = subapFFTPadding
-        
+
         #This is the size of the patch of sky the subap sees at the LGS height
         self.FOVPatch = self.subapFOVRad*self.lgsConfig.height
-        
+
         #This is the number of pxls used for correct FOV (same as a WFS subap)
         self.LGSFOVPxls = numpy.round(
                                 self.lgsConfig.lgsPupilDiam * 

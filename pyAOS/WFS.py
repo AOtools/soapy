@@ -64,9 +64,6 @@ class WFS(object):
 
         self.telDiam = simConfig.pupilSize/simConfig.pxlScale
         self.subapDiam = self.telDiam/self.wfsConfig.subaps
-        
-
-
 
         #######################################################
         #LGS Initialisation
@@ -293,9 +290,9 @@ class WFS(object):
         '''
         Processes one subaperture only, with given phase
         '''
-        eField = numpy.exp(1j*phs)
+        EField = numpy.exp(1j*phs)
         FP = numpy.abs(numpy.fft.fftshift(
-            numpy.fft.fft2(eField * numpy.exp(1j*self.XTilt),
+            numpy.fft.fft2(EField * numpy.exp(1j*self.XTilt),
                 s=(self.subapFFTPadding,self.subapFFTPadding))))**2
 
         FPDetector = aoSimLib.binImgs(FP,self.wfsConfig.subapOversamp)
@@ -471,8 +468,9 @@ class WFS(object):
         else:
             phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht)
         
-        self.EField *= numpy.exp(1j*phase1)
-        
+        print(phase1.max())
+        self.EField[:] = numpy.exp(1j*phase1)
+        print(self.EField.mean())
         #Loop through remaining scrns in reverse order - update ht accordingly
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
@@ -480,6 +478,7 @@ class WFS(object):
             ht -= z
             
             #Do ASP for last layer to next
+            print(self.EField.mean())
             self.EField[:] = angularSpectrum(
                         self.EField, self.wfsConfig.wavelength, 
                         delta, delta, z )
@@ -539,7 +538,7 @@ class WFS(object):
         
         return self.slopes
 
-    def zeroData(self):
+    def zeroPhaseData(self):
         self.EField[:] = 0
         self.wfsPhase[:] = 0
 
@@ -568,7 +567,7 @@ class WFS(object):
         #If LGS elongation simulated
         if self.elong!=0:
             for i in xrange(self.elongLayers):
-                super(ShackHartmann,self).zeroData()
+                self.zeroPhaseData()
 
                 self.makePhase(self.elongRadii[i])
                 self.uncorrectedPhase = self.wfsPhase
@@ -595,15 +594,17 @@ class WFS(object):
         pass
 
     def calculateSlopes(self):
-        pass
+        self.slopes = numpy.zeros(2*self.activeSubaps)
 
+    def zeroData(self):
+        self.zeroPhaseData()
 
 
 class ShackHartmann(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
     def zeroData(self):
-        super(ShackHartmann,self).zeroData()
+        self.zeroPhaseData()
         self.wfsDetectorPlane[:] = 0
         self.FPSubapArrays[:] = 0
 
@@ -822,22 +823,27 @@ class Pyramid(WFS):
         #self.optimiseTiltPyramid()
         self.calcTiltCorrect()
 
+    def zeroData(self):
+        self.zeroPhaseData()
+        self.wfsDetectorPlane[:] = 0
+        self.paddedDetectorPlane[:] = 0
 
     def calcFocalPlane(self):
         '''
         takes the calculated pupil phase, and uses FFT
         to transform to the focal plane, and scales for correct FOV.
         '''
+        #Apply tilt fix and scale EField for correct FOV
         self.EField*=self.tiltFix
         self.scaledEField = aoSimLib.zoom(self.EField, self.FOVPxlNo)*self.scaledMask
 
+        #Go to the focus 
+        self.FFT.inputData[:]=0
         self.FFT.inputData[ :self.FOVPxlNo,
                             :self.FOVPxlNo ] = self.scaledEField
         self.focalPlane = AOFFT.ftShift2d( self.FFT() ).copy()
 
-
-    def makeDetectorPlane(self):
-
+        #Cut focus into 4
         shapeX,shapeY = self.focalPlane.shape
         self.quads = numpy.empty(   (4,shapeX/2.,shapeX/2.),
                                     dtype=self.focalPlane.dtype)
@@ -848,7 +854,8 @@ class Pyramid(WFS):
                                                 y*shapeX/2 : (y+1)*shapeX/2]
                 n+=1
 
-
+        #Propogate each quadrant back to the pupil plane
+        self.iFFT.inputData[:] = 0
         self.iFFT.inputData[:,
                             :0.5*self.FOV_OVERSAMP*self.FOVPxlNo,
                             :0.5*self.FOV_OVERSAMP*self.FOVPxlNo] = self.quads
@@ -857,21 +864,28 @@ class Pyramid(WFS):
         size = self.paddedDetectorPxls/2
         pSize = self.iFFTPadding/2.
 
+
+        #add this onto the padded detector array
         for x in range(2):
             for y in range(2):
                 self.paddedDetectorPlane[
                         x*size:(x+1)*size,
-                        y*size:(y+1)*size] = self.pupilImages[
+                        y*size:(y+1)*size] += self.pupilImages[
                                                 2*x+y,
                                                 pSize:
                                                 pSize+size,
                                                 pSize:
                                                 pSize+size]
 
-        self.wfsDetectorPlane[:] = aoSimLib.binImgs(
+    def makeDetectorPlane(self):
+    
+        #Bin down to requried pixels
+        self.wfsDetectorPlane[:] += aoSimLib.binImgs(
                         self.paddedDetectorPlane,
                         self.wfsConfig.subapOversamp 
                         )
+
+
 
     def calculateSlopes(self):
 
@@ -937,7 +951,6 @@ class Pyramid(WFS):
         X,Y = numpy.meshgrid(coords,coords)
 
         self.tiltFix = numpy.exp(1j*A*(X+Y))
-
 
 
 def pyramid(phs):
