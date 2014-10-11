@@ -468,9 +468,7 @@ class WFS(object):
         else:
             phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht)
         
-        print(phase1.max())
         self.EField[:] = numpy.exp(1j*phase1)
-        print(self.EField.mean())
         #Loop through remaining scrns in reverse order - update ht accordingly
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
@@ -478,7 +476,6 @@ class WFS(object):
             ht -= z
             
             #Do ASP for last layer to next
-            print(self.EField.mean())
             self.EField[:] = angularSpectrum(
                         self.EField, self.wfsConfig.wavelength, 
                         delta, delta, z )
