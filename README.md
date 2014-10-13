@@ -27,7 +27,7 @@ pyAOS doesn't have too many requirements in terms of external libraries, though 
 
     numpy 
     scipy
-    pyfits
+    pyfits *or* astropy
     
 ### Recommended
     
