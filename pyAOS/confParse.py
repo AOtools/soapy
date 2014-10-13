@@ -126,8 +126,15 @@ class Configurator(object):
                 *maxGSPos*numpy.pi/(3600.*180) 
                 )+self.sim.pupilSize
 
-
-
+        #Check if any WFS use physical propogation.
+        #If so, make oversize phase scrns
+        wfsPhys = False
+        for wfs in range(self.sim.nGS):
+            if self.wfs[wfs].propagationMode=="physical":
+                wfsPhys = True
+                break
+        if wfsPhys:
+            self.sim.scrnSize*=2
 
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
         logger.info("subScreenSize: {}".format(self.sim.scrnSize))

@@ -38,7 +38,9 @@ try:
 except NameError:
     xrange = range
 
-
+#The data type of data arrays
+CDTYPE = numpy.complex64
+DTYPE = numpy.float32
 
 class WFS(object):
     ''' A  WFS class.
@@ -122,12 +124,6 @@ class WFS(object):
         self.angleEquivNoise = (wfsConfig.angleEquivNoise * 
                         float(wfsConfig.pxlsPerSubap)/wfsConfig.subapFOV )
         
-        #Choose propagation method
-        if (wfsConfig.propagationMode=="physical" or 
-                wfsConfig.propagationMode=="phys"):
-            self.makePhase = self.makePhasePhysical
-        else:
-            self.makePhase = self.makePhaseGeo
 
         self.iMat=False
 
@@ -159,11 +155,17 @@ class WFS(object):
                                      #self.subapFOVSpacing/self.PPSpacing))
         self.scaledMask = aoSimLib.zoom(self.mask,
                                         self.subapFOVSpacing*self.wfsConfig.subaps)
+    
         
-        #The data type of the arrays
-        CDTYPE = numpy.complex64
-        DTYPE = numpy.float32
-        
+        #Choose propagation method
+        if wfsConfig.propagationMode=="physical":
+            self.makePhase = self.makePhasePhysical
+            self.physEField = numpy.zeros(
+                (2*self.simConfig.pupilSize,)*2, dtype=CDTYPE)
+        else:
+            self.makePhase = self.makePhaseGeo
+
+
         #Initialise FFT classes
         #########################################
         self.subapFFTPadding = self.wfsConfig.pxlsPerSubap2 * self.wfsConfig.subapOversamp
@@ -242,9 +244,8 @@ class WFS(object):
         self.FPSubapArrays = numpy.zeros((self.activeSubaps,
                                           self.subapFFTPadding,
                                           self.subapFFTPadding),dtype=DTYPE)
-        
-        self.EField = numpy.zeros((self.simConfig.pupilSize, self.simConfig.pupilSize),
-                                                        dtype=CDTYPE)
+        self.EField = numpy.zeros(
+                (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
 
 
 ##################################################################
@@ -396,41 +397,45 @@ class WFS(object):
 
 #############################################################
 #Phase stacking routines for a WFS frame
-    def getMetaPupilPhase(self, scrn, height, radii=None):
+    def getMetaPupilPhase(self, scrn, height, radii=None, pupilSize=None):
         '''
         Returns the phase across a metaPupil 
         at some height and angular offset in arcsec.
         Interpolates if cone effect is required
         '''
 
+        #If no size of metapupil given, use system pupil size
+        if not pupilSize:
+            pupilSize = self.simConfig.pupilSize
+
         GSCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
         scrnX,scrnY=scrn.shape
 
-        if (scrnX/2.+GSCent[0]-self.simConfig.pupilSize/2.0)<0 \
-           or (scrnX/2.+GSCent[0]-self.simConfig.pupilSize/2.0) \
-           >scrnX or scrnX/2.+GSCent[0]-self.simConfig.pupilSize/2.0 \
-           <0 or (scrnY/2.+GSCent[1]-self.simConfig.pupilSize/2.0) \
-           >scrnY :
-
+        #Check screen is big enough to get a pupil from
+        if ( (scrnX/2. + GSCent[0] - pupilSize/2.0) < 0 
+                or (scrnX/2. + GSCent[0] - pupilSize/2.0) > scrnX 
+                or scrnX/2. + GSCent[0] - pupilSize/2.0 < 0 
+                or (scrnY/2. + GSCent[1] - pupilSize/2.0) > scrnY):
+ 
             raise ValueError( "GS seperation requires larger screen size" )
 
         metaPupil=scrn[ 
-                int(round(scrnX/2.+GSCent[0]-self.simConfig.pupilSize/2.0)):
-                int(round(scrnX/2.+GSCent[0]+self.simConfig.pupilSize/2.0)),
-                int(round(scrnY/2.+GSCent[1]-self.simConfig.pupilSize/2.0)):
-                int(round(scrnY/2.+GSCent[1]+self.simConfig.pupilSize/2.0))
+                int(round(scrnX/2. + GSCent[0] - pupilSize/2.0)):
+                int(round(scrnX/2. + GSCent[0] + pupilSize/2.0)),
+                int(round(scrnY/2. + GSCent[1] - pupilSize/2.0)):
+                int(round(scrnY/2. + GSCent[1] + pupilSize/2.0))
                 ]
 
         if self.wfsConfig.GSHeight!=0:
             if radii!=0:
                 metaPupil = aoSimLib.zoom(
-                                    metaPupil[
-                        int(round(self.simConfig.pupilSize/2.-radii)):
-                        int(round(self.simConfig.pupilSize/2. +radii)),
-                        int(round(self.simConfig.pupilSize/2.-radii)):
-                        int(round(self.simConfig.pupilSize/2. + radii))],
-                    (self.simConfig.pupilSize,self.simConfig.pupilSize)
-                    )
+                        metaPupil[
+                            int(round(pupilSize/2. - radii)):
+                            int(round(pupilSize/2. + radii)),
+                            int(round(pupilSize/2. - radii)):
+                            int(round(pupilSize/2. + radii))],
+                        (self.simConfig.pupilSize,self.simConfig.pupilSize)
+                        )
 
         return metaPupil
 
@@ -464,11 +469,14 @@ class WFS(object):
         
         #Get initial Phase for highest scrn and turn to efield
         if radii:
-            phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht, radii[scrnNo])
+            phase1 = self.getMetaPupilPhase(
+                        self.scrns[scrnNo], ht, radii=radii[scrnNo],
+                        pupilSize=2*self.simConfig.pupilSize )
         else:
-            phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht)
+            phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht,
+                        pupilSize=2*self.simConfig.pupilSize)
         
-        self.EField[:] = numpy.exp(1j*phase1)
+        self.physEField[:] = numpy.exp(1j*phase1)
         #Loop through remaining scrns in reverse order - update ht accordingly
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
@@ -476,27 +484,37 @@ class WFS(object):
             ht -= z
             
             #Do ASP for last layer to next
-            self.EField[:] = angularSpectrum(
-                        self.EField, self.wfsConfig.wavelength, 
+            self.physEField[:] = angularSpectrum(
+                        self.physEField, self.wfsConfig.wavelength, 
                         delta, delta, z )
             
             #Get phase for this layer
             if radii:
-                phase = self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i],
-                        radii[i])
+                phase = self.getMetaPupilPhase(
+                            self.scrns[i], self.atmosConfig.scrnHeights[i],
+                            radii=radii[i], 
+                            pupilSize=2*self.simConfig.pupilSize)
             else:
-                phase = self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
+                phase = self.getMetaPupilPhase(
+                            self.scrns[i], self.atmosConfig.scrnHeights[i],
+                            pupilSize=2*self.simConfig.pupilSize)
             
             #Add add phase from this layer
-            self.EField *= numpy.exp(1j*phase)
+            self.physEField *= numpy.exp(1j*phase)
         
         #If not already at ground, propagate the rest of the way.
         if self.atmosConfig.scrnHeights[0]!=0:
-            self.EField[:] = angularSpectrum(
-                    self.EField, self.wfsConfig.wavelength, delta, delta, ht
-                                            )
+            self.physEField[:] = angularSpectrum(
+                    self.physEField, self.wfsConfig.wavelength, 
+                    delta, delta, ht
+                    )
+
         #Multiply EField by aperture
-        self.EField*=self.mask
+        self.EField[:] = self.physEField[
+                            self.simConfig.pupilSize/2.:
+                            3*self.simConfig.pupilSize/2.,
+                            self.simConfig.pupilSize/2.:
+                            3*self.simConfig.pupilSize/2.] * self.mask
 
 ######################################################
 

@@ -26,8 +26,6 @@ class scienceCam:
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 
-
-
         self.simConfig = simConfig
         self.telConfig = telConfig
         self.sciConfig = sciConfig
@@ -36,7 +34,9 @@ class scienceCam:
 
         self.FOVrad = self.sciConfig.FOV * numpy.pi / (180.*3600)
 
-        self.FOVPxlNo = numpy.round( self.telConfig.telDiam * self.FOVrad/self.sciConfig.wavelength)
+        self.FOVPxlNo = numpy.round(
+                self.telConfig.telDiam * self.FOVrad
+                / self.sciConfig.wavelength)
 
         self.scaleFactor = float(self.FOVPxlNo)/self.simConfig.pupilSize
 
@@ -57,7 +57,6 @@ class scienceCam:
                         fftw_FLAGS=(sciConfig.fftwFlag,"FFTW_DESTROY_INPUT"),
                         THREADS=sciConfig.fftwThreads)
 
-                            
         #Calculate ideal PSF for purposes of strehl calculation
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
                                             =(numpy.exp(1j*self.scaledMask)
@@ -71,7 +70,7 @@ class scienceCam:
         phsWvl = 550e-9  
         self.r0Scale = phsWvl/self.sciConfig.wavelength
 
-    def metaPupilPos(self,height):
+    def metaPupilPos(self, height):
         '''
         Finds the centre of a metapupil at a given height,
         when offset by a given angle in arcsecs
@@ -81,20 +80,18 @@ class scienceCam:
         sciPos = numpy.array(self.sciConfig.position)*numpy.pi/(3600.0*180.0)
 
         #Position of centre of GS metapupil off axis at required height
-        sciCent=numpy.tan(sciPos)*height
+        sciCent = numpy.tan(sciPos)*height
 
         return sciCent
 
-
-
-    def metaPupilPhase(self,scrn,height):
+    def metaPupilPhase(self, scrn, height):
         '''
         Returns the phase across a metaPupil at some height
         and angular offset in arcsec
         '''
 
         sciCent = self.metaPupilPos(height) * self.simConfig.pxlScale
-        logger.debug("SciCents:(%i,%i)"%(sciCent[0],sciCent[1]))
+        logger.debug("SciCents:({0},{1})".format(sciCent[0],sciCent[1]))
 
         scrnX,scrnY=scrn.shape
 
