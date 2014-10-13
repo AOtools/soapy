@@ -3,10 +3,13 @@ Wave-front Sensors
 
 Classes simulating AO WFSs
 
-pyAOS.WFS module
-----------------
-
 .. automodule:: pyAOS.WFS
+
+.. autoclass:: pyAOS.WFS.WFS
     :members:
-    :undoc-members:
-    :show-inheritance:
+
+.. autoclass:: pyAOS.WFS.ShackHartmann
+    :members:
+
+.. autoclass:: pyAOS.WFS.Pyramid
+    :members:

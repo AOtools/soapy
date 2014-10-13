@@ -19,8 +19,72 @@
 """
 The pyAOS Wavefront Sensor module.
 
-This module contains a number of classes which simulate different adaptive optics wavefront sensor (WFS) types. All wavefront sensor classes can inherit from the base ``WFS`` class. The class provides the methods required to calculate phase over a WFS pointing in a given WFS direction. This leaves the7 new class to create methods which deal with creating the focal plane and making a measurement. To make use of the base-classes ``
+^^^^^^^^^
+WFS Class
+^^^^^^^^^
 
+This module contains a number of classes which simulate different adaptive optics wavefront sensor (WFS) types. All wavefront sensor classes can inherit from the base ``WFS`` class. The class provides the methods required to calculate phase over a WFS pointing in a given WFS direction and accounts for Laser Guide Star (LGS) geometry such as cone effect and elongation. This is  If only pupil images (or complex amplitudes) are required, then this class can be used stand-alone.
+
+Example:
+
+    Make configuration objects::
+    
+        from pyAOS import WFS, confParse
+    
+        config = confParse.Configurator("config_file.py")
+        config.readFile()
+        config.loadSimParams()
+        config.calcParams()
+    
+    Initialise the wave-front sensor::
+    
+        wfs = WFS.WFS(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+    
+    Set the WFS scrns (these should be made in advance, perhaps by the atmosphere module). Then run the WFS::
+    
+        wfs.scrns = phaseScrnList
+        wfs.makePhase()
+    
+    Now you can view data from the WFS frame::
+    
+        frameEField = wfs.EField
+    
+^^^^^^^^^^^^^^^^^^
+Shack-Hartmann WFS
+^^^^^^^^^^^^^^^^^^
+
+A Shack-Hartmann WFS is also included in the module, this contains further methods to make the focal plane, then calculate the slopes to send to the reconstructor.
+
+Example:
+    Using the config objects from above...::
+        
+        shWfs = WFS.ShackHartmann(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+        
+    As we are using a full WFS with focal plane making methods, the WFS base classes ``frame`` method can be used to take a frame from the WFS::
+        
+        slopes = shWfs.frame(phaseScrnList)
+
+    All the data from that WFS frame is available for inspection. For instance, to obtain the electric field across the WFS and the image seen by the WFS detector::
+        
+        EField = shWfs.EField            
+        wfsDetector = shWfs.wfsDetectorPlane
+
+        
+^^^^^^^^^^^^^^^
+Adding new WFSs
+^^^^^^^^^^^^^^^
+
+New WFS classes should inherit the ``WFS`` class, then create methods which deal with creating the focal plane and making a measurement from it. To make use of the base-classes ``frame`` method, which will run the WFS entirely, the new class must contain the following methods::
+    
+    calcFocalPlane(self)
+    makeDetectorPlane(self)
+    calculateSlopes(self)
+    
+The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurements made by the WFS. If LGS elongation is to be used for the new WFS, create a ``detectorPlane``, which is added to for each LGS elongation propagation. Have a look at the code for the ``Shack-Hartmann`` and experimental ``Pyramid`` WFSs to get some ideas on how to do this.
+
+
+:Author:
+    Andrew Reeves
 """
 
 import numpy
@@ -47,12 +111,17 @@ class WFS(object):
 
         This is a base class which contains methods to initialise the WFS,
         and calculate the phase across the WFSs input aperture, given the WFS
-        guide star geometry. 
-
+        guide star geometry.
+        
+        Parameters:
+            simConfig (confObj): The simulation configuration object
+            wfsConfig (confObj): The WFS configuration object
+            atmosConfig (confObj): The atmosphere configuration object
+            lgsConfig (confObj): The Laser Guide Star configuration object
+            mask (ndarray): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
     def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
-
 
         self.simConfig = simConfig
         self.wfsConfig = wfsConfig
