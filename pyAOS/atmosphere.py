@@ -49,7 +49,7 @@ Examples:
 
 """
 
-import pyfits
+
 import numpy
 import time
 import random
@@ -57,6 +57,16 @@ import scipy.fftpack as fft
 from . import AOFFT, logger
 import scipy.interpolate
 #from multiprocessing import Pool
+
+
+#Use either pyfits or astropy for fits file handling
+try:
+    from astropy.io import fits
+except ImportError:
+    try:
+        import pyfits as fits
+    except ImportError:
+        raise ImportError("pyAOS requires either pyfits or astropy")
 
 try:
     xrange
@@ -124,7 +134,7 @@ class atmos:
             logger.info("Loading Phase Screens")
 
             for i in xrange(self.scrnNo):
-                fitsHDU = pyfits.open(atmosConfig.scrnNames[i])[0]
+                fitsHDU = fits.open(atmosConfig.scrnNames[i])[0]
                 self.wholeScrns[i] = fitsHDU.data.astype("float32")
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]

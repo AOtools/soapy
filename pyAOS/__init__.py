@@ -58,7 +58,7 @@ Examples:
     Andrew Reeves
 
 :Version:
-    0.6
+    0.6.1
 
 '''
 
@@ -80,8 +80,17 @@ import time
 import traceback
 from multiprocessing import Process, Queue
 from argparse import ArgumentParser
-import pyfits
 import shutil
+
+#Use pyfits or astropy for fits file handling
+try:
+    from astropy.io import fits
+except ImportError:
+    try:
+        import pyfits as fits
+    except ImportError:
+        raise ImportError("pyAOS requires either pyfits or astropy")
+
 
 #xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
@@ -659,7 +668,7 @@ class Sim(object):
         if self.config.sim.filePrefix!=None:
             if self.config.sim.saveWfsFrames:
                 for wfs in xrange(self.config.sim.nGS):
-                    pyfits.writeto(
+                    fits.writeto(
                         self.path+"/wfsFPFrames/wfs-%d_frame-%d.fits"%(wfs,i),
                         self.wfss[wfs].wfsDetectorPlane     )
 
@@ -674,32 +683,32 @@ class Sim(object):
         if self.config.sim.filePrefix!=None:
 
             if self.config.sim.saveSlopes:
-                pyfits.writeto(self.path+"/slopes.fits", self.allSlopes,
+                fits.writeto(self.path+"/slopes.fits", self.allSlopes,
                                 clobber=True)
 
             if self.config.sim.saveDmCommands:
-                pyfits.writeto(self.path+"/dmCommands.fits", 
+                fits.writeto(self.path+"/dmCommands.fits", 
                             self.allDmCommands, clobber=True)
 
             if self.config.sim.saveLgsPsf:
-                pyfits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs, 
+                fits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs, 
                                 clobber=True)
 
 
             if self.config.sim.saveStrehl:
-                pyfits.writeto(self.path+"/instStrehl.fits", self.instStrehl,
+                fits.writeto(self.path+"/instStrehl.fits", self.instStrehl,
                                 clobber=True)
-                pyfits.writeto(self.path+"/longStrehl.fits", self.longStrehl, 
+                fits.writeto(self.path+"/longStrehl.fits", self.longStrehl, 
                                 clobber=True)  
 
             if self.config.sim.saveSciRes:
                 for i in xrange(self.config.sim.nSci):
-                    pyfits.writeto(self.path+"/sciResidual_%02d.fits"%i,
+                    fits.writeto(self.path+"/sciResidual_%02d.fits"%i,
                                 self.sciPhase[i], clobber=True)
 
             if self.config.sim.saveSciPsf:
                 for i in xrange(self.config.sim.nSci):
-                    pyfits.writeto(self.path+"/sciPsf_%02d.fits"%i,
+                    fits.writeto(self.path+"/sciPsf_%02d.fits"%i,
                                         self.sciImgs[i], clobber=True )
                     
 

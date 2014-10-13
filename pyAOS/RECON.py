@@ -18,11 +18,20 @@
 
 import numpy
 import scipy
-import pyfits
 from . import logger
 import traceback
 import sys
 import time
+
+
+#Use pyfits or astropy for fits file handling
+try:
+    from astropy.io import fits
+except ImportError:
+    try:
+        import pyfits as fits
+    except ImportError:
+        raise ImportError("pyAOS requires either pyfits or astropy")
 
 #xrange now just "range" in python3. 
 #Following code means fastest implementation used in 2 and 3
@@ -73,7 +82,7 @@ class Reconstructor:
     def saveCMat(self):
         filename = self.simConfig.filePrefix+"/cMat.fits"
         
-        cMatHDU = pyfits.PrimaryHDU(self.controlMatrix)
+        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
         cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
         cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
@@ -85,7 +94,7 @@ class Reconstructor:
         
         filename=self.simConfig.filePrefix+"/cMat.fits"
         
-        cMatHDU = pyfits.open(filename)[0]
+        cMatHDU = fits.open(filename)[0]
         cMatHDU.verify("fix")
         header = cMatHDU.header
         
@@ -129,9 +138,9 @@ class Reconstructor:
             filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
             filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
             
-            pyfits.PrimaryHDU(self.dms[dm].iMat).writeto(filenameIMat,
+            fits.PrimaryHDU(self.dms[dm].iMat).writeto(filenameIMat,
                                                         clobber=True)
-            pyfits.PrimaryHDU(self.dms[dm].iMatShapes).writeto(filenameShapes,
+            fits.PrimaryHDU(self.dms[dm].iMatShapes).writeto(filenameShapes,
                                                         clobber=True)
             
                             
@@ -141,8 +150,8 @@ class Reconstructor:
             filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
             filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
             
-            iMat = pyfits.open(filenameIMat)[0].data
-            iMatShapes = pyfits.open(filenameShapes)[0].data
+            iMat = fits.open(filenameIMat)[0].data
+            iMatShapes = fits.open(filenameShapes)[0].data
             
             if iMat.shape!=(self.dms[dm].acts,2*self.dms[dm].totalSubaps):
                 logger.warning("interaction matrix does not match required required size.")
@@ -312,13 +321,13 @@ class LearnAndApply(Reconstructor):
         cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
         tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
 
-        cMatHDU = pyfits.PrimaryHDU(self.controlMatrix)
+        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
         cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
         cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
         cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
         
-        tomoMatHDU = pyfits.PrimaryHDU(self.tomoRecon)
+        tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
 
         tomoMatHDU.writeto(tomoMatFilename, clobber=True)
         cMatHDU.writeto(cMatFilename, clobber=True)
@@ -329,7 +338,7 @@ class LearnAndApply(Reconstructor):
 
         #Load tomo reconstructor
         tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
-        tomoMat = pyfits.getdata(tomoFilename)
+        tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
         if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalSlopes - 2*self.wfss[0].activeSubaps):
@@ -369,7 +378,7 @@ class LearnAndApply(Reconstructor):
             
         if self.simConfig.saveLearn:
             #FITS.Write(self.learnSlopes,self.simConfig.filePrefix+"/learn.fits")
-            pyfits.PrimaryHDU(self.learnSlopes).writeto(
+            fits.PrimaryHDU(self.learnSlopes).writeto(
                             self.simConfig.filePrefix+"/learn.fits",clobber=True )
 
 
