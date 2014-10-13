@@ -434,7 +434,7 @@ class WFS(object):
                             int(round(pupilSize/2. + radii)),
                             int(round(pupilSize/2. - radii)):
                             int(round(pupilSize/2. + radii))],
-                        (self.simConfig.pupilSize,self.simConfig.pupilSize)
+                        (pupilSize, pupilSize)
                         )
 
         return metaPupil
