@@ -64,9 +64,12 @@ class GUI(QtGui.QMainWindow):
         self.gradient = pyqtgraph.GradientWidget(orientation="bottom")
         self.gradient.sigGradientChanged.connect(self.changeLUT)
         self.ui.verticalLayout.addWidget(self.gradient)
-        with open(guiFile_path+"/../res/guiLUT.json") as f:
-            gradState = json.load(f)
-        self.gradient.restoreState(gradState)
+        try:
+            with open(guiFile_path+"/../res/guiLUT.json") as f:
+                gradState = json.load(f)
+            self.gradient.restoreState(gradState)
+        except IOError:
+            pass
 
         self.sim = sim
 
