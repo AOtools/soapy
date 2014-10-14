@@ -620,23 +620,24 @@ class WFS(object):
 ######################################################
 
     def readNoise(self, dPlaneArray):
-
-        '''Read Noise'''
-       
         dPlaneArray += numpy.random.normal( (self.maxFlux/self.wfsConfig.SNR),
         0.1*self.maxFlux/self.wfsConfig.SNR, dPlaneArray.shape).clip(0,self.maxFlux).astype(self.dPlaneType)
 
 
     def photonNoise(self):
-
-        '''Photon Noise'''
         pass
 
 
     def iMatFrame(self,phs):
         '''
-        Runs an iMat frame - essentially gives slopes for given "phs",
+        Runs an iMat frame - essentially gives slopes for given "phs" so
         useful for other stuff too!
+        
+        Parameters:
+            phs (ndarray):  The phase to apply to the WFS. Should be of shape
+                            (simConfig.pupilSize, simConfig.pupilSize)
+        Returns:
+            ndarray: A 1-d array of WFS measurements
         '''
         self.iMat=True
         #Set "removeTT" to false while we take an iMat
@@ -659,9 +660,21 @@ class WFS(object):
         self.wfsPhase[:] = 0
 
 
-    def frame(self,scrns,correction=None):
+    def frame(self, scrns, correction=None):
         '''
         Runs one WFS frame
+        
+        Runs a single frame of the WFS with a given set of phase screens and
+        some optional correction. If elongation is set, will run the phase 
+        calculating and focal plane making methods multiple times for a few 
+        different heights of LGS, then sum these onto a ``wfsDetectorPlane``.
+        
+        Parameters:
+            scrns (list): A list or dict containing the phase screens
+            correction (ndarray, optional): The correction term to take from the phase screens before the WFS is run.
+            
+        Returns:
+            ndarray: WFS Measurements
         '''
 
         self.scrns = {}
