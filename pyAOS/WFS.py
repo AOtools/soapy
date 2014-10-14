@@ -548,7 +548,7 @@ class WFS(object):
             if radii:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            radii[i], GSPos=GSPos)
+                            radius=radii[i], GSPos=GSPos)
             else:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
@@ -570,7 +570,7 @@ class WFS(object):
         #Get initial Phase for highest scrn and turn to efield
         if radii:
             phase1 = self.getMetaPupilPhase(
-                        self.scrns[scrnNo], ht, radii=radii[scrnNo],
+                        self.scrns[scrnNo], ht, radius=radii[scrnNo],
                         pupilSize=2*self.simConfig.pupilSize, GSPos=GSPos )
         else:
             phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht,
@@ -592,7 +592,7 @@ class WFS(object):
             if radii:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            radii=radii[i], GSPos=GSPos,
+                            radius=radii[i], GSPos=GSPos,
                             pupilSize=2*self.simConfig.pupilSize)
             else:
                 phase = self.getMetaPupilPhase(
