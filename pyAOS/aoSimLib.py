@@ -20,7 +20,6 @@ A module containing useful functions used throughout pyAOS
 
 :Author:
     Andrew Reeves
-
 '''
 
 import numpy

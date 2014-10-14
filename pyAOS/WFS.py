@@ -275,9 +275,7 @@ class WFS(object):
 
         ######################################################
 
-        #Tilt Correction for even number sizes subaps -
-        #otherwise the PSF is binned to one corner
-        self.optimiseTilt()
+
 
         #Tell LGS some WFS stuff
         if self.LGS:
@@ -317,61 +315,6 @@ class WFS(object):
                 (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
 
 
-##################################################################
-#Centre spot in sub-aperture after FFT
-    def optimiseTilt(self):
-        '''
-        Finds the optimimum correction tilt to apply to each
-        subap to account for an odd even number of points in the subap
-        FFT.
-        to be executed during WFS initialisation.
-        '''
-        spacing = 1./self.subapFOVSpacing
-        X,Y = numpy.meshgrid(numpy.arange( -1+spacing,1+spacing,2*spacing),
-                             numpy.arange(-1+spacing,1+spacing,2*spacing) )
-       
-        O =numpy.ones( (self.subapFOVSpacing, self.subapFOVSpacing) )
-        self.YTilt = Y
-
-        res = scipy.optimize.minimize(self.optFunc,-1,args=(X,O),tol=0.01,
-                                options={"maxiter":100})
-
-        if abs(res["fun"])>0.1:
-            logger.warning("Unable to centre WFS spots - try lowering centThreshold")
-
-        A = res["x"]
-
-        self.XTilt = A*X
-        self.YTilt = A*Y
-
-
-    def optFunc(self,A,X,O):
-        '''
-        Function the <optimiseTilt> function uses to optimise
-        corrective subap tilt
-        '''
-        self.XTilt = A*X
-        slopes = self.oneSubap(O)
-
-        return abs(slopes[1])
-
-
-    def oneSubap(self,phs):
-        '''
-        Processes one subaperture only, with given phase
-        '''
-        EField = numpy.exp(1j*phs)
-        FP = numpy.abs(numpy.fft.fftshift(
-            numpy.fft.fft2(EField * numpy.exp(1j*self.XTilt),
-                s=(self.subapFFTPadding,self.subapFFTPadding))))**2
-
-        FPDetector = aoSimLib.binImgs(FP,self.wfsConfig.subapOversamp)
-
-        slope = aoSimLib.simpleCentroid(FPDetector, 
-                    self.wfsConfig.centThreshold)
-        slope -= self.wfsConfig.pxlsPerSubap2/2.
-        return slope
-#######################################################################
 
 ############################################################
 #Initialisation routines
@@ -731,6 +674,54 @@ class WFS(object):
 
 class ShackHartmann(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
+    
+    def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
+        
+        super(ShackHartmann,self).__init__(simConfig, wfsConfig, atmosConfig, lgsConfig, mask)
+        
+        #Tilt Correction for even number sizes subaps -
+        #otherwise the PSF is binned to one corner
+        if not self.wfsConfig.pxlsPerSubap%2:
+            self.calcTiltCorrect()
+
+
+    ##################################################################
+    #Centre spot in sub-aperture after FFT
+
+    def calcTiltCorrect(self):
+        """
+        Calculates the required tilt to add to avoid the PSF being centred on 
+        only 1 pixel
+        """
+        #Angle we need to correct for half a pixel
+        theta = 2*self.subapFOVrad/ (2*self.subapFFTPadding)
+
+        #Magnitude of tilt required to get that angle
+        A = theta*self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
+
+        #Create tilt arrays and apply magnitude
+        coords = numpy.linspace(-1,1,self.subapFOVSpacing)
+        X,Y = numpy.meshgrid(coords,coords)
+
+        self.tiltFix = -1*A*(X+Y)
+
+    def oneSubap(self,phs):
+        '''
+        Processes one subaperture only, with given phase
+        '''
+        EField = numpy.exp(1j*phs)
+        FP = numpy.abs(numpy.fft.fftshift(
+            numpy.fft.fft2(EField * numpy.exp(1j*self.XTilt),
+                s=(self.subapFFTPadding,self.subapFFTPadding))))**2
+
+        FPDetector = aoSimLib.binImgs(FP,self.wfsConfig.subapOversamp)
+
+        slope = aoSimLib.simpleCentroid(FPDetector, 
+                    self.wfsConfig.centThreshold)
+        slope -= self.wfsConfig.pxlsPerSubap2/2.
+        return slope
+#######################################################################
+
 
     def zeroData(self):
         self.zeroPhaseData()
@@ -768,7 +759,7 @@ class ShackHartmann(WFS):
         self.FFT.inputData[:] = 0
         self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
                         ,:int(round(self.subapFOVSpacing))] \
-                = self.subapArrays*numpy.exp(1j*(self.XTilt+self.YTilt))
+                = self.subapArrays*numpy.exp(1j*(self.tiltFix))
 
         self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
 
@@ -907,13 +898,21 @@ class Pyramid(WFS):
 
     def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
         
+ 
         super(Pyramid,self).__init__(simConfig, wfsConfig, atmosConfig, lgsConfig, mask)
         
+        self.FOV_OVERSAMP = 4
+        self.wfsConfig = wfsConfig
+        self.simConfig = simConfig
+        self.atmosConfig = atmosConfig
+        self.lgsConfig = lgsConfig
+        self.mask = mask
+
+        self.telDiam = simConfig.pupilSize/simConfig.pxlScale
 
         self.FOVrad = self.wfsConfig.subapFOV * numpy.pi / (180.*3600)
         self.FOVPxlNo = numpy.round( self.telDiam * self.FOVrad/self.wfsConfig.wavelength)
 
-        self.FOV_OVERSAMP = 4
         self.FFT = AOFFT.FFT(   [self.FOV_OVERSAMP*self.FOVPxlNo,]*2, 
                                 axes=(0,1), mode="pyfftw", 
                                 fftw_FLAGS=("FFTW_DESTROY_INPUT",
@@ -948,7 +947,10 @@ class Pyramid(WFS):
         self.activeSubaps = self.wfsConfig.pxlsPerSubap**2
 
         self.scaledMask = aoSimLib.zoom(self.mask, self.FOVPxlNo)
-        #self.optimiseTiltPyramid()
+        
+ 
+        #If not a odd number of pixels, calculate a shift to put 
+        # the psf in a central position   
         self.calcTiltCorrect()
 
     def zeroData(self):
@@ -962,7 +964,7 @@ class Pyramid(WFS):
         to transform to the focal plane, and scales for correct FOV.
         '''
         #Apply tilt fix and scale EField for correct FOV
-        self.EField*=self.tiltFix
+        self.EField*=numpy.exp(1j*self.tiltFix)
         self.scaledEField = aoSimLib.zoom(self.EField, self.FOVPxlNo)*self.scaledMask
 
         #Go to the focus 
@@ -1013,8 +1015,6 @@ class Pyramid(WFS):
                         self.wfsConfig.subapOversamp 
                         )
 
-
-
     def calculateSlopes(self):
 
         xDiff = (self.wfsDetectorPlane[ :self.wfsConfig.pxlsPerSubap,:]-
@@ -1030,55 +1030,26 @@ class Pyramid(WFS):
 
         self.slopes = numpy.append(xSlopes.flatten(), ySlopes.flatten())
 
-
-
-
     #Tilt optimisation
     ################################
-    def fpTilt(self, A, phs):
-
-        self.zeroData()
-        self.tiltFix = numpy.exp(1j*A*phs.copy())
-        self.EField[:] = self.mask*numpy.ones([self.simConfig.pupilSize]*2)
-        self.calcFocalPlane()
-        cent = aoSimLib.simpleCentroid(abs(self.focalPlane)**2)
-        shape = self.focalPlane.shape[0]
-
-        cent -= shape/2.
-
-        return abs(cent).sum()
-
-
-    def optimiseTiltPyramid(self):
-
-        coords = numpy.linspace(-1,1,self.simConfig.pupilSize)
-        X,Y = numpy.meshgrid(coords,coords)
-        tiltFix = X+Y
-
-        res = scipy.optimize.minimize(self.fpTilt, -0.1, args=(tiltFix,), tol=0.01,
-                                options={"maxiter":100})
-        print(res)
-
-        if abs(res["fun"])>0.1:
-            logger.warning("Unable to centre WFS")
-        A = res["x"]
-
-        self.tiltFix = numpy.exp(1j*A*tiltFix)
-
     def calcTiltCorrect(self):
         """
         Calculates the required tilt to add to avoid the PSF being centred on 
         only 1 pixel
         """
-        #Angle we need to correct 
-        theta = self.subapFOVrad/ (2*self.FOV_OVERSAMP*self.FOVPxlNo)
+        if not self.wfsConfig.pxlsPerSubap%2: 
+            #Angle we need to correct 
+            theta = self.subapFOVrad/ (2*self.FOV_OVERSAMP*self.FOVPxlNo)
 
-        A = theta*self.telDiam/(2*self.wfsConfig.wavelength)
+            A = theta*self.telDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
 
-        coords = numpy.linspace(-1,1,self.simConfig.pupilSize)
-        X,Y = numpy.meshgrid(coords,coords)
+            coords = numpy.linspace(-1,1,self.simConfig.pupilSize)
+            X,Y = numpy.meshgrid(coords,coords)
 
-        self.tiltFix = numpy.exp(1j*A*(X+Y))
+            self.tiltFix = -1*A*(X+Y)
+            
+        else:
+            self.tiltFix = numpy.zeros((self.simConfig.pupilSize,)*2)
 
 
 def pyramid(phs):
