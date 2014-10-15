@@ -40,7 +40,7 @@ try:
 except NameError:
     xrange = range
 
-class Reconstructor:
+class Reconstructor(object):
     def __init__( self, simConfig, dms, wfss, atmos, runWfsFunc=None):
                 
         self.dms = dms
