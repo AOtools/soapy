@@ -246,8 +246,6 @@ class WFS(object):
 
             logger.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.wfsConfig.subapOversamp)
 
-
-
         self.FFT = AOFFT.FFT(
                 inputSize=(
                 self.activeSubaps, self.subapFFTPadding, self.subapFFTPadding),
@@ -274,8 +272,6 @@ class WFS(object):
                     )
 
         ######################################################
-
-
 
         #Tell LGS some WFS stuff
         if self.LGS:
@@ -321,8 +317,12 @@ class WFS(object):
 
     def findMetaPupilSize(self, GSHeight):
         '''
-        Function to evaluate the sizes of the effective metePupils
+        Evaluates the sizes of the effective metePupils
         at each screen height if an GS of finite height is used.
+        
+        Args:
+            
+        
         '''
 
         radii={}
@@ -397,7 +397,7 @@ class WFS(object):
         Calculates the difference in GS position for each elongation layer
         only makes a difference if LGS launched off-axis
 
-        Arguments:
+        Parameters:
             elongLayer (int): which elongation layer
 
         Returns:
@@ -427,7 +427,14 @@ class WFS(object):
     def getMetaPupilPos(self, height, GSPos=None):
         '''
         Finds the centre of a metapupil at a given height, 
-        when offset by a given angle in arcsecs
+        when offset by a given angle in arcsecs, in units of phase pixels
+        
+        Arguments:
+            height (float): Height of the layer in metres
+            GSPos (tuple, optional):  The angular position of the GS. If not set, will use the WFS position
+            
+        Returns:
+            ndarray: The position of the centre of the metapupil in units of phase pixels
         '''
         #if no GSPos given, use system pos and convert into radians
         if not numpy.any(GSPos):
@@ -442,9 +449,19 @@ class WFS(object):
     def getMetaPupilPhase(  self, scrn, height, radius=None, pupilSize=None,
                             GSPos=None):
         '''
-        Returns the phase across a metaPupil 
-        at some height and angular offset in arcsec.
-        Interpolates if cone effect is required
+        Returns the phase across a metaPupil at some height and angular 
+        offset in arcsec. Interpolates phase to size of the pupil if cone 
+        effect is required
+        
+        Parameters:
+            scrn (ndarray): An array representing the phase screen
+            height (float): Height of the phase screen
+            radius (radius, optional): Radius of the meta-pupil. If not set, will use system pupil size.
+            pupilSize (ndarray, optional): Size of screen to return. If not set, will use system pupil size.
+            GSPos (tuple, optional): Angular position of guide star. If not set will use system position.
+            
+        Return:
+            ndarray: The meta pupil at the specified height
         '''
         #If no size of metapupil given, use system pupil size
         if not pupilSize:
