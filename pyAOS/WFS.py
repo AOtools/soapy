@@ -456,7 +456,7 @@ class WFS(object):
         Parameters:
             scrn (ndarray): An array representing the phase screen
             height (float): Height of the phase screen
-            radius (radius, optional): Radius of the meta-pupil. If not set, will use system pupil size.
+            radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
             pupilSize (ndarray, optional): Size of screen to return. If not set, will use system pupil size.
             GSPos (tuple, optional): Angular position of guide star. If not set will use system position.
             

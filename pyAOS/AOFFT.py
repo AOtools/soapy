@@ -54,6 +54,11 @@ class FFT(object):
 
     FFT performed by calling the class (i.e. 'fftObj()') and output data is returned.
 
+    Parameters:
+        inputSize (tuple): The size of the input array, including any padding
+        axes (tuple, optional): The axes to transform. defaults to the last.
+        mode (string, optional): Which FFT library to use, can by `'pyfftw'`, `'scipy'` or `'gpu'`. Defaults to `'pyfftw'`.
+        dtype (string, optional): The data type to transform, defaults to `'complex64'`
      '''
 
     def __init__(self,inputSize, axes=(-1,),mode="pyfftw",dtype="complex64",
@@ -165,7 +170,15 @@ class FFT(object):
 
 
     def fft(self,data=None):
+        """
+        Perform the fft of `data`.
+        
+        Parameters:
+            data (ndarray, optional): The data to transform. Optional as sometimes it can be faster to access `inputData` directly, though if and only if the data will be c-contiguous.
 
+        Returns:
+            ndarray: The transformed data
+        """
         if self.FFTMODE=="pyfftw":
 
             if data!=None:

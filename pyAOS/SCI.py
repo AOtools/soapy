@@ -17,9 +17,8 @@
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-from . import logger
 
-from . import aoSimLib, AOFFT
+from . import aoSimLib, AOFFT, logger
 
 
 class scienceCam:

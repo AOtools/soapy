@@ -40,7 +40,7 @@ def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
 
     Uses the AOFFT library to do fast convolution of 2, 2-dimensional numpy ndarrays. The FFT mode, and some parameters can be set in the arguments.
 
-    Args:
+    Parameters:
         img1 (ndarray): 1st array to be convolved
         img2 (ndarray): 2nd array to be convolved
         mode (string, optional): The fft mode used, defaults to fftw
@@ -78,7 +78,7 @@ def circle(radius, size, centre_offset=(0,0)):
     """
     Create a 2-dimensional array equal to 1 in a circle and 0 outside
 
-    Args:
+    Parameters:
         radius (float): The radius in pixels of the circle
         size (int): The size of the the array for the circle
         centre_offset (tuple): The coords of the centre of the circle
@@ -110,7 +110,7 @@ def zoom(array, newSize, order=3):
 
     Uses the scipy `RectBivariateSpline` interpolation routine to zoom into an array. Can cope with real of complex data.
 
-    Args:
+    Parameters:
         array (ndarray): 2-dimensional array to zoom
         newSize (tuple): the new size of the required array
         order (int, optional): Order of interpolation to use. default is 3
@@ -326,7 +326,7 @@ def zernikeArray(J, N):
     """
     Creates an array of Zernike Polynomials
     
-    Args:
+    Parameters:
         maxJ (int or list): Max Zernike polynomial to create, or list of zernikes J indices to create
         N (int): size of created arrays
 
