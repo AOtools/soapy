@@ -50,9 +50,22 @@ class FFT(object):
     '''
     Class for performing FFTs in a variety of ways, with the same API.
 
-    Initialise the class, (only needs to be done once if problem size stays the same) then set data to fftobj.inputData
+    Once the class has been initialised, FFTs going in the same direction and 
+    using the same padding size can be performed with re-initialising. The 
+    inputSize set is actually the padding size, any array smaller than this can
+    then be transformed. 
+    
+    Usually, its best to best to pass the data when performing the fft, either
+    calling the class directly (`fftobj()`) or calling the `fft` method of the 
+    class. If though, you're certain the array to transform is C-contiguous, 
+    and its size is the same as `inputSize`, then you can set:: 
+        
+        fftObj.inputData = fftData
+        
+    where `fftData` is the data to be transformed. This is faster, as it avoids
+    an array copying operation, but is dangerous as the FFT may fail if the 
+    input data is not correct.
 
-    FFT performed by calling the class (i.e. 'fftObj()') and output data is returned.
 
     Parameters:
         inputSize (tuple): The size of the input array, including any padding
