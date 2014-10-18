@@ -20,11 +20,13 @@ import numpy
 import time
 import json
 import traceback
-#Python2/3 compatibility
+
+#Python2/3 queue compatibility
 try:
     import queue
 except ImportError:
     import Queue as queue
+    
 from argparse import ArgumentParser
 import pylab
 import os
@@ -202,29 +204,29 @@ class GUI(QtGui.QMainWindow):
         
         if plotDict:
             for wfs in range(self.config.sim.nGS):
-                if plotDict["wfsFocalPlane"][wfs]!=None:
+                if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
                     self.wfsPlots[wfs].setImage(
                         plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
                         
-                if plotDict["wfsPhase"][wfs]!=None:
+                if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     self.phasePlots[wfs].setImage(
                         plotDict["wfsPhase"][wfs], lut=self.LUT)
                         
-                if plotDict["lgsPsf"][wfs]!=None:
+                if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
                         plotDict["lgsPsf"][wfs], lut=self.LUT)
                     
         
-            if plotDict["ttShape"]!=None:
+            if numpy.any(plotDict["ttShape"])!=None:
                 self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
             
             for dm in range(self.config.sim.nDM):
-                if plotDict["dmShape"][dm] !=None:
+                if numpy.any(plotDict["dmShape"][dm]) !=None:
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
                                             lut=self.LUT)
            
             for sci in range(self.config.sim.nSci):
-                if plotDict["sciImg"][sci]!=None:
+                if numpy.any(plotDict["sciImg"][sci])!=None:
                     if self.ui.instExpRadio.isChecked():
                         self.sciPlots[sci].setImage(
                                 plotDict["instSciImg"][sci], lut=self.LUT)
@@ -232,7 +234,7 @@ class GUI(QtGui.QMainWindow):
                         self.sciPlots[sci].setImage(
                                 plotDict["sciImg"][sci], lut=self.LUT)
                     
-                if plotDict["residual"][sci]!=None:
+                if numpy.any(plotDict["residual"][sci])!=None:
                     self.resPlots[sci].setImage(
                                 plotDict["residual"][sci], lut=self.LUT)
             
