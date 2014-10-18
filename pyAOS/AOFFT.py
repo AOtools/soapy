@@ -56,11 +56,15 @@ class FFT(object):
     then be transformed. 
     
     Usually, its best to best to pass the data when performing the fft, either
-    calling the class directly (`fftobj()`) or calling the `fft` method of the 
+    calling the class directly (`fftobj(fftData)`) or calling the `fft` method of the 
     class. If though, you're certain the array to transform is C-contiguous, 
     and its size is the same as `inputSize`, then you can set:: 
         
         fftObj.inputData = fftData
+    
+    then::
+        
+        outputData = fftObj()
         
     where `fftData` is the data to be transformed. This is faster, as it avoids
     an array copying operation, but is dangerous as the FFT may fail if the 

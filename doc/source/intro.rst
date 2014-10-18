@@ -1,12 +1,17 @@
 Introduction
 ************
 
-pyAOS is a Monte-Carlo Adaptive Optics Simulation toolkit written in Python. pyAOS can be used as a conventional end-to-end simulation, where a large number of AO configurations can be created simply by editing a configuration file. Its real power lays in modular nature of objects, such as WFSs, DMs and reconstructors which can be taken and used as building blocks to construct for new and complex AO ideas and configurations.
+pyAOS is a Montecarlo Adaptive Optics (AO) simulation written exclusively in the Python programming language. It is aimed at rapidly developing new AO concepts and being a learning tool for those new to the field of AO. 
+
+The code can be used as an end to end simulation, where the entire system parameters are controlled by a configuration file. This can be used from the Python command line, python scripts or a GUI which is included.
+
+The codes real strength lies in its modular nature. Each AO component is modelled as a Python object, with intuitive methods and attributes. Components can be imported and used separately to create novel AO configurations.
+
 
 Quick-Start
 -----------
 
-Try out some of the code examples in the `conf` directory, either run the `pyAOS` script in `bin`, or load a python or IPython terminal: ::
+Try out some of the code examples in the `conf` directory, either run the `pyAOS` script in `bin`, or load a python or IPython terminal::
 
     import pyAOS
     sim = pyAOS.Sim("configFilename")
@@ -14,3 +19,9 @@ Try out some of the code examples in the `conf` directory, either run the `pyAOS
     sim.makeIMat()
     sim.aoloop()
 
+
+Data will now be saved in the directory specified as `filePrefix` in the configuration file.
+
+Alternatively, the GUI can be started with::
+
+    pyAOS -g <configFilename>
