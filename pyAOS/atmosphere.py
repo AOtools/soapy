@@ -460,7 +460,6 @@ def ft_sh_phase_screen(r0, N, delta, L0, l0, FFT=None):
         fm = 5.92/l0/(2*numpy.pi) # inner scale frequency [1/m]
         f0 = 1./L0;
 
-
         # outer scale frequency [1/m]
         # modified von Karman atmospheric phase PSD
         PSD_phi = (0.023*r0**(-5./3)

@@ -102,7 +102,7 @@ try:
 except NameError:
     xrange = range
 
-#The data type of data arrays
+#The data type of data arrays (complex and real respectively)
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
@@ -128,35 +128,102 @@ class WFS(object):
         self.atmosConfig = atmosConfig
         self.lgsConfig = lgsConfig
 
-        self.centMethod = "simple"
         self.mask = mask
+        
+        self.iMat=False
+        self.phsWvl = 550e-9
 
-        self.subapFOVrad = wfsConfig.subapFOV * numpy.pi / (180. * 3600)
+        self.calcInitParams()
 
-        self.telDiam = simConfig.pupilSize/simConfig.pxlScale
-        self.subapDiam = self.telDiam/self.wfsConfig.subaps
+        #If GS not at infinity, find meta-pupil radii for each layer
+        if self.wfsConfig.GSHeight!=0:
+            self.radii = self.findMetaPupilSize(self.wfsConfig.GSHeight)
+        else:
+            self.radii=None
+        
 
-        #######################################################
-        #LGS Initialisation
-        if wfsConfig.lgs:     
+        #Choose propagation method
+        if wfsConfig.propagationMode=="physical":
+            self.makePhase = self.makePhasePhysical
+            self.physEField = numpy.zeros(
+                (2*self.simConfig.pupilSize,)*2, dtype=CDTYPE)
+        else:
+            self.makePhase = self.makePhaseGeo
+        
+        #Init LGS, FFTs and allocate some data arrays
+        self.initFFTs()
+        self.initLGS()
+        self.allocDataArrays()
+
+        self.calcTiltCorrect()
+        
+############################################################
+#Initialisation routines
+    
+    def calcInitParams(self):
+
+        self.telDiam = self.simConfig.pupilSize/self.simConfig.pxlScale
+        
+        #Phase power scaling factor for wfs wavelength
+        self.r0Scale = self.phsWvl/self.wfsConfig.wavelength
+
+    def allocDataArrays(self):
+        """
+        Allocate the data arrays the WFS will require
+        
+        Determines and allocates the various arrays the WFS will require to 
+        avoid having to re-alloc memory during the running of the WFS and
+        keep it fast. This includes arrays for phase
+        and the E-Field across the WFS
+        """
+        
+
+
+        self.wfsPhase = numpy.zeros( [self.simConfig.pupilSize]*2, dtype=DTYPE)
+        self.EField = numpy.zeros(
+                (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
+
+
+
+        
+
+    def initLGS(self):
+        """
+        Initialises the LGS objects for the WFS
+        
+        Creates and initialises the LGS objects if the WFS GS is a LGS. This
+        included calculating the phases additions which are required if the
+        LGS is elongated based on the depth of the elongation and the launch
+        position. Note that if the GS is at infinity, elongation is not possible
+        and a warning is logged.
+        """
+        
+        #Choose the correct LGS object, either with physical or geometric 
+        # or geometric propagation.
+        if self.wfsConfig.lgs:     
             if  (self.lgsConfig.propagationMode=="phys" or 
                     self.lgsConfig.propagationMode=="physical"):
-                LGSClass = LGS.PhysicalLGS         
+                self.LGS = LGS.PhysicalLGS( self.simConfig, self.wfsConfig, 
+                                            self.lgsConfig, self.atmosConfig
+                                            )
             else:
-                LGSClass = LGS.GeometricLGS
-                        
-            self.LGS = LGSClass( self.simConfig, wfsConfig, self.lgsConfig,
-                                    self.atmosConfig
-                                    )
+                LGSClass = LGS.GeometricLGS( self.simConfig, self.wfsConfig,
+                                             self.lgsConfig, self.atmosConfig
+                                             )
+            #Tell the LGS a bit about the WFS 
+            #(TODO-get rid of this and put into LGS init)       
+            self.LGS.setWFSParams(
+                    self.SUBAP_OVERSIZE*self.subapFOVrad,
+                    self.wfsConfig.subapOversamp, self.subapFFTPadding)
         else:
             self.LGS = None
 
+        
         self.lgsLaunchPos = None
         self.elong=0
         self.elongLayers = 0
         if self.LGS:
             self.lgsLaunchPos = self.lgsConfig.launchPosition
-
             #LGS Elongation##############################
             if (self.wfsConfig.GSHeight!=0 and 
                     self.lgsConfig.elongationDepth!=0):
@@ -190,139 +257,20 @@ class WFS(object):
             #If GS at infinity cant do elongation
             elif (self.wfsConfig.GSHeight==0 and 
                     self.lgsConfig.elongationDepth!=0):
-                logger.warning("Not able to implement lgs Elongation as GS at infinity")
-        #Done LGS
-        ##############################################
-
-        self.iMat=False
-
-        #Phase power scaling factor for wfs wavelength
-        phsWvl = 550e-9
-        self.r0Scale = phsWvl/self.wfsConfig.wavelength
-
-        #spacing between subaps in pupil Plane (size "pupilSize")
-        self.PPSpacing = float(self.simConfig.pupilSize)/self.wfsConfig.subaps
-
-        #Spacing on the "FOV Plane" - the number of elements required
-        #for the correct subap FOV (from way FFT "phase" to "image" works)
-        self.subapFOVSpacing = numpy.round(self.subapDiam * self.subapFOVrad / self.wfsConfig.wavelength)
-
-        #make twice as big to double subap FOV
-        self.SUBAP_OVERSIZE = 2
-        self.detectorPxls = self.wfsConfig.pxlsPerSubap*self.wfsConfig.subaps
-        self.subapFOVSpacing *= self.SUBAP_OVERSIZE
-        self.wfsConfig.pxlsPerSubap2 = self.SUBAP_OVERSIZE*self.wfsConfig.pxlsPerSubap
+                logger.warning("Not able to implement LGS Elongation as GS at infinity")
 
 
-        if self.wfsConfig.GSHeight!=0:
-            self.radii = self.findMetaPupilSize(self.wfsConfig.GSHeight)
-        else:
-            self.radii=None
-
-        self.findActiveSubaps()
-        #self.scaledMask = numpy.round(scipy.ndimage.zoom(self.mask,
-                                     #self.subapFOVSpacing/self.PPSpacing))
-        self.scaledMask = aoSimLib.zoom(self.mask,
-                                        self.subapFOVSpacing*self.wfsConfig.subaps)
-    
-        
-        #Choose propagation method
-        if wfsConfig.propagationMode=="physical":
-            self.makePhase = self.makePhasePhysical
-            self.physEField = numpy.zeros(
-                (2*self.simConfig.pupilSize,)*2, dtype=CDTYPE)
-        else:
-            self.makePhase = self.makePhaseGeo
-
-
-        #Initialise FFT classes
-        #########################################
-        self.subapFFTPadding = self.wfsConfig.pxlsPerSubap2 * self.wfsConfig.subapOversamp
-        if self.subapFFTPadding < self.subapFOVSpacing:
-            while self.subapFFTPadding<self.subapFOVSpacing:
-                self.wfsConfig.subapOversamp+=1
-                self.subapFFTPadding\
-                        =self.wfsConfig.pxlsPerSubap2*self.wfsConfig.subapOversamp
-
-            logger.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.wfsConfig.subapOversamp)
-
-        self.FFT = AOFFT.FFT(
-                inputSize=(
-                self.activeSubaps, self.subapFFTPadding, self.subapFFTPadding),
-                axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                THREADS=wfsConfig.fftwThreads, 
-                fftw_FLAGS=(wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
-
-        if self.lgsConfig.lgsUplink:
-            self.iFFT = AOFFT.FFT(
-                    inputSize = (self.activeSubaps,
-                                        self.subapFFTPadding,
-                                        self.subapFFTPadding),
-                    axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=wfsConfig.fftwThreads, 
-                    fftw_FLAGS=(wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
-                    )
-
-            self.lgs_iFFT = AOFFT.FFT(
-                    inputSize = (self.subapFFTPadding,
-                                self.subapFFTPadding),
-                    axes=(0,1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=wfsConfig.fftwThreads, 
-                    fftw_FLAGS=(wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
-                    )
-
-        ######################################################
-
-        #Tell LGS some WFS stuff
-        if self.LGS:
-            self.LGS.setWFSParams(self.SUBAP_OVERSIZE*self.subapFOVrad,
-                                     self.wfsConfig.subapOversamp, self.subapFFTPadding)
-            
-
-        #initialise some arrays which will be useful later
-        
-        #First make wfs detector array - only needs to be of ints,
-        #Find which kind to save memory
-        if (wfsConfig.bitDepth==8 or 
-                wfsConfig.bitDepth==16 or 
-                wfsConfig.bitDepth==32):
-            self.dPlaneType = eval("numpy.uint%d"%wfsConfig.bitDepth)
-        else:
-            self.dPlaneType = numpy.uint32
-        self.maxFlux = 0.7 * 2**wfsConfig.bitDepth -1
-        self.wfsDetectorPlane = numpy.zeros( (  self.detectorPxls,
-                                                self.detectorPxls   ),
-                                               dtype = self.dPlaneType )
-
-        self.wfsPhase = numpy.zeros( [self.simConfig.pupilSize]*2, dtype=DTYPE)
-
-        self.subapArrays=numpy.empty((self.activeSubaps,
-                                      self.subapFOVSpacing,
-                                      self.subapFOVSpacing),
-                                     dtype=CDTYPE)
-        self.binnedFPSubapArrays = numpy.zeros( (self.activeSubaps,
-                                                self.wfsConfig.pxlsPerSubap2,
-                                                self.wfsConfig.pxlsPerSubap2),
-                                                dtype=DTYPE)
-        self.FPSubapArrays = numpy.zeros((self.activeSubaps,
-                                          self.subapFFTPadding,
-                                          self.subapFFTPadding),dtype=DTYPE)
-        self.EField = numpy.zeros(
-                (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
-
-
-
-############################################################
-#Initialisation routines
 
     def findMetaPupilSize(self, GSHeight):
         '''
         Evaluates the sizes of the effective metePupils
         at each screen height if an GS of finite height is used.
         
-        Args:
-            
+        Parameters:
+            GSHeight (float): The height of the GS in metres
         
+        Returns:
+            dict : A dictionary containing the radii of a meta-pupil at each screen height 
         '''
 
         radii={}
@@ -340,22 +288,24 @@ class WFS(object):
 
         return radii
 
-    def findActiveSubaps(self):
-        '''
-        Finds the subapertures which are not empty space
-        determined if mean of subap coords of the mask is above threshold
-        '''
 
-        self.subapCoords = aoSimLib.findActiveSubaps(self.wfsConfig.subaps,self.mask, self.wfsConfig.subapThreshold)
-        self.activeSubaps = self.subapCoords.shape[0]
-
-        #When scaled to pxl sizes, need to scale subap coordinates too!
-        self.detectorSubapCoords = numpy.round(
-            self.subapCoords*(self.detectorPxls/float(self.simConfig.pupilSize) ) )
-
-
-    def calcElongPhaseAddition(self,elongLayer):
-
+    def calcElongPhaseAddition(self, elongLayer):
+        """
+        Calculates the phase required to emulate layers on an elongated source
+        
+        For each 'elongation layer' a phase addition is calculated which 
+        accounts for the difference in height from the nominal GS height where
+        the WFS is focussed, and accounts for the tilt seen if the LGS is
+        launched off-axis.
+        
+        Parameters:
+            elongLayer (int): The number of the elongation layer
+        
+        Returns:
+            ndarray: The phase addition required for that layer.
+        """
+        
+        
         #Calculate the path difference between the central GS height and the
         #elongation "layer"
         #Define these to make it easier
@@ -688,39 +638,167 @@ class WFS(object):
     def zeroData(self):
         self.zeroPhaseData()
 
+#   _____ _   _ 
+#  /  ___| | | |
+#  \ `--.| |_| |
+#   `--. \  _  |
+#  /\__/ / | | |
+#  \____/\_| |_/
+            
 
 class ShackHartmann(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
+
+
+    def calcInitParams(self):
+        """
+        Calculate some parameters to be used during initialisation
+        """
+        super(ShackHartmann, self).calcInitParams()
+        self.subapFOVrad = self.wfsConfig.subapFOV * numpy.pi / (180. * 3600)
+        self.subapDiam = self.telDiam/self.wfsConfig.subaps
+        
+        #spacing between subaps in pupil Plane (size "pupilSize")
+        self.PPSpacing = float(self.simConfig.pupilSize)/self.wfsConfig.subaps
+        
+        #Spacing on the "FOV Plane" - the number of elements required
+        #for the correct subap FOV (from way FFT "phase" to "image" works)
+        self.subapFOVSpacing = numpy.round(self.subapDiam 
+                                * self.subapFOVrad/ self.wfsConfig.wavelength)
+        
+        #make twice as big to double subap FOV
+        self.SUBAP_OVERSIZE = 2
+        self.detectorPxls = self.wfsConfig.pxlsPerSubap*self.wfsConfig.subaps
+        self.subapFOVSpacing *= self.SUBAP_OVERSIZE
+        self.wfsConfig.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
+                                            *self.wfsConfig.pxlsPerSubap)
+        
+        #Calculate the subaps which are actually seen behind the pupil mask
+        self.findActiveSubaps()
+        
+    def findActiveSubaps(self):
+        '''
+        Finds the subapertures which are not empty space
+        determined if mean of subap coords of the mask is above threshold
+        '''
+
+        self.subapCoords = aoSimLib.findActiveSubaps(self.wfsConfig.subaps,self.mask, self.wfsConfig.subapThreshold)
+        self.activeSubaps = self.subapCoords.shape[0]
+
+        #When scaled to pxl sizes, need to scale subap coordinates too!
+        self.detectorSubapCoords = numpy.round(
+            self.subapCoords*(self.detectorPxls/float(self.simConfig.pupilSize) ) )
+        
+        #Find the mask to apply to the scaled EField
+        self.scaledMask = aoSimLib.zoom(
+                    self.mask, self.subapFOVSpacing*self.wfsConfig.subaps)
+        
     
-    def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
+    def initFFTs(self):
+        """
+        Initialise the FFT Objects required for running the WFS
         
-        super(ShackHartmann,self).__init__(simConfig, wfsConfig, atmosConfig, lgsConfig, mask)
+        Initialised various FFT objects which are used through the WFS,
+        these include FFTs to calculate focal planes, and to convolve LGS
+        PSFs with the focal planes
+        """
         
-        #Tilt Correction for even number sizes subaps -
-        #otherwise the PSF is binned to one corner
-        if not self.wfsConfig.pxlsPerSubap%2:
-            self.calcTiltCorrect()
+        #Calculate the FFT padding to use
+        self.subapFFTPadding = self.wfsConfig.pxlsPerSubap2 * self.wfsConfig.subapOversamp
+        if self.subapFFTPadding < self.subapFOVSpacing:
+            while self.subapFFTPadding<self.subapFOVSpacing:
+                self.wfsConfig.subapOversamp+=1
+                self.subapFFTPadding\
+                        =self.wfsConfig.pxlsPerSubap2*self.wfsConfig.subapOversamp
 
+            logger.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.wfsConfig.subapOversamp)
+        
+        #Init the FFT to the focal plane
+        self.FFT = AOFFT.FFT(
+                inputSize=(
+                self.activeSubaps, self.subapFFTPadding, self.subapFFTPadding),
+                axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
+                THREADS=self.wfsConfig.fftwThreads, 
+                fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
 
-    ##################################################################
-    #Centre spot in sub-aperture after FFT
+        #If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
+        if self.lgsConfig.lgsUplink:
+            self.iFFT = AOFFT.FFT(
+                    inputSize = (self.activeSubaps,
+                                        self.subapFFTPadding,
+                                        self.subapFFTPadding),
+                    axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
+                    THREADS=self.wfsConfig.fftwThreads, 
+                    fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
+                    )
 
+            self.lgs_iFFT = AOFFT.FFT(
+                    inputSize = (self.subapFFTPadding,
+                                self.subapFFTPadding),
+                    axes=(0,1), mode="pyfftw",dtype=CDTYPE,
+                    THREADS=self.wfsConfig.fftwThreads, 
+                    fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
+                    )
+
+    def allocDataArrays(self):
+        """
+        Allocate the data arrays the WFS will require
+        
+        Determines and allocates the various arrays the WFS will require to 
+        avoid having to re-alloc memory during the running of the WFS and
+        keep it fast.
+        """
+        
+        super(ShackHartmann,self).allocDataArrays()
+        
+        self.subapArrays=numpy.empty((self.activeSubaps,
+                                      self.subapFOVSpacing,
+                                      self.subapFOVSpacing),
+                                     dtype=CDTYPE)
+        self.binnedFPSubapArrays = numpy.zeros( (self.activeSubaps,
+                                                self.wfsConfig.pxlsPerSubap2,
+                                                self.wfsConfig.pxlsPerSubap2),
+                                                dtype=DTYPE)
+        self.FPSubapArrays = numpy.zeros((self.activeSubaps,
+                                          self.subapFFTPadding,
+                                          self.subapFFTPadding),dtype=DTYPE)
+
+        #First make wfs detector array - only needs to be of uints,
+        #Find which kind to save memory
+        if (self.wfsConfig.bitDepth==8 or 
+                self.wfsConfig.bitDepth==16 or 
+                self.wfsConfig.bitDepth==32):
+            self.dPlaneType = eval("numpy.uint%d"%self.wfsConfig.bitDepth)
+        else:
+            self.dPlaneType = numpy.uint32
+        self.maxFlux = 0.7 * 2**self.wfsConfig.bitDepth -1
+        self.wfsDetectorPlane = numpy.zeros( (  self.detectorPxls,
+                                                self.detectorPxls   ),
+                                               dtype = self.dPlaneType )
+        
+        
+    
     def calcTiltCorrect(self):
         """
         Calculates the required tilt to add to avoid the PSF being centred on 
         only 1 pixel
         """
-        #Angle we need to correct for half a pixel
-        theta = 2*self.subapFOVrad/ (2*self.subapFFTPadding)
+        if not self.wfsConfig.pxlsPerSubap%2:
+            #If pxlsPerSubap is even
+            #Angle we need to correct for half a pixel
+            theta = 2*self.subapFOVrad/ (2*self.subapFFTPadding)
 
-        #Magnitude of tilt required to get that angle
-        A = theta*self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
+            #Magnitude of tilt required to get that angle
+            A = theta*self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
 
-        #Create tilt arrays and apply magnitude
-        coords = numpy.linspace(-1,1,self.subapFOVSpacing)
-        X,Y = numpy.meshgrid(coords,coords)
+            #Create tilt arrays and apply magnitude
+            coords = numpy.linspace(-1,1,self.subapFOVSpacing)
+            X,Y = numpy.meshgrid(coords,coords)
 
-        self.tiltFix = -1*A*(X+Y)
+            self.tiltFix = -1*A*(X+Y)
+            
+        else:
+            self.tiltFix = numpy.zeros( (self.subapFOVSpacing,)*2)
 
     def oneSubap(self,phs):
         '''
@@ -910,70 +988,83 @@ class ShackHartmann(WFS):
 
         return self.slopes
 
+#  ______                          _     _ 
+#  | ___ \                        (_)   | |
+#  | |_/ /   _ _ __ __ _ _ __ ___  _  __| |
+#  |  __/ | | | '__/ _` | '_ ` _ \| |/ _` |
+#  | |  | |_| | | | (_| | | | | | | | (_| |
+#  \_|   \__, |_|  \__,_|_| |_| |_|_|\__,_|
+#         __/ |                            
+#        |___/                             
 
 class Pyramid(WFS):
+    #oversampling for the first FFT from EField to focus (4 seems ok...)
+    FOV_OVERSAMP = 4
 
-    def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
+    def calcInitParams(self):
+        super(Pyramid, self).calcInitParams()
+        self.FOVrad = self.wfsConfig.subapFOV * numpy.pi / (180. * 3600)
         
- 
-        super(Pyramid,self).__init__(simConfig, wfsConfig, atmosConfig, lgsConfig, mask)
+        self.FOVPxlNo = numpy.round( self.telDiam * 
+                                    self.FOVrad/self.wfsConfig.wavelength)
+
+        self.detectorPxls = 2*self.wfsConfig.pxlsPerSubap
+        self.scaledMask = aoSimLib.zoom(self.mask, self.FOVPxlNo)
         
-        self.FOV_OVERSAMP = 4
-        self.wfsConfig = wfsConfig
-        self.simConfig = simConfig
-        self.atmosConfig = atmosConfig
-        self.lgsConfig = lgsConfig
-        self.mask = mask
-
-        self.telDiam = simConfig.pupilSize/simConfig.pxlScale
-
-        self.FOVrad = self.wfsConfig.subapFOV * numpy.pi / (180.*3600)
-        self.FOVPxlNo = numpy.round( self.telDiam * self.FOVrad/self.wfsConfig.wavelength)
+        self.activeSubaps = self.wfsConfig.pxlsPerSubap**2
+        
+        while (self.wfsConfig.pxlsPerSubap*self.wfsConfig.subapOversamp
+                    < self.FOVPxlNo):
+            self.wfsConfig.subapOversamp+=1
+        
+    def initFFTs(self):
 
         self.FFT = AOFFT.FFT(   [self.FOV_OVERSAMP*self.FOVPxlNo,]*2, 
                                 axes=(0,1), mode="pyfftw", 
                                 fftw_FLAGS=("FFTW_DESTROY_INPUT",
-                                            wfsConfig.fftwFlag),
-                                THREADS=wfsConfig.fftwThreads
+                                            self.wfsConfig.fftwFlag),
+                                THREADS=self.wfsConfig.fftwThreads
                                 )
-
-        #Find sizes of detector planes
-        while (self.wfsConfig.pxlsPerSubap*self.wfsConfig.subapOversamp
-                    < self.FOVPxlNo):
-            self.wfsConfig.subapOversamp+=1
-
-        self.paddedDetectorPxls = 2*self.wfsConfig.pxlsPerSubap*self.wfsConfig.subapOversamp
-        self.detectorPxls = 2*self.wfsConfig.pxlsPerSubap
-
-
-        self.iFFTPadding = self.FOV_OVERSAMP*(self.wfsConfig.subapOversamp*self.wfsConfig.pxlsPerSubap)
-
+                                
+        self.iFFTPadding = self.FOV_OVERSAMP*(self.wfsConfig.subapOversamp*
+                                            self.wfsConfig.pxlsPerSubap)
         self.iFFT = AOFFT.FFT(
                     [4, self.iFFTPadding, self.iFFTPadding],
-                    axes=(1,2), mode="pyfftw", THREADS = wfsConfig.fftwThreads,
-                    fftw_FLAGS=("FFTW_DESTROY_INPUT", wfsConfig.fftwFlag),
+                    axes=(1,2), mode="pyfftw", 
+                    THREADS = self.wfsConfig.fftwThreads,
+                    fftw_FLAGS=("FFTW_DESTROY_INPUT", self.wfsConfig.fftwFlag),
                     direction="BACKWARD"
                     )
 
-        #Allocate arrays 
+
+    def allocDataArrays(self):
+
+        super(Pyramid, self).allocDataArrays()
+        #Allocate arrays
+        #Find sizes of detector planes
+
+        self.paddedDetectorPxls = (2*self.wfsConfig.pxlsPerSubap
+                                    *self.wfsConfig.subapOversamp)
         self.paddedDetectorPlane = numpy.empty([self.paddedDetectorPxls]*2,
-                                                dtype="float32")
-        self.wfsDetectorPlane = numpy.empty([self.detectorPxls]*2,
-                                            dtype="float32")
-
-        self.activeSubaps = self.wfsConfig.pxlsPerSubap**2
-
-        self.scaledMask = aoSimLib.zoom(self.mask, self.FOVPxlNo)
+                                                dtype=DTYPE)
         
- 
-        #If not a odd number of pixels, calculate a shift to put 
-        # the psf in a central position   
-        self.calcTiltCorrect()
+        self.focalPlane = numpy.empty( [self.FOV_OVERSAMP*self.FOVPxlNo,]*2, 
+                                        dtype=CDTYPE)
+        
+        self.quads = numpy.empty(
+                    (4,self.focalPlane.shape[0]/2.,self.focalPlane.shape[1]/2.),
+                    dtype=CDTYPE)
+
+        
+        self.wfsDetectorPlane = numpy.empty([self.detectorPxls]*2,
+                                            dtype=DTYPE)
+        
 
     def zeroData(self):
         self.zeroPhaseData()
         self.wfsDetectorPlane[:] = 0
         self.paddedDetectorPlane[:] = 0
+
 
     def calcFocalPlane(self):
         '''
@@ -982,18 +1073,17 @@ class Pyramid(WFS):
         '''
         #Apply tilt fix and scale EField for correct FOV
         self.EField*=numpy.exp(1j*self.tiltFix)
-        self.scaledEField = aoSimLib.zoom(self.EField, self.FOVPxlNo)*self.scaledMask
+        self.scaledEField = aoSimLib.zoom(  self.EField, 
+                                            self.FOVPxlNo)*self.scaledMask
 
         #Go to the focus 
         self.FFT.inputData[:]=0
         self.FFT.inputData[ :self.FOVPxlNo,
                             :self.FOVPxlNo ] = self.scaledEField
-        self.focalPlane = AOFFT.ftShift2d( self.FFT() ).copy()
+        self.focalPlane[:] = AOFFT.ftShift2d( self.FFT() )
 
         #Cut focus into 4
-        shapeX,shapeY = self.focalPlane.shape
-        self.quads = numpy.empty(   (4,shapeX/2.,shapeX/2.),
-                                    dtype=self.focalPlane.dtype)
+        shapeX, shapeY = self.focalPlane.shape
         n=0
         for x in xrange(2):
             for y in xrange(2):
@@ -1056,7 +1146,7 @@ class Pyramid(WFS):
         """
         if not self.wfsConfig.pxlsPerSubap%2: 
             #Angle we need to correct 
-            theta = self.subapFOVrad/ (2*self.FOV_OVERSAMP*self.FOVPxlNo)
+            theta = self.FOVrad/ (2*self.FOV_OVERSAMP*self.FOVPxlNo)
 
             A = theta*self.telDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
 
@@ -1067,28 +1157,4 @@ class Pyramid(WFS):
             
         else:
             self.tiltFix = numpy.zeros((self.simConfig.pupilSize,)*2)
-
-
-def pyramid(phs):
-
-    shapeX,shapeY = phs.shape
-    quads = numpy.empty( (4,shapeX/2.,shapeX/2.), dtype="complex64")
-    EField = numpy.exp(1j*phs) * aoSimLib.circle(shapeX/2,shapeX)
-    FP = numpy.fft.fftshift(numpy.fft.fft2(EField))
-    n=0
-    for x in xrange(2):
-        for y in xrange(2):
-            quads[n] = FP[x*shapeX/2 : (x+1)*shapeX/2,
-                        y*shapeX/2 : (y+1)*shapeX/2]
-            n+=1
-
-    PPupilPlane = abs(numpy.fft.ifft2(quads))**2
-
-    allPupilPlane = numpy.empty( (shapeX,shapeY) )
-    allPupilPlane[:shapeX/2.,:shapeY/2] = PPupilPlane[0]
-    allPupilPlane[:shapeX/2.:,shapeY/2:] = PPupilPlane[1]
-    allPupilPlane[shapeX/2.:,:shapeY/2] = PPupilPlane[2]
-    allPupilPlane[shapeX/2.:,shapeY/2:] = PPupilPlane[3]
-
-    return allPupilPlane
 

@@ -131,18 +131,24 @@ def zoom(array, newSize, order=3):
 
     #If array is complex must do 2 interpolations
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
-        realInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.real, kx=order, ky=order)
-        imagInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.imag, kx=order, ky=order)
-                            
+        # realInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
+#                 numpy.arange(array.shape[1]), array.real, kx=order, ky=order)
+#         imagInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
+#        numpy.arange(array.shape[1]), array.imag, kx=order, ky=order)
+           
+        realInterpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array.real, copy=False)
+        imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array.imag, copy=False)                 
         return realInterpObj(coordsX,coordsY) \
                             + 1j*imagInterpObj(coordsX,coordsY)
             
     else:
 
-        interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array, kx=order, ky=order)
+        # interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
+#        numpy.arange(array.shape[1]), array, kx=order, ky=order)
+        interpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array, copy=False)
 
         return interpObj(coordsX,coordsY)
 
@@ -238,9 +244,9 @@ def simpleCentroid(img,threshold_frac=0):
 def brtPxlCentroid(img, nPxls):
     """
     Centroids using brightest Pixel Algorithm
-    (A. G. Basden et al, 2011)
+    (A. G. Basden et al,  MNRAS, 2011)
 
-    Finds the nPxlsth brightest pixel, subtracts that value from frame, 
+     Finds the nPxlsth brightest pixel, subtracts that value from frame, 
     sets anything below 0 to 0, and finally takes centroid
     """
 
@@ -253,7 +259,7 @@ def brtPxlCentroid(img, nPxls):
         pxlValues = numpy.sort(
                         img.reshape(img.shape[0], img.shape[-1]*img.shape[-2])
                         )[:,-nPxls]
-        img[:] = (img.T - pxlValues).T
+        img[:]  = (img.T - pxlValues).T
         img.clip(0, img.max(), out=img)
 
     return simpleCentroid(img)

@@ -206,7 +206,7 @@ class Sim(object):
             self.config.sim.totalSubaps += self.wfss[wfs].activeSubaps
 
             logger.info("WFS {0}: {1} active sub-apertures".format(wfs,
-                     len(self.wfss[wfs].subapCoords)))
+                     self.wfss[wfs].activeSubaps))
         self.config.sim.totalSlopes = 2*self.config.sim.totalSubaps
 
 
