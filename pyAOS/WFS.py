@@ -775,7 +775,9 @@ class ShackHartmann(WFS):
         self.wfsDetectorPlane = numpy.zeros( (  self.detectorPxls,
                                                 self.detectorPxls   ),
                                                dtype = self.dPlaneType )
-        
+        #Array used when centroiding subaps
+        self.centSubapArrays = numpy.empty( (self.activeSubaps,
+              self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
         
     
     def calcTiltCorrect(self):
@@ -828,8 +830,6 @@ class ShackHartmann(WFS):
         '''Photon Noise'''
         raise NotImplementedError
 
-
-
     def calcFocalPlane(self):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
@@ -858,7 +858,6 @@ class ShackHartmann(WFS):
 
         self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
 
-
     def makeDetectorPlane(self):
         '''
         if required, will convolve final psf with LGS psf, then bins
@@ -873,7 +872,7 @@ class ShackHartmann(WFS):
         #bins back down to correct size and then
         #fits them back in to a focal plane array
         self.binnedFPSubapArrays[:] = aoSimLib.binImgs(self.FPSubapArrays,
-                                                        self.wfsConfig.subapOversamp)
+                                            self.wfsConfig.subapOversamp)
 
         self.binnedFPSubapArrays[:] = self.maxFlux* (self.binnedFPSubapArrays.T/
                                             self.binnedFPSubapArrays.max((1,2))
@@ -949,9 +948,6 @@ class ShackHartmann(WFS):
         '''
 
         #Sort out FP into subaps
-        self.centSubapArrays = numpy.empty( (self.activeSubaps,  self.wfsConfig.pxlsPerSubap,
-                                                        self.wfsConfig.pxlsPerSubap) )
-
         for i in xrange(self.activeSubaps):
             x,y = self.detectorSubapCoords[i]
             x = int(x)

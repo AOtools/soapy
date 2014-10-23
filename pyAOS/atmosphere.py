@@ -143,15 +143,15 @@ class atmos:
                 #Theyre r0 must be in pixels! label: "R0"
                 #If so, we can scale them to the desired r0
                 try:
-
                     r0 = float(fitsHDU.header["R0"])
-                    self.wholeScrns[i] *=( (self.scrnStrengths[i]/
-                                            (r0/self.pxlScale))**(-5./6.))
+                    r0_metres = r0/self.pxlScale
+                    self.wholeScrns[i] *=(
+                                 #(self.scrnStrengths[i]/r0_metres)**(-5./6.)
+                                 (self.scrnStrengths[i]/r0_metres)**(-5./3.)
+                                         )
 
                 except KeyError:
                     logger.info("no r0 info found in screen header - will assume its ok as it is")
-
-
 
             if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
                 logger.info("Requested phase screen has different size to that input in config file....loading anyway")
@@ -198,11 +198,7 @@ class atmos:
             self.xCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][0]
             self.yCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][1]
 
-        # self.FFTRandom = AOFFT.FFT( 
-        #         inputSize=( self.scrnSize, self.scrnSize), axes=(0,1), 
-        #                     fftw_FLAGS=("FFTW_PATIENT","FFTW_DESTROY_INPUT"),
-        #                     THREADS=4, direction="BACKWARD"
-        #                     )
+
 
     def moveScrns(self):
         """
