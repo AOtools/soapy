@@ -146,8 +146,8 @@ class atmos:
                     r0 = float(fitsHDU.header["R0"])
                     r0_metres = r0/self.pxlScale
                     self.wholeScrns[i] *=(
-                                 #(self.scrnStrengths[i]/r0_metres)**(-5./6.)
-                                 (self.scrnStrengths[i]/r0_metres)**(-5./3.)
+                                 (self.scrnStrengths[i]/r0_metres)**(-5./6.)
+                                 #(self.scrnStrengths[i]/r0_metres)**(-5./3.)
                                          )
 
                 except KeyError:
