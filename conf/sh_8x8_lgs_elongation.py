@@ -10,9 +10,9 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8",
-    "logfile"       :   "sh_8x8.log",
-    "pupilSize"     :   64, 
+    "filePrefix"    :  "sh_8x8_lgs",
+    "logfile"       :   "sh_8x8_lgs.log",
+    "pupilSize"     :   128, 
     "nGS"           :   1,
     "nDM"           :   2,
     "nSci"          :   1,
@@ -31,7 +31,7 @@ simConfiguration = {
     },
 
 "Atmosphere":{
-    "scrnNo"        :   1,
+    "scrnNo"        :  4,
     "scrnHeights"   :   numpy.array([0,5000,10000,15000]),
     "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
     "windDirs"      :   numpy.array([0,45,90,135]),
@@ -42,27 +42,35 @@ simConfiguration = {
     },
 
 "Telescope":{
-   "telDiam"        :   4.2,  #Metres
+   "telDiam"        :   8.,  #Metres
    "obs"            :   1.2, #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
-    "GSPosition"    :   [(0,0)],
-    "GSHeight"      :   [0],
+    "GSPosition"    :   [(0,0)]*2,
+    "GSHeight"      :   [90e3],
     "subaps"        :   [8],
-    "pxlsPerSubap"  :   [10],
-    "subapFOV"      :   [3.0],
+    "pxlsPerSubap"  :   [20],
+    "subapFOV"      :   [6.0],
     "subapOversamp" :   [3],
     "wavelength"    :   [600e-9],
     "bitDepth"      :   [8],
-    "lgs"           :   [False],
+    "lgs"           :   [True],
     "centMethod"    :   ["brightestPxl"],
-    "centThreshold" :   [0.1],
+    "centThreshold" :   [0.2],
     },
 
 "LGS":{
-
+    
+    "lgsUplink"     :   [False],
+    "lgsPupilDiam"  :   [0.3],
+    "wavelength"    :   [600e-9],
+    "propagationMode":  ["physical"],
+    "height"        :   [90e3],
+    "elongationDepth":  [12e3],
+    "elongationLayers": [5],
+    "launchPosition":   [(0,0)],
     },
 
 "DM":{
@@ -71,22 +79,8 @@ simConfiguration = {
     "dmActs"        :   [2,         9**2],
     "dmCond"        :   [1e-15,      0.05],
     "closed"        :   [False,      False],
-    "iMatValue"     :   [50,        10  ],
+    "iMatValue"     :   [50,        10  ]
     },
-
-# "DM":{
-#     "dmType"        : ["TT"],
-#     "dmActs"        : [2],
-#     "dmCond"        : [1e-9],
-#     "closed"        : [True],
-#     },
-  
-# "DM":{
-#    "dmType"        :     ["Piezo"],
-#    "dmActs"        :     [ 9**2],
-#    "dmCond"        :     [  0.05],
-#    "closed"        :     [  False],
-#    },
 
 "Science":{
     "position"      :   [(0,0)],

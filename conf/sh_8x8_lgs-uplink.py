@@ -10,10 +10,10 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8",
-    "logfile"       :   "sh_8x8.log",
-    "pupilSize"     :   64, 
-    "nGS"           :   1,
+    "filePrefix"    :  "sh_8x8_lgs",
+    "logfile"       :   "sh_8x8_lgs.log",
+    "pupilSize"     :   128, 
+    "nGS"           :   2,
     "nDM"           :   2,
     "nSci"          :   1,
     "nIters"        :   1000,
@@ -31,7 +31,7 @@ simConfiguration = {
     },
 
 "Atmosphere":{
-    "scrnNo"        :   1,
+    "scrnNo"        :  4,
     "scrnHeights"   :   numpy.array([0,5000,10000,15000]),
     "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
     "windDirs"      :   numpy.array([0,45,90,135]),
@@ -48,45 +48,49 @@ simConfiguration = {
     },
 
 "WFS":{
-    "GSPosition"    :   [(0,0)],
-    "GSHeight"      :   [0],
-    "subaps"        :   [8],
-    "pxlsPerSubap"  :   [10],
-    "subapFOV"      :   [3.0],
-    "subapOversamp" :   [3],
-    "wavelength"    :   [600e-9],
-    "bitDepth"      :   [8],
-    "lgs"           :   [False],
-    "centMethod"    :   ["brightestPxl"],
-    "centThreshold" :   [0.1],
+    "GSPosition"    :   [(0,0), (0,0)],
+    "GSHeight"      :   [0,     90e3],
+    "subaps"        :   [4,     16],
+    "pxlsPerSubap"  :   [8,     14]*2,
+    "subapFOV"      :   [5.0,   5.0],
+    "subapOversamp" :   [4]*2,
+    "wavelength"    :   [600e-9]*2,
+    "bitDepth"      :   [8]*2,
+    "lgs"           :   [False, True],
+    "centMethod"    :   ["brightestPxl"]*2,
+    "centThreshold" :   [0.2]*2,
+    "exposureTime"  :   [1/200.,  None],
+    "removeTT"      :   [False, True],
     },
 
 "LGS":{
-
+    "lgsUplink"     :   [True]*2,
+    "lgsPupilDiam"  :   [0.3]*2,
+    "wavelength"    :   [600e-9]*2,
+    "propagationMode":  ["physical"]*2,
+    "height"        :   [90e3]*2,
+    "elongationDepth":  [0]*2,
+    "elongationLayers": [5]*2,
     },
+
+# "DM":{
+#
+#     "dmType"        :   [   "Piezo"],
+#     "dmActs"        :   [   9**2],
+#     "dmCond"        :   [   0.05],
+#     "closed"        :   [   False],
+#     "iMatValue"     :   [   10  ]
+#     },
 
 "DM":{
 
     "dmType"        :   ["TT",     "Piezo"],
-    "dmActs"        :   [2,         9**2],
+    "dmActs"        :   [2,         17**2],
     "dmCond"        :   [1e-15,      0.05],
     "closed"        :   [False,      False],
     "iMatValue"     :   [50,        10  ],
+    "wfs"           :   [0,         1],
     },
-
-# "DM":{
-#     "dmType"        : ["TT"],
-#     "dmActs"        : [2],
-#     "dmCond"        : [1e-9],
-#     "closed"        : [True],
-#     },
-  
-# "DM":{
-#    "dmType"        :     ["Piezo"],
-#    "dmActs"        :     [ 9**2],
-#    "dmCond"        :     [  0.05],
-#    "closed"        :     [  False],
-#    },
 
 "Science":{
     "position"      :   [(0,0)],
