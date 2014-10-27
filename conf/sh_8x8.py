@@ -67,7 +67,6 @@ simConfiguration = {
     },
 
 "DM":{
-
     "dmType"        :   ["TT",     "Piezo"],
     "dmActs"        :   [2,         9**2],
     "dmCond"        :   [1e-15,      0.05],
@@ -83,8 +82,6 @@ simConfiguration = {
     "pxls"          :   [128],
     "oversamp"      :   [2],
     }
-
-
 }
 
 

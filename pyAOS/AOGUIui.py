@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../pyAOS/gui/AoGui.ui'
+# Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Wed Oct  1 10:45:15 2014
+# Created: Mon Oct 27 13:22:10 2014
 #      by: PyQt4 UI code generator 4.11.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -74,27 +74,21 @@ class Ui_MainWindow(object):
         self.label_7.setSizePolicy(sizePolicy)
         self.label_7.setObjectName(_fromUtf8("label_7"))
         self.horizontalLayout_3.addWidget(self.label_7)
-        self.updateTimeSpin = QtGui.QSpinBox(self.layoutWidget)
-        self.updateTimeSpin.setMaximum(200)
-        self.updateTimeSpin.setProperty("value", 20)
+        self.updateTimeSpin = QtGui.QDoubleSpinBox(self.layoutWidget)
+        self.updateTimeSpin.setEnabled(True)
+        self.updateTimeSpin.setDecimals(1)
+        self.updateTimeSpin.setMaximum(100.0)
+        self.updateTimeSpin.setProperty("value", 15.0)
         self.updateTimeSpin.setObjectName(_fromUtf8("updateTimeSpin"))
         self.horizontalLayout_3.addWidget(self.updateTimeSpin)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem)
+        self.gainLayout = QtGui.QHBoxLayout()
+        self.gainLayout.setObjectName(_fromUtf8("gainLayout"))
         self.label_2 = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
-        self.label_2.setSizePolicy(sizePolicy)
         self.label_2.setObjectName(_fromUtf8("label_2"))
-        self.horizontalLayout_3.addWidget(self.label_2)
-        self.gainSpin = QtGui.QDoubleSpinBox(self.layoutWidget)
-        self.gainSpin.setMaximum(1.0)
-        self.gainSpin.setSingleStep(0.01)
-        self.gainSpin.setProperty("value", 1.0)
-        self.gainSpin.setObjectName(_fromUtf8("gainSpin"))
-        self.horizontalLayout_3.addWidget(self.gainSpin)
+        self.gainLayout.addWidget(self.label_2)
+        self.horizontalLayout_3.addLayout(self.gainLayout)
         self.horizontalLayout_6.addLayout(self.horizontalLayout_3)
         self.splitter_2 = QtGui.QSplitter(self.splitter_4)
         self.splitter_2.setEnabled(True)
@@ -312,7 +306,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "AO Tomography Simulation", None))
         self.label_7.setText(_translate("MainWindow", "Plot Update Rate", None))
-        self.label_2.setText(_translate("MainWindow", "Gain", None))
+        self.label_2.setText(_translate("MainWindow", "Gain:", None))
         self.LgsPsfLabel.setText(_translate("MainWindow", "Laser Guide Star PSFs", None))
         self.label_6.setText(_translate("MainWindow", "DM Shapes", None))
         self.label.setText(_translate("MainWindow", "WFS Phase", None))

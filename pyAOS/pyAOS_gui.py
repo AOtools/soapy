@@ -20,7 +20,7 @@ import numpy
 import time
 import json
 import traceback
-
+from functools import partial
 #Python2/3 queue compatibility
 try:
     import queue
@@ -55,8 +55,6 @@ class GUI(QtGui.QMainWindow):
 
         self.ui.reloadParamsAction.triggered.connect(self.read)
         self.ui.loadParamsAction.triggered.connect(self.readParamFile)
-
-        self.ui.gainSpin.valueChanged.connect(self.gainChanged)
         
         #Ensure update is called if sci button pressed
         self.ui.instExpRadio.clicked.connect(self.update)
@@ -134,9 +132,10 @@ class GUI(QtGui.QMainWindow):
     def initPlots(self):
 
         self.ui.progressBar.setValue(80)
-        for layout in [self.ui.wfsLayout, self.ui.dmLayout,
-                       self.ui.residualLayout, self.ui.sciLayout,self.ui.phaseLayout,
-                       self.ui.lgsLayout]:
+        for layout in [ self.ui.wfsLayout, self.ui.dmLayout,
+                        self.ui.residualLayout, self.ui.sciLayout, 
+                        self.ui.phaseLayout, self.ui.lgsLayout, 
+                        self.ui.gainLayout]:
             for i in reversed(range(layout.count())):
                 layout.itemAt(i).widget().setParent(None)
 
@@ -177,16 +176,26 @@ class GUI(QtGui.QMainWindow):
         self.sim.guiLock = self.updateLock
         self.sim.gui = True
         self.sim.waitingPlot = False
-        #Set initial gain
-        self.ui.gainSpin.setValue( self.sim.gain )
-
-#       self.initStrehlPlot()
         
+        #Set initial gains
+        self.gainSpins = []
+        for dm in range(self.config.sim.nDM):
+            gainLabel = QtGui.QLabel()
+            gainLabel.setText("DM {}:".format(dm))
+            self.ui.gainLayout.addWidget(gainLabel)
+            
+            self.gainSpins.append(QtGui.QDoubleSpinBox())
+            self.ui.gainLayout.addWidget(self.gainSpins[dm])
+            self.gainSpins[dm].setValue(self.config.dm[dm].gain)
+            self.gainSpins[dm].setSingleStep(0.05)
+            self.gainSpins[dm].setMaximum(1.)
+
+            self.gainSpins[dm].valueChanged.connect(
+                                                partial(self.gainChanged,dm))
+
         self.ui.progressBar.setValue( 100)
         self.statsThread = StatsThread(self.sim)
         
-
-
     def update(self):
         
         #tell sim that gui wants a plot
@@ -420,8 +429,8 @@ class GUI(QtGui.QMainWindow):
     def changeLUT(self):
         self.LUT = self.gradient.getLookupTable(256)
 
-    def gainChanged(self):
-        self.sim.gain = self.ui.gainSpin.value()
+    def gainChanged(self, dm):
+        self.config.dm[dm].gain = self.gainSpins[dm].value()
 
     def updateTimeChanged(self):
         

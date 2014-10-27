@@ -974,6 +974,9 @@ class ShackHartmann(WFS):
                     self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
                                             )
+        if self.wfsConfig.pxlsPerSubap==2:
+            slopes = aoSimLib.quadCell(self.centSubapArrays)
+            
         else:
             slopes=aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold

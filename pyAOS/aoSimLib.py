@@ -264,6 +264,15 @@ def brtPxlCentroid(img, nPxls):
 
     return simpleCentroid(img)
 
+def quadCell(img):
+    
+    xSum = img.sum(-2)
+    ySum = img.sum(-1)
+    
+    xCent = xSum[...,1] - xSum[...,0]
+    yCent = ySum[...,1] - ySum[...,0]
+    
+    return numpy.array([xCent, yCent])
 
 def zernike(j, N):
     """
