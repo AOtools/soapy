@@ -59,6 +59,7 @@ simConfiguration = {
     "lgs"           :   [False],
     "centMethod"    :   ["brightestPxl"],
     "centThreshold" :   [0.1],
+
     },
 
 "LGS":{

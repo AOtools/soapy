@@ -27,7 +27,7 @@ except NameError:
     xrange = range
 
 class DM:
-    def __init__ (self, simConfig, dmConfig, wfss, mask, wfslist=[0]):
+    def __init__ (self, simConfig, dmConfig, wfss, mask):
 
         self.simConfig = simConfig
         self.dmConfig = dmConfig
@@ -40,11 +40,10 @@ class DM:
        
         #find the total number of WFS subaps, and make imat
         #placeholder
-        self.wfslist = wfslist
         self.totalSubaps = 0
-        for wfs in self.wfslist:
-            self.totalSubaps += self.wfss[wfs].activeSubaps
-           
+        self.wfs = wfss[self.dmConfig.wfs]
+        self.totalSubaps = self.wfs.activeSubaps
+        
     def getActiveActs(self):
         """
         Method returning the total number of actuators used by the DM - May be overwritten in DM classes
@@ -53,7 +52,6 @@ class DM:
             int: number of active DM actuators
         """
         return self.acts
-
 
     def makeIMat(self, callback=None, progressCallback=None ):
        '''
@@ -64,30 +62,25 @@ class DM:
        iMat = numpy.zeros( (self.iMatShapes.shape[0],2*self.totalSubaps) )
 
        subap=0
-       for wfs in self.wfslist:
-           for i in xrange(self.iMatShapes.shape[0]):
-               iMat[i,subap:subap+(2*self.wfss[wfs].activeSubaps)] =\
-                       self.wfss[wfs].iMatFrame(
-                                           self.iMatShapes[i])#/
-                                            #self.wfss[wfs].waveLength)
 
-               logger.debug("DM IMat act: %i"%i)
+       for i in xrange(self.iMatShapes.shape[0]):
+           iMat[i,subap:subap+(2*self.wfs.activeSubaps)] =\
+                   self.wfs.iMatFrame( self.iMatShapes[i])#/
+                                        #self.wfss[wfs].waveLength)
 
-               self.dmShape = self.iMatShapes[i]
-               
-               if callback!=None:
+           logger.debug("DM IMat act: %i"%i)
 
-                   callback() 
-               
-               logger.statusMessage(i, self.iMatShapes.shape[0],
-                        "Generating {} Actuator DM iMat".format(self.acts))
+           self.dmShape = self.iMatShapes[i]
+       
+           if callback!=None:
 
-                
-               
+               callback() 
+       
+           logger.statusMessage(i, self.iMatShapes.shape[0],
+                    "Generating {} Actuator DM iMat".format(self.acts))
+
        self.iMat = iMat
        return iMat
-
-
 
     def dmFrame ( self, dmCommands, gain, closed=False):
         '''
@@ -98,13 +91,11 @@ class DM:
         
         #If loop is closed, only add residual measurements onto old
         #actuator values
-
         if closed:
             self.newActCoeffs += self.actCoeffs
         
         self.actCoeffs = (gain * self.newActCoeffs)\
                             + ( (1-gain) * self.actCoeffs)
-
 
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
@@ -123,7 +114,8 @@ class Zernike(DM):
         interaction Matrix
         '''
 
-        shapes = self.dmConfig.iMatValue*aoSimLib.zernikeArray(int(self.acts+2),int(self.simConfig.pupilSize))[2:]
+        shapes = self.dmConfig.iMatValue*aoSimLib.zernikeArray(
+                        int(self.acts+3),int(self.simConfig.pupilSize))[3:]
 
         self.iMatShapes = shapes*self.mask
 
@@ -179,8 +171,6 @@ class TT(DM):
         self.makeIMatShapes()
 
         iMat = numpy.zeros( (2,2) )
-
-        self.wfs = self.wfss[self.wfslist[0]]
 
         slopesToTT = numpy.zeros((self.wfs.activeSubaps*2, 2))
         slopesToTT[:self.wfs.activeSubaps, 0] = 1./self.wfs.activeSubaps
@@ -269,9 +259,3 @@ class TT1:
         self.dmShape *= self.mask
 
         return self.dmShape
-
-
-
-
-
-

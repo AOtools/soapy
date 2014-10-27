@@ -195,19 +195,20 @@ class Sim(object):
         #init WFSs
         logger.info("Initialising WFSs....")
         self.wfss = {}
-        self.config.sim.totalSubaps = 0
-
+        self.config.sim.totalWfsData = 0
+        self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for wfs in xrange(self.config.sim.nGS):
             wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
             self.wfss[wfs]=wfsClass(    
                     self.config.sim, self.config.wfs[wfs], 
                     self.config.atmos, self.config.lgs[wfs], self.mask)
+            
+            self.config.wfs[wfs].dataStart = self.config.sim.totalWfsData
+            self.config.sim.totalWfsData += self.wfss[wfs].activeSubaps*2
+            
+            logger.info("WFS {0}: {1} measurements".format(wfs,
+                     self.wfss[wfs].activeSubaps*2))
 
-            self.config.sim.totalSubaps += self.wfss[wfs].activeSubaps
-
-            logger.info("WFS {0}: {1} active sub-apertures".format(wfs,
-                     self.wfss[wfs].activeSubaps))
-        self.config.sim.totalSlopes = 2*self.config.sim.totalSubaps
 
 
         #init DMs
@@ -318,16 +319,18 @@ class Sim(object):
                 callback=self.addToGuiQueue, progressCallback=progressCallback)
         self.Timat+= time.time()-t
 
-    def runWfs_noMP(self, scrns = None, dmShape=None, wfsList=None):
+    def runWfs_noMP(self, scrns = None, dmShape=None, wfsList=None,
+                    loopIter=None):
         """
         Runs all WFSs
         
-        Runs a single frame for each WFS in wfsList, passing the given phase screens and optional dmShape (if WFS in closed loop). If LGSs are present it will also deals with LGS propagation. Finally, the slopes from all WFSs are returned.
+        Runs a single frame for each WFS in wfsList, passing the given phase screens and optional dmShape (if WFS in closed loop). The WFSs are only read out if the wfs frame time co-incides with the WFS frame rate, else old slopes are provided. If iter is not given, then all WFSs are run and read out. If LGSs are present it will also deals with LGS propagation. Finally, the slopes from all WFSs are returned.
         
         Args:
             scrns (list): List of phase screens passing over telescope
-            dmShape (np array): 2-dimensional array of the total corrector shape
-            wfsList (list): A list of the WFSs to be run
+            dmShape (ndarray, optional): 2-dim array of the total corrector shape
+            wfsList (list, optional): A list of the WFSs to be run
+            iter (int, optional): The loop iteration number
             
         Returns:
             array: The slope data return from the WFS frame (may not be actual slopes if WFS other than SH used)
@@ -336,15 +339,25 @@ class Sim(object):
         if scrns != None:
             self.scrns=scrns
 
-        slopes = numpy.zeros( (self.config.sim.totalSubaps*2))
+        slopes = numpy.zeros( (self.config.sim.totalWfsData))
         s = 0
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
 
         for wfs in wfsList:
+            #check if due to read out WFS
+            if iter:
+                read=False
+                if (int(float(self.config.sim.loopTime*loopIter)
+                        /self.config.wfs[wfs].exposureTime) 
+                                        != self.wfsFrameNo[wfs]):
+                    self.wfsFrameNo[wfs]+=1
+                    read=True
+            else:
+                read = True
 
             slopes[s:s+self.wfss[wfs].activeSubaps*2] = \
-                    self.wfss[wfs].frame(self.scrns,dmShape)
+                    self.wfss[wfs].frame(self.scrns, dmShape, read=read)
             s += self.wfss[wfs].activeSubaps*2
 
         self.Twfs+=time.time()-t_wfs
@@ -368,7 +381,7 @@ class Sim(object):
         if scrns != None:
             self.scrns=scrns
 
-        slopes = numpy.zeros( (self.config.sim.totalSubaps*2))
+        slopes = numpy.zeros( (self.config.sim.totalWfsData))
         s = 0
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
@@ -488,7 +501,7 @@ class Sim(object):
         self.iters=1
         self.correct=1
         self.go = True
-        self.slopes = numpy.zeros( ( 2*self.config.sim.totalSubaps) )
+        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
 
         self.closedCorrection = numpy.zeros(self.dmShape.shape)
         self.openCorrection = self.closedCorrection.copy()
@@ -516,7 +529,8 @@ class Sim(object):
                 self.closedCorrection += self.runDM(self.dmCommands, closed=True)
 
                 #Run WFS, with closed loop DM shape applied
-                self.slopes = self.runWfs(dmShape=self.closedCorrection)
+                self.slopes = self.runWfs(  dmShape=self.closedCorrection,
+                                            loopIter=i)
 
                 #Get DM shape for open loop DMs, add to closed loop DM shape
                 self.openCorrection += self.runDM(  self.dmCommands, 
@@ -596,7 +610,7 @@ class Sim(object):
 
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
-            self.allSlopes = numpy.empty( (self.config.sim.nIters, 2*self.config.sim.totalSubaps) )
+            self.allSlopes = numpy.empty( (self.config.sim.nIters, self.config.sim.totalWfsData) )
         else:
             self.allSlopes = None
 

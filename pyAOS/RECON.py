@@ -76,8 +76,8 @@ class Reconstructor(object):
 
     def initControlMatrix(self):
 
-        self.controlMatrix = numpy.zeros((self.simConfig.totalSlopes, self.simConfig.totalActs))
-        self.controlShape = (self.simConfig.totalSlopes, self.simConfig.totalActs)
+        self.controlMatrix = numpy.zeros((self.simConfig.totalWfsData, self.simConfig.totalActs))
+        self.controlShape = (self.simConfig.totalWfsData, self.simConfig.totalActs)
 
     def saveCMat(self):
         filename = self.simConfig.filePrefix+"/cMat.fits"
@@ -261,7 +261,7 @@ class WooferTweeter(Reconstructor):
         lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
 
         highOrderCMat = dmCMats[-1].T.dot( 
-                numpy.identity(self.simConfig.totalSlopes)-lowToHighTransform)
+                numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
                             
         self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
  
@@ -286,17 +286,30 @@ class MVM(Reconstructor):
                 dmCMat = scipy.linalg.pinv( dmIMat, 
                                             self.dms[dm].dmConfig.dmCond)
 
-            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+            self.controlMatrix[ 
+                    self.dms[dm].wfs.wfsConfig.dataStart:
+                    (self.dms[dm].wfs.activeSubaps*2
+                                +self.dms[dm].wfs.wfsConfig.dataStart),
+                                    acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
 
     def reconstruct(self, slopes):
         #If theres a TT mirror, remove the TT from the slopes and get TT commands
 
         if self.dms[0].dmConfig.dmType=="TT":
-            ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
+            ttMean = slopes[self.dms[0].wfs.wfsConfig.dataStart:
+                            (self.dms[0].wfs.activeSubaps*2
+                                +self.dms[0].wfs.wfsConfig.dataStart)
+                            ].reshape(2,  
+                                self.dms[0].wfs.activeSubaps).mean(1)
             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-            slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
-            slopes[self.wfss[0].activeSubaps:] -= ttMean[1]
+            slopes[self.dms[0].wfs.wfsConfig.dataStart:
+                            (self.dms[0].wfs.wfsConfig.dataStart
+                                +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
+            slopes[ self.dms[0].wfs.wfsConfig.dataStart
+                        +self.dms[0].wfs.activeSubaps:
+                    self.dms[0].wfs.wfsConfig.dataStart
+                        +2*self.dms[0].wfs.activeSubaps] -= ttMean[1]
 
             #get dm commands for the calculated on axis slopes
             dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
@@ -307,6 +320,18 @@ class MVM(Reconstructor):
         dmCommands = self.controlMatrix.T.dot(slopes)
         return dmCommands
 
+# class lgsTT(Reconstructor):
+#     """
+#     A Reconstructor which uses 2 WFS, one LGS and one TT to control 2 DMs,
+#     one TT DM and a high order DM. The TT WFS controls the TT DM and
+#     the second WFS controls the high order DM. The TT DM and WFS is
+#     assumed to be the first in the system.
+#     """
+#
+#     for dm in xrange(self.simConfig.nDM):
+#         #if this is the first DM
+#         if not dm:
+#             dmIMat = self.dms
 
 class LearnAndApply(Reconstructor):
     '''
@@ -341,7 +366,7 @@ class LearnAndApply(Reconstructor):
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
-        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalSlopes - 2*self.wfss[0].activeSubaps):
+        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:
@@ -361,7 +386,7 @@ class LearnAndApply(Reconstructor):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.empty( (self.learnIters,self.simConfig.totalSlopes) )
+        self.learnSlopes = numpy.empty( (self.learnIters,self.simConfig.totalWfsData) )
         for i in xrange(self.learnIters):
             self.learnIter=i            
 
@@ -531,7 +556,7 @@ class LearnAndApplyLGS(Reconstructor):
         FRAMES = 10
         
         onAxisSize = self.wfss[0].activeSubaps*2
-        offAxisSize = self.simConfig.totalSlopes - self.wfss[0].activeSubaps*2
+        offAxisSize = self.simConfig.totalWfsData - self.wfss[0].activeSubaps*2
         
         self.onSlopes = numpy.empty( (self.learnIters+FRAMES,onAxisSize) )
         self.offSlopes = numpy.empty( (self.learnIters+FRAMES,

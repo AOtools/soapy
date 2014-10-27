@@ -183,7 +183,7 @@ class WFS(object):
         self.EField = numpy.zeros(
                 (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
 
-
+        self.ZERO_DATA = True
 
         
 
@@ -245,7 +245,7 @@ class WFS(object):
                 #Also calculate the required phase addition for each layer
                 self.elongRadii = {}
                 self.elongPos = {}
-                self.elongPhaseAdditions = numpy.empty( 
+                self.elongPhaseAdditions = numpy.zeros( 
                     (self.elongLayers,self.simConfig.pupilSize, 
                     self.simConfig.pupilSize))
                 for i in xrange(self.elongLayers):
@@ -568,9 +568,9 @@ class WFS(object):
     def zeroPhaseData(self):
         self.EField[:] = 0
         self.wfsPhase[:] = 0
+        
 
-
-    def frame(self, scrns, correction=None):
+    def frame(self, scrns, correction=None, read=True):
         '''
         Runs one WFS frame
         
@@ -582,17 +582,17 @@ class WFS(object):
         Parameters:
             scrns (list): A list or dict containing the phase screens
             correction (ndarray, optional): The correction term to take from the phase screens before the WFS is run.
+            read (bool, optional): Should the WFS be read out? if False, then WFS image is calculated but slopes not calculated. defaults to True.
             
         Returns:
             ndarray: WFS Measurements
         '''
-
+        
+        self.zeroData(detector=read, inter=False)
         self.scrns = {}
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.r0Scale
-
-        self.zeroData()
 
         #If no elongation
         if self.elong==0:
@@ -601,7 +601,6 @@ class WFS(object):
             if numpy.any(correction):
                 self.EField *= numpy.exp(-1j*correction)
             self.calcFocalPlane()
-
 
         #If LGS elongation simulated
         if self.elong!=0:
@@ -615,9 +614,11 @@ class WFS(object):
                     self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane()
 
-        self.makeDetectorPlane()
-        self.calculateSlopes()
-
+        if read:
+            self.makeDetectorPlane()
+            self.calculateSlopes()
+            self.zeroData(detector=False)
+            
         return self.slopes
 
     def photoNoise(self):
@@ -751,7 +752,7 @@ class ShackHartmann(WFS):
         
         super(ShackHartmann,self).allocDataArrays()
         
-        self.subapArrays=numpy.empty((self.activeSubaps,
+        self.subapArrays=numpy.zeros((self.activeSubaps,
                                       self.subapFOVSpacing,
                                       self.subapFOVSpacing),
                                      dtype=CDTYPE)
@@ -776,9 +777,10 @@ class ShackHartmann(WFS):
                                                 self.detectorPxls   ),
                                                dtype = self.dPlaneType )
         #Array used when centroiding subaps
-        self.centSubapArrays = numpy.empty( (self.activeSubaps,
+        self.centSubapArrays = numpy.zeros( (self.activeSubaps,
               self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
         
+        self.slopes = numpy.zeros( 2*self.activeSubaps )
     
     def calcTiltCorrect(self):
         """
@@ -802,7 +804,7 @@ class ShackHartmann(WFS):
         else:
             self.tiltFix = numpy.zeros( (self.subapFOVSpacing,)*2)
 
-    def oneSubap(self,phs):
+    def oneSubap(self, phs):
         '''
         Processes one subaperture only, with given phase
         '''
@@ -820,10 +822,22 @@ class ShackHartmann(WFS):
 #######################################################################
 
 
-    def zeroData(self):
+    def zeroData(self, detector=True, inter=True):
+        """
+        Sets data structures in WFS to zero.
+        
+        Parameters:
+            detector (bool, optional): Zero the detector? default:True
+            inter (bool, optional): Zero intermediate arrays? default: True
+        """
+        
         self.zeroPhaseData()
-        self.wfsDetectorPlane[:] = 0
-        self.FPSubapArrays[:] = 0
+        
+        if inter:
+            self.FPSubapArrays[:] = 0
+        
+        if detector:
+            self.wfsDetectorPlane[:] = 0
 
     def photonNoise(self):
 
@@ -972,7 +986,7 @@ class ShackHartmann(WFS):
         if self.wfsConfig.removeTT==True:
             slopes = (slopes.T - slopes.mean(1)).T
 
-        self.slopes = slopes.reshape(self.activeSubaps*2)
+        self.slopes[:] = slopes.reshape(self.activeSubaps*2)
         
         if self.wfsConfig.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (
@@ -1041,22 +1055,23 @@ class Pyramid(WFS):
 
         self.paddedDetectorPxls = (2*self.wfsConfig.pxlsPerSubap
                                     *self.wfsConfig.subapOversamp)
-        self.paddedDetectorPlane = numpy.empty([self.paddedDetectorPxls]*2,
+        self.paddedDetectorPlane = numpy.zeros([self.paddedDetectorPxls]*2,
                                                 dtype=DTYPE)
         
-        self.focalPlane = numpy.empty( [self.FOV_OVERSAMP*self.FOVPxlNo,]*2, 
+        self.focalPlane = numpy.zeros( [self.FOV_OVERSAMP*self.FOVPxlNo,]*2, 
                                         dtype=CDTYPE)
         
-        self.quads = numpy.empty(
+        self.quads = numpy.zeros(
                     (4,self.focalPlane.shape[0]/2.,self.focalPlane.shape[1]/2.),
                     dtype=CDTYPE)
 
         
-        self.wfsDetectorPlane = numpy.empty([self.detectorPxls]*2,
+        self.wfsDetectorPlane = numpy.zeros([self.detectorPxls]*2,
                                             dtype=DTYPE)
         
-
-    def zeroData(self):
+        self.slopes = numpy.zeros( 2*self.activeSubaps )
+        
+    def zeroData(self, detector=True, inter=True):
         self.zeroPhaseData()
         self.wfsDetectorPlane[:] = 0
         self.paddedDetectorPlane[:] = 0
@@ -1131,7 +1146,7 @@ class Pyramid(WFS):
                     +yDiff[self.wfsConfig.pxlsPerSubap:, :])
 
 
-        self.slopes = numpy.append(xSlopes.flatten(), ySlopes.flatten())
+        self.slopes[:] = numpy.append(xSlopes.flatten(), ySlopes.flatten())
 
     #Tilt optimisation
     ################################

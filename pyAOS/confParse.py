@@ -135,6 +135,11 @@ class Configurator(object):
                 break
         if wfsPhys:
             self.sim.scrnSize*=2
+            
+        #If any wfs exposure times set to None, set to the sim loopTime
+        for wfs in self.wfs:
+            if not wfs.exposureTime:
+                wfs.exposureTime = self.sim.loopTime
 
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
         logger.info("subScreenSize: {}".format(self.sim.scrnSize))
@@ -405,6 +410,10 @@ class WfsConfig(ConfigObj):
         ``centThreshold``   float: Centroiding threshold as
                             a fraction of the max subap
                             value.                             ``0.1``
+        ``exposureTime``    float: Exposure time of the WFS 
+                            camera - must be higher than 
+                            loopTime. If None, will be 
+                            set to loopTime.                    None
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
@@ -441,7 +450,8 @@ class WfsConfig(ConfigObj):
                                 ("lgs",False),
                                 ("centThreshold",0.3),
                                 ("centMethod", "simple"),
-                                ("type", "ShackHartmann")
+                                ("type", "ShackHartmann"),
+                                ("exposureTime", None),
                             ]
         self.initParams()
 
@@ -569,6 +579,8 @@ class DmConfig(ConfigObj):
         ``closed``           bool:Is DM closed loop of WFS?       ``True``
         ``iMatValue``        float: Value to push actuators
                              when making iMat                    ``10``
+        ``wfs``              int: which Wfs to take iMat and
+                             use to correct for.                 ``0``
         ==================== =================================   ===========  
         """
 
@@ -588,6 +600,7 @@ class DmConfig(ConfigObj):
         self.optionalParams = [ 
                                 ("closed",True),
                                 ("iMatValue",10),
+                                ("wfs", 0)
                                 ]
         self.initParams()
 
