@@ -228,12 +228,11 @@ class SimConfig(ConfigObj):
                             WFS                                 ``0``
         ``nDM``             int: Number of deformable Mirrors   ``0``
         ``nSci``            int: Number of Science Cameras      ``0``
-        ``gain``            float: loop gain of system          ``0.6``
-        ``reconstructor``   string: name of reconstructor 
+        ``reconstructor``   str: name of reconstructor 
                             class to use. See 
                             ``reconstructor`` module
                             for available reconstructors.       ``"MVM"``
-        ``filePrefix``      string: directory name to store 
+        ``filePrefix``      str: directory name to store 
                             simulation data                     ``None``
         ``tipTilt``         bool: Does system use tip-tilt 
                             Mirror                              ``False``
@@ -245,11 +244,11 @@ class SimConfig(ConfigObj):
                             simulation ranging from 0 
                             (no-ouput) to 3 (all debug 
                             output)                             ``2``
-        ``logfile``         string: name of file to store 
+        ``logfile``         str: name of file to store 
                             logging data,                       ``None``
         ``learnIters``      int: Number of `learn` iterations
                             for Learn & Apply reconstructor     ``0``
-        ``learnAtmos``      string: if ``random``, then 
+        ``learnAtmos``      str: if ``random``, then 
                             random phase screens used for 
                             `learn`                             ``random``
         ==================  =================================   ===============
@@ -417,7 +416,7 @@ class WfsConfig(ConfigObj):
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
-        ``fftwFlag``         string: Flag to pass to FFTW 
+        ``fftwFlag``        str: Flag to pass to FFTW 
                             when preparing plan.               ``FFTW_PATIENT``
         =================== =================================  =========== 
 
@@ -473,7 +472,7 @@ class TelConfig(ConfigObj):
         ------------------  ---------------------------------   -----------
         ``obs``             float: Diameter of central
                             obscuration                         ``0``
-        ``mask``            string: Shape of pupil (only 
+        ``mask``            str: Shape of pupil (only 
                             accepts ``circle`` currently)       ``circle``
         ==================  =================================   ===========  
 
@@ -506,7 +505,7 @@ class LgsConfig(ConfigObj):
                              aperture in metres.                 ``0.3``
         ``wavelength``       float: Wavelength of laser beam 
                              in metres                           ``600e-9``
-        ``propagationMode``  string: Mode of light propogation 
+        ``propagationMode``  str: Mode of light propogation 
                              from GS. Can be "physical" or 
                              "geometric"                         ``"phsyical"``
         ``height``           float: Height to use physical 
@@ -523,7 +522,7 @@ class LgsConfig(ConfigObj):
         ``fftwThreads``      int: number of threads for fftw 
                              to use. If ``0``, will use 
                              system processor number.             ``1``
-        ``fftwFlag``         string: Flag to pass to FFTW 
+        ``fftwFlag``         str: Flag to pass to FFTW 
                              when preparing plan.                 ``FFTW_PATIENT``
         ==================== =================================   ===========  
 
@@ -565,6 +564,7 @@ class DmConfig(ConfigObj):
                                 stack-array DMs this is number of actuators, 
                                 for Zernike DMs this is number of Zernike 
                                 modes.
+        ``gain``                float: The loop gain for the DM      
         ``dmCond``              float: The conditioning parameter used in the 
                                 pseudo inverse of the interaction matrix. this
                                 is performed by 
@@ -593,7 +593,7 @@ class DmConfig(ConfigObj):
         self.requiredParams = [ "dmType",
                                 "dmActs",
                                 "dmCond",
-
+                                "gain",
                                 ]
 
 
@@ -632,7 +632,7 @@ class SciConfig(ConfigObj):
         ``fftwThreads``      int: number of threads for fftw 
                              to use. If ``0``, will use 
                              system processor number.             ``1``
-        ``fftwFlag``         string: Flag to pass to FFTW 
+        ``fftwFlag``         str: Flag to pass to FFTW 
                              when preparing plan.                 ``FFTW_MEASURE``            
         ==================== =================================   ===========   
 

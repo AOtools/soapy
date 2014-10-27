@@ -82,7 +82,7 @@ class DM:
        self.iMat = iMat
        return iMat
 
-    def dmFrame ( self, dmCommands, gain, closed=False):
+    def dmFrame ( self, dmCommands, closed=False):
         '''
         Uses interaction matrix to calculate the final DM shape
         '''
@@ -94,8 +94,8 @@ class DM:
         if closed:
             self.newActCoeffs += self.actCoeffs
         
-        self.actCoeffs = (gain * self.newActCoeffs)\
-                            + ( (1-gain) * self.actCoeffs)
+        self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
+                            + ( (1-self.dmConfig.gain) * self.actCoeffs)
 
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         

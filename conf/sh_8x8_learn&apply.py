@@ -17,7 +17,6 @@ simConfiguration = {
     "nSci"          :   1,
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
-    "gain"          :   0.6,
     "reconstructor" :   "LearnAndApply", 
     "learnIters"    :   1000,
     "learnAtmos"    :   "random",
@@ -70,6 +69,7 @@ simConfiguration = {
     "dmActs"        :   [9**2],
     "dmCond"        :   [0.05],
     "closed"        :   [False],
+    "gain"          :   0.6,
     },
 
 "Science":{

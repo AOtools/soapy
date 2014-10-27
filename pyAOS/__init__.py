@@ -139,10 +139,7 @@ class Sim(object):
 
         self.config = confParse.Configurator(self.configFile)
         self.config.readfile()
-        self.config.loadSimParams() 
-
-        self.gain = self.config.sim.gain
-
+        self.config.loadSimParams()
 
     def aoinit(self):
         '''
@@ -465,8 +462,9 @@ class Sim(object):
             if self.config.dm[dm].closed==closed:
                 self.dmShape += self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
-                                    self.dmAct1[dm]+self.dms[dm].acts],
-                        self.gain, closed)
+                                    self.dmAct1[dm]+self.dms[dm].acts], 
+                                                    closed
+                                                    )
 
         self.Tdm += time.time()-t
         return self.dmShape

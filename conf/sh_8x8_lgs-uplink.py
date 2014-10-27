@@ -73,14 +73,6 @@ simConfiguration = {
     "elongationLayers": [5]*2,
     },
 
-# "DM":{
-#
-#     "dmType"        :   [   "Piezo"],
-#     "dmActs"        :   [   9**2],
-#     "dmCond"        :   [   0.05],
-#     "closed"        :   [   False],
-#     "iMatValue"     :   [   10  ]
-#     },
 
 "DM":{
 
@@ -88,6 +80,7 @@ simConfiguration = {
     "dmActs"        :   [2,         17**2],
     "dmCond"        :   [1e-15,      0.05],
     "closed"        :   [False,      False],
+    "gain"          :   [0.6,       0.6],
     "iMatValue"     :   [50,        10  ],
     "wfs"           :   [0,         1],
     },

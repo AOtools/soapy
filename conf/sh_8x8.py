@@ -37,7 +37,7 @@ simConfiguration = {
     "windDirs"      :   numpy.array([0,45,90,135]),
     "windSpeeds"    :   numpy.array([10,10,15,20]),
     "newScreens"    :   True, #Bool
-    "wholeScrnSize" :   1024,
+    "wholeScrnSize" :   2048,
     "r0"            :   0.16,
     },
 
@@ -72,22 +72,9 @@ simConfiguration = {
     "dmActs"        :   [2,         9**2],
     "dmCond"        :   [1e-15,      0.05],
     "closed"        :   [False,      False],
+    "gain"          :   [0.6,       0.6],
     "iMatValue"     :   [50,        10  ],
     },
-
-# "DM":{
-#     "dmType"        : ["TT"],
-#     "dmActs"        : [2],
-#     "dmCond"        : [1e-9],
-#     "closed"        : [True],
-#     },
-  
-# "DM":{
-#    "dmType"        :     ["Piezo"],
-#    "dmActs"        :     [ 9**2],
-#    "dmCond"        :     [  0.05],
-#    "closed"        :     [  False],
-#    },
 
 "Science":{
     "position"      :   [(0,0)],

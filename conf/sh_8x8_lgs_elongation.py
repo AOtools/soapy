@@ -62,7 +62,6 @@ simConfiguration = {
     },
 
 "LGS":{
-    
     "lgsUplink"     :   [False],
     "lgsPupilDiam"  :   [0.3],
     "wavelength"    :   [600e-9],
@@ -79,7 +78,8 @@ simConfiguration = {
     "dmActs"        :   [2,         9**2],
     "dmCond"        :   [1e-15,      0.05],
     "closed"        :   [False,      False],
-    "iMatValue"     :   [50,        10  ]
+    "gain"          :   [0.6,       0.6],
+    "iMatValue"     :   [50,        10  ],
     },
 
 "Science":{
