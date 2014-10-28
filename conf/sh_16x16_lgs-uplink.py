@@ -17,7 +17,7 @@ simConfiguration = {
     "nDM"           :   2,
     "nSci"          :   1,
     "nIters"        :   1000,
-    "loopTime"      :   1/250.0,
+    "loopTime"      :   1/400.0,
     "gain"          :   0.6,
     "reconstructor" :   "MVM", 
 
@@ -42,24 +42,24 @@ simConfiguration = {
     },
 
 "Telescope":{
-   "telDiam"        :   4.2,  #Metres
-   "obs"            :   1.2, #Central Obscuration
+   "telDiam"        :   8.,  #Metres
+   "obs"            :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
-    "GSPosition"    :   [(0,0), (0,0)],
+    "GSPosition"    :   [(60,0), (0,0)],
     "GSHeight"      :   [0,     90e3],
-    "subaps"        :   [4,     16],
-    "pxlsPerSubap"  :   [8,     14]*2,
-    "subapFOV"      :   [5.0,   5.0],
+    "subaps"        :   [2,     16],
+    "pxlsPerSubap"  :   [2,     14]*2,
+    "subapFOV"      :   [3.0,   5.0],
     "subapOversamp" :   [4]*2,
     "wavelength"    :   [600e-9]*2,
     "bitDepth"      :   [8]*2,
     "lgs"           :   [False, True],
     "centMethod"    :   ["brightestPxl"]*2,
     "centThreshold" :   [0.2]*2,
-    "exposureTime"  :   [1/200.,  None],
+    "exposureTime"  :   [1/100.,  None],
     "removeTT"      :   [False, True],
     },
 
@@ -79,15 +79,15 @@ simConfiguration = {
     "dmType"        :   ["TT",     "Piezo"],
     "dmActs"        :   [2,         17**2],
     "dmCond"        :   [1e-15,      0.05],
-    "closed"        :   [False,      False],
-    "gain"          :   [0.6,       0.6],
-    "iMatValue"     :   [50,        10  ],
+    "closed"        :   [True,      True],
+    "gain"          :   [0.5,       0.6],
+    "iMatValue"     :   [20,        10  ],
     "wfs"           :   [0,         1],
     },
 
 "Science":{
     "position"      :   [(0,0)],
-    "FOV"           :   [3.0],
+    "FOV"           :   [1.5],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
     "oversamp"      :   [2],
