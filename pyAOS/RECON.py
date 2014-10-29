@@ -381,12 +381,56 @@ class LgsTT(MVM):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.empty( (self.learnIters,self.simConfig.totalWfsData) )
+        self.learnSlopes = numpy.empty( 
+                (self.learnIters,
+                self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2) 
+                )
         for i in xrange(self.learnIters):
-            self.learnIter=i            
-
+            self.learnIter=i
+                   
             scrns = self.moveScrns()
-            self.learnSlopes[i] = self.runWfs(scrns)
+            slopes = self.runWfs(scrns, range(1, self.simConfig.nGS)))
+            
+            #Now remove the *GLOBAL* TT (common to all) from the off axis slopes
+            offSlopes = slopes[self.wfss[1].activeSubaps*2:]
+  
+            xSlopes = numpy.empty(self.simConfig.totalWfsData
+                                                - self.config.wfs[2].dataStart)
+            ySlopes = numpy.empty_like(xSlopes)
+            for i in range(sim.config.nGS-2):
+                wfsSubaps = self.wfss[i+2].activeSubaps
+                xSlopes[
+                        i*wfsSubaps:(i*1)*wfsSubaps] = slopes[
+                                            lgsSlope1+i*2*wfsSubaps:
+                                            lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
+                                                            ]
+                ySlopes[
+                        i*wfsSubaps:(i*1)*wfsSubaps
+                        ] = slopes[
+                                    lgsSlope1+i*2*wfsSubaps+wfsSubaps:
+                                    lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
+                                    ]
+            
+            xMean = xSlopes.mean()
+            yMean = ySlopes.mean()
+        
+            xSlopes -= xMean
+            ySlopes -= yMean
+        
+            #Now put the global TT removed slopes back into the slope array for the
+            #tomographic reconstructor
+            offSlopes = numpy.empty(ySlopes.shape[0]*2)
+            for i in range(sim.config.nGS):
+                offSlopes[  i*wfsSubaps*2:
+                            i*wfsSubaps*2+wfsSubaps] = xSlopes[ i*wfsSubaps:
+                                                                (i+1)*wfsSubaps]
+                offSlopes[  i+wfsSubaps*2+wfsSubaps:
+                            (i+1)*wfsSubaps*2]       = ySlopes[ i*wfsSubaps:
+                                                                (i+1)*wfsSubaps]
+            
+            
+            slopes[self.wfss[1].activeSubaps*2:] = offSlopes
+            self.learnSlopes[i] = slopes
             
             sys.stdout.write("\rLearn Frame: {}".format(i))
             sys.stdout.flush()

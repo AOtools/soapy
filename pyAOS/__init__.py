@@ -327,10 +327,10 @@ class Sim(object):
             scrns (list): List of phase screens passing over telescope
             dmShape (ndarray, optional): 2-dim array of the total corrector shape
             wfsList (list, optional): A list of the WFSs to be run
-            iter (int, optional): The loop iteration number
+            loopIter (int, optional): The loop iteration number
             
         Returns:
-            array: The slope data return from the WFS frame (may not be actual slopes if WFS other than SH used)
+            ndarray: The slope data return from the WFS frame (may not be actual slopes if WFS other than SH used)
             """
         t_wfs = time.time()
         if scrns != None:
@@ -360,16 +360,17 @@ class Sim(object):
         self.Twfs+=time.time()-t_wfs
         return slopes
 
-    def runWfs_MP(self, scrns=None, dmShape=None, wfsList=None):
+    def runWfs_MP(self, scrns=None, dmShape=None, wfsList=None, loopIter=None):
         """
         Runs all WFSs using multiprocessing
         
-        Runs a single frame for each WFS in wfsList, passing the given phase screens and optional dmShape (if WFS in closed loop). If LGSs are present it will also deals with LGS propagation. Finally, the slopes from all WFSs are returned. Each WFS is allocated a seperate process to complete the frame, giving a significant increase in speed, expecially for computationally heavy WFSs.
+        Runs a single frame for each WFS in wfsList, passing the given phase screens and optional dmShape (if WFS in closed loop). If LGSs are present it will also deals with LGS propagation. Finally, the slopes from all WFSs are returned. Each WFS is allocated a separate process to complete the frame, giving a significant increase in speed, especially for computationally heavy WFSs.
         
         Args:
             scrns (list): List of phase screens passing over telescope
-            dmShape (np array): 2-dimensional array of the total corrector shape
-            wfsList (list): A list of the WFSs to be run
+            dmShape (ndarray, optional): 2-dimensional array of the total corrector shape
+            wfsList (list, optional): A list of the WFSs to be run, if not set, runs all WFSs
+            loopIter (int, optional): The loop iteration number
             
         Returns:
             ndarray: The slope data return from the WFS frame (may not be actual slopes if WFS other than SH used)
@@ -377,34 +378,48 @@ class Sim(object):
         t_wfs = time.time()
         if scrns != None:
             self.scrns=scrns
-
-        slopes = numpy.zeros( (self.config.sim.totalWfsData))
-        s = 0
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
+        
+
+        slopesSize = 0:
+        for wfs in wfsList:
+            slopesSize+=self.wfss[wfs].activeSubaps*2
+            
+        slopes = numpy.zeros( (slopesSize) )
 
         wfsProcs = []
         wfsQueues = []
+        s = 0
+        for wfs in wfsList:
 
-        for wfs in xrange(self.config.sim.nGS):
+            #check if due to read out WFS
+            if iter:
+                read=False
+                if (int(float(self.config.sim.loopTime*loopIter)
+                        /self.config.wfs[wfs].exposureTime) 
+                                        != self.wfsFrameNo[wfs]):
+                    self.wfsFrameNo[wfs]+=1
+                    read = True
+            else:
+                read = True
 
             wfsQueues.append(Queue())
             wfsProcs.append(Process(target=multiWfs,
-                    args=[  self.scrns, self.wfss[wfs], dmShape, 
+                    args=[  self.scrns, self.wfss[wfs], dmShape, read
                             wfsQueues[wfs]])
                     )
             wfsProcs[wfs].daemon = True
             wfsProcs[wfs].start()
 
-        for wfs in xrange(self.config.sim.nGS):
+        for wfs in wfsList:
 
-            res = wfsQueues[wfs].get()
-
+            result = wfsQueues[wfs].get()
 
             (slopes[s:s+self.wfss[wfs].activeSubaps*2],
                     self.wfss[wfs].wfsDetectorPlane,
                     self.wfss[wfs].uncorrectedPhase,
-                    lgsPsf) = res
+                    lgsPsf) = result
 
             if lgsPsf!=None:
                 self.wfss[wfs].LGS.psf1 = lgsPsf
@@ -833,7 +848,7 @@ class Sim(object):
 
 
 #Functions used by MP stuff
-def multiWfs(scrns, wfsObj, dmShape, queue):
+def multiWfs(scrns, wfsObj, dmShape, read, queue):
     """
     Function to run the WFS in multiprocessing mode.
 
@@ -846,7 +861,7 @@ def multiWfs(scrns, wfsObj, dmShape, queue):
         queue (Queue object): a multiprocessing Queue object used to pass data back to host process.
     """
 
-    slopes = wfsObj.frame(scrns, dmShape)
+    slopes = wfsObj.frame(scrns, dmShape, read=read)
 
     if wfsObj.lgsConfig.lgsUplink:
         lgsPsf = wfsObj.LGS.psf1
