@@ -554,7 +554,8 @@ class Sim(object):
                 ttShape, self.slopes = self.runTipTilt(self.slopes)
 
                 #Pass whole combine DM shapes to science target
-                self.runSciCams(self.openCorrection+self.closedCorrection+ttShape)
+                self.runSciCams(
+                            self.openCorrection+self.closedCorrection+ttShape)
                 
                 #Save Data
                 self.storeData(i)

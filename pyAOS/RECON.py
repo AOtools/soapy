@@ -370,9 +370,9 @@ class LgsTT(MVM):
 
     def initControlMatrix(self):
 
-        self.controlShape = (self.wfss[1].wfsConfig.dataStart,
+        self.controlShape = (self.wfss[2].wfsConfig.dataStart,
                              self.simConfig.totalActs)
-        self.controlMatrix = numpy.empty( self.controlShape )
+        self.controlMatrix = numpy.zeros( self.controlShape )
     
 
     def learn(self,callback=None, progressCallback=None):
@@ -382,7 +382,7 @@ class LgsTT(MVM):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.empty( 
+        self.learnSlopes = numpy.zeros( 
                 (self.learnIters,
                 self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2) 
                 )
@@ -399,7 +399,6 @@ class LgsTT(MVM):
                                     - self.wfss[2].wfsConfig.dataStart)/2.)
             ySlopes = numpy.empty_like(xSlopes)
             for i in range(self.simConfig.nGS-2):
-
                 wfsSubaps = self.wfss[i+2].activeSubaps
                 
                 xSlopes[
@@ -423,7 +422,8 @@ class LgsTT(MVM):
             #Now put the global TT removed slopes back into the slope array for the
             #tomographic reconstructor
             offSlopes = numpy.empty(ySlopes.shape[0]*2)
-            for i in range(self.simConfig.nGS):
+            for i in range(self.simConfig.nGS-2):
+                wfsSubaps = self.wfss[i+2].activeSubaps
                 offSlopes[  i*wfsSubaps*2:
                             i*wfsSubaps*2+wfsSubaps] = xSlopes[ i*wfsSubaps:
                                                                 (i+1)*wfsSubaps]
@@ -434,9 +434,6 @@ class LgsTT(MVM):
             
             slopes[self.wfss[1].activeSubaps*2:] = offSlopes
             self.learnSlopes[f] = slopes
-            
-            # sys.stdout.write("\rLearn Frame: {}".format(i))
-#sys.stdout.flush()
             
             if callback!=None:
                 callback()
@@ -462,10 +459,10 @@ class LgsTT(MVM):
             progressCallback(1,1, "Calculating Covariance Matrices")
         
         self.covMat = numpy.cov(self.learnSlopes.T)
-        Conoff = self.covMat[   :2*self.wfss[0].activeSubaps,
-                                2*self.wfss[0].activeSubaps:     ]
-        Coffoff = self.covMat[  2*self.wfss[0].activeSubaps:,
-                                2*self.wfss[0].activeSubaps:    ]
+        Conoff = self.covMat[   :2*self.wfss[1].activeSubaps,
+                                2*self.wfss[1].activeSubaps:     ]
+        Coffoff = self.covMat[  2*self.wfss[1].activeSubaps:,
+                                2*self.wfss[1].activeSubaps:    ]
         
         logger.info("Inverting offoff Covariance Matrix")
         iCoffoff = numpy.linalg.pinv(Coffoff)
@@ -473,19 +470,20 @@ class LgsTT(MVM):
         self.tomoRecon = Conoff.dot(iCoffoff)
         logger.info("Done. \nCreating full reconstructor....")
         
-        #Same code as in "MVM" class to create dm-slopes reconstructor.
-        acts = 0
-        for dm in xrange(self.simConfig.nDM):
-            dmIMat = self.dms[dm].iMat
-            
-            if dmIMat.shape[0]==dmIMat.shape[1]:
-                dmCMat = numpy.inv(dmIMat)
-            else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
-            
-            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-            acts += self.dms[dm].acts
+        # #Same code as in "MVM" class to create dm-slopes reconstructor.
+#         acts = 0
+#         for dm in xrange(self.simConfig.nDM):
+#             dmIMat = self.dms[dm].iMat
+#
+#             if dmIMat.shape[0]==dmIMat.shape[1]:
+#                 dmCMat = numpy.inv(dmIMat)
+#             else:
+#                 dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
+#
+#             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+#             acts += self.dms[dm].acts
 
+        super(LgsTT, self).calcCMat(callback, progressCallback)
         #self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
         logger.info("Done.")
         
@@ -507,16 +505,14 @@ class LgsTT(MVM):
         ySlopes = numpy.empty_like(xSlopes)
         for i in range(self.simConfig.nGS-2):
             wfsSubaps = self.wfss[i+2].activeSubaps
-            xSlopes[
-                    i*wfsSubaps:(i+1)*wfsSubaps] = slopes[
+            xSlopes[i*wfsSubaps:(i+1)*wfsSubaps] = slopes[
                                         lgsSlope1+i*2*wfsSubaps:
                                         lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
                                                         ]
-            ySlopes[
-                    i*wfsSubaps:(i+1)*wfsSubaps
+            ySlopes[i*wfsSubaps:(i+1)*wfsSubaps
                     ] = slopes[
                                 lgsSlope1+i*2*wfsSubaps+wfsSubaps:
-                                lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
+                                lgsSlope1+(i*2*wfsSubaps)+2*wfsSubaps
                                 ]
             
         xMean = xSlopes.mean()
@@ -528,20 +524,21 @@ class LgsTT(MVM):
         #Now put the global TT removed slopes back into the slope array for the
         #tomographic reconstructor
         offSlopes = numpy.empty(ySlopes.shape[0]*2)
-        for i in range(self.simConfig.nGS):
+        for i in range(self.simConfig.nGS-2):
+            wfsSubaps = self.wfss[i+2].activeSubaps
             offSlopes[  i*wfsSubaps*2:
                         i*wfsSubaps*2+wfsSubaps] = xSlopes[ i*wfsSubaps:
                                                             (i+1)*wfsSubaps]
-            offSlopes[  i+wfsSubaps*2+wfsSubaps:
-                        (i+1)*wfsSubaps*2]       = ySlopes[ i*wfsSubaps:
-                                                            (i+1)*wfsSubaps]
+            offSlopes[  i*wfsSubaps*2+wfsSubaps:
+                        (i+1)*wfsSubaps*2] = ySlopes[ i*wfsSubaps:
+                                                        (i+1)*wfsSubaps]
 
         #Retreive pseudo on-axis slopes from tomo reconstructor using all slopes
         #but the TT and on-axis WFS slopes
         onSlopes = self.tomoRecon.dot(offSlopes)
 
         #New slopes are the TT slopes and pseudo off-axis slopes
-        slopes = numpy.append(slopes[2*self.wfss[0].activeSubaps], onSlopes)
+        slopes = numpy.append(slopes[:2*self.wfss[0].activeSubaps], onSlopes)
 
         return super(LgsTT, self).reconstruct(slopes)
 
@@ -605,7 +602,7 @@ class LearnAndApply(Reconstructor):
     def initControlMatrix(self):
 
         self.controlShape = (2*self.wfss[0].activeSubaps, self.simConfig.totalActs)
-        self.controlMatrix = numpy.empty( self.controlShape )
+        self.controlMatrix = numpy.zeros( self.controlShape )
     
 
     def learn(self,callback=None, progressCallback=None):
@@ -615,7 +612,7 @@ class LearnAndApply(Reconstructor):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.empty( (self.learnIters,self.simConfig.totalWfsData) )
+        self.learnSlopes = numpy.zeros( (self.learnIters,self.simConfig.totalWfsData) )
         for i in xrange(self.learnIters):
             self.learnIter=i            
 
@@ -787,10 +784,10 @@ class LearnAndApplyLGS(Reconstructor):
         onAxisSize = self.wfss[0].activeSubaps*2
         offAxisSize = self.simConfig.totalWfsData - self.wfss[0].activeSubaps*2
         
-        self.onSlopes = numpy.empty( (self.learnIters+FRAMES,onAxisSize) )
-        self.offSlopes = numpy.empty( (self.learnIters+FRAMES,
+        self.onSlopes = numpy.zeros( (self.learnIters+FRAMES,onAxisSize) )
+        self.offSlopes = numpy.zeros( (self.learnIters+FRAMES,
                                                 FRAMES*offAxisSize) )
-        self.slopesBuffer = numpy.empty( (FRAMES,offAxisSize) )
+        self.slopesBuffer = numpy.zeros( (FRAMES,offAxisSize) )
         
         for i in xrange(self.learnIters+FRAMES):
             self.learnIter = i
@@ -811,7 +808,7 @@ class LearnAndApplyLGS(Reconstructor):
         Uses the slopes recorded in the "learn" and DM interaction matrices
         to create a CMat.
         '''
-        self.controlMatrix = numpy.empty( (2*self.wfss[0].activeSubaps,
+        self.controlMatrix = numpy.zeros( (2*self.wfss[0].activeSubaps,
                                             self.simConfig.totalActs) )
         logger.info("Performing Learn....")
         self.learn()
