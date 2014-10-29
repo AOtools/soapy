@@ -370,7 +370,8 @@ class LgsTT(MVM):
 
     def initControlMatrix(self):
 
-        self.controlShape = (2*self.wfss[0].activeSubaps, self.simConfig.totalActs)
+        self.controlShape = (self.wfss[1].wfsConfig.dataStart,
+                             self.simConfig.totalActs)
         self.controlMatrix = numpy.empty( self.controlShape )
     
 
@@ -460,9 +461,7 @@ class LgsTT(MVM):
         if progressCallback!=None:
             progressCallback(1,1, "Calculating Covariance Matrices")
         
-        #Use all but TT slopes (last WFS) for covMat
-        self.covMat = numpy.cov(
-                            self.learnSlopes.T[2*self.wfss[0].activeSubaps:])
+        self.covMat = numpy.cov(self.learnSlopes.T)
         Conoff = self.covMat[   :2*self.wfss[0].activeSubaps,
                                 2*self.wfss[0].activeSubaps:     ]
         Coffoff = self.covMat[  2*self.wfss[0].activeSubaps:,
