@@ -343,7 +343,7 @@ class Sim(object):
 
         for wfs in wfsList:
             #check if due to read out WFS
-            if iter:
+            if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
                         /self.config.wfs[wfs].exposureTime) 
@@ -382,7 +382,7 @@ class Sim(object):
             wfsList=range(self.config.sim.nGS)
         
 
-        slopesSize = 0:
+        slopesSize = 0
         for wfs in wfsList:
             slopesSize+=self.wfss[wfs].activeSubaps*2
             
@@ -391,10 +391,10 @@ class Sim(object):
         wfsProcs = []
         wfsQueues = []
         s = 0
-        for wfs in wfsList:
-
+        for proc in xrange(len(wfsList)):
+            wfs = wfsList[proc]
             #check if due to read out WFS
-            if iter:
+            if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
                         /self.config.wfs[wfs].exposureTime) 
@@ -406,27 +406,28 @@ class Sim(object):
 
             wfsQueues.append(Queue())
             wfsProcs.append(Process(target=multiWfs,
-                    args=[  self.scrns, self.wfss[wfs], dmShape, read
-                            wfsQueues[wfs]])
+                    args=[  self.scrns, self.wfss[wfs], dmShape, read,
+                            wfsQueues[proc]])
                     )
-            wfsProcs[wfs].daemon = True
-            wfsProcs[wfs].start()
+            wfsProcs[proc].daemon = True
+            wfsProcs[proc].start()
 
-        for wfs in wfsList:
-
-            result = wfsQueues[wfs].get()
+        for proc in xrange(len(wfsList)):
+            wfs = wfsList[proc]
+            
+            result = wfsQueues[proc].get()
 
             (slopes[s:s+self.wfss[wfs].activeSubaps*2],
                     self.wfss[wfs].wfsDetectorPlane,
                     self.wfss[wfs].uncorrectedPhase,
                     lgsPsf) = result
-
-            if lgsPsf!=None:
+            
+            if numpy.any(lgsPsf)!=None:
                 self.wfss[wfs].LGS.psf1 = lgsPsf
 
-            wfsProcs[wfs].join()
+            wfsProcs[proc].join()
             s += self.wfss[wfs].activeSubaps*2
-
+            
         self.Twfs+=time.time()-t_wfs
         return slopes
 

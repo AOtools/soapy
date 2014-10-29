@@ -385,30 +385,32 @@ class LgsTT(MVM):
                 (self.learnIters,
                 self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2) 
                 )
-        for i in xrange(self.learnIters):
-            self.learnIter=i
+        for f in xrange(self.learnIters):
+            self.learnIter=f
                    
             scrns = self.moveScrns()
-            slopes = self.runWfs(scrns, range(1, self.simConfig.nGS)))
+            slopes = self.runWfs(scrns, wfsList=range(1, self.simConfig.nGS))
             
             #Now remove the *GLOBAL* TT (common to all) from the off axis slopes
             offSlopes = slopes[self.wfss[1].activeSubaps*2:]
   
-            xSlopes = numpy.empty(self.simConfig.totalWfsData
-                                                - self.config.wfs[2].dataStart)
+            xSlopes = numpy.empty((self.simConfig.totalWfsData
+                                    - self.wfss[2].wfsConfig.dataStart)/2.)
             ySlopes = numpy.empty_like(xSlopes)
-            for i in range(sim.config.nGS-2):
+            for i in range(self.simConfig.nGS-2):
+
                 wfsSubaps = self.wfss[i+2].activeSubaps
+                
                 xSlopes[
-                        i*wfsSubaps:(i*1)*wfsSubaps] = slopes[
-                                            lgsSlope1+i*2*wfsSubaps:
-                                            lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
+                        i*wfsSubaps:(i+1)*wfsSubaps] = offSlopes[
+                                            i*2*wfsSubaps:
+                                            (i*2*wfsSubaps)+wfsSubaps
                                                             ]
                 ySlopes[
-                        i*wfsSubaps:(i*1)*wfsSubaps
-                        ] = slopes[
-                                    lgsSlope1+i*2*wfsSubaps+wfsSubaps:
-                                    lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
+                        i*wfsSubaps:(i+1)*wfsSubaps
+                        ] = offSlopes[
+                                    i*2*wfsSubaps+wfsSubaps:
+                                    (i*2*wfsSubaps)+2*wfsSubaps
                                     ]
             
             xMean = xSlopes.mean()
@@ -420,25 +422,25 @@ class LgsTT(MVM):
             #Now put the global TT removed slopes back into the slope array for the
             #tomographic reconstructor
             offSlopes = numpy.empty(ySlopes.shape[0]*2)
-            for i in range(sim.config.nGS):
+            for i in range(self.simConfig.nGS):
                 offSlopes[  i*wfsSubaps*2:
                             i*wfsSubaps*2+wfsSubaps] = xSlopes[ i*wfsSubaps:
                                                                 (i+1)*wfsSubaps]
-                offSlopes[  i+wfsSubaps*2+wfsSubaps:
-                            (i+1)*wfsSubaps*2]       = ySlopes[ i*wfsSubaps:
-                                                                (i+1)*wfsSubaps]
+                offSlopes[  i*wfsSubaps*2+wfsSubaps:
+                            (i+1)*wfsSubaps*2] = ySlopes[ i*wfsSubaps:
+                                                            (i+1)*wfsSubaps]
             
             
             slopes[self.wfss[1].activeSubaps*2:] = offSlopes
-            self.learnSlopes[i] = slopes
+            self.learnSlopes[f] = slopes
             
-            sys.stdout.write("\rLearn Frame: {}".format(i))
-            sys.stdout.flush()
+            # sys.stdout.write("\rLearn Frame: {}".format(i))
+#sys.stdout.flush()
             
             if callback!=None:
                 callback()
             if progressCallback!=None:
-               progressCallback("Performing Learn", i, self.learnIters ) 
+               progressCallback("Performing Learn", f, self.learnIters ) 
             
         if self.simConfig.saveLearn:
             fits.PrimaryHDU(self.learnSlopes).writeto(
@@ -500,19 +502,19 @@ class LgsTT(MVM):
         """
 
         #Remove all TT common to all the off-axis WFSs.
-        lgsSlope1 = self.config.wfs[2].dataStart
-        xSlopes = numpy.empty(self.simConfig.totalWfsData
-                                                - self.config.wfs[2].dataStart)
+        lgsSlope1 = self.wfss[2].wfsConfig.dataStart
+        xSlopes = numpy.empty((self.simConfig.totalWfsData
+                                - self.wfss[2].wfsConfig.dataStart)/2.)
         ySlopes = numpy.empty_like(xSlopes)
-        for i in range(sim.config.nGS-2):
+        for i in range(self.simConfig.nGS-2):
             wfsSubaps = self.wfss[i+2].activeSubaps
             xSlopes[
-                    i*wfsSubaps:(i*1)*wfsSubaps] = slopes[
+                    i*wfsSubaps:(i+1)*wfsSubaps] = slopes[
                                         lgsSlope1+i*2*wfsSubaps:
                                         lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
                                                         ]
             ySlopes[
-                    i*wfsSubaps:(i*1)*wfsSubaps
+                    i*wfsSubaps:(i+1)*wfsSubaps
                     ] = slopes[
                                 lgsSlope1+i*2*wfsSubaps+wfsSubaps:
                                 lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
@@ -527,7 +529,7 @@ class LgsTT(MVM):
         #Now put the global TT removed slopes back into the slope array for the
         #tomographic reconstructor
         offSlopes = numpy.empty(ySlopes.shape[0]*2)
-        for i in range(sim.config.nGS):
+        for i in range(self.simConfig.nGS):
             offSlopes[  i*wfsSubaps*2:
                         i*wfsSubaps*2+wfsSubaps] = xSlopes[ i*wfsSubaps:
                                                             (i+1)*wfsSubaps]
@@ -621,8 +623,8 @@ class LearnAndApply(Reconstructor):
             scrns = self.moveScrns()
             self.learnSlopes[i] = self.runWfs(scrns)
             
-            sys.stdout.write("\rLearn Frame: {}".format(i))
-            sys.stdout.flush()
+            # sys.stdout.write("\rLearn Frame: {}".format(i))
+#             sys.stdout.flush()
             
             if callback!=None:
                 callback()
