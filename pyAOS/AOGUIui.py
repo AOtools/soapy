@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Mon Oct 27 13:22:10 2014
+# Created: Wed Oct 29 16:35:32 2014
 #      by: PyQt4 UI code generator 4.11.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -83,11 +83,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.addWidget(self.updateTimeSpin)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem)
-        self.gainLayout = QtGui.QHBoxLayout()
-        self.gainLayout.setObjectName(_fromUtf8("gainLayout"))
         self.label_2 = QtGui.QLabel(self.layoutWidget)
         self.label_2.setObjectName(_fromUtf8("label_2"))
-        self.gainLayout.addWidget(self.label_2)
+        self.horizontalLayout_3.addWidget(self.label_2)
+        self.gainLayout = QtGui.QHBoxLayout()
+        self.gainLayout.setObjectName(_fromUtf8("gainLayout"))
         self.horizontalLayout_3.addLayout(self.gainLayout)
         self.horizontalLayout_6.addLayout(self.horizontalLayout_3)
         self.splitter_2 = QtGui.QSplitter(self.splitter_4)
@@ -305,8 +305,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "AO Tomography Simulation", None))
-        self.label_7.setText(_translate("MainWindow", "Plot Update Rate", None))
-        self.label_2.setText(_translate("MainWindow", "Gain:", None))
+        self.label_7.setText(_translate("MainWindow", "Plot Update Rate (Hz)", None))
+        self.label_2.setText(_translate("MainWindow", "Gain -", None))
         self.LgsPsfLabel.setText(_translate("MainWindow", "Laser Guide Star PSFs", None))
         self.label_6.setText(_translate("MainWindow", "DM Shapes", None))
         self.label.setText(_translate("MainWindow", "WFS Phase", None))

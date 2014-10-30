@@ -354,7 +354,7 @@ class LgsTT(MVM):
 
     def loadCMat(self):
             
-        super(LearnAndApply, self).loadCMat()
+        super(LgsTT, self).loadCMat()
 
         #Load tomo reconstructor
         tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"

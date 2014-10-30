@@ -300,6 +300,8 @@ class GUI(QtGui.QMainWindow):
                     
                     circ = pylab.Circle(cent,radius=radius,alpha=0.4,fc=colour)
                     self.resultPlot.canvas.axes[i].add_patch(circ)
+                    self.resultPlot.canvas.axes[i].set_yticks([])
+                    self.resultPlot.canvas.axes[i].set_xticks([])
 
 
     def initStrehlPlot(self):
@@ -484,6 +486,7 @@ class StatsThread(QtCore.QThread):
             except ZeroDivisionError:
                 pass
 
+
 class InitThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
     def __init__(self,guiObj):
@@ -500,6 +503,7 @@ class InitThread(QtCore.QThread):
 
     def progressUpdate(self, message, i="", maxIter=""):
         self.updateProgressSignal.emit(message, i, maxIter)
+
 
 class IMatThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
