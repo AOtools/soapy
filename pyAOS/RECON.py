@@ -437,7 +437,7 @@ class LgsTT(MVM):
         logger.info("Done. \nCreating full reconstructor....")
 
         super(LgsTT, self).calcCMat(callback, progressCallback)
-        #self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
+        
         logger.info("Done.")
         
 
