@@ -102,6 +102,7 @@ class ShackHartmann(WFS.ShackHartmann):
         self.gpuFFT = reiknalib.ftAbs(
                 self.subapArraysGPU, axes=(1,2)).compile(self.thr)
         
+
     def calcFocalPlane(self):
         """
         Calculates the focal plane of the SH WFS, given the EField across

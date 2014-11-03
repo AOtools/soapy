@@ -299,6 +299,67 @@ class MakeSubaps(Computation):
                                                         
         return plan
 
+class BinImgs(Computation):
+    """
+    Computation to bin arrays of 2d images into smaller arrays of 2d images.
+    The input images must be an integer multiple of the binned images
+    """
+
+
+    def __init__(self, binnedArray, inputArray, binFactor):
+
+        
+        Computation.__init__(self, [
+            Parameter('binnedArray', Annotation(binnedArray, 'o')),
+            Parameter('inputArray', Annotation(inputArray, 'i')),
+            Parameter('binFactor', Annotation(binFactor))
+            ])
+            
+        
+
+    def _build_plan(    self, plan_factory, device_params, 
+                        binnedArray,  inputArray, binFactor):
+
+        plan = plan_factory()
+
+        template = reikna.helpers.template_from(
+        """
+        <%def name='binImgs(kernel_declaration, k_binnedArray, k_inputArray, k_binFactor)'>
+        ${kernel_declaration}
+        {
+            VIRTUAL_SKIP_THREADS;
+            const VSIZE_T i = virtual_global_id(0);
+            const VSIZE_T j = virtual_global_id(1);
+            const VSIZE_T k = virtual_global_id(2);
+            
+            const VSIZE_T binFactor = ${k_binFactor};
+            
+            const VSIZE_T x1 = j * (VSIZE_T) binFactor;
+            const VSIZE_T y1 = k * (VSIZE_T) binFactor;
+            
+            ${k_binnedArray.ctype} value = 0;
+            for(VSIZE_T x = x1; x<(x1+binFactor); x++){
+                for(VSIZE_T y = y1; y<(y1+binFactor); y++){
+                    value = value + ${k_inputArray.load_idx}(i,x,y);
+                }
+            }
+            
+            ${k_binnedArray.store_idx}(i, j, k, ${cast}(value));
+        }
+        </%def>
+        """)
+
+        plan.kernel_call(
+                template.get_def('binImgs'),
+                [binnedArray, inputArray, binFactor],
+                global_size=binnedArray.shape,
+                render_kwds={'cast' : cluda.functions.cast(
+                                        binnedArray.dtype, inputArray.dtype)
+                            }
+                )
+                                                        
+        return plan
+
     
 ##############################
 #Combined Calculations
@@ -323,6 +384,23 @@ def ftAbs(outputArray, inputArray, axes):
 
 #####################
 #Test Funcs
+
+def testBin(data, binFactor, thr=None):
+    
+    if not thr:
+        api = cluda.ocl_api()
+        thr = api.Thread.create()
+        
+    data_gpu = thr.to_device(data)
+    result_gpu = thr.to_device(numpy.zeros((data.shape[0], data.shape[1]/binFactor, data.shape[2]/binFactor)))
+    
+    binCalc = BinImgs(result_gpu, data_gpu, binFactor)
+    c_binCalc = binCalc.compile(thr)
+    
+    c_binCalc(result_gpu, data_gpu, binFactor)
+    
+    return result_gpu.get()
+    
 
 def testFT(data):
 
