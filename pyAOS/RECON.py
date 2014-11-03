@@ -390,59 +390,21 @@ class LgsTT(MVM):
             self.learnIter=f
                    
             scrns = self.moveScrns()
-            slopes = self.runWfs(scrns, wfsList=range(1, self.simConfig.nGS))
-            
-            #Now remove the *GLOBAL* TT (common to all) from the off axis slopes
-            offSlopes = slopes[self.wfss[1].activeSubaps*2:]
-  
-            xSlopes = numpy.empty((self.simConfig.totalWfsData
-                                    - self.wfss[2].wfsConfig.dataStart)/2.)
-            ySlopes = numpy.empty_like(xSlopes)
-            for i in range(self.simConfig.nGS-2):
-                wfsSubaps = self.wfss[i+2].activeSubaps
-                
-                xSlopes[
-                        i*wfsSubaps:(i+1)*wfsSubaps] = offSlopes[
-                                            i*2*wfsSubaps:
-                                            (i*2*wfsSubaps)+wfsSubaps
-                                                            ]
-                ySlopes[
-                        i*wfsSubaps:(i+1)*wfsSubaps
-                        ] = offSlopes[
-                                    i*2*wfsSubaps+wfsSubaps:
-                                    (i*2*wfsSubaps)+2*wfsSubaps
-                                    ]
-            
-            xMean = xSlopes.mean()
-            yMean = ySlopes.mean()
-        
-            xSlopes -= xMean
-            ySlopes -= yMean
-        
-            #Now put the global TT removed slopes back into the slope array for the
-            #tomographic reconstructor
-            offSlopes = numpy.empty(ySlopes.shape[0]*2)
-            for i in range(self.simConfig.nGS-2):
-                wfsSubaps = self.wfss[i+2].activeSubaps
-                offSlopes[  i*wfsSubaps*2:
-                            i*wfsSubaps*2+wfsSubaps] = xSlopes[ i*wfsSubaps:
-                                                                (i+1)*wfsSubaps]
-                offSlopes[  i*wfsSubaps*2+wfsSubaps:
-                            (i+1)*wfsSubaps*2] = ySlopes[ i*wfsSubaps:
-                                                            (i+1)*wfsSubaps]
-            
-            
-            slopes[self.wfss[1].activeSubaps*2:] = offSlopes
-            self.learnSlopes[f] = slopes
-            
+            self.learnSlopes[f] = self.runWfs(
+                                        scrns, 
+                                        wfsList=range(1, self.simConfig.nGS))
+                                        
+            logger.statusMessage(f, self.learnIters, "Performing Learn")
             if callback!=None:
                 callback()
             if progressCallback!=None:
-               progressCallback("Performing Learn", f, self.learnIters ) 
+               progressCallback("Performing Learn", f, self.learnIters )
+
             
         if self.simConfig.saveLearn:
             fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.filePrefix+"/learn.fits",clobber=True )
+                            self.simConfig.filePrefix+"/learn.fits", 
+                            clobber=True )
 
 
     def calcCMat(self,callback=None, progressCallback=None):
@@ -457,6 +419,10 @@ class LgsTT(MVM):
         
         if progressCallback!=None:
             progressCallback(1,1, "Calculating Covariance Matrices")
+        
+        #Need to remove all *common* TT from off-axis learn slopes
+        self.learnSlopes[:, 2*self.wfss[1].activeSubaps:] = self.removeCommonTT(
+                self.learnSlopes[:, 2*self.wfss[1].activeSubaps:], [2,3,4,5])
         
         self.covMat = numpy.cov(self.learnSlopes.T)
         Conoff = self.covMat[   :2*self.wfss[1].activeSubaps,
@@ -499,64 +465,41 @@ class LgsTT(MVM):
         """
 
         #Remove all TT common to all the off-axis WFSs.
-        lgsSlope1 = self.wfss[2].wfsConfig.dataStart
-        xSlopes = numpy.empty((self.simConfig.totalWfsData
-                                - self.wfss[2].wfsConfig.dataStart)/2.)
-        ySlopes = numpy.empty_like(xSlopes)
-        for i in range(self.simConfig.nGS-2):
-            wfsSubaps = self.wfss[i+2].activeSubaps
-            xSlopes[i*wfsSubaps:(i+1)*wfsSubaps] = slopes[
-                                        lgsSlope1+i*2*wfsSubaps:
-                                        lgsSlope1+(i*2*wfsSubaps)+wfsSubaps
-                                                        ]
-            ySlopes[i*wfsSubaps:(i+1)*wfsSubaps
-                    ] = slopes[
-                                lgsSlope1+i*2*wfsSubaps+wfsSubaps:
-                                lgsSlope1+(i*2*wfsSubaps)+2*wfsSubaps
-                                ]
-            
-        xMean = xSlopes.mean()
-        yMean = ySlopes.mean()
+        offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
+        offSlopes = self.removeCommonTT(offSlopes, [2,3,4,5])
         
-        xSlopes -= xMean
-        ySlopes -= yMean
-        
-        #Now put the global TT removed slopes back into the slope array for the
-        #tomographic reconstructor
-        offSlopes = numpy.empty(ySlopes.shape[0]*2)
-        for i in range(self.simConfig.nGS-2):
-            wfsSubaps = self.wfss[i+2].activeSubaps
-            offSlopes[  i*wfsSubaps*2:
-                        i*wfsSubaps*2+wfsSubaps] = xSlopes[ i*wfsSubaps:
-                                                            (i+1)*wfsSubaps]
-            offSlopes[  i*wfsSubaps*2+wfsSubaps:
-                        (i+1)*wfsSubaps*2] = ySlopes[ i*wfsSubaps:
-                                                        (i+1)*wfsSubaps]
-
-        #Retreive pseudo on-axis slopes from tomo reconstructor using all slopes
-        #but the TT and on-axis WFS slopes
+        #Get Pseudo on-axis slopes from tomo reconstructor
         onSlopes = self.tomoRecon.dot(offSlopes)
-
+        
         #New slopes are the TT slopes and pseudo off-axis slopes
         slopes = numpy.append(slopes[:2*self.wfss[0].activeSubaps], onSlopes)
-
+        
         return super(LgsTT, self).reconstruct(slopes)
 
-        # if self.dms[0].dmConfig.dmType=="TT":
-#             ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
-#             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-#             slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
-#             slopes[self.wfss[0].activeSubaps:] -= ttMean[1]
-#
-#             #get dm commands for the calculated on axis slopes
-#             dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
-#
-#             return numpy.append(ttCommands, dmCommands)
-#
-#         #get dm commands for the calculated on axis slopes
-#         dmCommands = self.controlMatrix.T.dot(slopes)
-#return dmCommands
-
+    def removeCommonTT(self, slopes, wfsList):
+        
+        xSlopesShape = numpy.array(slopes.shape)
+        xSlopesShape[-1] /= 2.
+        xSlopes = numpy.zeros(xSlopesShape)
+        ySlopes = numpy.zeros(xSlopesShape)
+        
+        for i in range(len(wfsList)):
+            wfs = wfsList[i]
+            wfsSubaps = self.wfss[wfs].activeSubaps
+            xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps]
+            ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps]
+            
+        xSlopes = (xSlopes.T - xSlopes.mean(-1)).T
+        ySlopes = (ySlopes.T - ySlopes.mean(-1)).T
+        
+        for i in range(len(wfsList)):
+            wfs = wfsList[i]
+            wfsSubaps = self.wfss[wfs].activeSubaps
+            
+            slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps] = xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+            slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps] = ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+        
+        return slopes
             
 
 class LearnAndApply(Reconstructor):
@@ -605,7 +548,7 @@ class LearnAndApply(Reconstructor):
         self.controlMatrix = numpy.zeros( self.controlShape )
     
 
-    def learn(self,callback=None, progressCallback=None):
+    def learn(self, callback=None, progressCallback=None):
         '''
         Takes "self.learnFrames" WFS frames, and computes the tomographic
         reconstructor for the system. This method uses the "truth" sensor, and
@@ -619,9 +562,8 @@ class LearnAndApply(Reconstructor):
             scrns = self.moveScrns()
             self.learnSlopes[i] = self.runWfs(scrns)
             
-            # sys.stdout.write("\rLearn Frame: {}".format(i))
-#             sys.stdout.flush()
-            
+
+            logger.statusMessage(i, self.learnIters, "Performing Learn")
             if callback!=None:
                 callback()
             if progressCallback!=None:
@@ -706,8 +648,6 @@ class LearnAndApply(Reconstructor):
         return dmCommands
 
             
-
-
 #####################################
 #Experimental....
 #####################################

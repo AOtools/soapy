@@ -683,7 +683,9 @@ class ShackHartmann(WFS):
         determined if mean of subap coords of the mask is above threshold
         '''
 
-        self.subapCoords = aoSimLib.findActiveSubaps(self.wfsConfig.subaps,self.mask, self.wfsConfig.subapThreshold)
+        self.subapCoords = aoSimLib.findActiveSubaps(
+                self.wfsConfig.subaps, self.mask, 
+                self.wfsConfig.subapThreshold)
         self.activeSubaps = self.subapCoords.shape[0]
 
         #When scaled to pxl sizes, need to scale subap coordinates too!

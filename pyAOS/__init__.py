@@ -63,7 +63,7 @@ Examples:
 
 #sim imports
 from . import atmosphere, logger
-from . import WFS
+from . import WFS, reikna_WFS
 from . import DM
 from . import RECON
 from . import SCI
@@ -195,7 +195,7 @@ class Sim(object):
         self.config.sim.totalWfsData = 0
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for wfs in xrange(self.config.sim.nGS):
-            wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
+            wfsClass = eval("reikna_WFS.{}".format(self.config.wfs[wfs].type))
             self.wfss[wfs]=wfsClass(    
                     self.config.sim, self.config.wfs[wfs], 
                     self.config.atmos, self.config.lgs[wfs], self.mask)
