@@ -519,13 +519,13 @@ class Sim(object):
 
         self.closedCorrection = numpy.zeros(self.dmShape.shape)
         self.openCorrection = self.closedCorrection.copy()
-        self.dmCommands = numpy.empty( self.config.sim.totalActs )
+        self.dmCommands = numpy.zeros( self.config.sim.totalActs )
 
         for i in xrange(self.config.sim.nIters):
             if self.go:
 
                 #get next phase screens
-                t = time.time()
+                t = time.time()ß
                 self.scrns = self.atmos.moveScrns()
                 self.Tatmos = time.time()-t
 

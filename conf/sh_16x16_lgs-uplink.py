@@ -48,19 +48,19 @@ simConfiguration = {
     },
 
 "WFS":{
-    "GSPosition"    :   [(60,0), (0,0)],
-    "GSHeight"      :   [0,     90e3],
-    "subaps"        :   [2,     16],
-    "pxlsPerSubap"  :   [2,     14]*2,
-    "subapFOV"      :   [3.0,   5.0],
-    "subapOversamp" :   [4]*2,
+    "GSPosition"    :   [(60,0),    (0,0)],
+    "GSHeight"      :   [0,         90e3],
+    "subaps"        :   [2,         16],
+    "pxlsPerSubap"  :   [2,         14],
+    "subapFOV"      :   [3.0,       5.0],
+    "subapOversamp" :   [4,         4],
     "wavelength"    :   [600e-9]*2,
     "bitDepth"      :   [8]*2,
-    "lgs"           :   [False, True],
+    "lgs"           :   [False,     True],
     "centMethod"    :   ["brightestPxl"]*2,
     "centThreshold" :   [0.2]*2,
-    "exposureTime"  :   [1/100.,  None],
-    "removeTT"      :   [False, True],
+    "exposureTime"  :   [1/100.,    None],
+    "removeTT"      :   [False,     True],
     },
 
 "LGS":{
