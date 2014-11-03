@@ -30,6 +30,18 @@ def absSquare_tr(shape):
     return absSquare
 
 
+def pad_tr(outArray, inArray):
+    
+    pad = Transformation([
+        Parameter("outArray", Annotation(outArray, 'o')),
+        Parameter("inArray", Annotation(inArray, 'i'))
+    ],
+    """
+    ${outArray.store_same}(${inArray.load_same});
+    """,
+    connectors["outArray", "inArray"]
+    )
+
 ###########################    
 #Computations
 ###########################    
@@ -200,7 +212,6 @@ class MultiplyArrays2d(Computation):
             Parameter('input2', Annotation(arr, 'i')),
            ])
 
-
     def _build_plan(    self, plan_factory, device_params, 
                         output,  input1, input2):
 
@@ -289,16 +300,21 @@ class MakeSubaps(Computation):
         return plan
 
     
-    
 ##############################
 #Combined Calculations
 #############################
     
-def ftAbs(arr, axes):
+def ftAbs(outputArray, inputArray, axes):
     
-    ft = rFFT(arr, axes)
-    absSq_tr = absSquare_tr(arr.shape)
     
+    pad = pad_tr(outputArray, inputArray )
+    
+    ft = rFFT(outputArray, axes)
+    
+    absSq_tr = absSquare_tr(outputArray.shape)
+
+    
+    ft.parameter.input.connect( pad, pad.outArray, inArray=pad.inArray)
     ft.parameter.output.connect( absSq_tr, absSq_tr.complexNum,
                                  out=absSq_tr.absSq)
     
@@ -486,66 +502,6 @@ def bench_interp1d(dataSize, newSize, N=1000):
 
 
 
-        
-class Interp2dGPU(Computation):
-    
-    def __init__(self, outputArr, inputArr, coordArr):
-        
-        Computation.__init__(self, [
-            Parameter('output', Annotation(outputArr, 'o')),
-            Parameter('inputArray', Annotation(inputArr, 'i')),
-            Parameter('xCoords', Annotation(coordArr, 'i')),
-            Parameter('yCoords', Annotation(coordArr, 'i'))
-            ])
-    
-    def _build_plan(    self, plan_factory, device_params,
-                        output, inputArray, xCoords, yCoords):
-        plan = plan_factory()
-
-        template = reikna.helpers.template_from(
-        """
-        <%def name='interp2d(kernel_decleration, k_output, k_input, k_xCoords, k_yCoords)'>
-        ${kernel_decleration}
-        {
-        VIRTUAL_SKIP_THREADS;
-        
-        const VSIZE_T i = virtual_global_id(0);
-        const VSIZE_T j = virtual_global_id(1);
-        
-        const ${k_xCoords.ctype} x = ${k_xCoords.load_idx}(i);
-        const ${k_yCoords.ctype} y = ${k_yCoords.load_idx}(j);
-
-        const int xInt = (int) x;
-        const int yInt = (int) y;
-
-        const int xInt1 = (int) (xInt+1);
-        const int yInt1 = (int) (yInt+1);
-
-        const ${k_input.ctype} xRem = (${k_input.ctype}) x - (${k_input.ctype}) xInt;
-        const ${k_input.ctype} yRem = (${k_input.ctype}) y - (${k_input.ctype}) yInt;
-
-        const ${k_input.ctype} xGrad = ${k_input.load_idx}(xInt1, yInt) 
-                    - ${k_input.load_idx}(xInt, yInt);
-        const ${k_input.ctype} yGrad = ${k_input.load_idx}(xInt, yInt1)
-                    - ${k_input.load_idx}(xInt, yInt);
-                    
-        const ${k_output.ctype} value = (${k_output.ctype}) (${mul}(xRem, xGrad) + ${mul}(yRem, yGrad) + ${k_input.load_idx}(xInt,yInt));
-        
-        ${k_output.store_idx}(i, j, value);
-
-        }
-        </%def>
-        """)
-
-        plan.kernel_call(
-                template.get_def('interp2d'),
-                [output, inputArray, xCoords, yCoords],
-                global_size=(output.shape),
-                render_kwds={
-                    'mul' : cluda.functions.mul(output.dtype,output.dtype),
-                    }
-                )
-        return plan
 
 
 def test_interp2d(data, newSize, thr=None):
