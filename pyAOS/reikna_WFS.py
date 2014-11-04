@@ -69,7 +69,10 @@ class ShackHartmann(WFS.ShackHartmann):
 
         
         #subapCoords for sorting subaps
-        self.subapCoordsGPU = self.thr.to_device(self.subapCoords)
+        #scaled subap coords to scaled EField size
+        self.subapCoordsGPU = self.thr.to_device(
+                numpy.round(self.subapCoords*(self.subapFOVSpacing/self.PPSpacing)
+                            ))
         
     def initCalculations(self):
         
@@ -103,9 +106,10 @@ class ShackHartmann(WFS.ShackHartmann):
                 axes=(1,2)).compile(self.thr)
                 
 
+
         
 
-    def calcFocalPlane(self):
+    def calcFocalPlaneGPU(self):
         """
         Calculates the focal plane of the SH WFS, given the EField across
         the WFS.
@@ -125,7 +129,6 @@ class ShackHartmann(WFS.ShackHartmann):
         self.mulScaledEField(
                 self.scaledEFieldGPU, self.scaledEFieldGPU, self.scaledMaskGPU)
 
- 
         self.makeSubaps(
                 self.subapArraysGPU, self.scaledEFieldGPU, self.subapCoordsGPU
                 )
@@ -137,6 +140,53 @@ class ShackHartmann(WFS.ShackHartmann):
         self.FPSubapArrays[:] += AOFFT.ftShift2d(self.FPSubapArraysGPU.get())
         
         
+    def calcFocalPlane(self):
+        '''
+        Calculates the wfs focal plane, given the phase across the WFS
+        '''
+
+        #Scale phase (EField) to correct size for FOV
+        # self.scaledEField = aoSimLib.zoom( self.EField, 
+        #         self.wfsConfig.subaps*self.subapFOVSpacing) * self.scaledMask 
+
+        self.EFieldGPU = self.thr.to_device(self.EField)
+        
+        self.scaleEFieldGPU(
+                self.scaledEFieldGPU, self.EFieldGPU, 
+                self.scaleEFieldXCoordsGPU, self.scaleEFieldYCoordsGPU)
+
+        self.mulScaledEField(
+                self.scaledEFieldGPU, self.scaledEFieldGPU, self.scaledMaskGPU)
+
+        self.makeSubaps(
+                self.subapArraysGPU, self.scaledEFieldGPU, self.subapCoordsGPU
+                )
+
+        self.subapArrays[:] = self.subapArraysGPU.get()
+
+        # self.gpuFFT(self.FPSubapArraysGPU, self.subapArraysGPU)
+
+        # self.FPSubapArrays[:] += AOFFT.ftShift2d(self.FPSubapArraysGPU.get())
+        #create an array of individual subap EFields
+        # for i in xrange(self.activeSubaps):
+        #     x,y = numpy.round(self.subapCoords[i] *
+        #                              self.subapFOVSpacing/self.PPSpacing)
+        #     self.subapArrays[i] = self.scaledEField[
+        #                             int(x):
+        #                             int(x+self.subapFOVSpacing) ,
+        #                             int(y):
+        #                             int(y+self.subapFOVSpacing)]
+
+        #do the fft to all subaps at the same time
+        #and convert into intensity
+        self.FFT.inputData[:] = 0
+        self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
+                        ,:int(round(self.subapFOVSpacing))] \
+                = self.subapArrays*numpy.exp(1j*(self.tiltFix))
+
+        self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
+
+
 #     def makeDetectorPlane(self):
 #         '''
 #         if required, will convolve final psf with LGS psf, then bins
