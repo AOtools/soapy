@@ -3,7 +3,7 @@ from pyAOS import WFS
 from reikna import cluda
 from reikna.core import Type
 
-from . import reiknalib
+from . import reiknalib, AOFFT
 
 import numpy
 
@@ -48,7 +48,7 @@ class ShackHartmann(WFS.ShackHartmann):
         self.binnedFPSubapArraysGPU = self.thr.to_device(
                                             self.binnedFPSubapArrays)
         self.FPSubapArraysGPU = self.thr.to_device(self.FPSubapArrays)
-        self.wfsDetectorPlane = self.thr.to_device(self.wfsDetectorPlane)
+        self.wfsDetectorPlaneGPU = self.thr.to_device(self.wfsDetectorPlane)
         
         #Other things not usually thought of as "allocated data" in the cpu version
         self.scaledMaskGPU = self.thr.to_device(self.scaledMask.astype(CDTYPE))
@@ -100,7 +100,7 @@ class ShackHartmann(WFS.ShackHartmann):
         
         #The forward FFTs for the subaps
         self.gpuFFT = reiknalib.ftAbs(
-                self.subapArraysGPU, axes=(1,2)).compile(self.thr)
+                self.FPSubapArrays, self.subapArraysGPU, axes=(1,2)).compile(self.thr)
         
     def calcFocalPlane(self):
         """
@@ -112,19 +112,29 @@ class ShackHartmann(WFS.ShackHartmann):
         This is the start of current work of the GPU, so must load the stacked 
         EField on the device first.
         """
+        print('send efield...')
         self.EFieldGPU = self.thr.to_device(self.EField)
+        
+        print('scale efield...')
         self.scaleEFieldGPU(
                 self.scaledEFieldGPU, self.EFieldGPU, 
                 self.scaleEFieldXCoordsGPU, self.scaleEFieldYCoordsGPU)
         
+        print('mul efield...')
         self.mulScaledEField(
                 self.scaledEFieldGPU, self.scaledEFieldGPU, self.scaledMaskGPU)
         
+        print('make subaps...')
         self.makeSubaps(
                 self.subapArraysGPU, self.scaledEFieldGPU, self.subapCoordsGPU
                 )
     
+        print('do fft...')
+        print(self.FPSubapArraysGPU.shape, self.FPSubapArraysGPU.dtype)
+        print(self.subapArraysGPU.shape, self.subapArraysGPU.dtype)
         self.gpuFFT(self.FPSubapArraysGPU, self.subapArraysGPU)
         
-        self.FPSubapArrays[:] += self.FPSubapArraysGPU.get()
+        print('get data...')
+
+        self.FPSubapArrays[:] += AOFFT.ftShift2d(self.FPSubapArraysGPU.get())
         

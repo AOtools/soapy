@@ -39,10 +39,12 @@ def pad_tr(outArray, inArray):
     """
     ${outArray.store_same}(${inArray.load_same});
     """,
-    connectors["outArray", "inArray"]
+    connectors=["outArray", "inArray"]
     )
 
-###########################    
+    return pad
+
+###########################
 #Computations
 ###########################    
 class Interp1dGPU(Computation):
@@ -129,15 +131,15 @@ class Interp2dGPU(Computation):
         const int xInt1 = (int) (xInt+1);
         const int yInt1 = (int) (yInt+1);
 
-        const ${k_input.ctype} xRem = (${k_input.ctype}) x - (${k_input.ctype}) xInt;
-        const ${k_input.ctype} yRem = (${k_input.ctype}) y - (${k_input.ctype}) yInt;
+        const ${k_input.ctype} xRem = ${add}( (${k_input.ctype}) x, (${k_input.ctype}) ${mulMinus}(xInt,-1) );
+        const ${k_input.ctype} yRem = ${add}( (${k_input.ctype}) y, (${k_input.ctype}) ${mulMinus}(yInt,-1) );
 
         const ${k_input.ctype} xGrad = ${k_input.load_idx}(xInt1, yInt) 
                     - ${k_input.load_idx}(xInt, yInt);
         const ${k_input.ctype} yGrad = ${k_input.load_idx}(xInt, yInt1)
                     - ${k_input.load_idx}(xInt, yInt);
                     
-        const ${k_output.ctype} value = (${k_output.ctype}) (${mul}(xRem, xGrad) + ${mul}(yRem, yGrad) + ${k_input.load_idx}(xInt,yInt));
+        const ${k_output.ctype} value = (${k_output.ctype}) ${add3}(${mul}(xRem, xGrad), ${mul}(yRem, yGrad), ${k_input.load_idx}(xInt,yInt));
         
         ${k_output.store_idx}(i, j, value);
 
@@ -151,6 +153,9 @@ class Interp2dGPU(Computation):
                 global_size=(output.shape),
                 render_kwds={
                     'mul' : cluda.functions.mul(output.dtype,output.dtype),
+                    'add' : cluda.functions.add(inputArray.dtype, inputArray.dtype),
+                    'mulMinus' : cluda.functions.mul(inputArray.dtype, numpy.int32, out_dtype=inputArray.dtype),
+                    'add3' : cluda.functions.add(inputArray.dtype, inputArray.dtype, inputArray.dtype),
                     }
                 )
         return plan
@@ -307,14 +312,22 @@ class MakeSubaps(Computation):
 def ftAbs(outputArray, inputArray, axes):
     
     
-    pad = pad_tr(outputArray, inputArray )
-    
-    ft = rFFT(outputArray, axes)
-    
-    absSq_tr = absSquare_tr(outputArray.shape)
+    pad = Transformation([
+        Parameter("outArray", Annotation(Type(shape=outputArray.shape, dtype=inputArray.dtype), 'o')),
+        Parameter("inArray", Annotation(inputArray, 'i'))
+        ],
+        """
+        ${outArray.store_same}(${inArray.load_same});
+        """,
+        connectors=["outArray", "inArray"]
+        )
 
     
+    ft = rFFT(Type(shape=outputArray.shape,dtype=inputArray.dtype), axes)
+    
     ft.parameter.input.connect( pad, pad.outArray, inArray=pad.inArray)
+
+    absSq_tr = absSquare_tr(outputArray.shape)
     ft.parameter.output.connect( absSq_tr, absSq_tr.complexNum,
                                  out=absSq_tr.absSq)
     
