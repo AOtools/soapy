@@ -39,7 +39,7 @@ def pad_tr(outArray, inArray):
     """
     ${outArray.store_same}(${inArray.load_same});
     """,
-    connectors["outArray", "inArray"]
+    connectors=["outArray", "inArray"]
     )
 
 ###########################    
@@ -129,15 +129,16 @@ class Interp2dGPU(Computation):
         const int xInt1 = (int) (xInt+1);
         const int yInt1 = (int) (yInt+1);
 
-        const ${k_input.ctype} xRem = (${k_input.ctype}) x - (${k_input.ctype}) xInt;
-        const ${k_input.ctype} yRem = (${k_input.ctype}) y - (${k_input.ctype}) yInt;
+        const ${k_xCoords.ctype} xRem = (${k_xCoords.ctype}) x - (${k_xCoords.ctype}) xInt;
+        const ${k_yCoords.ctype} yRem = (${k_yCoords.ctype}) y - (${k_yCoords.ctype}) yInt;
 
-        const ${k_input.ctype} xGrad = ${k_input.load_idx}(xInt1, yInt) 
-                    - ${k_input.load_idx}(xInt, yInt);
+        const ${k_input.ctype} xGrad = ${sum2}(${k_input.load_idx}(
+                            xInt1, yInt), 
+                    ${mulConst}(${k_input.load_idx}(xInt, yInt),-1));
         const ${k_input.ctype} yGrad = ${k_input.load_idx}(xInt, yInt1)
                     - ${k_input.load_idx}(xInt, yInt);
                     
-        const ${k_output.ctype} value = (${k_output.ctype}) (${mul}(xRem, xGrad) + ${mul}(yRem, yGrad) + ${k_input.load_idx}(xInt,yInt));
+        const ${k_output.ctype} value =${sum3}(${mul}(xRem, xGrad), ${mul}(yRem, yGrad), ${k_input.load_idx}(xInt,yInt));
         
         ${k_output.store_idx}(i, j, value);
 
@@ -150,7 +151,17 @@ class Interp2dGPU(Computation):
                 [output, inputArray, xCoords, yCoords],
                 global_size=(output.shape),
                 render_kwds={
-                    'mul' : cluda.functions.mul(output.dtype,output.dtype),
+                    'mul' : cluda.functions.mul(xCoords.dtype,inputArray.dtype,
+                                                out_dtype=inputArray.dtype),
+                    'sum3' : cluda.functions.add(
+                            inputArray.dtype, inputArray.dtype, 
+                            inputArray.dtype, out_dtype=output.dtype),
+                    'mulConst':cluda.functions.mul(
+                            inputArray.dtype, numpy.float32,
+                            out_dtype=inputArray.dtype),
+                    'sum2'  : cluda.functions.add(
+                            inputArray.dtype, inputArray.dtype,
+                            out_dtype=inputArray.dtype),
                     }
                 )
         return plan

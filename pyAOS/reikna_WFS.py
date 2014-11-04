@@ -100,7 +100,8 @@ class ShackHartmann(WFS.ShackHartmann):
         
         #The forward FFTs for the subaps
         self.gpuFFT = reiknalib.ftAbs(
-                self.subapArraysGPU, axes=(1,2)).compile(self.thr)
+                self.FPSubapArraysGPU, self.subapArraysGPU,
+                axes=(1,2)).compile(self.thr)
         
 
     def calcFocalPlane(self):
@@ -129,3 +130,65 @@ class ShackHartmann(WFS.ShackHartmann):
         
         self.FPSubapArrays[:] += self.FPSubapArraysGPU.get()
         
+        
+    def makeDetectorPlane(self):
+        '''
+        if required, will convolve final psf with LGS psf, then bins
+        psf down to detector size. Finally puts back into wfsFocalPlane Array
+        in correct order.
+        '''
+
+        #If required, convolve with LGS PSF
+        # if self.LGS and self.lgsConfig.lgsUplink and self.iMat!=True:
+#    self.LGSUplink()
+
+        #bins back down to correct size and then
+        #fits them back in to a focal plane array
+        self.binnedFPSubapArrays[:] = aoSimLib.binImgs(self.FPSubapArrays,
+                                            self.wfsConfig.subapOversamp)
+
+        self.binnedFPSubapArrays[:] = self.maxFlux* (self.binnedFPSubapArrays.T/
+                                            self.binnedFPSubapArrays.max((1,2))
+                                                                         ).T
+
+        for i in xrange(self.activeSubaps):
+
+            x,y=self.detectorSubapCoords[i]
+
+            #Set default position to put arrays into (2 subap FOV)
+            x1 = int(round(x-self.wfsConfig.pxlsPerSubap/2.))
+            x2 = int(round(x+self.wfsConfig.pxlsPerSubap*3./2))
+            y1 = int(round(y-self.wfsConfig.pxlsPerSubap/2.))
+            y2 = int(round(y+self.wfsConfig.pxlsPerSubap*3./2.))
+
+            #Set defualt size of input array (i.e. all of it)
+            x1_fp = int(0)
+            x2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
+            y1_fp = int(round(0))
+            y2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
+
+            #If at the edge of the field, may only fit a fraction in 
+            if x==0:
+                x1 = int(0)
+                x1_fp = int(round(self.wfsConfig.pxlsPerSubap/2.))
+
+            elif x==(self.detectorPxls-self.wfsConfig.pxlsPerSubap):
+                x2 = int(round(self.detectorPxls))
+                x2_fp = int(round(-1*self.wfsConfig.pxlsPerSubap/2.))
+
+            if y==0:
+                y1 = int(0)
+                y1_fp = int(round(self.wfsConfig.pxlsPerSubap/2.))
+
+            elif y==(self.detectorPxls-self.wfsConfig.pxlsPerSubap):
+                y2 = int(self.detectorPxls)
+                y2_fp = int(round(-1*self.wfsConfig.pxlsPerSubap/2.))
+
+            self.wfsDetectorPlane[x1:x2, y1:y2] += (
+                    self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp] )
+
+        if self.wfsConfig.SNR and self.iMat!=True:
+
+            self.photonNoise()
+            self.readNoise(self.wfsDetectorPlane)
+    
