@@ -385,11 +385,9 @@ class Sim(object):
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
         
-
         slopesSize = 0
         for wfs in wfsList:
-            slopesSize+=self.wfss[wfs].activeSubaps*2
-            
+            slopesSize+=self.wfss[wfs].activeSubaps*2            
         slopes = numpy.zeros( (slopesSize) )
 
         wfsProcs = []
@@ -869,7 +867,7 @@ def multiWfs(scrns, wfsObj, dmShape, read, queue):
 
     slopes = wfsObj.frame(scrns, dmShape, read=read)
 
-    if wfsObj.lgsConfig.lgsUplink:
+    if wfsObj.LGS:
         lgsPsf = wfsObj.LGS.psf1
     else:
         lgsPsf = None

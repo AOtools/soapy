@@ -37,6 +37,15 @@ except ImportError:
 
 
 guiFile_path = os.path.abspath(os.path.realpath(__file__)+"/..")
+CMAP={'mode': u'rgb',
+     'ticks': [   (0.7926888166025087, (209, 191, 55, 255)),
+                  (0.9959871589085072, (255, 255, 255, 255)),
+                  (0, (0, 0, 0, 255)),
+                  (0.5681543771928579, (187, 58, 58, 255)),
+                  (0.3202389238483501, (178, 34, 222, 255)),
+                  (0.13884430176565007, (45, 36, 168, 255))]}
+
+
 
 class GUI(QtGui.QMainWindow):
     def __init__(self,sim,useOpenGL=False):
@@ -64,12 +73,8 @@ class GUI(QtGui.QMainWindow):
         self.gradient = pyqtgraph.GradientWidget(orientation="bottom")
         self.gradient.sigGradientChanged.connect(self.changeLUT)
         self.ui.verticalLayout.addWidget(self.gradient)
-        try:
-            with open(guiFile_path+"/../res/guiLUT.json") as f:
-                gradState = json.load(f)
-            self.gradient.restoreState(gradState)
-        except IOError:
-            pass
+        self.gradient.restoreState(CMAP)
+
 
         self.sim = sim
 
