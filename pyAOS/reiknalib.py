@@ -287,8 +287,8 @@ class MakeSubaps(Computation):
             const VSIZE_T j = virtual_global_id(1);
             const VSIZE_T k = virtual_global_id(2);
             
-            const VSIZE_T x = ${k_subapCoords.load_idx}(i, 0);
-            const VSIZE_T y = ${k_subapCoords.load_idx}(i, 1);
+            const VSIZE_T x = (VSIZE_T) ${k_subapCoords.load_idx}(i, 0);
+            const VSIZE_T y = (VSIZE_T) ${k_subapCoords.load_idx}(i, 1);
             
             const VSIZE_T xIn = (VSIZE_T) (x + j);
             const VSIZE_T yIn = (VSIZE_T) (y + k);
@@ -296,8 +296,6 @@ class MakeSubaps(Computation):
             const ${k_subaps.ctype} value = ${cast}(${k_inputArray.load_idx}(xIn,yIn));
             
             ${k_subaps.store_idx}(i, j, k, value);
-            
-            printf("(%d, %d, %d), (%d, %d)\\n",i,j,k,x,y);
         }
         </%def>
         """)
