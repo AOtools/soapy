@@ -42,7 +42,9 @@ def pad_tr(outArray, inArray):
     connectors=["outArray", "inArray"]
     )
 
-###########################    
+    return pad
+
+###########################
 #Computations
 ###########################    
 class Interp1dGPU(Computation):
@@ -139,7 +141,7 @@ class Interp2dGPU(Computation):
                     - ${k_input.load_idx}(xInt, yInt);
                     
         const ${k_output.ctype} value =${sum3}(${mul}(xRem, xGrad), ${mul}(yRem, yGrad), ${k_input.load_idx}(xInt,yInt));
-        
+
         ${k_output.store_idx}(i, j, value);
 
         }
@@ -151,6 +153,7 @@ class Interp2dGPU(Computation):
                 [output, inputArray, xCoords, yCoords],
                 global_size=(output.shape),
                 render_kwds={
+
                     'mul' : cluda.functions.mul(xCoords.dtype,inputArray.dtype,
                                                 out_dtype=inputArray.dtype),
                     'sum3' : cluda.functions.add(
@@ -379,14 +382,22 @@ class BinImgs(Computation):
 def ftAbs(outputArray, inputArray, axes):
     
     
-    pad = pad_tr(outputArray, inputArray )
-    
-    ft = rFFT(outputArray, axes)
-    
-    absSq_tr = absSquare_tr(outputArray.shape)
+    pad = Transformation([
+        Parameter("outArray", Annotation(Type(shape=outputArray.shape, dtype=inputArray.dtype), 'o')),
+        Parameter("inArray", Annotation(inputArray, 'i'))
+        ],
+        """
+        ${outArray.store_same}(${inArray.load_same});
+        """,
+        connectors=["outArray", "inArray"]
+        )
 
     
+    ft = rFFT(Type(shape=outputArray.shape,dtype=inputArray.dtype), axes)
+    
     ft.parameter.input.connect( pad, pad.outArray, inArray=pad.inArray)
+
+    absSq_tr = absSquare_tr(outputArray.shape)
     ft.parameter.output.connect( absSq_tr, absSq_tr.complexNum,
                                  out=absSq_tr.absSq)
     
