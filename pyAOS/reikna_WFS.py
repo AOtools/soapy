@@ -115,33 +115,25 @@ class ShackHartmann(WFS.ShackHartmann):
         This is the start of current work of the GPU, so must load the stacked 
         EField on the device first.
         """
-        print('send efield...')
+
         self.EFieldGPU = self.thr.to_device(self.EField)
         
-        print('scale efield...')
         self.scaleEFieldGPU(
                 self.scaledEFieldGPU, self.EFieldGPU, 
                 self.scaleEFieldXCoordsGPU, self.scaleEFieldYCoordsGPU)
-        print(self.scaledEFieldGPU.get().mean())
 
-        print('mul efield...')
         self.mulScaledEField(
                 self.scaledEFieldGPU, self.scaledEFieldGPU, self.scaledMaskGPU)
-        print(self.scaledEFieldGPU.get().mean())
 
-        print('make subaps...')
+ 
         self.makeSubaps(
                 self.subapArraysGPU, self.scaledEFieldGPU, self.subapCoordsGPU
                 )
-        print(self.scaledEFieldGPU.get().mean())
-    
-        print('do fft...')
-        print(self.FPSubapArraysGPU.shape, self.FPSubapArraysGPU.dtype)
-        print(self.subapArraysGPU.shape, self.subapArraysGPU.dtype)
-        self.gpuFFT(self.FPSubapArraysGPU, self.subapArraysGPU)
-        print(self.binnedFPSubapArraysGPU.get().mean())
 
-        print('get data')
+        self.gpuFFT(self.FPSubapArraysGPU, self.subapArraysGPU)
+
+
+
         self.FPSubapArrays[:] += AOFFT.ftShift2d(self.FPSubapArraysGPU.get())
         
         
