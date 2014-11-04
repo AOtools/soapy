@@ -335,12 +335,16 @@ class Sim(object):
         t_wfs = time.time()
         if scrns != None:
             self.scrns=scrns
-
-        slopes = numpy.zeros( (self.config.sim.totalWfsData))
-        s = 0
+        
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
-
+        
+        slopesSize = 0
+        for wfs in wfsList:
+           slopesSize+=self.wfss[wfs].activeSubaps*2
+        slopes = numpy.zeros( (slopesSize) )
+       
+        s = 0
         for wfs in wfsList:
             #check if due to read out WFS
             if loopIter:

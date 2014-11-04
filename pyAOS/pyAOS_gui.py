@@ -436,9 +436,11 @@ class GUI(QtGui.QMainWindow):
 
     def updateTimeChanged(self):
         
-        if self.ui.updateTimeSpin!=0:
+        try:
             self.updateTime = int(numpy.round(1000./float(self.ui.updateTimeSpin.value())))
             self.updateTimer.setInterval(self.updateTime)
+        except ZeroDivisionError:
+            pass
 
     def progressUpdate(self, message, i="", maxIter=""):
 

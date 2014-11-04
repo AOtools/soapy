@@ -218,52 +218,7 @@ class Reconstructor(object):
         return dmCommands
 
             
-class WooferTweeter(Reconstructor):
-    '''
-    Reconstructs a 2 DM system, where 1 DM is of low order, high stroke
-    and the other has a higher, but low stroke.
-    
-    Reconstructs dm commands for each DM, then removes the low order 
-    component from the high order commands by propagating back to the 
-    slopes corresponding to the lower order DM shape, and propagating 
-    to the high order DM shape.
-    '''
-    
-    def calcCMat(self,callback=None, progressCallback=None):
-        '''
-        Creates control Matrix. 
-        Assumes that DM 0 (or 1 if TT used) is low order, 
-        and DM 1 (or 2 if TT used) is high order.
-        '''
 
-        if self.simConfig.nDM==1:
-            logger.warning("Woofer Tweeter Reconstruction not valid for 1 dm.")
-            return None
-        acts = 0
-        dmCMats = []
-        for dm in xrange(self.simConfig.nDM):
-            dmIMat = self.dms[dm].iMat
-            
-            if dmIMat.shape[0]==dmIMat.shape[1]:
-                dmCMat = numpy.linalg.pinv(dmIMat)
-            else:
-                dmCMat = numpy.linalg.pinv(
-                                    dmIMat, self.dms[dm].dmConfig.dmCond)
-            
-            if dm != self.simConfig.nDM-1:
-                self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-                acts+=self.dms[dm].acts
-            
-            dmCMats.append(dmCMat)
-            
-        #This is the matrix which converts from Low order DM commands
-        #to high order DM commands, via slopes
-        lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
-
-        highOrderCMat = dmCMats[-1].T.dot( 
-                numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
-                            
-        self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
  
 
 
@@ -346,14 +301,14 @@ class LgsTT(MVM):
         cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
         cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
         cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
-        
+
         tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
 
         tomoMatHDU.writeto(tomoMatFilename, clobber=True)
         cMatHDU.writeto(cMatFilename, clobber=True)
 
     def loadCMat(self):
-            
+
         super(LgsTT, self).loadCMat()
 
         #Load tomo reconstructor
@@ -370,7 +325,7 @@ class LgsTT(MVM):
 
     def initControlMatrix(self):
 
-        self.controlShape = (self.wfss[2].wfsConfig.dataStart,
+        self.controlShape = (2*self.wfss[0].activeSubaps+2*self.wfss[1].activeSubaps,
                              self.simConfig.totalActs)
         self.controlMatrix = numpy.zeros( self.controlShape )
     
@@ -382,28 +337,28 @@ class LgsTT(MVM):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.zeros( 
+        self.learnSlopes = numpy.zeros(
                 (self.learnIters,
-                self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2) 
+                self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2)
                 )
         for f in xrange(self.learnIters):
             self.learnIter=f
-                   
+
             scrns = self.moveScrns()
             self.learnSlopes[f] = self.runWfs(
-                                        scrns, 
-                                        wfsList=range(1, self.simConfig.nGS))
-                                        
+                    scrns, wfsList=range(1, self.simConfig.nGS)
+                    )
+
             logger.statusMessage(f, self.learnIters, "Performing Learn")
             if callback!=None:
                 callback()
             if progressCallback!=None:
                progressCallback("Performing Learn", f, self.learnIters )
 
-            
+
         if self.simConfig.saveLearn:
             fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.filePrefix+"/learn.fits", 
+                            self.simConfig.filePrefix+"/learn.fits",
                             clobber=True )
 
 
@@ -412,56 +367,56 @@ class LgsTT(MVM):
         Uses the slopes recorded in the "learn" and DM interaction matrices
         to create a CMat.
         '''
-
+      
         logger.info("Performing Learn....")
         self.learn(callback, progressCallback)
         logger.info("Done. Creating Tomographic Reconstructor...")
-        
+
         if progressCallback!=None:
             progressCallback(1,1, "Calculating Covariance Matrices")
-        
+
         #Need to remove all *common* TT from off-axis learn slopes
         self.learnSlopes[:, 2*self.wfss[1].activeSubaps:] = self.removeCommonTT(
                 self.learnSlopes[:, 2*self.wfss[1].activeSubaps:], [2,3,4,5])
-        
+
         self.covMat = numpy.cov(self.learnSlopes.T)
         Conoff = self.covMat[   :2*self.wfss[1].activeSubaps,
                                 2*self.wfss[1].activeSubaps:     ]
         Coffoff = self.covMat[  2*self.wfss[1].activeSubaps:,
                                 2*self.wfss[1].activeSubaps:    ]
-        
+
         logger.info("Inverting offoff Covariance Matrix")
         iCoffoff = numpy.linalg.pinv(Coffoff)
-        
+
         self.tomoRecon = Conoff.dot(iCoffoff)
         logger.info("Done. \nCreating full reconstructor....")
 
         super(LgsTT, self).calcCMat(callback, progressCallback)
-        
-        logger.info("Done.")
-        
 
     def reconstruct(self, slopes):
-        """ 
-        Determine DM commands using previously made 
-        reconstructor from slopes. 
+        """
+        Determine DM commands using previously made
+        reconstructor from slopes.
         Args:
             slopes (ndarray): array of slopes to reconstruct from
         Returns:
-            ndarray: array to comands to be sent to DM 
+            ndarray: array to commands to be sent to DM
         """
-
-        #Remove all TT common to all the off-axis WFSs.
+  
+        #Get off axis slopes nd remove *common* TT
         offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
-        offSlopes = self.removeCommonTT(offSlopes, [2,3,4,5])
+        offSlopes = self.removeCommonTT(offSlopes,[2,3,4,5])
         
-        #Get Pseudo on-axis slopes from tomo reconstructor
-        onSlopes = self.tomoRecon.dot(offSlopes)
+        #Use the tomo matrix to get pseudo on-axis slopes
+        psuedoOnSlopes = self.tomoRecon.dot(offSlopes)
         
-        #New slopes are the TT slopes and pseudo off-axis slopes
-        slopes = numpy.append(slopes[:2*self.wfss[0].activeSubaps], onSlopes)
+        #Combine on-axis slopes with TT measurements
+        slopes = numpy.append(
+                slopes[:self.wfss[1].wfsConfig.dataStart], psuedoOnSlopes)
         
+        #Send to command matrices to get dmCommands
         return super(LgsTT, self).reconstruct(slopes)
+
 
     def removeCommonTT(self, slopes, wfsList):
         
@@ -634,6 +589,115 @@ class LearnAndApply(Reconstructor):
         dmCommands = self.controlMatrix.T.dot(slopes)
         return dmCommands
 
+class GLAO_4LGS(MVM):
+    """
+    Reconstructor of LGS TT prediction algorithm.
+    
+    Uses one TT DM and a high order DM. The TT WFS controls the TT DM and
+    the second WFS controls the high order DM. The TT WFS and DM are
+    assumed to be the first in the system.
+    """
+
+
+    def initControlMatrix(self):
+
+        self.controlShape = (2*self.wfss[0].activeSubaps+2*self.wfss[1].activeSubaps,
+                             self.simConfig.totalActs)
+        self.controlMatrix = numpy.zeros( self.controlShape )
+
+
+    def reconstruct(self, slopes):
+        """
+        Determine DM commands using previously made
+        reconstructor from slopes.
+        Args:
+            slopes (ndarray): array of slopes to reconstruct from
+        Returns:
+            ndarray: array to commands to be sent to DM
+        """
+  
+        offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
+        meanOffSlopes = offSlopes.reshape(4,self.wfss[2].activeSubaps*2).mean(0)
+        
+        meanOffSlopes = self.removeCommonTT(meanOffSlopes, [1])
+        
+        slopes = numpy.append(
+                slopes[:self.wfss[1].wfsConfig.dataStart], meanOffSlopes)
+        
+        return super(LgsTT, self).reconstruct(slopes)
+     
+
+    def removeCommonTT(self, slopes, wfsList):
+        
+        xSlopesShape = numpy.array(slopes.shape)
+        xSlopesShape[-1] /= 2.
+        xSlopes = numpy.zeros(xSlopesShape)
+        ySlopes = numpy.zeros(xSlopesShape)
+        
+        for i in range(len(wfsList)):
+            wfs = wfsList[i]
+            wfsSubaps = self.wfss[wfs].activeSubaps
+            xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps]
+            ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps]
+            
+        xSlopes = (xSlopes.T - xSlopes.mean(-1)).T
+        ySlopes = (ySlopes.T - ySlopes.mean(-1)).T
+        
+        for i in range(len(wfsList)):
+            wfs = wfsList[i]
+            wfsSubaps = self.wfss[wfs].activeSubaps
+            
+            slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps] = xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+            slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps] = ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+        
+        return slopes    
+        
+class WooferTweeter(Reconstructor):
+    '''
+    Reconstructs a 2 DM system, where 1 DM is of low order, high stroke
+    and the other has a higher, but low stroke.
+    
+    Reconstructs dm commands for each DM, then removes the low order 
+    component from the high order commands by propagating back to the 
+    slopes corresponding to the lower order DM shape, and propagating 
+    to the high order DM shape.
+    '''
+    
+    def calcCMat(self,callback=None, progressCallback=None):
+        '''
+        Creates control Matrix. 
+        Assumes that DM 0 (or 1 if TT used) is low order, 
+        and DM 1 (or 2 if TT used) is high order.
+        '''
+
+        if self.simConfig.nDM==1:
+            logger.warning("Woofer Tweeter Reconstruction not valid for 1 dm.")
+            return None
+        acts = 0
+        dmCMats = []
+        for dm in xrange(self.simConfig.nDM):
+            dmIMat = self.dms[dm].iMat
+            
+            if dmIMat.shape[0]==dmIMat.shape[1]:
+                dmCMat = numpy.linalg.pinv(dmIMat)
+            else:
+                dmCMat = numpy.linalg.pinv(
+                                    dmIMat, self.dms[dm].dmConfig.dmCond)
+            
+            if dm != self.simConfig.nDM-1:
+                self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+                acts+=self.dms[dm].acts
+            
+            dmCMats.append(dmCMat)
+            
+        #This is the matrix which converts from Low order DM commands
+        #to high order DM commands, via slopes
+        lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
+
+        highOrderCMat = dmCMats[-1].T.dot( 
+                numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
+                            
+        self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
             
 #####################################
 #Experimental....
