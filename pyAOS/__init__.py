@@ -335,12 +335,16 @@ class Sim(object):
         t_wfs = time.time()
         if scrns != None:
             self.scrns=scrns
-
-        slopes = numpy.zeros( (self.config.sim.totalWfsData))
-        s = 0
+        
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
-
+        
+        slopesSize = 0
+        for wfs in wfsList:
+           slopesSize+=self.wfss[wfs].activeSubaps*2
+        slopes = numpy.zeros( (slopesSize) )
+       
+        s = 0
         for wfs in wfsList:
             #check if due to read out WFS
             if loopIter:
@@ -381,11 +385,9 @@ class Sim(object):
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
         
-
         slopesSize = 0
         for wfs in wfsList:
-            slopesSize+=self.wfss[wfs].activeSubaps*2
-            
+            slopesSize+=self.wfss[wfs].activeSubaps*2            
         slopes = numpy.zeros( (slopesSize) )
 
         wfsProcs = []
@@ -519,7 +521,7 @@ class Sim(object):
 
         self.closedCorrection = numpy.zeros(self.dmShape.shape)
         self.openCorrection = self.closedCorrection.copy()
-        self.dmCommands = numpy.empty( self.config.sim.totalActs )
+        self.dmCommands = numpy.zeros( self.config.sim.totalActs )
 
         for i in xrange(self.config.sim.nIters):
             if self.go:
@@ -865,7 +867,7 @@ def multiWfs(scrns, wfsObj, dmShape, read, queue):
 
     slopes = wfsObj.frame(scrns, dmShape, read=read)
 
-    if wfsObj.lgsConfig.lgsUplink:
+    if wfsObj.LGS:
         lgsPsf = wfsObj.LGS.psf1
     else:
         lgsPsf = None
