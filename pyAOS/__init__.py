@@ -525,7 +525,7 @@ class Sim(object):
             if self.go:
 
                 #get next phase screens
-                t = time.time()ß
+                t = time.time()
                 self.scrns = self.atmos.moveScrns()
                 self.Tatmos = time.time()-t
 
