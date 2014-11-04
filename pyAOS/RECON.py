@@ -346,6 +346,8 @@ class LgsTT(MVM):
 
             scrns = self.moveScrns()
             self.learnSlopes[f] = self.runWfs(
+                    scrns, wfsList=range(1, self.simConfig.nGS)
+                    )
 
             logger.statusMessage(f, self.learnIters, "Performing Learn")
             if callback!=None:
@@ -373,11 +375,9 @@ class LgsTT(MVM):
         if progressCallback!=None:
             progressCallback(1,1, "Calculating Covariance Matrices")
 
-
         #Need to remove all *common* TT from off-axis learn slopes
         self.learnSlopes[:, 2*self.wfss[1].activeSubaps:] = self.removeCommonTT(
                 self.learnSlopes[:, 2*self.wfss[1].activeSubaps:], [2,3,4,5])
-
 
         self.covMat = numpy.cov(self.learnSlopes.T)
         Conoff = self.covMat[   :2*self.wfss[1].activeSubaps,
@@ -640,7 +640,6 @@ class GLAO_4LGS(MVM):
             xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps]
             ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps]
             
-
         xSlopes = (xSlopes.T - xSlopes.mean(-1)).T
         ySlopes = (ySlopes.T - ySlopes.mean(-1)).T
         
