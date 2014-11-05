@@ -3,7 +3,8 @@
 The python AO simulation startup script.
 either starts a command line or gui version of the simulation.
 '''
-
+import os
+os.environ["QT_API"]="pyqt"
 
 from argparse import ArgumentParser
 import IPython
