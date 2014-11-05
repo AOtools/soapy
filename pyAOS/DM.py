@@ -70,6 +70,9 @@ class DM:
 
            logger.debug("DM IMat act: %i"%i)
 
+           if numpy.any(numpy.isnan(iMat[i])):
+                raise
+
            self.dmShape = self.iMatShapes[i]
        
            if callback!=None:
