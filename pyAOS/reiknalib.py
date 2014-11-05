@@ -30,20 +30,6 @@ def absSquare_tr(shape):
     return absSquare
 
 
-def pad_tr(outArray, inArray):
-    
-    pad = Transformation([
-        Parameter("outArray", Annotation(outArray, 'o')),
-        Parameter("inArray", Annotation(inArray, 'i'))
-    ],
-    """
-    ${outArray.store_same}(${inArray.load_same});
-    """,
-    connectors=["outArray", "inArray"]
-    )
-
-    return pad
-
 ###########################
 #Computations
 ###########################    
@@ -373,6 +359,174 @@ class BinImgs(Computation):
         return plan
 
     
+class PadArrays(Computation):
+    """
+    Computation to bin arrays of 2d images into smaller arrays of 2d images.
+    The input images must be an integer multiple of the binned images
+    """
+
+
+    def __init__(self, paddedArray, inputArray):
+
+        
+        Computation.__init__(self, [
+            Parameter('paddedArray', Annotation(paddedArray, 'o')),
+            Parameter('inputArray', Annotation(inputArray, 'i')),
+            ])
+            
+        
+
+    def _build_plan(    self, plan_factory, device_params, 
+                        paddedArray,  inputArray):
+
+        plan = plan_factory()
+
+        template = reikna.helpers.template_from(
+        """
+        <%def name='padArrays(kernel_declaration, k_paddedArray, k_inputArray)'>
+        ${kernel_declaration}
+        {
+            VIRTUAL_SKIP_THREADS;
+            const VSIZE_T i = virtual_global_id(0);
+            const VSIZE_T j = virtual_global_id(1);
+            const VSIZE_T k = virtual_global_id(2);
+            
+            ${k_paddedArray.store_idx}(i, j, k, ${cast}(
+                    ${k_inputArray.load_idx}(i,j,k)));
+        }
+        </%def>
+        """)
+
+        plan.kernel_call(
+                template.get_def('padArrays'),
+                [paddedArray, inputArray],
+                global_size=inputArray.shape,
+                render_kwds={'cast' : cluda.functions.cast(
+                                        paddedArray.dtype, inputArray.dtype)
+                            }
+                )
+                                                        
+        return plan
+
+
+class Sum2dto3d(Computation):
+    """
+    Computation to add a 2d array to the last 2 axes of a 2-dimensional array
+    """
+
+
+    def __init__(self, array3d, array2d ):
+
+        
+        Computation.__init__(self, [
+            Parameter('array3d', Annotation(array3d, 'io')),
+            Parameter('array2d', Annotation(array2d, 'i')),
+            ])
+            
+        
+
+    def _build_plan(    self, plan_factory, device_params, 
+                        array3d,  array2d):
+
+        plan = plan_factory()
+
+        template = reikna.helpers.template_from(
+        """
+        <%def name='sumArrays(kernel_declaration, k_array3d, k_array2d)'>
+        ${kernel_declaration}
+        {
+            VIRTUAL_SKIP_THREADS;
+            const VSIZE_T i = virtual_global_id(0);
+            const VSIZE_T j = virtual_global_id(1);
+            const VSIZE_T k = virtual_global_id(2);
+            
+            ${k_array3d.ctype} value;
+
+
+
+            ${k_array3d.store_idx}(i,j,k, ${sum}(
+                            ${k_array3d.load_idx}(i,j,k),
+                            ${cast}(${k_array2d.load_idx}(j,k))
+                            )
+                        );
+
+        }
+        </%def>
+        """)
+
+        plan.kernel_call(
+                template.get_def('sumArrays'),
+                [array3d, array2d],
+                global_size=array3d.shape,
+                render_kwds={'sum' : cluda.functions.add(
+                                        array3d.dtype, array2d.dtype,
+                                        out_dtype=array3d.dtype),
+                            'cast' : cluda.functions.cast(
+                                        array3d.dtype, array2d.dtype)
+                            }
+                )
+                                                        
+        return plan
+
+class Mul2dto3d(Computation):
+    """
+    Computation to multiply the last 2 axes of a 3d array to a 2-dimensional array
+    """
+
+
+    def __init__(self, array3d, array2d ):
+
+        
+        Computation.__init__(self, [
+            Parameter('array3d', Annotation(array3d, 'io')),
+            Parameter('array2d', Annotation(array2d, 'i')),
+            ])
+            
+        
+
+    def _build_plan(    self, plan_factory, device_params, 
+                        array3d,  array2d):
+
+        plan = plan_factory()
+
+        template = reikna.helpers.template_from(
+        """
+        <%def name='mulArrays(kernel_declaration, k_array3d, k_array2d)'>
+        ${kernel_declaration}
+        {
+            VIRTUAL_SKIP_THREADS;
+            const VSIZE_T i = virtual_global_id(0);
+            const VSIZE_T j = virtual_global_id(1);
+            const VSIZE_T k = virtual_global_id(2);
+            
+            ${k_array3d.ctype} value;
+
+
+
+            ${k_array3d.store_idx}(i,j,k, ${mul}(
+                            ${k_array3d.load_idx}(i,j,k),
+                            ${cast}(${k_array2d.load_idx}(j,k))
+                            )
+                        );
+
+        }
+        </%def>
+        """)
+
+        plan.kernel_call(
+                template.get_def('mulArrays'),
+                [array3d, array2d],
+                global_size=array3d.shape,
+                render_kwds={'mul' : cluda.functions.mul(
+                                        array3d.dtype, array2d.dtype,
+                                        out_dtype=array3d.dtype),
+                            'cast' : cluda.functions.cast(
+                                        array3d.dtype, array2d.dtype)
+                            }
+                )
+                                                        
+        return plan
+
 ##############################
 #Combined Calculations
 #############################
@@ -380,20 +534,9 @@ class BinImgs(Computation):
 def ftAbs(outputArray, inputArray, axes):
     
     
-    pad = Transformation([
-        Parameter("outArray", Annotation(Type(shape=outputArray.shape, dtype=inputArray.dtype), 'o')),
-        Parameter("inArray", Annotation(inputArray, 'i'))
-        ],
-        """
-        ${outArray.store_same}(${inArray.load_same});
-        """,
-        connectors=["outArray", "inArray"]
-        )
 
     
     ft = rFFT(Type(shape=outputArray.shape,dtype=inputArray.dtype), axes)
-    
-    ft.parameter.input.connect( pad, pad.outArray, inArray=pad.inArray)
 
     absSq_tr = absSquare_tr(outputArray.shape)
     ft.parameter.output.connect( absSq_tr, absSq_tr.complexNum,
@@ -734,11 +877,11 @@ def interp2d_cpu(data, newSize):
 
 class dataTestComp(Computation):
     
-    def __init__(self, arr):
+    def __init__(self, inputArray, outputArray):
         
         Computation.__init__(self, [
-            Parameter('output', Annotation(arr, 'o')),
-            Parameter('inputArray', Annotation(arr, 'i')),
+            Parameter('output', Annotation(outputArray, 'o')),
+            Parameter('inputArray', Annotation(inputArray, 'i')),
             ])
 
 
@@ -758,7 +901,7 @@ class dataTestComp(Computation):
     
         ${k_input.ctype} value = ${k_input.load_idx}(idx,idy);
 
-        printf("data[%d, %d] = %.2f\\n", idx, idy, value);
+        ##printf("data[%d, %d] = %.2f\\n", idx, idy, value);
 
         ${k_output.store_idx}(idx, idy, value); 
         }

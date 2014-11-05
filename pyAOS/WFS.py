@@ -791,7 +791,7 @@ class ShackHartmann(WFS):
         """
         if not self.wfsConfig.pxlsPerSubap%2:
             #If pxlsPerSubap is even
-            #Angle we need to correct for half a pixel
+            #Angle  we need to correct for half a pixel
             theta = 2*self.subapFOVrad/ (2*self.subapFFTPadding)
 
             #Magnitude of tilt required to get that angle
@@ -803,8 +803,11 @@ class ShackHartmann(WFS):
 
             self.tiltFix = -1*A*(X+Y)
             
+            
         else:
             self.tiltFix = numpy.zeros( (self.subapFOVSpacing,)*2)
+
+        self.ETiltFix = numpy.exp(1j*self.tiltFix).astype(CDTYPE)
 
     def oneSubap(self, phs):
         '''

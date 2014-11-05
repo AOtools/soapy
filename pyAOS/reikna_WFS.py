@@ -7,8 +7,8 @@ from . import reiknalib, AOFFT, aoSimLib
 
 import numpy
 
-CDTYPE = numpy.complex64
-DTYPE = numpy.float32
+CDTYPE = WFS.CDTYPE
+DTYPE = WFS.DTYPE
 
 class ShackHartmann(WFS.ShackHartmann):
     """
@@ -74,6 +74,7 @@ class ShackHartmann(WFS.ShackHartmann):
                 numpy.round(self.subapCoords*(self.subapFOVSpacing/self.PPSpacing)
                             ))
         
+
     def initCalculations(self):
         
         self.scaledEFieldGPU = self.thr.to_device(
@@ -82,10 +83,7 @@ class ShackHartmann(WFS.ShackHartmann):
                         ).astype(CDTYPE)
                 )
         
-        print(self.scaledEFieldGPU.shape)
-        print(self.EField.shape)
-        print(self.scaleEFieldXCoordsGPU.shape)
-        
+
         scaleEFieldGPU = reiknalib.Interp2dGPU(
                 self.scaledEFieldGPU, self.EField, self.scaleEFieldXCoordsGPU
                 )
@@ -100,12 +98,23 @@ class ShackHartmann(WFS.ShackHartmann):
                 self.subapCoords
                 ).compile(self.thr)
         
+
+        #calc to add the tilt fix
+        self.ETiltFixGPU = self.thr.to_device(self.ETiltFix)
+        self.addTiltFix = reiknalib.Mul2dto3d(
+                self.subapArraysGPU, self.ETiltFix).compile(self.thr)
+
+        #calc to pad arrays before they get FFTed
+        self.paddedSubapArraysGPU = self.thr.to_device(
+                numpy.zeros(self.FPSubapArrays.shape).astype(CDTYPE))
+        self.padFFT = reiknalib.PadArrays(
+                self.paddedSubapArraysGPU, self.subapArraysGPU).compile(self.thr)
+
         #The forward FFTs for the subaps
         self.gpuFFT = reiknalib.ftAbs(
-                self.FPSubapArraysGPU, self.subapArraysGPU,
+                self.FPSubapArraysGPU, self.paddedSubapArraysGPU,
                 axes=(1,2)).compile(self.thr)
                 
-
 
         
 
@@ -133,8 +142,9 @@ class ShackHartmann(WFS.ShackHartmann):
                 self.subapArraysGPU, self.scaledEFieldGPU, self.subapCoordsGPU
                 )
 
-        self.gpuFFT(self.FPSubapArraysGPU, self.subapArraysGPU)
-
+        self.addTiltFix(self.subapArraysGPU, self.ETiltFixGPU)
+        self.padFFT(self.paddedSubapArraysGPU, self.subapArraysGPU)
+        self.gpuFFT(self.FPSubapArraysGPU, self.paddedSubapArraysGPU)
 
 
         self.FPSubapArrays[:] += AOFFT.ftShift2d(self.FPSubapArraysGPU.get())
@@ -162,11 +172,11 @@ class ShackHartmann(WFS.ShackHartmann):
                 self.subapArraysGPU, self.scaledEFieldGPU, self.subapCoordsGPU
                 )
 
-        self.subapArrays[:] = self.subapArraysGPU.get()
+        self.addTiltFix(self.subapArraysGPU, self.ETiltFixGPU)
+        self.padFFT(self.paddedSubapArraysGPU, self.subapArraysGPU)
+        self.gpuFFT(self.FPSubapArraysGPU, self.paddedSubapArraysGPU)
 
-        # self.gpuFFT(self.FPSubapArraysGPU, self.subapArraysGPU)
-
-        # self.FPSubapArrays[:] += AOFFT.ftShift2d(self.FPSubapArraysGPU.get())
+        self.FPSubapArrays[:] += AOFFT.ftShift2d(self.FPSubapArraysGPU.get())
         #create an array of individual subap EFields
         # for i in xrange(self.activeSubaps):
         #     x,y = numpy.round(self.subapCoords[i] *
@@ -177,14 +187,15 @@ class ShackHartmann(WFS.ShackHartmann):
         #                             int(y):
         #                             int(y+self.subapFOVSpacing)]
 
-        #do the fft to all subaps at the same time
-        #and convert into intensity
-        self.FFT.inputData[:] = 0
-        self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
-                        ,:int(round(self.subapFOVSpacing))] \
-                = self.subapArrays*numpy.exp(1j*(self.tiltFix))
+        # self.subapArrays[:] = self.subapArraysGPU.get()
+        # #do the fft to all subaps at the same time
+        # #and convert into intensity
+        # self.FFT.inputData[:] = 0
+        # self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
+        #                 ,:int(round(self.subapFOVSpacing))] \
+        #         = self.subapArrays*numpy.exp(1j*(self.tiltFix))
 
-        self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
+        #self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
 
 
 #     def makeDetectorPlane(self):
