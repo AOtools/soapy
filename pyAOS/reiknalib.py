@@ -468,6 +468,7 @@ class Sum2dto3d(Computation):
                                                         
         return plan
 
+
 class Mul2dto3d(Computation):
     """
     Computation to multiply the last 2 axes of a 3d array to a 2-dimensional array
@@ -509,6 +510,62 @@ class Mul2dto3d(Computation):
                             )
                         );
 
+        }
+        </%def>
+        """)
+
+        plan.kernel_call(
+                template.get_def('mulArrays'),
+                [array3d, array2d],
+                global_size=array3d.shape,
+                render_kwds={'mul' : cluda.functions.mul(
+                                        array3d.dtype, array2d.dtype,
+                                        out_dtype=array3d.dtype),
+                            'cast' : cluda.functions.cast(
+                                        array3d.dtype, array2d.dtype)
+                            }
+                )
+                                                        
+        return plan
+
+class FTShift2d(Computation):
+    """
+    Computation to preform an fft shift on an array of 2-d arrays (a 3-d array)
+    """
+
+
+    def __init__(self, array):
+
+        
+        Computation.__init__(self, [
+            Parameter('inputArray', Annotation(array, 'o')),
+            Parameter('outputArray', Annotation(array, 'i')),
+            ])
+            
+        
+
+    def _build_plan(    self, plan_factory, device_params, 
+                        inputArray,  outputArray):
+
+        plan = plan_factory()
+
+        template = reikna.helpers.template_from(
+        """
+        <%def name='mulArrays(kernel_declaration, k_input, k_output, shapeX, shapeY)'>
+        ${kernel_declaration}
+        {
+            VIRTUAL_SKIP_THREADS;
+            const VSIZE_T i = virtual_global_id(0);
+            const VSIZE_T j = virtual_global_id(1);
+            const VSIZE_T k = virtual_global_id(2);
+            
+            ${k_array3d.ctype} value;
+
+            ${k_array3d.store_idx}(i,j,k, ${mul}(
+                            ${k_array3d.load_idx}(i,j,k),
+                            ${cast}(${k_array2d.load_idx}(j,k))
+                            )
+                        );
         }
         </%def>
         """)
