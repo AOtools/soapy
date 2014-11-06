@@ -167,6 +167,9 @@ class WFS(object):
         #Phase power scaling factor for wfs wavelength
         self.r0Scale = self.phsWvl/self.wfsConfig.wavelength
 
+    def initFFTs(self):
+        pass
+
     def allocDataArrays(self):
         """
         Allocate the data arrays the WFS will require
@@ -392,7 +395,7 @@ class WFS(object):
                         *numpy.pi/(3600.0*180.0) )
 
         #Position of centre of GS metapupil off axis at required height
-        GSCent = (numpy.tan(GSPos) * height).astype("int")
+        GSCent = (numpy.tan(GSPos) * height)
 
         return GSCent
 
@@ -417,7 +420,9 @@ class WFS(object):
         if not pupilSize:
             pupilSize = self.simConfig.pupilSize
 
-        GSCent = self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
+        GSCent = numpy.round(
+                self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
+                        ).astype("int")
         scrnX,scrnY=scrn.shape
 
         #Check screen is big enough to get a pupil from
@@ -612,7 +617,7 @@ class WFS(object):
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
                     self.EField *= numpy.exp(-1j*correction)
-                self.calcFocalPlane()
+                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
 
         if read:
             self.makeDetectorPlane()
@@ -844,7 +849,7 @@ class ShackHartmann(WFS):
         '''Photon Noise'''
         raise NotImplementedError
 
-    def calcFocalPlane(self):
+    def calcFocalPlane(self, intensity=None):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
         '''
@@ -871,6 +876,9 @@ class ShackHartmann(WFS):
                 = self.subapArrays*numpy.exp(1j*(self.tiltFix))
 
         self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
+        
+        if intensity:
+            self.FPSubapArrays*=intensity
 
     def makeDetectorPlane(self):
         '''
@@ -974,13 +982,15 @@ class ShackHartmann(WFS):
                     self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
                                             )
-        if self.wfsConfig.pxlsPerSubap==2:
-            slopes = aoSimLib.quadCell(self.centSubapArrays)
-            
         else:
             slopes=aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
                      )
+                     
+        if self.wfsConfig.pxlsPerSubap==2:
+            slopes = aoSimLib.quadCell(self.centSubapArrays)
+            
+        
 
 
         #shift slopes relative to subap centre

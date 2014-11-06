@@ -144,6 +144,11 @@ class Configurator(object):
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
         logger.info("subScreenSize: {}".format(self.sim.scrnSize))
 
+        #If lgs sodium layer profile is none, set it to 1s for each layer
+        for lgs in self.lgs:
+            if not numpy.any(lgs.naProfile):
+                lgs.naProfile = numpy.ones(lgs.elongationLayers)
+
 class ConfigObj(object):
     def __init__(self):
 
@@ -524,6 +529,9 @@ class LgsConfig(ConfigObj):
                              system processor number.             ``1``
         ``fftwFlag``         str: Flag to pass to FFTW 
                              when preparing plan.                 ``FFTW_PATIENT``
+        ``naProfile``        list: The relative sodium layer
+                             strength for each elongation
+                             layer. If None, all equal.          ``None''
         ==================== =================================   ===========  
 
     """
@@ -543,7 +551,8 @@ class LgsConfig(ConfigObj):
                                 ("fftwThreads", 0),
                                 ("elongationDepth", 0),
                                 ("elongationLayers", 10),
-                                ("launchPosition",  numpy.array([0,0]))
+                                ("launchPosition",  numpy.array([0,0])),
+                                ("naProfile", None),
                                 ]
 
 

@@ -95,8 +95,11 @@ class DM:
             self.newActCoeffs += self.actCoeffs
         
         self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-                            + ( (1-self.dmConfig.gain) * self.actCoeffs)
+              + ( (1-self.dmConfig.gain) * self.actCoeffs)
 
+        # self.actCoeffs = (self.actCoeffs +
+#         (self.newActCoeffs-self.actCoeffs)*self.dmConfig.gain)
+        
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
         #Remove any piston term from DM
