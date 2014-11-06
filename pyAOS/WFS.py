@@ -213,11 +213,7 @@ class WFS(object):
                 LGSClass = LGS.GeometricLGS( self.simConfig, self.wfsConfig,
                                              self.lgsConfig, self.atmosConfig
                                              )
-            #Tell the LGS a bit about the WFS 
-            #(TODO-get rid of this and put into LGS init)       
-            self.LGS.setWFSParams(
-                    self.SUBAP_OVERSIZE*self.subapFOVrad,
-                    self.wfsConfig.subapOversamp, self.subapFFTPadding)
+
         else:
             self.LGS = None
 
@@ -262,7 +258,9 @@ class WFS(object):
                     self.lgsConfig.elongationDepth!=0):
                 logger.warning("Not able to implement LGS Elongation as GS at infinity")
 
-
+                
+    def calcTiltCorrect(self):
+        pass
 
     def findMetaPupilSize(self, GSHeight):
         '''
@@ -786,6 +784,15 @@ class ShackHartmann(WFS):
               self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
         
         self.slopes = numpy.zeros( 2*self.activeSubaps )
+    
+    def initLGS(self):
+        super(ShackHartmann, self).initLGS()
+        #Tell the LGS a bit about the WFS 
+        #(TODO-get rid of this and put into LGS init)       
+        self.LGS.setWFSParams(
+                self.SUBAP_OVERSIZE*self.subapFOVrad,
+                self.wfsConfig.subapOversamp, self.subapFFTPadding)
+    
     
     def calcTiltCorrect(self):
         """
