@@ -788,7 +788,7 @@ class Sim(object):
                 for i in xrange(self.config.sim.nGS):
                     wfsFocalPlane[i] = self.wfss[i].wfsDetectorPlane.copy().astype("float32")
                     try:
-                        wfsPhase[i] = self.wfss[i].uncorrectedPhase.copy()
+                        wfsPhase[i] = self.wfss[i].uncorrectedPhase
                     except AttributeError:
                         wfsPhase[i] = None
                         pass

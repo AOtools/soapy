@@ -607,7 +607,7 @@ class WFS(object):
                 self.zeroPhaseData()
 
                 self.makePhase(self.elongRadii[i], self.elongPos[i])
-                self.uncorrectedPhase = self.wfsPhase
+                self.uncorrectedPhase = self.wfsPhase.copy()
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
                     self.EField *= numpy.exp(-1j*correction)
@@ -644,8 +644,6 @@ class WFS(object):
 #   `--. \  _  |
 #  /\__/ / | | |
 #  \____/\_| |_/
-            
-
 class ShackHartmann(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
@@ -774,7 +772,7 @@ class ShackHartmann(WFS):
         self.maxFlux = 0.7 * 2**self.wfsConfig.bitDepth -1
         self.wfsDetectorPlane = numpy.zeros( (  self.detectorPxls,
                                                 self.detectorPxls   ),
-                                               dtype = self.dPlaneType )
+                                                dtype = self.dPlaneType )
         #Array used when centroiding subaps
         self.centSubapArrays = numpy.zeros( (self.activeSubaps,
               self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
@@ -853,7 +851,7 @@ class ShackHartmann(WFS):
         '''Photon Noise'''
         raise NotImplementedError
 
-    def calcFocalPlane(self, intensity=None):
+    def calcFocalPlane(self, intensity=1):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
         '''
@@ -879,10 +877,13 @@ class ShackHartmann(WFS):
                         ,:int(round(self.subapFOVSpacing))] \
                 = self.subapArrays*numpy.exp(1j*(self.tiltFix))
 
-        self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
-        
-        if intensity:
-            self.FPSubapArrays*=intensity
+
+        if intensity==1:
+            self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
+        else:
+            self.FPSubapArrays += intensity*numpy.abs(
+                    AOFFT.ftShift2d(self.FFT()))**2
+    
 
     def makeDetectorPlane(self):
         '''
