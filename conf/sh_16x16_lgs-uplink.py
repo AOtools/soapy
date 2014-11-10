@@ -20,7 +20,8 @@ simConfiguration = {
     "loopTime"      :   1/400.0,
     "gain"          :   0.6,
     "reconstructor" :   "MVM", 
-
+    "wfsMP"         :   True,
+    
     "verbosity"     :   2,
 
     "saveCMat"      :   False,
@@ -37,7 +38,7 @@ simConfiguration = {
     "windDirs"      :   numpy.array([0,45,90,135]),
     "windSpeeds"    :   numpy.array([10,10,15,20]),
     "newScreens"    :   True, #Bool
-    "wholeScrnSize" :   1024,
+    "wholeScrnSize" :   2048,
     "r0"            :   0.16,
     },
 
@@ -48,7 +49,7 @@ simConfiguration = {
     },
 
 "WFS":{
-    "GSPosition"    :   [(60,0),    (0,0)],
+    "GSPosition"    :   [(0,30),    (0,0)],
     "GSHeight"      :   [0,         90e3],
     "subaps"        :   [2,         16],
     "pxlsPerSubap"  :   [2,         14],
@@ -59,7 +60,7 @@ simConfiguration = {
     "lgs"           :   [False,     True],
     "centMethod"    :   ["brightestPxl"]*2,
     "centThreshold" :   [0.2]*2,
-    "exposureTime"  :   [1/100.,    None],
+    "exposureTime"  :   [1./100,    None],
     "removeTT"      :   [False,     True],
     },
 
@@ -73,9 +74,7 @@ simConfiguration = {
     "elongationLayers": [5]*2,
     },
 
-
 "DM":{
-
     "dmType"        :   ["TT",     "Piezo"],
     "dmActs"        :   [2,         17**2],
     "dmCond"        :   [1e-15,      0.05],
@@ -92,8 +91,6 @@ simConfiguration = {
     "pxls"          :   [128],
     "oversamp"      :   [2],
     }
-
-
 }
 
 

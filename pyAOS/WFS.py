@@ -140,7 +140,6 @@ class WFS(object):
             self.radii = self.findMetaPupilSize(self.wfsConfig.GSHeight)
         else:
             self.radii=None
-        
 
         #Choose propagation method
         if wfsConfig.propagationMode=="physical":
@@ -179,8 +178,6 @@ class WFS(object):
         keep it fast. This includes arrays for phase
         and the E-Field across the WFS
         """
-        
-
 
         self.wfsPhase = numpy.zeros( [self.simConfig.pupilSize]*2, dtype=DTYPE)
         self.EField = numpy.zeros(
@@ -188,7 +185,6 @@ class WFS(object):
 
         self.ZERO_DATA = True
 
-        
 
     def initLGS(self):
         """
@@ -217,7 +213,6 @@ class WFS(object):
         else:
             self.LGS = None
 
-        
         self.lgsLaunchPos = None
         self.elong=0
         self.elongLayers = 0
@@ -306,14 +301,13 @@ class WFS(object):
             ndarray: The phase addition required for that layer.
         """
         
-        
         #Calculate the path difference between the central GS height and the
         #elongation "layer"
         #Define these to make it easier
         h = self.elongHeights[elongLayer]
         dh = h-self.wfsConfig.GSHeight
         H = self.lgsConfig.height
-        d = numpy.array(self.lgsLaunchPos) * self.telDiam/2.
+        d = numpy.array(self.lgsLaunchPos).astype('float32') * self.telDiam/2.
         D = self.telDiam
         theta = (d.astype("float")/H) - self.wfsConfig.GSPosition
 
@@ -357,7 +351,7 @@ class WFS(object):
 
         h = self.elongHeights[elongLayer]       #height of elonglayer
         dh = h-self.wfsConfig.GSHeight          #delta height from GS Height
-        H = self.lgsConfig.height               #Height of GS
+        H = self.wfsConfig.GSHeight               #Height of GS
 
         #Position of launch in m
         xl = numpy.array(self.lgsLaunchPos) * self.telDiam/2.  
@@ -365,7 +359,7 @@ class WFS(object):
         #GS Pos in radians
         GSPos=numpy.array(self.wfsConfig.GSPosition)*numpy.pi/(3600.0*180.0)
 
-
+        #difference in angular Pos for that height layer in rads
         theta_n = GSPos - ((dh*xl)/ (H*(H+dh)))
 
         return theta_n
@@ -424,13 +418,15 @@ class WFS(object):
         scrnX,scrnY=scrn.shape
 
         #Check screen is big enough to get a pupil from
-        if ( (scrnX/2. + GSCent[0] - pupilSize/2.0) < 0 
-                or (scrnX/2. + GSCent[0] - pupilSize/2.0) > scrnX 
-                or scrnX/2. + GSCent[0] - pupilSize/2.0 < 0 
-                or (scrnY/2. + GSCent[1] - pupilSize/2.0) > scrnY):
- 
-            raise ValueError( "GS seperation requires larger screen size" )
-
+        if ( round(scrnX/2. + GSCent[0] - pupilSize/2.0) < 0 
+                or round(scrnX/2. + GSCent[0] - pupilSize/2.0) > scrnX 
+                or round(scrnX/2. + GSCent[0] - pupilSize/2.0) < 0 
+                or round(scrnY/2. + GSCent[1] - pupilSize/2.0) > scrnY):
+                
+            raise ValueError( 
+                    "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, pupilSize: {2}".format(
+                            GSCent, scrn.shape, pupilSize, height) )
+            
         metaPupil=scrn[ 
                 int(round(scrnX/2. + GSCent[0] - pupilSize/2.0)):
                 int(round(scrnX/2. + GSCent[0] + pupilSize/2.0)),
@@ -788,10 +784,11 @@ class ShackHartmann(WFS):
     def initLGS(self):
         super(ShackHartmann, self).initLGS()
         #Tell the LGS a bit about the WFS 
-        #(TODO-get rid of this and put into LGS init)       
-        self.LGS.setWFSParams(
-                self.SUBAP_OVERSIZE*self.subapFOVrad,
-                self.wfsConfig.subapOversamp, self.subapFFTPadding)
+        #(TODO-get rid of this and put into LGS init)
+        if self.LGS:       
+            self.LGS.setWFSParams(
+                    self.SUBAP_OVERSIZE*self.subapFOVrad,
+                    self.wfsConfig.subapOversamp, self.subapFFTPadding)
     
     
     def calcTiltCorrect(self):

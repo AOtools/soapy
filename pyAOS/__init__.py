@@ -173,7 +173,6 @@ class Sim(object):
                         self.config.tel.obs*self.config.sim.pxlScale/2., 
                         self.config.sim.pupilSize
                         )
-   
 
         self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
@@ -186,8 +185,6 @@ class Sim(object):
             self.runWfs = self.runWfs_MP
         else:
             self.runWfs = self.runWfs_noMP
-
-
 
         #init WFSs
         logger.info("Initialising WFSs....")
@@ -205,8 +202,6 @@ class Sim(object):
             
             logger.info("WFS {0}: {1} measurements".format(wfs,
                      self.wfss[wfs].activeSubaps*2))
-
-
 
         #init DMs
         logger.info("Initialising DMs...")
@@ -368,7 +363,12 @@ class Sim(object):
         """
         Runs all WFSs using multiprocessing
         
-        Runs a single frame for each WFS in wfsList, passing the given phase screens and optional dmShape (if WFS in closed loop). If LGSs are present it will also deals with LGS propagation. Finally, the slopes from all WFSs are returned. Each WFS is allocated a separate process to complete the frame, giving a significant increase in speed, especially for computationally heavy WFSs.
+        Runs a single frame for each WFS in wfsList, passing the given phase 
+        screens and optional dmShape (if WFS in closed loop). If LGSs are 
+        present it will also deals with LGS propagation. Finally, the slopes 
+        from all WFSs are returned. Each WFS is allocated a separate process 
+        to complete the frame, giving a significant increase in speed, 
+        especially for computationally heavy WFSs.
         
         Args:
             scrns (list): List of phase screens passing over telescope
@@ -416,13 +416,11 @@ class Sim(object):
 
         for proc in xrange(len(wfsList)):
             wfs = wfsList[proc]
-            
-            result = wfsQueues[proc].get()
 
             (slopes[s:s+self.wfss[wfs].activeSubaps*2],
                     self.wfss[wfs].wfsDetectorPlane,
                     self.wfss[wfs].uncorrectedPhase,
-                    lgsPsf) = result
+                    lgsPsf) = wfsQueues[proc].get()
             
             if numpy.any(lgsPsf)!=None:
                 self.wfss[wfs].LGS.psf1 = lgsPsf
@@ -434,11 +432,15 @@ class Sim(object):
         return slopes
 
 
-    def runTipTilt(self,slopes,closed=True):
+    def runTipTilt(self, slopes, closed=True):
         """
         Runs a single frame of the Tip-Tilt Mirror
 
-        Uses a previously created interaction matrix to calculate the correction required for the given slopes from a tip-tilt (TT) mirror. Returns the phase of the TT mirror and also the now TT corrected slopes. If no TT mirror is present in the system, then an array of zeros is returns and the slopes are unchanged.
+        Uses a previously created interaction matrix to calculate the 
+        correction required for the given slopes from a tip-tilt (TT) mirror. 
+        Returns the phase of the TT mirror and also the now TT corrected 
+        slopes. If no TT mirror is present in the system, then an array of 
+        zeros is returns and the slopes are unchanged.
 
         Args:
             slopes (ndarray): An array of WFS slope values
@@ -610,7 +612,6 @@ class Sim(object):
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
 
-
             shutil.copyfile( self.configFile, self.path+"/conf.py" )
 
         #Init Strehl Saving
@@ -656,17 +657,14 @@ class Sim(object):
         else:
             self.lgsPsfs = None
 
-
-
-
-    def storeData(self,i):
+    def storeData(self, i):
         """
         Stores data from each frame in an appropriate data structure.
 
         Called on each frame to store the simulation data into various data structures corresponding to different data sources in the system. 
 
         Args:
-            i(int): The system iteration number
+            i (int): The system iteration number
         """
         if self.config.sim.saveSlopes:
             self.allSlopes[i] = self.slopes

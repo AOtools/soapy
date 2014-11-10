@@ -112,9 +112,27 @@ class Configurator(object):
         #furthest out GS defines the sub-scrn size
         gsPos = []
         for gs in range(self.sim.nGS):
-            gsPos.append(self.wfs[gs].GSPosition)
+            pos = self.wfs[gs].GSPosition
+            #Need to add bit if the GS is an elongation off-axis LGS
+            if self.lgs[gs].elongationDepth:
+                #This calculation is done more explicitely in teh WFS module
+                #in the ``calcElongPos`` method
+                maxLaunch = abs(numpy.array(
+                        self.lgs[gs].launchPosition)).max()*self.tel.telDiam/2.
+                dh = numpy.array([  -1*self.lgs[gs].elongationDepth/2.,
+                                    self.lgs[gs].elongationDepth/2.])
+                H = self.wfs[gs].GSHeight
+                theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
+                        (3600*180/numpy.pi)).max()
+                pos+=theta_n
+                
+            gsPos.append(pos)
+            
+            
         for sci in range(self.sim.nSci):
             gsPos.append(self.sci[sci].position)
+
+
 
         if len(gsPos)!=0:
             maxGSPos = numpy.array(gsPos).max()
@@ -125,6 +143,8 @@ class Configurator(object):
                 2*self.sim.pxlScale*self.atmos.scrnHeights.max()
                 *maxGSPos*numpy.pi/(3600.*180) 
                 )+self.sim.pupilSize
+
+
 
         #Check if any WFS use physical propogation.
         #If so, make oversize phase scrns
@@ -148,6 +168,8 @@ class Configurator(object):
         for lgs in self.lgs:
             if not numpy.any(lgs.naProfile):
                 lgs.naProfile = numpy.ones(lgs.elongationLayers)
+            if len(lgs.naProfile)<lgs.elongationLayers:
+                raise ConfigurationError("Not enough values for naProfile")
 
 class ConfigObj(object):
     def __init__(self):
