@@ -58,7 +58,7 @@ Examples:
     Andrew Reeves
 
 :Version:
-    0.6.1
+    0.7.0
 '''
 
 #sim imports
