@@ -217,10 +217,6 @@ class Reconstructor(object):
         self.Trecon += time.time()-t
         return dmCommands
 
-            
-
- 
-
 
 class MVM(Reconstructor):
 
@@ -316,7 +312,7 @@ class LgsTT(MVM):
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
-        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
+        if tomoMat.shape != (2*self.wfss[1].activeSubaps, self.simConfig.totalWfsData - self.wfss[2].wfsConfig.dataStart):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:

@@ -980,7 +980,7 @@ class ShackHartmann(WFS):
             x = int(x)
             y = int(y)
             self.centSubapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
-                                                    y:y+self.wfsConfig.pxlsPerSubap ]
+                                                    y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
         if self.wfsConfig.centMethod=="brightestPxl":
             slopes = aoSimLib.brtPxlCentroid(
@@ -988,16 +988,13 @@ class ShackHartmann(WFS):
                                 (self.wfsConfig.pxlsPerSubap**2))
                                             )
         else:
-            slopes=aoSimLib.simpleCentroid(
+            slopes = aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
                      )
                      
         if self.wfsConfig.pxlsPerSubap==2:
             slopes = aoSimLib.quadCell(self.centSubapArrays)
             
-        
-
-
         #shift slopes relative to subap centre
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
         

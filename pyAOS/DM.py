@@ -65,8 +65,7 @@ class DM:
 
        for i in xrange(self.iMatShapes.shape[0]):
            iMat[i,subap:subap+(2*self.wfs.activeSubaps)] =\
-                   self.wfs.iMatFrame( self.iMatShapes[i])#/
-                                        #self.wfss[wfs].waveLength)
+                   self.wfs.iMatFrame( self.iMatShapes[i])
 
            logger.debug("DM IMat act: %i"%i)
 
@@ -96,9 +95,6 @@ class DM:
         
         self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
               + ( (1-self.dmConfig.gain) * self.actCoeffs)
-
-        # self.actCoeffs = (self.actCoeffs +
-#         (self.newActCoeffs-self.actCoeffs)*self.dmConfig.gain)
         
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
@@ -109,7 +105,6 @@ class DM:
 
 
 class Zernike(DM):
-
 
     def makeIMatShapes(self):
         '''
@@ -124,7 +119,6 @@ class Zernike(DM):
 
 
 class Piezo(DM):
-
 
     def getActiveActs(self):
         activeActs = []
