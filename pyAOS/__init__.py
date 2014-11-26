@@ -57,8 +57,6 @@ Examples:
 :Author:
     Andrew Reeves
 
-:Version:
-    0.7.0
 '''
 
 #sim imports
