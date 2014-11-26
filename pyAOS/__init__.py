@@ -96,8 +96,6 @@ try:
 except NameError:
     xrange = range
 
-__version__ = 0.7.0
-
 
 class Sim(object):
     """
