@@ -98,7 +98,7 @@ try:
 except NameError:
     xrange = range
 
-__version__ = 0.5
+__version__ = 0.7.0
 
 
 class Sim(object):
@@ -893,3 +893,7 @@ if __name__ == "__main__":
     sim.aoloop()
 
 
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
