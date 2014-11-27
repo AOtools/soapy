@@ -509,7 +509,7 @@ class InitThread(QtCore.QThread):
         self.sim.aoinit()
 
     def progressUpdate(self, message, i="", maxIter=""):
-        self.updateProgressSignal.emit(message, i, maxIter)
+        self.updateProgressSignal.emit(str(message), str(i), str(maxIter))
 
 
 class IMatThread(QtCore.QThread):
@@ -569,7 +569,7 @@ class LoopThread(QtCore.QThread):
     
     def progressUpdate(self, message, i="", maxIter=""):
 
-        self.updateProgressSignal.emit(message, str(i), str(maxIter))
+        self.updateProgressSignal.emit(str(message), str(i), str(maxIter))
 
 
 class IPythonConsole:
