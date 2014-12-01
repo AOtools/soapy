@@ -188,7 +188,6 @@ class Reconstructor(object):
                 logger.info("Interaction Matrices Done")
                 
         else:
-            
             self.makeIMat(callback=callback, progressCallback=progressCallback)
             logger.info("Interaction Matrices Done")
         
@@ -249,7 +248,7 @@ class MVM(Reconstructor):
         Returns DM commands given some slopes
         
         First, if there's a TT mirror, remove the TT from the TT WFS (the 1st
-        WFS slopes) and get TT commands to send to the mirror. This slopes may
+        WFS slopes) and get TT commands to send to the mirror. These slopes may
         then be used to reconstruct commands for others DMs, or this could be 
         the responsibility of other WFSs depending on the config file.
         """
@@ -389,6 +388,7 @@ class LgsTT(MVM):
 
         super(LgsTT, self).calcCMat(callback, progressCallback)
 
+
     def reconstruct(self, slopes):
         """
         Determine DM commands using previously made
@@ -399,7 +399,7 @@ class LgsTT(MVM):
             ndarray: array to commands to be sent to DM
         """
   
-        #Get off axis slopes nd remove *common* TT
+        #Get off axis slopes and remove *common* TT
         offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
         offSlopes = self.removeCommonTT(offSlopes,[2,3,4,5])
         

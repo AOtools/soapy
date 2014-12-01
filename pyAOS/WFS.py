@@ -490,8 +490,8 @@ class WFS(object):
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
-            ht -= z
-            
+            print("ASP: Ht: {0}m, dH: {1}m".format(ht, z))
+            ht -= z            
             #Do ASP for last layer to next
             self.physEField[:] = angularSpectrum(
                         self.physEField, self.wfsConfig.wavelength, 

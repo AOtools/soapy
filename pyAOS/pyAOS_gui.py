@@ -534,12 +534,12 @@ class IMatThread(QtCore.QThread):
             self.guiObj.stop()
             traceback.print_exc()
 
-
     def progressUpdate(self, message, i="", maxIter=""):
         i = str(i)
         maxIter = str(maxIter)
         message = str(message)
         self.updateProgressSignal.emit(message, i, maxIter)
+
 
 class LoopThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
@@ -551,7 +551,6 @@ class LoopThread(QtCore.QThread):
         self.guiObj=guiObj
 
         self.sim = guiObj.sim
-
 
     def run(self):
         logger.setStatusFunc(self.progressUpdate)

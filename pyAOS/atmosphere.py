@@ -104,7 +104,6 @@ class atmos:
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *atmosConfig.scrnStrengths)**(-3./5.) )
-
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
 
