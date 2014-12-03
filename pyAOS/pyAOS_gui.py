@@ -483,7 +483,7 @@ class StatsThread(QtCore.QThread):
         self.startTime = time.time()
         
         while self.sim.iters+1 < self.sim.config.sim.nIters and self.sim.go:
-            time.sleep(1)
+            time.sleep(0.4)
             iTime = time.time()
             try:
                 #Calculate and print running stats

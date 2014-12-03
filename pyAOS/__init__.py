@@ -622,6 +622,11 @@ class Sim(object):
                 self.sciPhase.append(
                     numpy.empty( (self.config.sim.nIters, self.config.sim.pupilSize, self.config.sim.pupilSize)))
 
+        #Init science WFE saving
+        self.WFE = numpy.zeros(
+                    (self.config.sim.nSci, self.config.sim.nIters)
+                    )
+
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
             self.allSlopes = numpy.empty( (self.config.sim.nIters, self.config.sim.totalWfsData) )
@@ -684,6 +689,9 @@ class Sim(object):
             for sci in xrange(self.config.sim.nSci):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
+                self.WFE[sci,i] =  numpy.sqrt(
+                        numpy.mean(self.sciCams[sci].residual**2)
+                        )
             
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
@@ -718,6 +726,8 @@ class Sim(object):
                 fits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs, 
                                 clobber=True)
 
+            if self.config.sim.saveWFE:
+                fits.writeto(self.path+"/WFS.fits", self.WFS, clobber=True)
 
             if self.config.sim.saveStrehl:
                 fits.writeto(self.path+"/instStrehl.fits", self.instStrehl,

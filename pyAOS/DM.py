@@ -19,7 +19,10 @@
 The module simulating Deformable Mirrors in pyAOS
 """
 import numpy
+from scipy.ndimage.interpolation import rotate
+
 from . import aoSimLib, logger
+
 
 try:
     xrange
@@ -59,6 +62,18 @@ class DM:
        '''
        self.makeIMatShapes()
 
+       if self.dmConfig.rotation:
+           self.iMatShapes = rotate(    self.iMatShapes, self.dmConfig.rotation,
+                                        order=1, axes=(-2,-1))
+           rotShape = self.iMatShapes.shape
+           self.iMatShapes = self.iMatShapes[:,
+                   rotShape[1]/2. - self.simConfig.pupilSize/2.:
+                   rotShape[1]/2. + self.simConfig.pupilSize/2.,
+                   rotShape[2]/2. - self.simConfig.pupilSize/2.:
+                   rotShape[2]/2. + self.simConfig.pupilSize/2.
+                   ]
+       
+
        iMat = numpy.zeros( (self.iMatShapes.shape[0],2*self.totalSubaps) )
 
        subap=0
@@ -97,6 +112,19 @@ class DM:
               + ( (1-self.dmConfig.gain) * self.actCoeffs)
         
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
+        
+        #If the dm rotation is not 0, then use the scipy.ndimage.interpolation
+        #function to rotate it.
+        # if self.dmConfig.rotation:
+#             self.dmShape = rotate(  self.dmShape, self.dmConfig.rotation,
+#                                     order=1)
+#             rotShape = self.dmShape.shape
+#             self.dmShape = self.dmShape[
+#                     rotShape[0]/2. - self.simConfig.pupilSize/2.:
+#                     rotShape[0]/2. + self.simConfig.pupilSize/2.,
+#                     rotShape[1]/2. - self.simConfig.pupilSize/2.:
+#                     rotShape[1]/2. + self.simConfig.pupilSize/2.
+#              ]
         
         #Remove any piston term from DM
         self.dmShape-=self.dmShape.mean()
@@ -158,7 +186,7 @@ class TT(DM):
     def makeIMatShapes(self):
 
         coords = self.dmConfig.iMatValue*numpy.linspace(-1,1,self.simConfig.pupilSize)
-        self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
+        self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))*self.mask
 
 
     def makeIMat(self, callback=None, progressCallback=None ):
@@ -166,6 +194,17 @@ class TT(DM):
         makes IMat
         '''
         self.makeIMatShapes()
+        
+        if self.dmConfig.rotation:
+            self.iMatShapes = rotate(    self.iMatShapes, self.dmConfig.rotation,
+                                         order=1, axes=(-2,-1))
+            rotShape = self.iMatShapes.shape
+            self.iMatShapes = self.iMatShapes[:,
+                    rotShape[1]/2. - self.simConfig.pupilSize/2.:
+                    rotShape[1]/2. + self.simConfig.pupilSize/2.,
+                    rotShape[2]/2. - self.simConfig.pupilSize/2.:
+                    rotShape[2]/2. + self.simConfig.pupilSize/2.
+                    ]
 
         iMat = numpy.zeros( (2,2) )
 

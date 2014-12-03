@@ -325,6 +325,7 @@ class SimConfig(ConfigObj):
                                 ("saveStrehl", False),
                                 ("saveWfsFrames", False),
                                 ("saveSciPsf", False),
+                                ("saveWFE", False),
                                 ("saveSciRes", False),
                                 ("tipTilt", False),
                                 ("ttGain", 0.6),
@@ -332,7 +333,7 @@ class SimConfig(ConfigObj):
                                 ("verbosity", 2),
                                 ("logfile", None),
                                 ("learnIters", 0),
-                                ("learnAtmos", "random"),
+                                ("learnAtmos", "random"), 
                         ]
 
         self.initParams()
@@ -612,6 +613,8 @@ class DmConfig(ConfigObj):
                              when making iMat                    ``10``
         ``wfs``              int: which Wfs to take iMat and
                              use to correct for.                 ``0``
+        ``rotation``         float: A DM rotation with respect
+                             to the pupil in degrees             ``0''
         ==================== =================================   ===========  
         """
 
@@ -629,9 +632,10 @@ class DmConfig(ConfigObj):
 
 
         self.optionalParams = [ 
-                                ("closed",True),
-                                ("iMatValue",10),
-                                ("wfs", 0)
+                                ("closed", True),
+                                ("iMatValue", 10),
+                                ("wfs", 0),
+                                ("rotation", 0)
                                 ]
         self.initParams()
 
