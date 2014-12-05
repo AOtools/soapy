@@ -61,7 +61,7 @@ class scienceCam:
                                             =(numpy.exp(1j*self.scaledMask)
                                                     *self.scaledMask)
         fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        binFp = aoSimLib.binImgs(fp,self.sciConfig.oversamp)
+        binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
         self.psfMax = binFp.max()        
         self.longExpStrehl = 0
         self.instStrehl = 0 
