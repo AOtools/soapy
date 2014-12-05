@@ -157,10 +157,18 @@ def zoom(array, newSize, order=3):
 #WFS Functions
 ######################
 
-def findActiveSubaps(subaps,mask,threshold):
+def findActiveSubaps(subaps, mask, threshold):
     '''
     Finds the subapertures which are "seen" be through the
     pupil function. Returns the coords of those subaps
+    
+    Parameters:
+        subaps (int): The number of subaps in x (assumes square)
+        mask (ndarray): A pupil mask, where is transparent when 1, and opaque when 0
+        threshold (float): The mean value across a subap to make it "active"
+        
+    Returns:
+        ndarray: An array of active subap coords
     '''
 
     subapCoords = []
@@ -178,7 +186,7 @@ def findActiveSubaps(subaps,mask,threshold):
     subapCoords = numpy.array( subapCoords )
     return subapCoords
 
-def binImgs(data,n):
+def binImgs(data, n):
     '''
     Bins one or more images down by the given factor
     bins. n must be a factor of data.shape, who knows what happens
