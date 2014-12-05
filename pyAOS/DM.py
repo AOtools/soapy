@@ -63,8 +63,10 @@ class DM:
        self.makeIMatShapes()
 
        if self.dmConfig.rotation:
-           self.iMatShapes = rotate(    self.iMatShapes, self.dmConfig.rotation,
-                                        order=1, axes=(-2,-1))
+           self.iMatShapes = rotate(    
+                   self.iMatShapes, self.dmConfig.rotation,
+                   order=self.dmConfig.interpOrder, axes=(-2,-1)
+                   )
            rotShape = self.iMatShapes.shape
            self.iMatShapes = self.iMatShapes[:,
                    rotShape[1]/2. - self.simConfig.pupilSize/2.:
@@ -113,19 +115,6 @@ class DM:
         
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
-        #If the dm rotation is not 0, then use the scipy.ndimage.interpolation
-        #function to rotate it.
-        # if self.dmConfig.rotation:
-#             self.dmShape = rotate(  self.dmShape, self.dmConfig.rotation,
-#                                     order=1)
-#             rotShape = self.dmShape.shape
-#             self.dmShape = self.dmShape[
-#                     rotShape[0]/2. - self.simConfig.pupilSize/2.:
-#                     rotShape[0]/2. + self.simConfig.pupilSize/2.,
-#                     rotShape[1]/2. - self.simConfig.pupilSize/2.:
-#                     rotShape[1]/2. + self.simConfig.pupilSize/2.
-#              ]
-        
         #Remove any piston term from DM
         self.dmShape-=self.dmShape.mean()
         self.dmShape*=self.mask
@@ -173,7 +162,8 @@ class Piezo(DM):
             shape[x,y] = 1
 
             shapes[i] = self.dmConfig.iMatValue * aoSimLib.zoom(shape,
-                    (self.simConfig.pupilSize,self.simConfig.pupilSize), order=1)
+                    (self.simConfig.pupilSize,self.simConfig.pupilSize),
+                    order=self.dmConfig.interpOrder)
         self.iMatShapes = (shapes * self.mask) #*self.wvl
 
 
@@ -185,51 +175,53 @@ class TT(DM):
 
     def makeIMatShapes(self):
 
-        coords = self.dmConfig.iMatValue*numpy.linspace(-1,1,self.simConfig.pupilSize)
+        coords = self.dmConfig.iMatValue*numpy.linspace(
+                    -1,1,self.simConfig.pupilSize)
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))*self.mask
 
 
-    def makeIMat(self, callback=None, progressCallback=None ):
-        '''
-        makes IMat
-        '''
-        self.makeIMatShapes()
-        
-        if self.dmConfig.rotation:
-            self.iMatShapes = rotate(    self.iMatShapes, self.dmConfig.rotation,
-                                         order=1, axes=(-2,-1))
-            rotShape = self.iMatShapes.shape
-            self.iMatShapes = self.iMatShapes[:,
-                    rotShape[1]/2. - self.simConfig.pupilSize/2.:
-                    rotShape[1]/2. + self.simConfig.pupilSize/2.,
-                    rotShape[2]/2. - self.simConfig.pupilSize/2.:
-                    rotShape[2]/2. + self.simConfig.pupilSize/2.
-                    ]
-
-        iMat = numpy.zeros( (2,2) )
-
-        slopesToTT = numpy.zeros((self.wfs.activeSubaps*2, 2))
-        slopesToTT[:self.wfs.activeSubaps, 0] = 1./self.wfs.activeSubaps
-        slopesToTT[self.wfs.activeSubaps:, 1] = 1./self.wfs.activeSubaps
-
-        for i in xrange(self.iMatShapes.shape[0]):
-            
-            slopes = self.wfs.iMatFrame(self.iMatShapes[i])
-            iMat[i,:] = slopes.reshape(2,self.wfs.activeSubaps).mean(1)
-
-            logger.debug("DM IMat act: %i"%i)
-
-            self.dmShape = self.iMatShapes[i]
-           
-            if callback!=None:
-                callback() 
-           
-            logger.statusMessage(i, self.iMatShapes.shape[0],
-                    "Generating {} Actuator DM iMat".format(self.acts))
-
-               
-        self.iMat = iMat.dot(numpy.linalg.pinv(slopesToTT))
-        return self.iMat
+    # def makeIMat(self, callback=None, progressCallback=None ):
+   #      '''
+   #      makes IMat
+   #      '''
+   #      self.makeIMatShapes()
+   #
+   #      if self.dmConfig.rotation:
+   #          self.iMatShapes = rotate(
+   #                  self.iMatShapes, self.dmConfig.rotation,
+   #                  order=self.dmConfig.interpOrder, axes=(-2,-1))
+   #          rotShape = self.iMatShapes.shape
+   #          self.iMatShapes = self.iMatShapes[:,
+   #                  rotShape[1]/2. - self.simConfig.pupilSize/2.:
+   #                  rotShape[1]/2. + self.simConfig.pupilSize/2.,
+   #                  rotShape[2]/2. - self.simConfig.pupilSize/2.:
+   #                  rotShape[2]/2. + self.simConfig.pupilSize/2.
+   #                  ]
+   #
+   #      iMat = numpy.zeros( (2,2) )
+   #
+   #      slopesToTT = numpy.zeros((self.wfs.activeSubaps*2, 2))
+   #      slopesToTT[:self.wfs.activeSubaps, 0] = 1./self.wfs.activeSubaps
+   #      slopesToTT[self.wfs.activeSubaps:, 1] = 1./self.wfs.activeSubaps
+   #
+   #      for i in xrange(self.iMatShapes.shape[0]):
+   #
+   #          slopes = self.wfs.iMatFrame(self.iMatShapes[i])
+   #          iMat[i,:] = slopes.reshape(2,self.wfs.activeSubaps).mean(1)
+   #
+   #          logger.debug("DM IMat act: %i"%i)
+   #
+   #          self.dmShape = self.iMatShapes[i]
+   #
+   #          if callback!=None:
+   #              callback()
+   #
+   #          logger.statusMessage(i, self.iMatShapes.shape[0],
+   #                  "Generating {} Actuator DM iMat".format(self.acts))
+   #
+   #
+   #      self.iMat = iMat.dot(numpy.linalg.pinv(slopesToTT))
+   # return self.iMat
 
 
 class TT1:

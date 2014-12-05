@@ -615,6 +615,9 @@ class DmConfig(ConfigObj):
                              use to correct for.                 ``0``
         ``rotation``         float: A DM rotation with respect
                              to the pupil in degrees             ``0''
+        ``interpOrder''      Order of interpolation for dm,
+                             including piezo actuators and
+                             rotation.                           ``1''
         ==================== =================================   ===========  
         """
 
@@ -635,7 +638,8 @@ class DmConfig(ConfigObj):
                                 ("closed", True),
                                 ("iMatValue", 10),
                                 ("wfs", 0),
-                                ("rotation", 0)
+                                ("rotation", 0),
+                                ("interpOrder", 1),
                                 ]
         self.initParams()
 
