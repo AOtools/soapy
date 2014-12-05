@@ -226,17 +226,40 @@ class MVM(Reconstructor):
         control matrix
         '''
         acts = 0
+        dmIMat = numpy.empty_like(self.controlMatrix.T)
+        for dm in xrange(self.simConfig.nDM):
+            dmIMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
+            acts+=self.dms[dm].acts
+        
+        logger.info("Invert iMat with cond: {}".format(
+                self.dms[dm].dmConfig.dmCond))
+        self.controlMatrix = scipy.linalg.pinv(
+                dmIMat, self.dms[dm].dmConfig.dmCond
+                )
+            
+
+class MVM_SeperateDMs(Reconstructor):
+
+
+    def calcCMat(self,callback=None, progressCallback=None):
+        '''
+        Uses DM object makeIMat methods, then inverts each to create a 
+        control matrix
+        '''
+        acts = 0
+
         for dm in xrange(self.simConfig.nDM):
 
-            dmIMat = self.dms[dm].iMat
-
+            
+            
+            #Old code which treats each DM iMat seperately
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
-                dmCMat = scipy.linalg.pinv( dmIMat, 
+                dmCMat = scipy.linalg.pinv( dmIMat,
                                             self.dms[dm].dmConfig.dmCond)
 
-            self.controlMatrix[ 
+            self.controlMatrix[
                     self.dms[dm].wfs.wfsConfig.dataStart:
                     (self.dms[dm].wfs.activeSubaps*2
                                 +self.dms[dm].wfs.wfsConfig.dataStart),
@@ -257,7 +280,7 @@ class MVM(Reconstructor):
             ttMean = slopes[self.dms[0].wfs.wfsConfig.dataStart:
                             (self.dms[0].wfs.activeSubaps*2
                                 +self.dms[0].wfs.wfsConfig.dataStart)
-                            ].reshape(2,  
+                            ].reshape(2,
                                 self.dms[0].wfs.activeSubaps).mean(1)
             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
             slopes[self.dms[0].wfs.wfsConfig.dataStart:
@@ -273,6 +296,8 @@ class MVM(Reconstructor):
 
             return numpy.append(ttCommands, dmCommands)
 
+        
+    
         #get dm commands for the calculated on axis slopes
         dmCommands = self.controlMatrix.T.dot(slopes)
         return dmCommands
