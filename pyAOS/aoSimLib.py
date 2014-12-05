@@ -177,8 +177,10 @@ def findActiveSubaps(subaps, mask, threshold):
 
     for x in range(subaps):
         for y in range(subaps):
-            subap = mask[   x*xSpacing:(x+1)*xSpacing,
-                            y*ySpacing:(y+1)*ySpacing ]
+            subap = mask[   
+                    numpy.round(x*xSpacing): numpy.round((x+1)*xSpacing),
+                    numpy.round(y*ySpacing): numpy.round((y+1)*ySpacing) 
+                    ]
 
             if subap.mean() >= threshold:
                 subapCoords.append( [x*xSpacing, y*ySpacing])
