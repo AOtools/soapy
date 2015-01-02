@@ -520,54 +520,60 @@ class Sim(object):
         self.closedCorrection = numpy.zeros(self.dmShape.shape)
         self.openCorrection = self.closedCorrection.copy()
         self.dmCommands = numpy.zeros( self.config.sim.totalActs )
+        
+        try:
+            for i in xrange(self.config.sim.nIters):
+                if self.go:
 
-        for i in xrange(self.config.sim.nIters):
-            if self.go:
+                    #get next phase screens
+                    t = time.time()
+                    self.scrns = self.atmos.moveScrns()
+                    self.Tatmos = time.time()-t
 
-                #get next phase screens
-                t = time.time()
-                self.scrns = self.atmos.moveScrns()
-                self.Tatmos = time.time()-t
+                    #Reset correction
+                    self.closedCorrection[:] = 0
+                    self.openCorrection[:] = 0
 
-                #Reset correction
-                self.closedCorrection[:] = 0
-                self.openCorrection[:] = 0
+                    #Run Loop...
 
-                #Run Loop...
+                    #Get dmCommands from reconstructor
+                    if self.config.sim.nDM:
+                        self.dmCommands[:] = self.recon.reconstruct(self.slopes)
 
-                #Get dmCommands from reconstructor
-                if self.config.sim.nDM:
-                    self.dmCommands[:] = self.recon.reconstruct(self.slopes)
+                    #Get dmShape from closed loop DMs
+                    self.closedCorrection += self.runDM(self.dmCommands, closed=True)
 
-                #Get dmShape from closed loop DMs
-                self.closedCorrection += self.runDM(self.dmCommands, closed=True)
+                    #Run WFS, with closed loop DM shape applied
+                    self.slopes = self.runWfs(  dmShape=self.closedCorrection,
+                                                loopIter=i)
 
-                #Run WFS, with closed loop DM shape applied
-                self.slopes = self.runWfs(  dmShape=self.closedCorrection,
-                                            loopIter=i)
+                    #Get DM shape for open loop DMs, add to closed loop DM shape
+                    self.openCorrection += self.runDM(  self.dmCommands, 
+                                                        closed=False)
 
-                #Get DM shape for open loop DMs, add to closed loop DM shape
-                self.openCorrection += self.runDM(  self.dmCommands, 
-                                                    closed=False)
+                    #Run a tip-tilt mirror if set
+                    ttShape, self.slopes = self.runTipTilt(self.slopes)
 
-                #Run a tip-tilt mirror if set
-                ttShape, self.slopes = self.runTipTilt(self.slopes)
+                    #Pass whole combine DM shapes to science target
+                    self.runSciCams(
+                                self.openCorrection+self.closedCorrection+ttShape)
+                    
+                    #Save Data
+                    self.storeData(i)
 
-                #Pass whole combine DM shapes to science target
-                self.runSciCams(
-                            self.openCorrection+self.closedCorrection+ttShape)
-                
-                #Save Data
-                self.storeData(i)
+                    self.iters = i
 
-                self.iters = i
+                    #logger.statusMessage(i, self.config.sim.nIters, 
+                    #                    "AO Loop")
+                    
+                    self.printOutput(self.config.sim.filePrefix, i, strehl=True)
 
-                logger.statusMessage(i, self.config.sim.nIters, 
-                                    "AO Loop")
-
-                self.addToGuiQueue()
-            else:
-                break
+                    self.addToGuiQueue()
+                else:
+                    break
+        except KeyboardInterrupt:
+            self.go = False
+            logger.info("Sim exited by user") 
 
         #Finally save data after loop is over.
         self.saveData()
@@ -757,7 +763,7 @@ class Sim(object):
         return datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 
-    def printOutput(self,label,iter,strehl=False):
+    def printOutput(self, label, iter, strehl=False):
         """
         Prints simulation information  to the console
 
@@ -767,15 +773,15 @@ class Sim(object):
             iter(int): simulation frame number
             strehl(float, optional): current strehl ration if science cameras are present to record it.
         """
-        
-        string = "%s Frame: %d      \n"%(label,iter)
+        string = label
         if strehl:
-            string += "Strehl:      %2.2f   "%(sim.longStrehl[iter])
-            string += "inst Strehl  %2.2f   "%(sim.instStrehl[iter])
+            string += "Strehl -- "
+            for sci in xrange(self.config.sim.nSci):
+                string += "sci_{0}: inst {1:.2f}, long {2:.2f}".format(
+                        sci, self.sciCams[sci].instStrehl, 
+                        self.sciCams[sci].longExpStrehl)
             
-        sys.stdout.write(string)
-        sys.stdout.flush()
-            
+        logger.statusMessage(iter, self.config.sim.nIters, string )
         
 
     def addToGuiQueue(self):
