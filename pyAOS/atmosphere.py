@@ -201,6 +201,23 @@ class atmos:
             self.yCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][1]
 
 
+    def saveScrns(self, DIR):
+        """
+        Saves the currently loaded phase screens to file, 
+        saving the r0 value in the fits header (in units of pixels).
+
+        Args:
+            DIR (string): The directory to save the screens
+        """
+
+        for scrn in range(self.scrnNo):
+            logger.info("Write Sreen {}....".format(scrn))
+            hdu = fits.PrimaryHDU(self.wholeScrns[scrn])
+            hdu.header["R0"] = "{:.2f}".format(
+                    self.scrnStrengths[scrn]*self.pxlScale)
+            hdu.writeto(DIR+"/scrn{}.fits".format(scrn))
+            logger.info("Done!")
+        
 
     def moveScrns(self):
         """
