@@ -54,7 +54,7 @@ class DM:
         Returns:
             int: number of active DM actuators
         """
-        return self.acts
+        return self.dmConfig.dmActs
 
     def makeIMat(self, callback=None, progressCallback=None ):
        '''
