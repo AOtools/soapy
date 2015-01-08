@@ -22,9 +22,9 @@
 '''
 The main pyAOS Simulation module
 
-This module contains the `Sim` class, which can be used to run an end-to-end simulation. Initally, a configuration file is read, the system is initialised, interaction and command matrices calculated and finally a loop run. The simulation outputs some information to the console during the simulation.
+This module contains the ``Sim`` class, which can be used to run an end-to-end simulation. Initally, a configuration file is read, the system is initialised, interaction and command matrices calculated and finally a loop run. The simulation outputs some information to the console during the simulation.
 
-    The `Sim` class holds all configuration information and data from the simulation. 
+    The ``Sim`` class holds all configuration information and data from the simulation. 
 
 Examples:
     
@@ -33,7 +33,7 @@ Examples:
         import pyAOS
         sim = pyAOS.Sim("sh_8x8_4.2m.py")
 
-    Configuration information has now been loaded, and can be accessed through the `config` attribute of the `sim` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
+    Configuration information has now been loaded, and can be accessed through the ``config`` attribute of the ``sim`` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
 
         sim.config.sim.pupilSize
         sim.config.wfs[0].pxlsPerSubap = 10
@@ -42,7 +42,7 @@ Examples:
 
         sim.aoinit()
 
-    DM Interation and command matrices are calculated now. If `sim.config.sim.filePrefix` is not `None`, then these matrices will be saved in `data/filePrefix`(data will be saved here also in a time-stamped directory)::
+    DM Interation and command matrices are calculated now. If ``sim.config.sim.filePrefix`` is not ``None``, then these matrices will be saved in `data/filePrefix`(data will be saved here also in a time-stamped directory)::
 
         sim.makeIMat()
 
@@ -51,7 +51,7 @@ Examples:
 
         sim.aoloop()
 
-    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to `data/filePrefix` (if it is not set to `None`). Data can also be accessed from the simulation class, e.g. `sim.allSlopes`, `sim.longStrehl`
+    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/filePrefix`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes`, `sim.longStrehl`
 
 
 :Author:
