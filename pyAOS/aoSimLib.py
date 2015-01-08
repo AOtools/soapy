@@ -121,13 +121,13 @@ def gaussian2d(size, width, amplitude=1., cent=None):
     try:
         xSize = size[0]
         ySize = size[1]
-    except TypeError:
+    except (TypeError, IndexError):
         xSize = ySize = size
 
     try:
         xWidth = float(width[0])
         yWidth = float(width[1])
-    except TypeError:
+    except (TypeError, IndexError):
         xWidth = yWidth = float(width)
 
     if not cent:
@@ -143,6 +143,8 @@ def gaussian2d(size, width, amplitude=1., cent=None):
             -(((xCent-X)/xWidth)**2 + ((yCent-Y)/yWidth)**2)/2)
 
     return image
+
+
 
 #Interpolation
 ###############################################
