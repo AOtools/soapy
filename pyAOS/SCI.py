@@ -137,7 +137,7 @@ class scienceCam:
         to transform to the focal plane, and scales for correct FOV.
         '''
 
-        phs = aoSimLib.zoom(self.residual, self.FOVPxlNo) *self.r0Scale
+        phs = aoSimLib.zoom(self.residual, self.FOVPxlNo) * self.r0Scale
 
         eField = numpy.exp(1j*phs)*self.scaledMask
 
@@ -159,6 +159,9 @@ class scienceCam:
             self.residual = self.phase
             
         self.calcFocalPlane()
+        
+        #Here so when viewing data, that outside of the pupil isn't visible.
+        self.residual*=self.mask
 
         self.instStrehl =  self.focalPlane.max()/self.psfMax
 
