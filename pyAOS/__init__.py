@@ -695,7 +695,7 @@ class Sim(object):
             for sci in xrange(self.config.sim.nSci):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
-                res = self.sciCams[sci].residual.view()
+                res = self.sciCams[sci].residual*self.sciCams[sci].r0Scale
                 self.WFE[sci,i] =  numpy.sqrt(
                         ((res-res.mean())**2).sum()/self.mask.sum())
             
