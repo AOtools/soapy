@@ -690,8 +690,8 @@ class ShackHartmann(WFS):
                         self.detectorPxls/float(self.simConfig.pupilSize) ) )
         
         #Find the mask to apply to the scaled EField
-        self.scaledMask = aoSimLib.zoom(
-                    self.mask, self.subapFOVSpacing*self.wfsConfig.subaps)
+        self.scaledMask = numpy.round(aoSimLib.zoom(
+                    self.mask, self.subapFOVSpacing*self.wfsConfig.subaps))
         
     
     def initFFTs(self):

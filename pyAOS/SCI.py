@@ -127,7 +127,7 @@ class scienceCam:
             phase=self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
 
             totalPhase+=phase
-        totalPhase *= self.mask
+        #totalPhase *= self.mask
 
         self.phase=totalPhase
 
