@@ -39,7 +39,8 @@ class scienceCam:
 
         self.scaleFactor = float(self.FOVPxlNo)/self.simConfig.pupilSize
 
-        self.scaledMask = numpy.round(aoSimLib.zoom(self.mask,self.FOVPxlNo))
+        self.scaledMask = numpy.round(aoSimLib.zoom(self.mask,self.FOVPxlNo)
+                ).astype("int32")
 
         #Init FFT object
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.oversamp
