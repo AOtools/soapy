@@ -131,7 +131,7 @@ class WFS(object):
         self.mask = mask
         
         self.iMat=False
-        self.phsWvl = 550e-9
+        self.phsWvl = 500e-9
 
         self.calcInitParams()
 

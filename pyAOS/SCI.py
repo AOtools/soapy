@@ -40,7 +40,7 @@ class scienceCam:
         self.scaleFactor = float(self.FOVPxlNo)/self.simConfig.pupilSize
 
         self.scaledMask = numpy.round(aoSimLib.zoom(self.mask,self.FOVPxlNo)
-                ).astype("int32")
+                ).astype("float32")
 
         #Init FFT object
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.oversamp
@@ -66,8 +66,9 @@ class scienceCam:
         self.psfMax = binFp.max()        
         self.longExpStrehl = 0
         self.instStrehl = 0 
+
         #Get phase scaling factor to get r0 in other wavelength   
-        phsWvl = 550e-9  
+        phsWvl = 500e-9  
         self.r0Scale = phsWvl/self.sciConfig.wavelength
 
     def metaPupilPos(self, height):
@@ -93,7 +94,7 @@ class scienceCam:
         sciCent = self.metaPupilPos(height) * self.simConfig.pxlScale
         logger.debug("SciCents:({0},{1})".format(sciCent[0],sciCent[1]))
 
-        scrnX,scrnY=scrn.shape
+        scrnX,scrnY=scrn .shape
 
 
         if      (scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0) < 0 \
