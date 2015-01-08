@@ -321,7 +321,8 @@ class GUI(QtGui.QMainWindow):
         
         self.strehlAxes = self.resultPlot.canvas.ax
         self.strehlAxes.set_xlabel("Iterations",fontsize="xx-small")
-        self.strehlAxes.set_ylabel("Strehl Ratio (%)",fontsize="xx-small")
+        self.strehlAxes.set_ylabel("Strehl Ratio",fontsize="xx-small")
+        self.strehlAxes.set_ylim(0, 1.)
         self.strehlAxes.tick_params(axis='both', which='major', labelsize="xx-small")
         self.strehlAxes.tick_params(axis='both', which='minor', labelsize="xx-small")
         self.strehlPlts=[]

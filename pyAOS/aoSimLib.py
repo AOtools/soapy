@@ -105,7 +105,44 @@ def circle(radius, size, centre_offset=(0,0)):
     C[mask] = 1
     return C
 
+def gaussian2d(size, width, amplitude=1., cent=None):
+    '''
+    Generates 2D gaussian distribution
 
+
+    Args:
+        size (tuple, float): Dimensions of Array to place gaussian
+        width (tuple, float): Width of distribution. 
+                                Accepts tuple for x and y values.
+        amplitude (float): Amplitude of guassian distribution
+        cent (tuple): Centre of distribution on grid.
+    '''
+
+    try:
+        xSize = size[0]
+        ySize = size[1]
+    except TypeError:
+        xSize = ySize = size
+
+    try:
+        xWidth = float(width[0])
+        yWidth = float(width[1])
+    except TypeError:
+        xWidth = yWidth = float(width)
+
+    if not cent:
+        xCent = size[0]/2.
+        yCent = size[1]/2.
+    else:
+        xCent = cent[0]
+        yCent = cent[1]
+
+    X,Y = numpy.meshgrid(range(0, xSize), range(0, ySize))
+    
+    image = amplitude * numpy.exp(
+            -(((xCent-X)/xWidth)**2 + ((yCent-Y)/yWidth)**2)/2)
+
+    return image
 
 #Interpolation
 ###############################################

@@ -697,8 +697,7 @@ class Sim(object):
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
                 res = self.sciCams[sci].residual.view()
                 self.WFE[sci,i] =  numpy.sqrt(
-                        numpy.mean((res-res.mean())**2)
-                        )
+                        ((res-res.mean())**2).sum()/self.mask.sum())
             
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
@@ -776,7 +775,7 @@ class Sim(object):
         """
         string = label
         if strehl:
-            string += "Strehl -- "
+            string += "  Strehl -- "
             for sci in xrange(self.config.sim.nSci):
                 string += "sci_{0}: inst {1:.2f}, long {2:.2f}".format(
                         sci, self.sciCams[sci].instStrehl, 
