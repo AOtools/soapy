@@ -153,7 +153,8 @@ class Piezo(DM):
 
     def makeIMatShapes(self):
 
-        shapes = numpy.zeros( (self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize) )
+        shapes = numpy.zeros( (
+                self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize) )
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]
@@ -166,7 +167,25 @@ class Piezo(DM):
                     order=self.dmConfig.interpOrder)
         self.iMatShapes = (shapes * self.mask) #*self.wvl
 
+class GaussStack(Piezo):
 
+    def makeIMatShapes(self):
+        shapes = numpy.zeros((
+                self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize))
+    
+        actSpacing = self.simConfig.pupilSize/(numpy.sqrt(self.dmConfig.dmActs)-1)
+        width = actSpacing/2.
+
+        for i in xrange(self.acts):
+            x,y = self.activeActs[i]*actSpacing
+            shapes[i] = aoSimLib.gaussian2d(
+                    self.simConfig.pupilSize, width, cent = (x,y))
+        
+        self.iMatShapes = shapes
+
+            
+
+        
 class TT(DM):
 
     def getActiveActs(self):
