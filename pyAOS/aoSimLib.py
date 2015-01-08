@@ -93,7 +93,9 @@ def circle(radius, size, centre_offset=(0,0)):
     x-=centre_offset[0]
     y-=centre_offset[1]
 
-    mask = x*x + y*y <= radius*radius+0.5
+    radius+=0.5
+
+    mask = x*x + y*y <= radius*radius
     
     C = numpy.zeros((size, size))
     C[mask] = 1
