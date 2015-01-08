@@ -23,7 +23,11 @@ A module containing useful functions used throughout pyAOS
 '''
 
 import numpy
+
 from scipy.interpolate import interp2d,RectBivariateSpline
+#a lookup dict for interp2d order (expressed as 'kind')
+INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
+
 from . import AOFFT
 
 #xrange now just "range" in python3. 
@@ -120,7 +124,10 @@ def zoom(array, newSize, order=3):
     Returns:
         ndarray : zoom array of new size.
     """
-    
+   
+    if order not in INTERP_KIND:
+       raise ValueError("Order can either be 1, 3, or 5 only")
+
     try:
         xSize = newSize[0]
         ySize = newSize[1]
@@ -139,9 +146,11 @@ def zoom(array, newSize, order=3):
 #        numpy.arange(array.shape[1]), array.imag, kx=order, ky=order)
            
         realInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.real, copy=False)
+                numpy.arange(array.shape[1]), array.real, copy=False, 
+                kind=INTERP_KIND[order])
         imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.imag, copy=False)                 
+                numpy.arange(array.shape[1]), array.imag, copy=False,
+                kind=INTERP_KIND[order])                 
         return realInterpObj(coordsX,coordsY) \
                             + 1j*imagInterpObj(coordsX,coordsY)
             
@@ -150,7 +159,8 @@ def zoom(array, newSize, order=3):
         # interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
 #        numpy.arange(array.shape[1]), array, kx=order, ky=order)
         interpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array, copy=False)
+                numpy.arange(array.shape[1]), array, copy=False,
+                kind=INTERP_KIND[order])
 
         return interpObj(coordsX,coordsY)
 
