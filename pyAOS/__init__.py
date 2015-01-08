@@ -36,7 +36,7 @@ Examples:
     Configuration information has now been loaded, and can be accessed through the `config` attribute of the `sim` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
 
         sim.config.sim.pupilSize
-        sim.config.sim.wfs[0].pxlsPerSubap = 10
+        sim.config.wfs[0].pxlsPerSubap = 10
 
     Next, the system is initialised, this entails calculating various parameters in the system sub-modules, so must be done after changing some simulation parameters::
 
