@@ -250,8 +250,8 @@ class MVM_SeperateDMs(Reconstructor):
 
         for dm in xrange(self.simConfig.nDM):
 
-            
-            
+            dmIMat = self.dms[dm].iMat
+
             #Old code which treats each DM iMat seperately
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)

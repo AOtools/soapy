@@ -548,7 +548,7 @@ class IMatThread(QtCore.QThread):
 class LoopThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
     
-    def __init__(self,guiObj):
+    def __init__(self, guiObj):
 
         QtCore.QThread.__init__(self)
         #multiprocessing.Process.__init__(self)
