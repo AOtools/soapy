@@ -153,7 +153,7 @@ def zoom(array, newSize, order=3):
     """
     A Class to zoom 2-dimensional arrays using interpolation
 
-    Uses the scipy `RectBivariateSpline` interpolation routine to zoom into an array. Can cope with real of complex data.
+    Uses the scipy `Interp2d` interpolation routine to zoom into an array. Can cope with real of complex data.
 
     Parameters:
         array (ndarray): 2-dimensional array to zoom
@@ -171,7 +171,7 @@ def zoom(array, newSize, order=3):
         xSize = newSize[0]
         ySize = newSize[1]
 
-    except IndexError:
+    except (IndexError, TypeError):
         xSize = ySize = newSize
 
     coordsX = numpy.linspace(0, array.shape[0]-1, xSize)
@@ -179,11 +179,7 @@ def zoom(array, newSize, order=3):
 
     #If array is complex must do 2 interpolations
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
-        # realInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#                 numpy.arange(array.shape[1]), array.real, kx=order, ky=order)
-#         imagInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#        numpy.arange(array.shape[1]), array.imag, kx=order, ky=order)
-           
+
         realInterpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array.real, copy=False, 
                 kind=INTERP_KIND[order])
@@ -195,13 +191,57 @@ def zoom(array, newSize, order=3):
             
     else:
 
-        # interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#        numpy.arange(array.shape[1]), array, kx=order, ky=order)
         interpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array, copy=False,
                 kind=INTERP_KIND[order])
 
         return interpObj(coordsX,coordsY)
+
+
+def zoom_rbs(array, newSize, order=3):
+    """
+    A Class to zoom 2-dimensional arrays using RectBivariateSpline interpolation
+
+    Uses the scipy ``RectBivariateSpline`` interpolation routine to zoom into an array. Can cope with real of complex data. May be slower than above ``zoom``, as RBS routine copies data.
+
+    Parameters:
+        array (ndarray): 2-dimensional array to zoom
+        newSize (tuple): the new size of the required array
+        order (int, optional): Order of interpolation to use. default is 3
+
+    Returns:
+        ndarray : zoom array of new size.
+    """
+    try:
+        xSize = newSize[0]
+        ySize = newSize[1]
+
+    except IndexError:
+        xSize = ySize = newSize
+
+    coordsX = numpy.linspace(0, array.shape[0]-1, xSize)
+    coordsY = numpy.linspace(0, array.shape[1]-1, ySize)
+
+    #If array is complex must do 2 interpolations
+    if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
+        realInterpObj = RectBivariateSpline(   
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+                array.real, kx=order, ky=order)
+        imagInterpObj = RectBivariateSpline(   
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+                array.imag, kx=order, ky=order)
+                         
+        return realInterpObj(coordsX,coordsY) \
+                            + 1j*imagInterpObj(coordsX,coordsY)
+            
+    else:
+
+        interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array, kx=order, ky=order)
+
+
+        return interpObj(coordsX,coordsY)
+
 
 
 #######################

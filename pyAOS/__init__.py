@@ -35,7 +35,7 @@ Examples:
 
     Configuration information has now been loaded, and can be accessed through the ``config`` attribute of the ``sim`` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
 
-        sim.config.sim.pupilSize
+        print(sim.config.sim.pupilSize)
         sim.config.wfs[0].pxlsPerSubap = 10
 
     Next, the system is initialised, this entails calculating various parameters in the system sub-modules, so must be done after changing some simulation parameters::
@@ -171,6 +171,9 @@ class Sim(object):
                         )
         else:
             self.mask = self.config.tel.mask.copy()
+    
+        self.mask = numpy.pad(
+                self.mask, self.config.sim.simPad, mode="constant")
 
         self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
@@ -203,14 +206,14 @@ class Sim(object):
 
         #init DMs
         logger.info("Initialising DMs...")
-        if self.config.sim.tipTilt:
-            self.TT = DM.TT1(self.config.sim.pupilSize, self.wfss[0], self.mask)
+        #if self.config.sim.tipTilt:
+        #    self.TT = DM.TT1(self.config.sim.pupilSize, self.wfss[0], self.mask)
 
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
         self.dmAct1 = []
-        self.dmShape = numpy.zeros( [self.config.sim.pupilSize]*2 )
+        self.dmShape = numpy.zeros( [self.config.sim.simSize]*2 )
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             dmObj = eval( "DM."+self.config.dm[dm].dmType)
@@ -628,7 +631,9 @@ class Sim(object):
         if self.config.sim.saveSciRes and self.config.sim.nSci>0:
             for sci in xrange(self.config.sim.nSci):
                 self.sciPhase.append(
-                    numpy.empty( (self.config.sim.nIters, self.config.sim.pupilSize, self.config.sim.pupilSize)))
+                    numpy.empty( 
+                            (self.config.sim.nIters, self.config.sim.simSize, 
+                            self.config.sim.simSize)))
 
         #Init science WFE saving
         self.WFE = numpy.zeros(
@@ -821,7 +826,7 @@ class Sim(object):
                 dmShape = {}
                 for i in xrange(self.config.sim.nDM):
                     try:
-                        dmShape[i] = self.dms[i].dmShape.copy()
+                        dmShape[i] = self.dms[i].dmShape.copy()*self.mask
                     except AttributeError:
                         dmShape[i] = None
 
@@ -839,7 +844,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].residual.copy()
+                        residual[i] = self.sciCams[i].residual.copy()*self.mask
                     except AttributeError:
                         residual[i] = None
 

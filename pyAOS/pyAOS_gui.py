@@ -114,6 +114,7 @@ class GUI(QtGui.QMainWindow):
         self.ui.plotLayout.addWidget(self.resultPlot)
 
         sim.readParams()
+        sim.config.calcParams()
         self.config = self.sim.config
         self.initPlots()
         self.show()
@@ -156,7 +157,8 @@ class GUI(QtGui.QMainWindow):
                     self.ui.wfsLayout, 
                     self.config.wfs[wfs].subaps*self.config.wfs[wfs].pxlsPerSubap
                     )
-            self.phasePlots[wfs] = self.makeImageItem(self.ui.phaseLayout,self.config.sim.pupilSize)
+            self.phasePlots[wfs] = self.makeImageItem(
+                    self.ui.phaseLayout,self.config.sim.simSize)
                                                       
             if self.config.lgs[wfs].lgsUplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
@@ -165,12 +167,12 @@ class GUI(QtGui.QMainWindow):
 
         if self.config.sim.tipTilt:
             self.ttPlot = self.makeImageItem(self.ui.dmLayout,
-                                            self.config.sim.pupilSize)
+                                            self.config.sim.simSize)
             
         self.dmPlots = {}
         for dm in range(self.config.sim.nDM):
             self.dmPlots[dm] = self.makeImageItem(self.ui.dmLayout,
-                                                  self.config.sim.pupilSize)
+                                                  self.config.sim.simSize)
 
         self.sciPlots = {}
         self.resPlots = {}
@@ -179,7 +181,7 @@ class GUI(QtGui.QMainWindow):
             self.sciPlots[sci] = self.makeImageItem(self.ui.sciLayout,
                                                     self.config.sci[sci].pxls)
             self.resPlots[sci] = self.makeImageItem(self.ui.residualLayout,
-                                                    self.config.sim.pupilSize)
+                                                    self.config.sim.simSize)
         self.sim.guiQueue = self.updateQueue
         self.sim.guiLock = self.updateLock
         self.sim.gui = True

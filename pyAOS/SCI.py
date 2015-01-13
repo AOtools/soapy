@@ -36,10 +36,19 @@ class scienceCam:
         self.FOVPxlNo = numpy.round(
                 self.telConfig.telDiam * self.FOVrad
                 / self.sciConfig.wavelength)
-
-        self.scaleFactor = float(self.FOVPxlNo)/self.simConfig.pupilSize
-
-        self.scaledMask = numpy.round(aoSimLib.zoom(self.mask,self.FOVPxlNo)
+    
+        self.padFOVPxlNo = int(round(
+                self.FOVPxlNo*float(self.simConfig.simSize)
+                /self.simConfig.pupilSize)
+                )
+        if self.padFOVPxlNo%2 != self.FOVPxlNo%2:
+            self.padFOVPxlNo+=1
+       
+        mask = self.mask[
+                self.simConfig.simPad:-self.simConfig.simPad,
+                self.simConfig.simPad:-self.simConfig.simPad
+                ]
+        self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
                 ).astype("float32")
 
         #Init FFT object
@@ -97,18 +106,18 @@ class scienceCam:
         scrnX,scrnY=scrn .shape
 
 
-        if      (scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0) < 0 \
-           or   (scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0) > scrnX \
-           or   (scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0) < 0 \
-           or   (scrnY/2+sciCent[1]-self.simConfig.pupilSize/2.0) > scrnY :
+        if      (scrnX/2+sciCent[0]-self.simConfig.simSize/2.0) < 0 \
+           or   (scrnX/2+sciCent[0]-self.simConfig.simSize/2.0) > scrnX \
+           or   (scrnX/2+sciCent[0]-self.simConfig.simSize/2.0) < 0 \
+           or   (scrnY/2+sciCent[1]-self.simConfig.simSize/2.0) > scrnY :
 
             raise ValueError(  "Sci Position seperation\
                                 requires larger scrn size" )
 
-        X1 = scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0
-        X2 = scrnX/2+sciCent[0]+self.simConfig.pupilSize/2.0
-        Y1 = scrnY/2+sciCent[1]-self.simConfig.pupilSize/2.0
-        Y2 = scrnY/2+sciCent[1]+self.simConfig.pupilSize/2.0
+        X1 = scrnX/2+sciCent[0]-self.simConfig.simSize/2.0
+        X2 = scrnX/2+sciCent[0]+self.simConfig.simSize/2.0
+        Y1 = scrnY/2+sciCent[1]-self.simConfig.simSize/2.0
+        Y2 = scrnY/2+sciCent[1]+self.simConfig.simSize/2.0
 
         metaPupil=scrn[ X1:X2, Y1:Y2 ]
 
@@ -121,34 +130,38 @@ class scienceCam:
         Returns the total phase on a science Camera which is offset
         by a given angle
         '''
-        totalPhase=numpy.zeros([self.simConfig.pupilSize]*2)
+        totalPhase=numpy.zeros([self.simConfig.simSize]*2)
         for i in self.scrns:
-
             phase=self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
 
             totalPhase+=phase
-        #totalPhase *= self.mask
 
         self.phase=totalPhase
 
     def calcFocalPlane(self):
         '''
-        takes the calculated pupil phase, and uses FFT
-        to transform to the focal plane, and scales for correct FOV.
+        Takes the calculated pupil phase, scales for the correct FOV, 
+        and uses an FFT to transform to the focal plane.
         '''
 
-        phs = aoSimLib.zoom(self.residual, self.FOVPxlNo) * self.r0Scale
+        #Scaled the padded phase to the right size for the requried FOV
+        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
+        
+        #Chop out the phase across the pupil before the fft
+        coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
+        phs = phs[coord:-coord, coord:-coord] 
 
-        eField = numpy.exp(1j*phs)*self.scaledMask
+        eField = numpy.exp(1j*phs) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d( self.FFT() )
 
         focalPlane = numpy.abs(focalPlane)**2
 
-        self.focalPlane = aoSimLib.binImgs( focalPlane , self.sciConfig.oversamp )
+        self.focalPlane = aoSimLib.binImgs( 
+                focalPlane , self.sciConfig.oversamp )
 
-    def frame(self,scrns,phaseCorrection=None):
+    def frame(self, scrns, phaseCorrection=None):
 
         self.scrns = scrns
         self.calcPupilPhase()
@@ -161,7 +174,7 @@ class scienceCam:
         self.calcFocalPlane()
         
         #Here so when viewing data, that outside of the pupil isn't visible.
-        self.residual*=self.mask
+        #self.residual*=self.mask
 
         self.instStrehl =  self.focalPlane.max()/self.psfMax
 
