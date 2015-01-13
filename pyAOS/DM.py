@@ -293,8 +293,7 @@ class TT1:
             #if closed loop update old commands
             self.newDmCommands += self.dmCommands
           
-        #leaky box gain
-
+        #apply gain
         self.dmCommands = (gain * self.newDmCommands)\
                                 + ( (1-gain) * self.dmCommands)
 

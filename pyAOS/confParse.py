@@ -28,6 +28,10 @@ The ``ConfigObj`` provides a base class used by other module configuration objec
 import numpy
 from . import logger
 
+#How much bigger to make the simulation than asked for.
+SIM_OVERSIZE = 1.2
+
+
 class ConfigurationError(Exception):
     pass
 
@@ -72,32 +76,32 @@ class Configurator(object):
 
     def loadSimParams(self):
 
-        logger.debug("Load Sim Params...")
+        logger.debug("\nLoad Sim Params...")
         self.sim.loadParams(self.configDict["Sim"])
 
-        logger.debug("Load Atmosphere Params...")
+        logger.debug("\nLoad Atmosphere Params...")
         self.atmos.loadParams(self.configDict["Atmosphere"])
 
-        logger.debug("Load Telescope Params...")
+        logger.debug("\nLoad Telescope Params...")
         self.tel.loadParams(self.configDict["Telescope"])
 
-        logger.debug("Load WFS Params...")
         for wfs in range(self.sim.nGS):
+            logger.debug("Load WFS {} Params...".format(wfs))
             self.wfs.append(WfsConfig(wfs))
             self.wfs[wfs].loadParams(self.configDict["WFS"])
 
-        logger.debug("Load LGS Params")
         for lgs in range(self.sim.nGS):
+            logger.debug("Load LGS {} Params".format(lgs))
             self.lgs.append(LgsConfig(lgs))
             self.lgs[lgs].loadParams(self.configDict["LGS"])
 
-        logger.debug("Load DM Params")
         for dm in range(self.sim.nDM):
+            logger.debug("Load DM {} Params".format(dm))
             self.dm.append(DmConfig(dm))
             self.dm[dm].loadParams(self.configDict["DM"])
 
-        logger.debug("Load Science Params")
         for sci in range(self.sim.nSci):
+            logger.debug("Load Science {} Params".format(sci))
             self.sci.append(SciConfig(sci))
             self.sci[sci].loadParams(self.configDict["Science"])
 
@@ -109,7 +113,14 @@ class Configurator(object):
         self.sim.pxlScale = (float(self.sim.pupilSize)/
                                     self.tel.telDiam)
 
-        #furthest out GS defines the sub-scrn size
+        #We oversize the pupil (in "aperture pixels" - apples!)
+        self.sim.simSize = PUPIL_OVERSIZE*self.sim.pxlScale
+        #But if the pupilSize is odd/even, then simSize must also be
+        if self.sim.pupilSize%2 is not self.sim.simSize%2:
+            self.sim.simSize+=1
+
+
+        #furthest out GS or SCI target defines the sub-scrn size
         gsPos = []
         for gs in range(self.sim.nGS):
             pos = self.wfs[gs].GSPosition
@@ -124,15 +135,11 @@ class Configurator(object):
                 H = self.wfs[gs].GSHeight
                 theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         (3600*180/numpy.pi)).max()
-                pos+=theta_n
-                
+                pos+=theta_n         
             gsPos.append(pos)
-            
-            
+               
         for sci in range(self.sim.nSci):
             gsPos.append(self.sci[sci].position)
-
-
 
         if len(gsPos)!=0:
             maxGSPos = numpy.array(gsPos).max()

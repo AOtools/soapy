@@ -169,6 +169,8 @@ class Sim(object):
                         self.config.tel.obs*self.config.sim.pxlScale/2., 
                         self.config.sim.pupilSize
                         )
+        else:
+            self.mask = self.config.tel.mask.copy()
 
         self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
