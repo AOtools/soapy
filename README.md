@@ -3,7 +3,7 @@
 
 pyAOS is a Monte-Carlo Adaptive Optics Simulation toolkit written in Python. pyAOS can be used as a conventional end-to-end simulation, where a large number of AO configurations can be created simply by editing a configuration file. Its real power lays in modular nature of objects, such as WFSs, DMs and reconstructors which can be taken and used as building blocks to construct new and complex AO ideas and configurations.
 
-Please keep in mind that pyAOS is very much a work-in-progress and under heavy development. I've not yet settled on a completely stable API, but will try and say when something big has changed.
+Please keep in mind that pyAOS is very much a work-in-progress and under heavy development. I've not yet settled on a completely stable API, but I will try and say when something big has changed. For these reasons I would strongly reccomend against using pyAOS for critical work and would suggest contacting me to discuss its suitability for any work to be published.
 
 There is documentation at http://pyaos.readthedocs.org/en/latest/index.html, again this is also being developed at this time!
 
