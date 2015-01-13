@@ -108,17 +108,19 @@ class DM:
         
         #If loop is closed, only add residual measurements onto old
         #actuator values
-        #if closed:
-         #   self.newActCoeffs += self.actCoeffs
-        
-        self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-              + ( (1-self.dmConfig.gain) * self.actCoeffs)
+        if closed:
+            #self.newActCoeffs += self.actCoeffs
+            self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
+
+        else:
+            self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
+                + ( (1-self.dmConfig.gain) * self.actCoeffs)
         
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
         #Remove any piston term from DM
-        self.dmShape-=self.dmShape.mean()
-        #self.dmShape*=self.mask
+#        self.dmShape-=self.dmShape.mean()
+
         return self.dmShape
 
 
