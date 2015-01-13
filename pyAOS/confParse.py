@@ -114,7 +114,7 @@ class Configurator(object):
                                     self.tel.telDiam)
 
         #We oversize the pupil (in "aperture pixels" - apples!)
-        self.sim.simSize = PUPIL_OVERSIZE*self.sim.pxlScale
+        self.sim.simSize = SIM_OVERSIZE*self.sim.pxlScale
         #But if the pupilSize is odd/even, then simSize must also be
         if self.sim.pupilSize%2 is not self.sim.simSize%2:
             self.sim.simSize+=1
