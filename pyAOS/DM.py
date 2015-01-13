@@ -108,8 +108,8 @@ class DM:
         
         #If loop is closed, only add residual measurements onto old
         #actuator values
-        if closed:
-            self.newActCoeffs += self.actCoeffs
+        #if closed:
+         #   self.newActCoeffs += self.actCoeffs
         
         self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
               + ( (1-self.dmConfig.gain) * self.actCoeffs)
