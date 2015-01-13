@@ -68,12 +68,11 @@ class DM:
                    order=self.dmConfig.interpOrder, axes=(-2,-1)
                    )
            rotShape = self.iMatShapes.shape
-
            self.iMatShapes = self.iMatShapes[:,
-                   rotShape[1]/2. - self.simConfig.simSize/2.:
-                   rotShape[1]/2. + self.simConfig.simSize/2.,
-                   rotShape[2]/2. - self.simConfig.simSize/2.:
-                   rotShape[2]/2. + self.simConfig.simSize/2.
+                   rotShape[1]/2. - self.simConfig.pupilSize/2.:
+                   rotShape[1]/2. + self.simConfig.pupilSize/2.,
+                   rotShape[2]/2. - self.simConfig.pupilSize/2.:
+                   rotShape[2]/2. + self.simConfig.pupilSize/2.
                    ]
        
 
@@ -118,7 +117,7 @@ class DM:
         
         #Remove any piston term from DM
         self.dmShape-=self.dmShape.mean()
-        #self.dmShape*=self.mask
+        self.dmShape*=self.mask
         return self.dmShape
 
 
@@ -133,25 +132,19 @@ class Zernike(DM):
         shapes = self.dmConfig.iMatValue*aoSimLib.zernikeArray(
                         int(self.acts+3),int(self.simConfig.pupilSize))[3:]
 
- 
-        self.iMatShapes = numpy.pad(
-                shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                ) #* self.mask
+        self.iMatShapes = shapes*self.mask
+
 
 class Piezo(DM):
 
     def getActiveActs(self):
         activeActs = []
         xActs = int(numpy.round(numpy.sqrt(self.dmConfig.dmActs)))
-        self.spcing = self.simConfig.pupilSize/float(xActs)
+        spcing = self.mask.shape[0]/float(xActs)
 
         for x in xrange(xActs):
             for y in xrange(xActs):
-                if self.mask[
-                        x*self.spcing+self.simConfig.simPad:
-                        (x+1)*self.spcing+self.simConfig.simPad,
-                        y*self.spcing+self.simConfig.simPad:
-                        (y+1)*self.spcing+self.simConfig.simPad].sum() > 0:
+                if self.mask[x*spcing:(x+1)*spcing,y*spcing:(y+1)*spcing].sum() > 0:
                     activeActs.append([x,y])
         self.activeActs = numpy.array(activeActs)
         self.xActs = xActs
@@ -159,47 +152,20 @@ class Piezo(DM):
 
 
     def makeIMatShapes(self):
-        """
-        Generate Piezo DM influence functions
-    
-        Generates the shape of each actuator on a Piezo stack DM 
-        (influence functions). These are created by interpolating a grid
-        on the size of the number of actuators, with only the 'poked' 
-        actuator set to 1 and all others set to zero, up to the required 
-        simulation size. This grid is actually padded with 1 extra actuator 
-        spacing to avoid strange edge effects
-        """
-        
-        #Create a "dmSize" - the pupilSize but with 1 extra actuator on each 
-        #side
-        dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
-        shapes = numpy.zeros( (self.acts, dmSize, dmSize) )
+        shapes = numpy.zeros( (
+                self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize) )
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]
-            
-            #Add one to avoid the outer padding
-            x+=1
-            y+=1
 
-            shape = numpy.zeros( (self.xActs+2,self.xActs+2) )
+            shape = numpy.zeros( (self.xActs,self.xActs) )
             shape[x,y] = 1
 
-            #Interpolate up to the padded DM size
-            shapes[i] = self.dmConfig.iMatValue * aoSimLib.zoom_rbs(shape,
-                    (dmSize, dmSize), order=self.dmConfig.interpOrder)
-
-        if dmSize>self.simConfig.simSize:
-            coord = int(round(dmSize/2. - self.simConfig.simSize/2.))
-            self.iMatShapes = shapes[:,coord:-coord, coord:-coord]# * self.mask
-        
-        else:
-            pad = int(round((self.simConfig.simSize - dmSize)/2))
-            self.iMatShapes = numpy.pad(
-                    shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                    )#*self.mask
-
+            shapes[i] = self.dmConfig.iMatValue * aoSimLib.zoom(shape,
+                    (self.simConfig.pupilSize,self.simConfig.pupilSize),
+                    order=self.dmConfig.interpOrder)
+        self.iMatShapes = (shapes * self.mask) #*self.wvl
 
 class GaussStack(Piezo):
 
@@ -216,9 +182,7 @@ class GaussStack(Piezo):
                     self.simConfig.pupilSize, width, cent = (x,y))
         
         self.iMatShapes = shapes
-        self.iMatShapes = numpy.pad(
-                self.iMatShapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                )#*self.mask
+
             
 
         
@@ -229,15 +193,12 @@ class TT(DM):
 
 
     def makeIMatShapes(self):
-    
-        #Make the TT across the entire sim shape, but want it 1 to -1 across 
-        #pupil
-        padMax = float(self.simConfig.simSize)/self.simConfig.pupilSize
 
         coords = self.dmConfig.iMatValue*numpy.linspace(
-                    -padMax, padMax, self.simConfig.simSize)
-        self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
-        
+                    -1,1,self.simConfig.pupilSize)
+        self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))*self.mask
+
+
     # def makeIMat(self, callback=None, progressCallback=None ):
    #      '''
    #      makes IMat
