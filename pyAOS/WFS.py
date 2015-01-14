@@ -153,9 +153,10 @@ class WFS(object):
         self.initFFTs()
         self.initLGS()
         self.allocDataArrays()
-
-        self.calcTiltCorrect()
         
+        self.calcTiltCorrect()
+        self.getStatic()
+
 ############################################################
 #Initialisation routines
     
@@ -255,6 +256,9 @@ class WFS(object):
                 
     def calcTiltCorrect(self):
         pass
+
+    def getStatic(self):
+        self.staticData = None
 
     def findMetaPupilSize(self, GSHeight):
         '''
@@ -538,7 +542,7 @@ class WFS(object):
         pass
 
 
-    def iMatFrame(self,phs):
+    def iMatFrame(self, phs):
         '''
         Runs an iMat frame - essentially gives slopes for given "phs" so
         useful for other stuff too!
@@ -618,7 +622,8 @@ class WFS(object):
             self.makeDetectorPlane()
             self.calculateSlopes()
             self.zeroData(detector=False)
-            
+        
+
         return self.slopes
 
     def photoNoise(self):
@@ -695,8 +700,6 @@ class ShackHartmann(WFS):
                 self.wfsConfig.subaps, mask,
                 self.wfsConfig.subapThreshold)
         self.activeSubaps = self.subapCoords.shape[0]
-
-        #When scaled to pxl sizes, need to scale subap coordinates too!
         self.detectorSubapCoords = numpy.round(
                 self.subapCoords*(
                         self.detectorPxls/float(self.simConfig.pupilSize) ) )
@@ -840,6 +843,18 @@ class ShackHartmann(WFS):
                     self.wfsConfig.centThreshold)
         slope -= self.wfsConfig.pxlsPerSubap2/2.
         return slope
+
+
+    def getStatic(self):
+        """
+        Computes the static measurements, i.e., slopes with flat wavefront
+        """
+        
+        self.staticData = None
+
+        #Make flat wavefront
+        phs = numpy.ones([self.simConfig.simSize]*2)
+        self.staticData = self.iMatFrame(phs).copy()
 #######################################################################
 
 
@@ -1010,7 +1025,9 @@ class ShackHartmann(WFS):
             slopes = aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
                      )
-                     
+        
+
+        
         if self.wfsConfig.pxlsPerSubap==2:
             slopes = aoSimLib.quadCell(self.centSubapArrays)
             
@@ -1021,7 +1038,11 @@ class ShackHartmann(WFS):
             slopes = (slopes.T - slopes.mean(1)).T
 
         self.slopes[:] = slopes.reshape(self.activeSubaps*2)
-        
+       
+        if numpy.any(self.staticData):
+            self.slopes -= self.staticData
+ 
+
         if self.wfsConfig.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (
                     self.wfsConfig.angleEquivNoise * 
@@ -1029,6 +1050,7 @@ class ShackHartmann(WFS):
                     /self.wfsConfig.subapFOV )
             self.slopes += numpy.random.normal( 0, pxlEquivNoise, 
                                                 2*self.activeSubaps)
+
 
         return self.slopes
 

@@ -119,7 +119,7 @@ class DM:
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
         #Remove any piston term from DM
-#        self.dmShape-=self.dmShape.mean()
+        self.dmShape-=self.dmShape.mean()
 
         return self.dmShape
 
@@ -308,7 +308,7 @@ class TT1:
 
     def makeIMat(self, callback=None, progressCallback=None):
 
-        iMat = numpy.empty((2,2))
+        iMat = numpy.zeros((2,2))
 
         for i in xrange(2):
             self.dmShape = self.iMatShapes[i]

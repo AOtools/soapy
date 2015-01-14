@@ -226,15 +226,15 @@ class MVM(Reconstructor):
         control matrix
         '''
         acts = 0
-        dmIMat = numpy.empty_like(self.controlMatrix.T)
+        self.iMat = numpy.empty_like(self.controlMatrix.T)
         for dm in xrange(self.simConfig.nDM):
-            dmIMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
+            self.iMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
             acts+=self.dms[dm].acts
         
         logger.info("Invert iMat with cond: {}".format(
                 self.dms[dm].dmConfig.dmCond))
         self.controlMatrix = scipy.linalg.pinv(
-                dmIMat, self.dms[dm].dmConfig.dmCond
+                self.iMat, self.dms[dm].dmConfig.dmCond
                 )
             
 
