@@ -82,8 +82,11 @@ class DM:
        subap=0
 
        for i in xrange(self.iMatShapes.shape[0]):
-           iMat[i,subap:subap+(2*self.wfs.activeSubaps)] =\
-                   self.wfs.iMatFrame( self.iMatShapes[i])
+           iMat[i,subap:subap+(2*self.wfs.activeSubaps)] =(
+                   self.wfs.iMatFrame( 
+                            self.iMatShapes[i]*self.dmConfig.iMatValue)
+                   /self.dmConfig.iMatValue
+                   )
 
            logger.debug("DM IMat act: %i"%i)
 
@@ -132,13 +135,13 @@ class Zernike(DM):
         interaction Matrix
         '''
 
-        shapes = self.dmConfig.iMatValue*aoSimLib.zernikeArray(
+        shapes = aoSimLib.zernikeArray(
                         int(self.acts+3),int(self.simConfig.pupilSize))[3:]
 
  
         self.iMatShapes = numpy.pad(
                 shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                ) #* self.mask
+                ) 
 
 class Piezo(DM):
 
@@ -189,8 +192,11 @@ class Piezo(DM):
             shape[x,y] = 1
 
             #Interpolate up to the padded DM size
-            shapes[i] = self.dmConfig.iMatValue * aoSimLib.zoom_rbs(shape,
+            shapes[i] = aoSimLib.zoom_rbs(shape,
                     (dmSize, dmSize), order=self.dmConfig.interpOrder)
+            
+            shapes[i] -= shapes[i].mean()
+
 
         if dmSize>self.simConfig.simSize:
             coord = int(round(dmSize/2. - self.simConfig.simSize/2.))
@@ -236,7 +242,7 @@ class TT(DM):
         #pupil
         padMax = float(self.simConfig.simSize)/self.simConfig.pupilSize
 
-        coords = self.dmConfig.iMatValue*numpy.linspace(
+        coords = 0.01*numpy.linspace(
                     -padMax, padMax, self.simConfig.simSize)
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
         
@@ -304,7 +310,7 @@ class TT1:
 
         X,Y = numpy.meshgrid( coords, coords ) 
 
-        self.iMatShapes = 30* numpy.array( [X*self.mask,Y*self.mask] )# * self.wvl
+        self.iMatShapes = numpy.array( [X*self.mask,Y*self.mask] )
 
     def makeIMat(self, callback=None, progressCallback=None):
 
