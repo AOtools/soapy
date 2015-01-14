@@ -671,7 +671,7 @@ class ShackHartmann(WFS):
                                 * self.subapFOVrad/ self.wfsConfig.wavelength)
 
         #make twice as big to double subap FOV
-        self.SUBAP_OVERSIZE = 2
+        self.SUBAP_OVERSIZE = 1
         self.detectorPxls = self.wfsConfig.pxlsPerSubap*self.wfsConfig.subaps
         self.subapFOVSpacing *= self.SUBAP_OVERSIZE
         self.wfsConfig.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
@@ -814,7 +814,8 @@ class ShackHartmann(WFS):
         if not self.wfsConfig.pxlsPerSubap%2:
             #If pxlsPerSubap is even
             #Angle we need to correct for half a pixel
-            theta = 2*self.subapFOVrad/ (2*self.subapFFTPadding)
+            theta = self.SUBAP_OVERSIZE*self.subapFOVrad/ (
+                    2*self.subapFFTPadding)
 
             #Magnitude of tilt required to get that angle
             A = theta*self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
@@ -853,7 +854,7 @@ class ShackHartmann(WFS):
         self.staticData = None
 
         #Make flat wavefront
-        phs = numpy.ones([self.simConfig.simSize]*2)
+        phs = numpy.zeros([self.simConfig.simSize]*2).astype(DTYPE)
         self.staticData = self.iMatFrame(phs).copy()
 #######################################################################
 
@@ -942,35 +943,51 @@ class ShackHartmann(WFS):
         for i in xrange(self.activeSubaps):
 
             x,y=self.detectorSubapCoords[i]
-
-            #Set default position to put arrays into (2 subap FOV)
-            x1 = int(round(x-self.wfsConfig.pxlsPerSubap/2.))
-            x2 = int(round(x+self.wfsConfig.pxlsPerSubap*3./2))
-            y1 = int(round(y-self.wfsConfig.pxlsPerSubap/2.))
-            y2 = int(round(y+self.wfsConfig.pxlsPerSubap*3./2.))
+    
+            #Set default position to put arrays into (SUBAP_OVERSIZE FOV)
+            x1 = int(round(
+                    x+self.wfsConfig.pxlsPerSubap/2.
+                    -self.wfsConfig.pxlsPerSubap2/2.))
+            x2 = int(round(
+                    x+self.wfsConfig.pxlsPerSubap/2.
+                    +self.wfsConfig.pxlsPerSubap2/2.))
+            y1 = int(round(
+                    y+self.wfsConfig.pxlsPerSubap/2.
+                    -self.wfsConfig.pxlsPerSubap2/2.))
+            y2 = int(round(
+                    y+self.wfsConfig.pxlsPerSubap/2.
+                    +self.wfsConfig.pxlsPerSubap2/2.))
 
             #Set defualt size of input array (i.e. all of it)
             x1_fp = int(0)
             x2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
-            y1_fp = int(round(0))
+            y1_fp = int(0)
             y2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
 
             #If at the edge of the field, may only fit a fraction in 
             if x==0:
-                x1 = int(0)
-                x1_fp = int(round(self.wfsConfig.pxlsPerSubap/2.))
+                x1 = 0
+                x1_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        -self.wfsConfig.pxlsPerSubap/2.))
 
             elif x==(self.detectorPxls-self.wfsConfig.pxlsPerSubap):
                 x2 = int(round(self.detectorPxls))
-                x2_fp = int(round(-1*self.wfsConfig.pxlsPerSubap/2.))
+                x2_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        +self.wfsConfig.pxlsPerSubap/2.))
 
             if y==0:
-                y1 = int(0)
-                y1_fp = int(round(self.wfsConfig.pxlsPerSubap/2.))
+                y1 = 0
+                y1_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        -self.wfsConfig.pxlsPerSubap/2.))
 
             elif y==(self.detectorPxls-self.wfsConfig.pxlsPerSubap):
                 y2 = int(self.detectorPxls)
-                y2_fp = int(round(-1*self.wfsConfig.pxlsPerSubap/2.))
+                y2_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        +self.wfsConfig.pxlsPerSubap/2.))
 
             self.wfsDetectorPlane[x1:x2, y1:y2] += (
                     self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp] )
