@@ -206,8 +206,7 @@ class Sim(object):
 
         #init DMs
         logger.info("Initialising DMs...")
-        #if self.config.sim.tipTilt:
-        #    self.TT = DM.TT1(self.config.sim.pupilSize, self.wfss[0], self.mask)
+
 
         self.dms = {}
         self.dmActCommands = {}
@@ -292,10 +291,6 @@ class Sim(object):
         """
         t = time.time()
         logger.info("Making interaction Matrices...")
-        if self.config.sim.tipTilt:
-            logger.info("Generating Tip Tilt IMat")
-            self.TT.makeIMat(self.addToGuiQueue,
-                                    progressCallback=progressCallback)
 
         if forceNew:
             loadIMat=False
@@ -430,38 +425,7 @@ class Sim(object):
             s += self.wfss[wfs].activeSubaps*2
             
         self.Twfs+=time.time()-t_wfs
-        return slopes
-
-
-    def runTipTilt(self, slopes, closed=True):
-        """
-        Runs a single frame of the Tip-Tilt Mirror
-
-        Uses a previously created interaction matrix to calculate the 
-        correction required for the given slopes from a tip-tilt (TT) mirror. 
-        Returns the phase of the TT mirror and also the now TT corrected 
-        slopes. If no TT mirror is present in the system, then an array of 
-        zeros is returns and the slopes are unchanged.
-
-        Args:
-            slopes (ndarray): An array of WFS slope values
-            closed (bool, optional): if True, TT acts in closed loop and the mirror shape is only updated from previous shape based on set TT gain value
-        Returns:
-            ndArray: New shape of the TT mirror
-            ndArray: TT corrected slopes
-        """
-
-        self.dmShape[:] = 0
-        if self.config.sim.tipTilt:
-            #calculate the shape of TT Mirror
-            self.dmShape += self.TT.dmFrame(slopes,self.config.sim.ttGain)
-
-            #Then remove TT signal from slopes
-            xySlopes = slopes.reshape(2,self.TT.wfs.activeSubaps)
-            xySlopes = (xySlopes.T - xySlopes.mean(1)).T
-            slopes = xySlopes.reshape(self.TT.wfs.activeSubaps*2)
-
-        return self.dmShape, slopes
+        return slopes 
 
 
     def runDM(self,dmCommands,closed=True):
@@ -563,7 +527,7 @@ class Sim(object):
 
                     #Pass whole combined DM shapes to science target
                     self.runSciCams(
-                                self.openCorrection+self.closedCorrection+ttShape)
+                                self.openCorrection+self.closedCorrection)
                     
                     #Save Data
                     self.storeData(i)
@@ -651,8 +615,7 @@ class Sim(object):
         #Init DM Command Data saving
         if self.config.sim.saveDmCommands:
             ttActs = 0
-            if self.config.sim.tipTilt:
-                ttActs = 2
+
             self.allDmCommands = numpy.empty( (self.config.sim.nIters, ttActs+self.config.sim.totalActs))
 
         else:
@@ -687,9 +650,7 @@ class Sim(object):
 
         if self.config.sim.saveDmCommands:
             act=0
-            if self.config.sim.tipTilt:
-                self.allDmCommands[i,:2] = self.TT.dmCommands
-                act=2
+
             self.allDmCommands[i,act:] = self.dmCommands
 
         #Quick bodge to save lgs psfs as images
