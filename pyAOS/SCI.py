@@ -80,8 +80,8 @@ class scienceCam:
         #binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,)*2)
         self.calcFocalPlane()
-
-        self.psfMax = self.focalPlane.max()        
+        self.bestPSF = self.focalPlane.copy()
+        self.psfMax = self.bestPSF.max()        
         self.longExpStrehl = 0
         self.instStrehl = 0 
 
