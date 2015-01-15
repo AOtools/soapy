@@ -288,6 +288,9 @@ class atmos:
             self.xCoords[i] += self.windV[i][0]
             self.yCoords[i] += self.windV[i][1]
 
+            #remove piston from phase screens
+            scrns[i] -= scrns[i].mean()
+
         return scrns
 
     def randomScrns(self, subharmonics=True, L0=30., l0=0.01):
