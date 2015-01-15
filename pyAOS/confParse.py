@@ -28,9 +28,8 @@ The ``ConfigObj`` provides a base class used by other module configuration objec
 import numpy
 from . import logger
 
-#How much bigger to make the simulation than asked for. The value is a ratio
-#of how much to pad on each side
-SIM_OVERSIZE = 0.1
+#How much bigger to make the simulation than asked for.
+SIM_OVERSIZE = 1.2
 
 
 class ConfigurationError(Exception):
@@ -114,10 +113,11 @@ class Configurator(object):
         self.sim.pxlScale = (float(self.sim.pupilSize)/
                                     self.tel.telDiam)
 
-        #We oversize the pupil to what we'll call the "simulation size"
-        self.sim.simSize = int(self.sim.pupilSize 
-                + 2*numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
-        self.sim.simPad = int(numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
+        #We oversize the pupil (in "aperture pixels" - apples!)
+        self.sim.simSize = SIM_OVERSIZE*self.sim.pxlScale
+        #But if the pupilSize is odd/even, then simSize must also be
+        if self.sim.pupilSize%2 is not self.sim.simSize%2:
+            self.sim.simSize+=1
 
 
         #furthest out GS or SCI target defines the sub-scrn size
@@ -149,7 +149,7 @@ class Configurator(object):
         self.sim.scrnSize = numpy.ceil(
                 2*self.sim.pxlScale*self.atmos.scrnHeights.max()
                 *maxGSPos*numpy.pi/(3600.*180) 
-                )+self.sim.simSize
+                )+self.sim.pupilSize
 
 
 
@@ -193,7 +193,7 @@ class ConfigObj(object):
         message = "{0} not set, default to {1}".format(param, newValue)
         self.__setattr__(param, newValue)
 
-        logger.debug(message)
+        logger.info(message)
 
     def initParams(self):
         for param in self.requiredParams:
@@ -268,10 +268,6 @@ class SimConfig(ConfigObj):
                             for available reconstructors.       ``"MVM"``
         ``filePrefix``      str: directory name to store 
                             simulation data                     ``None``
-        ``tipTilt``         bool: Does system use tip-tilt 
-                            Mirror                              ``False``
-        ``ttGain``          float: loop gain of tip-tilt 
-                            Mirror                              ``0.6``
         ``wfsMP``           bool: Each WFS uses its own 
                             process                             ``False``
         ``verbosity``       int: debug output for the 
@@ -334,8 +330,6 @@ class SimConfig(ConfigObj):
                                 ("saveSciPsf", False),
                                 ("saveWFE", False),
                                 ("saveSciRes", False),
-                                ("tipTilt", False),
-                                ("ttGain", 0.6),
                                 ("wfsMP", False),
                                 ("verbosity", 2),
                                 ("logfile", None),
@@ -649,7 +643,7 @@ class DmConfig(ConfigObj):
                                 ("iMatValue", 10),
                                 ("wfs", 0),
                                 ("rotation", 0),
-                                ("interpOrder", 2),
+                                ("interpOrder", 1),
                                 ("gaussWidth", 0.5),
                                 ]
         self.initParams()
