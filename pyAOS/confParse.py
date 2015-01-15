@@ -268,10 +268,6 @@ class SimConfig(ConfigObj):
                             for available reconstructors.       ``"MVM"``
         ``filePrefix``      str: directory name to store 
                             simulation data                     ``None``
-        ``tipTilt``         bool: Does system use tip-tilt 
-                            Mirror                              ``False``
-        ``ttGain``          float: loop gain of tip-tilt 
-                            Mirror                              ``0.6``
         ``wfsMP``           bool: Each WFS uses its own 
                             process                             ``False``
         ``verbosity``       int: debug output for the 
@@ -334,8 +330,6 @@ class SimConfig(ConfigObj):
                                 ("saveSciPsf", False),
                                 ("saveWFE", False),
                                 ("saveSciRes", False),
-                                ("tipTilt", False),
-                                ("ttGain", 0.6),
                                 ("wfsMP", False),
                                 ("verbosity", 2),
                                 ("logfile", None),

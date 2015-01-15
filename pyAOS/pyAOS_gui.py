@@ -163,12 +163,7 @@ class GUI(QtGui.QMainWindow):
             if self.config.lgs[wfs].lgsUplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
-
-
-        if self.config.sim.tipTilt:
-            self.ttPlot = self.makeImageItem(self.ui.dmLayout,
-                                            self.config.sim.simSize)
-            
+ 
         self.dmPlots = {}
         for dm in range(self.config.sim.nDM):
             self.dmPlots[dm] = self.makeImageItem(self.ui.dmLayout,
