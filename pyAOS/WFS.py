@@ -495,7 +495,6 @@ class WFS(object):
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
-            print("ASP: Ht: {0}m, dH: {1}m".format(ht, z))
             ht -= z            
             #Do ASP for last layer to next
             self.physEField[:] = angularSpectrum(
@@ -559,7 +558,7 @@ class WFS(object):
         self.wfsConfig.removeTT=False
 
         self.zeroData()
-        self.EField[:] =  numpy.exp(1j*phs)
+        self.EField[:] =  numpy.exp(1j*phs*self.r0Scale)
         self.calcFocalPlane()
         self.makeDetectorPlane()
         self.calculateSlopes()
@@ -597,7 +596,8 @@ class WFS(object):
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.r0Scale
-
+    
+        correction = correction.copy()*self.r0Scale
         #If no elongation
         if self.elong==0:
             self.makePhase(self.radii)
@@ -617,6 +617,7 @@ class WFS(object):
                 if numpy.any(correction):
                     self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
+    
 
         if read:
             self.makeDetectorPlane()
