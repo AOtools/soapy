@@ -226,10 +226,22 @@ class GUI(QtGui.QMainWindow):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
                     self.wfsPlots[wfs].setImage(
                         plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-                        
+                try: 
+                    scaleValues = [min(self.minValues), max(self.maxValues)]
+                except (AttributeError, ValueError):
+                    scaleValues = None
+                self.minValues = []
+                self.maxValues = []
+
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
+                    wfsPhase = plotDict["wfsPhase"][wfs]
+                    self.minValues.append(wfsPhase.min())
+                    self.maxValues.append(wfsPhase.max())
+                    if not scaleValues:
+                        scaleValues = [wfsPhase.min(), wfsPhase.max()]
+
                     self.phasePlots[wfs].setImage(
-                        plotDict["wfsPhase"][wfs], lut=self.LUT)
+                            wfsPhase, lut=self.LUT, levels=scaleValues)
                         
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
@@ -240,9 +252,16 @@ class GUI(QtGui.QMainWindow):
                 self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
             
             for dm in range(self.config.sim.nDM):
+                
                 if numpy.any(plotDict["dmShape"][dm]) !=None:
+                    dmShape = plotDict["dmShape"][dm]
+                    if not scaleValues:
+                        scaleValues = [dmShape.min(), dmShape.max()]
+                    self.minValues.append(dmShape.min())
+                    self.maxValues.append(dmShape.max())
+
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
-                                            lut=self.LUT)
+                                            lut=self.LUT, levels=scaleValues)
            
             for sci in range(self.config.sim.nSci):
                 if numpy.any(plotDict["sciImg"][sci])!=None:
@@ -254,8 +273,14 @@ class GUI(QtGui.QMainWindow):
                                 plotDict["sciImg"][sci], lut=self.LUT)
                     
                 if numpy.any(plotDict["residual"][sci])!=None:
+                    residual = plotDict["residual"][sci]
+                    if not scaleValues:
+                        scaleValues = [residual.min(), residual.max()]
+                    self.minValues.append(residual.min())
+                    self.maxValues.append(residual.max())
+
                     self.resPlots[sci].setImage(
-                                plotDict["residual"][sci], lut=self.LUT)
+                            residual, lut=self.LUT, levels=scaleValues)
             
             if self.loopRunning:
                 self.updateStrehls()
