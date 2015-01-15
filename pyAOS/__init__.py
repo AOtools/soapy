@@ -520,8 +520,9 @@ class Sim(object):
         self.iters=1
         self.correct=1
         self.go = True
-        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
 
+        #Circular buffers to hold loop iteration correction data
+        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
         self.closedCorrection = numpy.zeros(self.dmShape.shape)
         self.openCorrection = self.closedCorrection.copy()
         self.dmCommands = numpy.zeros( self.config.sim.totalActs )
@@ -540,6 +541,7 @@ class Sim(object):
                     self.openCorrection[:] = 0
 
                     #Run Loop...
+                    ########################################
 
                     #Get dmCommands from reconstructor
                     if self.config.sim.nDM:
@@ -557,9 +559,9 @@ class Sim(object):
                                                         closed=False)
 
                     #Run a tip-tilt mirror if set
-                    ttShape, self.slopes = self.runTipTilt(self.slopes)
+                    #ttShape, self.slopes = self.runTipTilt(self.slopes)
 
-                    #Pass whole combine DM shapes to science target
+                    #Pass whole combined DM shapes to science target
                     self.runSciCams(
                                 self.openCorrection+self.closedCorrection+ttShape)
                     

@@ -122,7 +122,7 @@ class DM:
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
         #Remove any piston term from DM
-        self.dmShape-=self.dmShape.mean()
+        self.dmShape -= self.dmShape.mean()
 
         return self.dmShape
 
