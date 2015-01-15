@@ -66,19 +66,47 @@ class scienceCam:
                         fftw_FLAGS=(sciConfig.fftwFlag,"FFTW_DESTROY_INPUT"),
                         THREADS=sciConfig.fftwThreads)
 
-        #Calculate ideal PSF for purposes of strehl calculation
-        self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
-                                            =(numpy.exp(1j*self.scaledMask)
-                                                    *self.scaledMask)
-        fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
-        self.psfMax = binFp.max()        
-        self.longExpStrehl = 0
-        self.instStrehl = 0 
-
         #Get phase scaling factor to get r0 in other wavelength   
         phsWvl = 500e-9  
         self.r0Scale = phsWvl/self.sciConfig.wavelength
+
+        self.calcTiltCorrect()
+
+        #Calculate ideal PSF for purposes of strehl calculation
+        #self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
+        #                                    =(numpy.exp(1j*self.scaledMask)
+        #                                            *self.scaledMask)
+        #fp = abs(AOFFT.ftShift2d(self.FFT()))**2
+        #binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
+        self.residual = numpy.zeros((self.simConfig.simSize,)*2)
+        self.calcFocalPlane()
+
+        self.psfMax = self.focalPlane.max()        
+        self.longExpStrehl = 0
+        self.instStrehl = 0 
+
+
+
+    def calcTiltCorrect(self):
+        """
+        Calculates the required tilt to add to avoid  the PSF being centred
+        on one pixel only
+        """
+
+        #Only required if pxl number is even
+        if not self.sciConfig.pxls%2:
+            #Need to correct for half a pixel angle
+            theta = float(self.FOVrad)/(2*self.FFTPadding)
+
+            #Find magnitude of tilt from this angle
+            A = theta*self.telConfig.telDiam/(2*self.sciConfig.wavelength)*2*numpy.pi
+
+            coords = numpy.linspace(-1,1, self.FOVPxlNo)
+            X,Y = numpy.meshgrid(coords, coords)
+            self.tiltFix = -1*A*(X+Y)
+        else:
+           self.tiltFix = numpy.zeros((self.FOVPxlNo,)*2)
+
 
     def metaPupilPos(self, height):
         '''
@@ -146,12 +174,12 @@ class scienceCam:
 
         #Scaled the padded phase to the right size for the requried FOV
         phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
-        
+         
         #Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
         phs = phs[coord:-coord, coord:-coord] 
 
-        eField = numpy.exp(1j*phs) * self.scaledMask
+        eField = numpy.exp(1j*(phs+self.tiltFix)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d( self.FFT() )
