@@ -169,7 +169,7 @@ class Configurator(object):
                 wfs.exposureTime = self.sim.loopTime
 
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
-        logger.info("subScreenSize: {}".format(self.sim.scrnSize))
+        logger.info("subScreenSize: {:d} simulation pixels".format(int(self.sim.scrnSize)))
 
         #If lgs sodium layer profile is none, set it to 1s for each layer
         for lgs in self.lgs:

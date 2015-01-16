@@ -544,7 +544,7 @@ class Sim(object):
                     break
         except KeyboardInterrupt:
             self.go = False
-            logger.info("Sim exited by user") 
+            logger.info("\nSim exited by user\n") 
 
         #Finally save data after loop is over.
         self.saveData()

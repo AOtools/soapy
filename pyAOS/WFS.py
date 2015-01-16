@@ -277,7 +277,7 @@ class WFS(object):
         for i in xrange(self.atmosConfig.scrnNo):
             #Find radius of metaPupil geometrically (fraction of pupil at
             # Ground Layer)
-            radius = (self.simConfig.simSize/2.) * (
+            radius = (self.simConfig.pupilSize/2.) * (
                     1-(float(self.atmosConfig.scrnHeights[i])/GSHeight))
             radii[i]= numpy.round(radius)
 
@@ -672,7 +672,11 @@ class ShackHartmann(WFS):
                                 * self.subapFOVrad/ self.wfsConfig.wavelength)
 
         #make twice as big to double subap FOV
-        self.SUBAP_OVERSIZE = 1
+        if self.wfsConfig.subaps==1:
+            self.SUBAP_OVERSIZE = 1
+        else:
+            self.SUBAP_OVERSIZE = 2
+
         self.detectorPxls = self.wfsConfig.pxlsPerSubap*self.wfsConfig.subaps
         self.subapFOVSpacing *= self.SUBAP_OVERSIZE
         self.wfsConfig.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
@@ -856,7 +860,7 @@ class ShackHartmann(WFS):
 
         #Make flat wavefront
         phs = numpy.zeros([self.simConfig.simSize]*2).astype(DTYPE)
-        self.staticData = self.iMatFrame(phs).copy()
+        self.staticData = self.iMatFrame(phs).copy().reshape(2,self.activeSubaps)
 #######################################################################
 
 
@@ -1034,7 +1038,10 @@ class ShackHartmann(WFS):
             self.centSubapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
                                                     y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
-        if self.wfsConfig.centMethod=="brightestPxl":
+        if self.wfsConfig.pxlsPerSubap==2:
+            slopes = aoSimLib.quadCell(self.centSubapArrays)
+
+        elif self.wfsConfig.centMethod=="brightestPxl":
             slopes = aoSimLib.brtPxlCentroid(
                     self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
@@ -1042,23 +1049,22 @@ class ShackHartmann(WFS):
         else:
             slopes = aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
-                     )
-        
-
-        
-        if self.wfsConfig.pxlsPerSubap==2:
-            slopes = aoSimLib.quadCell(self.centSubapArrays)
+                     ) 
             
-        #shift slopes relative to subap centre
+        #shift slopes relative to subap centre and remove static offsets
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
+
+
+        if numpy.any(self.staticData):
+            slopes -= self.staticData
+        
         
         if self.wfsConfig.removeTT==True:
             slopes = (slopes.T - slopes.mean(1)).T
 
         self.slopes[:] = slopes.reshape(self.activeSubaps*2)
        
-        if numpy.any(self.staticData):
-            self.slopes -= self.staticData
+
  
 
         if self.wfsConfig.angleEquivNoise and not self.iMat:

@@ -314,8 +314,10 @@ class GUI(QtGui.QMainWindow):
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
                 if self.sim.config.wfs[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfs[wfs].GSHeight==0:
-                    cent = self.sim.wfss[wfs].getMetaPupilPos(
-    self.sim.config.atmos.scrnHeights[i])*self.sim.config.sim.pxlScale+self.config.sim.pupilSize
+                    cent = (self.sim.wfss[wfs].getMetaPupilPos(
+                            self.sim.config.atmos.scrnHeights[i])
+                            *self.sim.config.sim.pxlScale
+                            +self.config.sim.pupilSize)
 
                     if self.sim.wfss[wfs].radii!=None:
                         radius = self.sim.wfss[wfs].radii[i]

@@ -18,7 +18,6 @@ simConfiguration = {
     "nSci"          :   1,
     "nIters"        :   5000,
     "loopTime"      :   1/400.0,
-    "gain"          :   0.6,
     "reconstructor" :   "MVM", 
 
     "verbosity"     :   2,
@@ -55,7 +54,7 @@ simConfiguration = {
     "subapFOV"      :   [2.5],
     "subapOversamp" :   [3],
     "wavelength"    :   [600e-9],
-    "bitDepth"      :   [8],
+    "bitDepth"      :   [32],
     "lgs"           :   [False],
     "centMethod"    :   ["brightestPxl"],
     "centThreshold" :   [0.1],
@@ -69,10 +68,10 @@ simConfiguration = {
 "DM":{
     "dmType"        :   ["TT",     "Piezo"],
     "dmActs"        :   [2,         9**2],
-    "dmCond"        :   [1e-15,      0.05],
+    "dmCond"        :   [1e-15,     0.05],
     "closed"        :   [True,      True],
     "gain"          :   [0.6,       0.7],
-    "iMatValue"     :   [50,        10  ],
+    "iMatValue"     :   [0.2,       0.2 ],
     },
 
 "Science":{

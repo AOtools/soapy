@@ -156,8 +156,8 @@ class Reconstructor(object):
             if iMat.shape!=(self.dms[dm].acts,2*self.dms[dm].totalSubaps):
                 logger.warning("interaction matrix does not match required required size.")
                 raise Exception
-            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.pupilSize:
-                logger.warning("loaded DM shapes are not same size as current pupil.")
+            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.simSize:
+                logger.warning("loaded DM shapes are not same size as current sim.")
                 raise Exception
             else:
                 self.dms[dm].iMat = iMat
@@ -180,7 +180,7 @@ class Reconstructor(object):
                 self.loadIMat()
                 logger.info("Interaction Matrices loaded successfully")
             except:
-                traceback.print_exc()
+                #traceback.print_exc()
                 logger.warning("Load Interaction Matrices failed - will create new one.")
                 self.makeIMat(callback=callback,    
                          progressCallback=progressCallback)
@@ -196,7 +196,7 @@ class Reconstructor(object):
                 self.loadCMat()
                 logger.info("Command Matrix Loaded Successfully")
             except:
-                traceback.print_exc()
+                #traceback.print_exc()
                 logger.warning("Load Command Matrix failed - will create new one")
                 
                 self.calcCMat(callback, progressCallback)
