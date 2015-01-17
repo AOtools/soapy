@@ -43,8 +43,8 @@ simConfiguration = {
     },
 
 "Telescope":{
-   "telDiam"        :   8.,  #Metres
-   "obs"            :   1.1, #Central Obscuration
+   "telDiam"        :   4.2,  #Metres
+   "obs"            :   1., #Central Obscuration
    "mask"           :   "circle",
     },
 
@@ -79,7 +79,7 @@ simConfiguration = {
     "dmActs"        :   [2,         9**2],
     "dmCond"        :   [1e-15,      0.07],
     "closed"        :   [True,      True],
-    "gain"          :   [0.8,       0.6],
+    "gain"          :   [0.6,       0.6],
     "iMatValue"     :   [1.,        0.2  ],
     "wfs"           :   [0,         1],
     },
