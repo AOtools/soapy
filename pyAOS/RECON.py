@@ -129,7 +129,8 @@ class Reconstructor(object):
     def saveIMat(self):
 
         for dm in xrange(self.simConfig.nDM):
-            filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
+            filenameIMat = 
+ self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
             filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
             
             fits.PrimaryHDU(self.dms[dm].iMat).writeto(filenameIMat,
@@ -246,7 +247,7 @@ class MVM_SeperateDMs(Reconstructor):
 
             dmIMat = self.dms[dm].iMat
 
-            #Old code which treats each DM iMat seperately
+            #Treats each DM iMat seperately
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
