@@ -91,6 +91,7 @@ import numpy
 import numpy.random
 import scipy.ndimage
 import scipy.optimize
+from scipy.interpolate import interp2d
 
 from . import AOFFT, aoSimLib, LGS, logger
 from .opticalPropagationLib import angularSpectrum
@@ -183,6 +184,9 @@ class WFS(object):
         self.wfsPhase = numpy.zeros( [self.simConfig.simSize]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.simConfig.simSize]*2, dtype=CDTYPE)
 
+        self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
+         
+    
         self.ZERO_DATA = True
 
 
@@ -337,7 +341,7 @@ class WFS(object):
         phaseAddition += ( (self.elongZs[1]/self.elongZs[1].max())
                             *tiltPathDiff[1])
         
-        pad = ((0,0), (sim.simConfig.simPad,)*2, (sim.simConfig.simPad,)*2)
+        pad = ((self.simConfig.simPad,)*2, (self.simConfig.simPad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
 
         return phaseAddition
@@ -381,7 +385,8 @@ class WFS(object):
         
         Arguments:
             height (float): Height of the layer in metres
-            GSPos (tuple, optional):  The angular position of the GS. If not set, will use the WFS position
+            GSPos (tuple, optional):  The angular position of the GS in radians.
+                                    If not set, will use the WFS position
             
         Returns:
             ndarray: The position of the centre of the metapupil in units of phase pixels
@@ -417,28 +422,37 @@ class WFS(object):
         if not simSize:
             simSize = self.simConfig.simSize
 
-        GSCent = numpy.round(
-                self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
-                        ).astype("int")
-        scrnX,scrnY=scrn.shape
+        GSCent = self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
+                    
+        #print("GSCent {}".format(GSCent))
+        scrnX, scrnY = scrn.shape
 
-        #Check screen is big enough to get a pupil from
-        if ( round(scrnX/2. + GSCent[0] - simSize/2.0) < 0 
-                or round(scrnX/2. + GSCent[0] - simSize/2.0) > scrnX 
-                or round(scrnX/2. + GSCent[0] - simSize/2.0) < 0 
-                or round(scrnY/2. + GSCent[1] - simSize/2.0) > scrnY):
-                
+        x1 = scrnX/2. + GSCent[0] - simSize/2.0
+        x2 = scrnX/2. + GSCent[0] + simSize/2.0
+        y1 = scrnY/2. + GSCent[1] - simSize/2.0
+        y2 = scrnY/2. + GSCent[1] + simSize/2.0
+    
+        #print("WFS Scrn Coords - x1: {0}, x2: {1}, y1: {2}, y2: {3}".format(
+        #        x1,x2,y1,y2))
+
+        if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
             raise ValueError( 
                     "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
-            
-        metaPupil=scrn[ 
-                int(round(scrnX/2. + GSCent[0] - simSize/2.0)):
-                int(round(scrnX/2. + GSCent[0] + simSize/2.0)),
-                int(round(scrnY/2. + GSCent[1] - simSize/2.0)):
-                int(round(scrnY/2. + GSCent[1] + simSize/2.0))
-                ]
+        
+        if x1.is_integer() and x2.is_integer and y1.is_integer and y2.is_integer():
+            #Old, simple integer based solution
+            metaPupil= scrn[ x1:x2, y1:y2]
+        else:
+            print("DO interp")
+            #Dirty, temporary fix to interpolate between phase points
+            xCoords = numpy.linspace(x1, x2-1, simSize)
+            yCoords = numpy.linspace(y1, y2-1, simSize)
+            scrnCoords = numpy.arange(scrnX)
+            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            metaPupil = interpObj(xCoords, yCoords)
 
+        #If the GS is not at infinity, take into account cone effect
         if self.wfsConfig.GSHeight!=0:
             if radius!=0:
                 metaPupil = aoSimLib.zoom(
@@ -597,13 +611,12 @@ class WFS(object):
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.r0Scale
     
-        correction = correction.copy()*self.r0Scale
         #If no elongation
         if self.elong==0:
             self.makePhase(self.radii)
             self.uncorrectedPhase = self.wfsPhase.copy()
             if numpy.any(correction):
-                self.EField *= numpy.exp(-1j*correction)
+                self.EField *= numpy.exp(-1j*correction*self.r0Scale)
             self.calcFocalPlane()
 
         #If LGS elongation simulated
@@ -615,10 +628,9 @@ class WFS(object):
                 self.uncorrectedPhase = self.wfsPhase.copy()
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
-                    self.EField *= numpy.exp(-1j*correction)
+                    self.EField *= numpy.exp(-1j*correction*self.r0Scale)
                 self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
     
-
         if read:
             self.makeDetectorPlane()
             self.calculateSlopes()
@@ -1059,12 +1071,17 @@ class ShackHartmann(WFS):
             slopes -= self.staticData
         
         
-        if self.wfsConfig.removeTT==True:
-            slopes = (slopes.T - slopes.mean(1)).T
+#        if self.wfsConfig.removeTT==True:
+#            print("\x1b[31m RemoveTT!")
+#            slopes = (slopes.T - slopes.mean(1)).T
 
         self.slopes[:] = slopes.reshape(self.activeSubaps*2)
-       
-
+      
+        if self.wfsConfig.removeTT==True:
+            self.slopes[:self.activeSubaps] -= self.slopes[:self.activeSubaps].mean()
+            self.slopes[self.activeSubaps:] -= self.slopes[self.activeSubaps:].mean()
+        print(self.slopes[:self.activeSubaps].mean())
+        print(self.slopes[self.activeSubaps:].mean())
  
 
         if self.wfsConfig.angleEquivNoise and not self.iMat:
