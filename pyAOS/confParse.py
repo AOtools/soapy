@@ -150,6 +150,10 @@ class Configurator(object):
                 2*self.sim.pxlScale*self.atmos.scrnHeights.max()
                 *maxGSPos*numpy.pi/(3600.*180) 
                 )+self.sim.simSize
+        
+        #Make scrnSize even
+        if self.sim.scrnSize%2!=0:
+            self.sim.scrnSize+=1
 
 
 
@@ -177,6 +181,12 @@ class Configurator(object):
                 lgs.naProfile = numpy.ones(lgs.elongationLayers)
             if len(lgs.naProfile)<lgs.elongationLayers:
                 raise ConfigurationError("Not enough values for naProfile")
+
+        #If outer scale is None, set all to 100m
+        if self.atmos.L0==None:
+            self.atmos.L0 = []
+            for scrn in range(self.atmos.scrnNo):
+                self.atmos.L0.append(100.)
 
 class ConfigObj(object):
     def __init__(self):
@@ -353,7 +363,7 @@ class AtmosConfig(ConfigObj):
         ``scrnStrength``        list, float: Relative layer scrnStrength
         ``windDirs``            list, float: Wind directions in degrees.
         ``windSpeeds``          list, float: Wind velocities in m/s
-        ``r0``                  float: integrated seeing strength 
+        ``r0``                  float: integrated  seeing strength 
                                 (metres at 550nm)
         ``wholeScrnSize``       int: Size of the phase screens to store in the
                                 ``atmosphere`` object
@@ -370,6 +380,9 @@ class AtmosConfig(ConfigObj):
                             generation algorithm for better
                             tip-tilt statistics - useful
                             for small phase screens.             ``False``
+        ``L0''              list, float: Outer scale of each
+                            layer. Kolmogorov turbulence if
+                            ``None``.                           ``None``
         ==================  =================================   ===========    
     """
 
@@ -387,6 +400,7 @@ class AtmosConfig(ConfigObj):
 
         self.optionalParams = [ ("scrnNames",None),
                                 ("subHarmonics",False),
+                                ("L0", None)
                                 ]
 
         self.initParams()
