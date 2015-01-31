@@ -600,7 +600,7 @@ class LoopThread(QtCore.QThread):
 
 
 class IPythonConsole:
-    def __init__(self,layout,sim,gui):
+    def __init__(self, layout, sim, gui):
         # Create an in-process kernel
         # >>> print_process_id()
         # will print the same process ID as the main process
@@ -611,7 +611,23 @@ class IPythonConsole:
 
         self.kernel.shell.write("Welcome to AO Sim!")
 
-        self.kernel.shell.push({"sim":sim, "gui":gui})
+        config = sim.config
+        #Pass some useful objects to the user
+        usefulObjects = {    "sim" : sim,
+                            "gui" : gui,
+                            "config" : config,
+                            "simConfig" : sim.config.sim,
+                            "telConfig" : sim.config.tel,
+                            "atmosConfig" : sim.config.atmos}
+        
+        for i in range(sim.config.sim.nGS):
+            usefulObjects["wfs{}Config".format(i)] = sim.config.wfs[i]
+        for i in range(sim.config.sim.nDM):
+            usefulObjects["dm{}Config".format(i)] = sim.config.dm[i]
+        for i in range(sim.config.sim.nSci):
+            usefulObjects["sci{}Config".format(i)] = sim.config.sci[i]
+
+        self.kernel.shell.push(usefulObjects)
         #kernel.shell.push({'foo': 43, 'print_process_id': print_process_id})
 
         self.kernel_client = self.kernel_manager.client()
