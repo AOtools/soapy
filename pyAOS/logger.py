@@ -23,6 +23,17 @@ or both. The verbosity can also be adjusted between 0 and 3, where all is logged
 """
 import inspect
 import sys
+try:
+    import colorama
+    colorama.init()
+    RED = colorama.Fore.RED
+    BLUE = colorama.Fore.BLUE
+    GREEN = colorama.Fore.GREEN
+    MAGENTA = colorama.Fore.MAGENTA
+except:
+    RED = BLUE = GREEN = MAGENTA = ""
+
+COLOURS = {1 :RED, 2 :BLUE, 3:GREEN, 4:MAGENTA}
 
 LOGGING_LEVEL = 1
 LOGGING_FILE = None
@@ -44,7 +55,7 @@ def setStatusFunc(func):
 def statusMessage(i, maxIter, message):
 	if not STATUS_FUNC:
 		sys.stdout.flush()
-		sys.stdout.write("\r{0} of {1}: {2}".format(i+1,maxIter, message))
+		sys.stdout.write(COLOURS[4]+"\r{0} of {1}: {2}".format(i+1,maxIter, message))
 
 	else:
 		STATUS_FUNC(message, i, maxIter)
@@ -62,6 +73,7 @@ def _printMessage(message, level=3):
 		message(str): The message to log
 	"""
 
+
 	if LOGGING_LEVEL>=level:
 		if LOGGING_LEVEL>2 or level==1:
 			curframe = inspect.currentframe()
@@ -70,7 +82,7 @@ def _printMessage(message, level=3):
 
 		if LOGGING_FILE:
 			with open(LOGGING_FILE, "a") as File:
-				File.write(message+"\n")
+				File.write(COLOURS[level]+message+"\n")
 
 		if STATUS_FUNC:
 			STATUS_FUNC(message)
