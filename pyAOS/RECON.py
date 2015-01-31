@@ -135,8 +135,7 @@ class Reconstructor(object):
     def saveIMat(self):
 
         for dm in xrange(self.simConfig.nDM):
-            filenameIMat = 
- self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
+            filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
             filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
             
             fits.PrimaryHDU(self.dms[dm].iMat).writeto(filenameIMat,
@@ -284,10 +283,12 @@ class MVM_SeperateDMs(Reconstructor):
                             ].reshape(2,
                                 self.dms[0].wfs.activeSubaps).mean(1)
             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-            slopes[self.dms[0].wfs.wfsConfig.dataStart:
-                            (self.dms[0].wfs.wfsConfig.dataStart
-                                +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
-            slopes[ self.dms[0].wfs.wfsConfig.dataStart
+            slopes[
+                    self.dms[0].wfs.wfsConfig.dataStart:
+                    (self.dms[0].wfs.wfsConfig.dataStart
+                        +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
+            slopes[ 
+                    self.dms[0].wfs.wfsConfig.dataStart
                         +self.dms[0].wfs.activeSubaps:
                     self.dms[0].wfs.wfsConfig.dataStart
                         +2*self.dms[0].wfs.activeSubaps] -= ttMean[1]

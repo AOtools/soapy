@@ -44,7 +44,13 @@ class DM:
         #find the total number of WFS subaps, and make imat
         #placeholder
         self.totalSubaps = 0
-        self.wfs = wfss[self.dmConfig.wfs]
+
+        try:
+            #Make sure the specifed WFS actually exists
+            self.wfs = wfss[self.dmConfig.wfs]
+        except KeyError:
+            raise KeyError("DM attached to WFS {}, but that WFS is not specifed in config".format(self.wfs))
+        
         self.totalSubaps = self.wfs.activeSubaps
         
     def getActiveActs(self):

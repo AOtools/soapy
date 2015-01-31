@@ -49,10 +49,10 @@ simConfiguration = {
     },
 
 "WFS":{
-    "GSPosition"    :   [(0,30),    (0,0)],
+    "GSPosition"    :   [(0,0),    (0,0)],
     "GSHeight"      :   [0,         90e3],
     "subaps"        :   [1,         8],
-    "pxlsPerSubap"  :   [2,         14],
+    "pxlsPerSubap"  :   [20,         14],
     "subapFOV"      :   [2.0,       5.0],
     "subapOversamp" :   [4,         4],
     "wavelength"    :   [600e-9]*2,
@@ -86,7 +86,7 @@ simConfiguration = {
 
 "Science":{
     "position"      :   [(0,0)],
-    "FOV"           :   [1.5],
+    "FOV"           :   [4.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
     "oversamp"      :   [2],

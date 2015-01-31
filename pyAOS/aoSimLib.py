@@ -40,7 +40,7 @@ except NameError:
 def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
     '''
-    Convolves 2, 2 dimensional arrays
+    Convolves two, 2-dimensional arrays
 
     Uses the AOFFT library to do fast convolution of 2, 2-dimensional numpy ndarrays. The FFT mode, and some parameters can be set in the arguments.
 
