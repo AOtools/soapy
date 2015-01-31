@@ -377,7 +377,14 @@ def quadCell(img):
 
 def zernike(j, N):
     """
-     Creates the Zernike polynomial with mode index j, where i = 1 corresponds to piston  
+     Creates the Zernike polynomial with mode index j, 
+     where j = 1 corresponds to piston.
+
+     Args: 
+        j (int): The noll j number of the zernike mode
+        N (int): The diameter of the zernike more in pixels
+     Returns:
+        ndarray: The Zernike mode
      """
     n,m = zernIndex(j);
 

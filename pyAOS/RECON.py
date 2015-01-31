@@ -104,14 +104,8 @@ class Reconstructor(object):
             dmNo = int(header["DMNO"])
             exec("dmActs = numpy.array({})".format(cMatHDU.header["DMACTS"]), globals())
             exec("dmTypes = %s"%header["DMTYPE"],globals())
-            print(cMatHDU.header["DMCOND"])
             exec("dmConds = numpy.array({})".format(cMatHDU.header["DMCOND"]),globals())
-            
-            print("dmConds: {}".format(self.dmConds))
-            print("loaded dmConds: {}".format(dmConds))
-
-            #print(dmConds==self.dmConds))
- 
+             
             if not numpy.allclose(dmConds,self.dmConds):
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:

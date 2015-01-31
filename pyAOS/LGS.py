@@ -51,8 +51,9 @@ class LGSObj(object):
         phsWvl = 550e-9
         self.r0scale = phsWvl / self.lgsConfig.wavelength
 
-        self.mask = aoSimLib.circle(self.LGSPupilSize/2,
-                                    self.simConfig.simSize)
+        self.mask = aoSimLib.circle(
+                0.5*lgsConfig.lgsPupilDiam*self.simConfig.pxlScale,
+                self.simConfig.simSize)
         self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
@@ -351,7 +352,7 @@ class PhysicalLGS(LGSObj):
         g = numpy.fft.ifftshift(self.iFFT()) * (N * delta_f)**2
         return g
         
-    def LGSPSF(self,scrns):
+    def LGSPSF(self, scrns):
         '''
         Computes the LGS PSF for each frame by propagating
         light to each turbulent layer with a fresnel algorithm
@@ -388,11 +389,11 @@ class PhysicalLGS(LGSObj):
 
             self.z = self.atmosConfig.scrnHeights[i]-self.atmosConfig.scrnHeights[i-1]
 
-            if self.z == 0:
-                self.U *= numpy.exp(-1j * self.phs)
-            else:
-                self.U = self.angularSpectrum(self.U*numpy.exp(-1j*self.phs),
+            if self.z != 0:
+                self.U = self.angularSpectrum(self.U,
                                            self.lgsConfig.wavelength, self.d1, self.d2, self.z)
+            
+            self.U*=self.phs
             self.ht += self.z
 
         #Finally, propagate to the last layer.
