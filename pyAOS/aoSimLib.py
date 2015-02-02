@@ -186,8 +186,8 @@ def zoom(array, newSize, order=3):
         imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array.imag, copy=False,
                 kind=INTERP_KIND[order])                 
-        return realInterpObj(coordsX,coordsY) \
-                            + 1j*imagInterpObj(coordsX,coordsY)
+        return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX) 
+                            + 1j*imagInterpObj(coordsY,coordsX)))
             
     else:
 
@@ -195,7 +195,7 @@ def zoom(array, newSize, order=3):
                 numpy.arange(array.shape[1]), array, copy=False,
                 kind=INTERP_KIND[order])
 
-        return interpObj(coordsX,coordsY)
+        return numpy.flipud(numpy.rot90(interpObj(coordsX,coordsY)))
 
 
 def zoom_rbs(array, newSize, order=3):
@@ -231,8 +231,8 @@ def zoom_rbs(array, newSize, order=3):
                 numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
                 array.imag, kx=order, ky=order)
                          
-        return realInterpObj(coordsX,coordsY) \
-                            + 1j*imagInterpObj(coordsX,coordsY)
+        return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX)
+                            + 1j*imagInterpObj(coordsY,coordsX)))
             
     else:
 
@@ -240,7 +240,46 @@ def zoom_rbs(array, newSize, order=3):
                 numpy.arange(array.shape[1]), array, kx=order, ky=order)
 
 
-        return interpObj(coordsX,coordsY)
+        return numpy.flipud(numpy.rot90(interpObj(coordsY,coordsX)))
+
+
+def interp1d_numpy(array, coords):
+    """
+    A Numpy only inplementation array of 1d interpolation
+
+    Parameters:
+        array (ndarray): The 1d array to be interpolated
+        coords (ndarray): An array of coords to return values
+
+    Returns:
+        ndarray: The interpolated array
+    """ 
+    intCoords = coords.astype("int")
+    arrayInt = array[intCoords] 
+    arrayInt1 = array[(intCoords+1).clip(0,array.shape[0]-1)]
+    grad = arrayInt1 - arrayInt
+
+    rem = coords - intCoords
+
+    interpArray = arrayInt + grad*rem
+
+    return interpArray
+
+def interp2d_numpy(array, xCoords, yCoords):
+    """
+    A Numpy only inplementation array of 2d interpolation
+
+    Parameters:
+        array (ndarray): The 1d array to be interpolated
+        xCoords (ndarray): An array of x coords to return values
+        yCoords (ndarray): An array of y coords to return values
+
+    Returns:
+        ndarray: The interpolated array
+    """ 
+
+
+
 
 
 
