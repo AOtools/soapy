@@ -235,7 +235,7 @@ def zoom_rbs(array, newSize, order=3):
                 numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
                 array.imag, kx=order, ky=order)
                          
-        return realInterpObj(coordsY,coordsX)
+        return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
             
     else:
