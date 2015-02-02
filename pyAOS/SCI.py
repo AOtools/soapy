@@ -165,7 +165,7 @@ class scienceCam:
             yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
             scrnCoords = numpy.arange(scrnX)
             interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)    
+            metaPupil = flipud(rot90(interpObj(yCoords, xCoords)))
 
         return metaPupil
 
