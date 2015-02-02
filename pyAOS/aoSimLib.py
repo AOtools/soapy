@@ -40,7 +40,7 @@ except NameError:
 def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
     '''
-    Convolves 2, 2 dimensional arrays
+    Convolves two, 2-dimensional arrays
 
     Uses the AOFFT library to do fast convolution of 2, 2-dimensional numpy ndarrays. The FFT mode, and some parameters can be set in the arguments.
 
@@ -153,7 +153,7 @@ def zoom(array, newSize, order=3):
     """
     A Class to zoom 2-dimensional arrays using interpolation
 
-    Uses the scipy `RectBivariateSpline` interpolation routine to zoom into an array. Can cope with real of complex data.
+    Uses the scipy `Interp2d` interpolation routine to zoom into an array. Can cope with real of complex data.
 
     Parameters:
         array (ndarray): 2-dimensional array to zoom
@@ -171,6 +171,51 @@ def zoom(array, newSize, order=3):
         xSize = newSize[0]
         ySize = newSize[1]
 
+    except (IndexError, TypeError):
+        xSize = ySize = newSize
+
+    coordsX = numpy.linspace(0, array.shape[0]-1, xSize)
+    coordsY = numpy.linspace(0, array.shape[1]-1, ySize)
+
+    #If array is complex must do 2 interpolations
+    if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
+
+        realInterpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array.real, copy=False, 
+                kind=INTERP_KIND[order])
+        imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array.imag, copy=False,
+                kind=INTERP_KIND[order])                 
+        return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX) 
+                            + 1j*imagInterpObj(coordsY,coordsX)))
+            
+    else:
+
+        interpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array, copy=False,
+                kind=INTERP_KIND[order])
+
+        return numpy.flipud(numpy.rot90(interpObj(coordsX,coordsY)))
+
+
+def zoom_rbs(array, newSize, order=3):
+    """
+    A Class to zoom 2-dimensional arrays using RectBivariateSpline interpolation
+
+    Uses the scipy ``RectBivariateSpline`` interpolation routine to zoom into an array. Can cope with real of complex data. May be slower than above ``zoom``, as RBS routine copies data.
+
+    Parameters:
+        array (ndarray): 2-dimensional array to zoom
+        newSize (tuple): the new size of the required array
+        order (int, optional): Order of interpolation to use. default is 3
+
+    Returns:
+        ndarray : zoom array of new size.
+    """
+    try:
+        xSize = newSize[0]
+        ySize = newSize[1]
+
     except IndexError:
         xSize = ySize = newSize
 
@@ -179,29 +224,67 @@ def zoom(array, newSize, order=3):
 
     #If array is complex must do 2 interpolations
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
-        # realInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#                 numpy.arange(array.shape[1]), array.real, kx=order, ky=order)
-#         imagInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#        numpy.arange(array.shape[1]), array.imag, kx=order, ky=order)
-           
-        realInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.real, copy=False, 
-                kind=INTERP_KIND[order])
-        imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.imag, copy=False,
-                kind=INTERP_KIND[order])                 
-        return realInterpObj(coordsX,coordsY) \
-                            + 1j*imagInterpObj(coordsX,coordsY)
+        realInterpObj = RectBivariateSpline(   
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+                array.real, kx=order, ky=order)
+        imagInterpObj = RectBivariateSpline(   
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+                array.imag, kx=order, ky=order)
+                         
+        return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX)
+                            + 1j*imagInterpObj(coordsY,coordsX)))
             
     else:
 
-        # interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#        numpy.arange(array.shape[1]), array, kx=order, ky=order)
-        interpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array, copy=False,
-                kind=INTERP_KIND[order])
+        interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array, kx=order, ky=order)
 
-        return interpObj(coordsX,coordsY)
+
+        return numpy.flipud(numpy.rot90(interpObj(coordsY,coordsX)))
+
+
+def interp1d_numpy(array, coords):
+    """
+    A Numpy only inplementation array of 1d interpolation
+
+    Parameters:
+        array (ndarray): The 1d array to be interpolated
+        coords (ndarray): An array of coords to return values
+
+    Returns:
+        ndarray: The interpolated array
+    """ 
+    intCoords = coords.astype("int")
+    arrayInt = array[intCoords] 
+    arrayInt1 = array[(intCoords+1).clip(0,array.shape[0]-1)]
+    grad = arrayInt1 - arrayInt
+
+    rem = coords - intCoords
+
+    interpArray = arrayInt + grad*rem
+
+    return interpArray
+
+def interp2d_numpy(array, xCoords, yCoords):
+    """
+    A Numpy only inplementation array of 2d interpolation
+
+    Parameters:
+        array (ndarray): The 1d array to be interpolated
+        xCoords (ndarray): An array of x coords to return values
+        yCoords (ndarray): An array of y coords to return values
+
+    Returns:
+        ndarray: The interpolated array
+    """ 
+
+    intXCoords = xCoords.astype("int")
+    intYCoords = yCoords.astype("int")
+
+    xIntArray = array[intXCoords]
+
+
+
 
 
 #######################
@@ -337,7 +420,14 @@ def quadCell(img):
 
 def zernike(j, N):
     """
-     Creates the Zernike polynomial with mode index j, where i = 1 corresponds to piston  
+     Creates the Zernike polynomial with mode index j, 
+     where j = 1 corresponds to piston.
+
+     Args: 
+        j (int): The noll j number of the zernike mode
+        N (int): The diameter of the zernike more in pixels
+     Returns:
+        ndarray: The Zernike mode
      """
     n,m = zernIndex(j);
 
@@ -427,5 +517,4 @@ def zernikeArray(J, N):
         for j in xrange(1,maxJ+1):
             Zs[j-1] = zernike(j, N)
 
-    return Zs
-
+    return Zsv

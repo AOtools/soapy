@@ -91,6 +91,7 @@ import numpy
 import numpy.random
 import scipy.ndimage
 import scipy.optimize
+from scipy.interpolate import interp2d
 
 from . import AOFFT, aoSimLib, LGS, logger
 from .opticalPropagationLib import angularSpectrum
@@ -153,9 +154,10 @@ class WFS(object):
         self.initFFTs()
         self.initLGS()
         self.allocDataArrays()
-
-        self.calcTiltCorrect()
         
+        self.calcTiltCorrect()
+        self.getStatic()
+
 ############################################################
 #Initialisation routines
     
@@ -183,6 +185,9 @@ class WFS(object):
         self.EField = numpy.zeros(
                 (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
 
+        self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
+         
+    
         self.ZERO_DATA = True
 
 
@@ -257,6 +262,9 @@ class WFS(object):
     def calcTiltCorrect(self):
         pass
 
+    def getStatic(self):
+        self.staticData = None
+
     def findMetaPupilSize(self, GSHeight):
         '''
         Evaluates the sizes of the effective metePupils
@@ -274,9 +282,10 @@ class WFS(object):
         for i in xrange(self.atmosConfig.scrnNo):
             #Find radius of metaPupil geometrically (fraction of pupil at
             # Ground Layer)
-            radius = (self.telDiam/2.) * (
-                                1-(float(self.atmosConfig.scrnHeights[i])/GSHeight))
-            radii[i]= numpy.round(radius * self.simConfig.pxlScale)
+
+            radius = (self.simConfig.pupilSize/2.) * (
+                    1-(float(self.atmosConfig.scrnHeights[i])/GSHeight))
+            radii[i]= numpy.round(radius)
 
             #If scrn is above LGS, radius is 0
             if self.atmosConfig.scrnHeights[i]>=GSHeight:
@@ -334,6 +343,9 @@ class WFS(object):
         phaseAddition += ( (self.elongZs[1]/self.elongZs[1].max())
                             *tiltPathDiff[1])
 
+        
+        pad = ((self.simConfig.simPad,)*2, (self.simConfig.simPad,)*2)
+        phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
 
         return phaseAddition
 
@@ -372,14 +384,15 @@ class WFS(object):
     def getMetaPupilPos(self, height, GSPos=None):
         '''
         Finds the centre of a metapupil at a given height, 
-        when offset by a given angle in arcsecs, in units of phase pixels
+        when offset by a given angle in arsecs, in metres from the ()
         
         Arguments:
             height (float): Height of the layer in metres
-            GSPos (tuple, optional):  The angular position of the GS. If not set, will use the WFS position
+            GSPos (tuple, optional):  The angular position of the GS in radians.
+                                    If not set, will use the WFS position
             
         Returns:
-            ndarray: The position of the centre of the metapupil in units of phase pixels
+            ndarray: The position of the centre of the metapupil in metres
         '''
         #if no GSPos given, use system pos and convert into radians
         if not numpy.any(GSPos):
@@ -412,27 +425,37 @@ class WFS(object):
         if not pupilSize:
             pupilSize = self.simConfig.pupilSize
 
-        GSCent = numpy.round(
-                self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
-                        ).astype("int")
-        scrnX,scrnY=scrn.shape
+        GSCent = self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
+                    
+        #print("GSCent {}".format(GSCent))
+        scrnX, scrnY = scrn.shape
 
-        #Check screen is big enough to get a pupil from
-        if ( round(scrnX/2. + GSCent[0] - pupilSize/2.0) < 0 
-                or round(scrnX/2. + GSCent[0] - pupilSize/2.0) > scrnX 
-                or round(scrnX/2. + GSCent[0] - pupilSize/2.0) < 0 
-                or round(scrnY/2. + GSCent[1] - pupilSize/2.0) > scrnY):
-                
+        x1 = scrnX/2. + GSCent[0] - simSize/2.0
+        x2 = scrnX/2. + GSCent[0] + simSize/2.0
+        y1 = scrnY/2. + GSCent[1] - simSize/2.0
+        y2 = scrnY/2. + GSCent[1] + simSize/2.0
+    
+        #print("WFS Scrn Coords - x1: {0}, x2: {1}, y1: {2}, y2: {3}".format(
+        #        x1,x2,y1,y2))
+
+        if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
             raise ValueError( 
-                    "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, pupilSize: {2}".format(
-                            GSCent, scrn.shape, pupilSize, height) )
-            
-        metaPupil=scrn[ 
-                int(round(scrnX/2. + GSCent[0] - pupilSize/2.0)):
-                int(round(scrnX/2. + GSCent[0] + pupilSize/2.0)),
-                int(round(scrnY/2. + GSCent[1] - pupilSize/2.0)):
-                int(round(scrnY/2. + GSCent[1] + pupilSize/2.0))
-                ]
+                    "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
+                            GSCent, scrn.shape, simSize, height) )
+        
+        if (x1.is_integer() and x2.is_integer() 
+                and y1.is_integer() and y2.is_integer()):
+            #Old, simple integer based solution
+            metaPupil= scrn[ x1:x2, y1:y2]
+        else:
+            #Dirty, temporary fix to interpolate between phase points
+            xCoords = numpy.linspace(x1, x2-1, simSize)
+            yCoords = numpy.linspace(y1, y2-1, simSize)
+            scrnCoords = numpy.arange(scrnX)
+            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            metaPupil = interpObj(xCoords, yCoords)
+
+        #If the GS is not at infinity, take into account cone effect
 
         if self.wfsConfig.GSHeight!=0:
             if radius!=0:
@@ -490,7 +513,6 @@ class WFS(object):
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
-            print("ASP: Ht: {0}m, dH: {1}m".format(ht, z))
             ht -= z            
             #Do ASP for last layer to next
             self.physEField[:] = angularSpectrum(
@@ -537,7 +559,7 @@ class WFS(object):
         pass
 
 
-    def iMatFrame(self,phs):
+    def iMatFrame(self, phs):
         '''
         Runs an iMat frame - essentially gives slopes for given "phs" so
         useful for other stuff too!
@@ -554,7 +576,7 @@ class WFS(object):
         self.wfsConfig.removeTT=False
 
         self.zeroData()
-        self.EField[:] =  numpy.exp(1j*phs)
+        self.EField[:] =  numpy.exp(1j*phs*self.r0Scale)
         self.calcFocalPlane()
         self.makeDetectorPlane()
         self.calculateSlopes()
@@ -592,13 +614,13 @@ class WFS(object):
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.r0Scale
-
+    
         #If no elongation
         if self.elong==0:
             self.makePhase(self.radii)
             self.uncorrectedPhase = self.wfsPhase.copy()
             if numpy.any(correction):
-                self.EField *= numpy.exp(-1j*correction)
+                self.EField *= numpy.exp(-1j*correction*self.r0Scale)
             self.calcFocalPlane()
 
         #If LGS elongation simulated
@@ -610,14 +632,15 @@ class WFS(object):
                 self.uncorrectedPhase = self.wfsPhase.copy()
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
-                    self.EField *= numpy.exp(-1j*correction)
+                    self.EField *= numpy.exp(-1j*correction*self.r0Scale)
                 self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
-
+    
         if read:
             self.makeDetectorPlane()
             self.calculateSlopes()
             self.zeroData(detector=False)
-            
+        
+
         return self.slopes
 
     def photoNoise(self):
@@ -665,7 +688,11 @@ class ShackHartmann(WFS):
                                 * self.subapFOVrad/ self.wfsConfig.wavelength)
         
         #make twice as big to double subap FOV
-        self.SUBAP_OVERSIZE = 2
+        if self.wfsConfig.subaps==1:
+            self.SUBAP_OVERSIZE = 1
+        else:
+            self.SUBAP_OVERSIZE = 2
+
         self.detectorPxls = self.wfsConfig.pxlsPerSubap*self.wfsConfig.subaps
         self.subapFOVSpacing *= self.SUBAP_OVERSIZE
         self.wfsConfig.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
@@ -683,8 +710,6 @@ class ShackHartmann(WFS):
         self.subapCoords = aoSimLib.findActiveSubaps(
                 self.wfsConfig.subaps, self.mask, self.wfsConfig.subapThreshold)
         self.activeSubaps = self.subapCoords.shape[0]
-
-        #When scaled to pxl sizes, need to scale subap coordinates too!
         self.detectorSubapCoords = numpy.round(
                 self.subapCoords*(
                         self.detectorPxls/float(self.simConfig.pupilSize) ) )
@@ -799,7 +824,8 @@ class ShackHartmann(WFS):
         if not self.wfsConfig.pxlsPerSubap%2:
             #If pxlsPerSubap is even
             #Angle we need to correct for half a pixel
-            theta = 2*self.subapFOVrad/ (2*self.subapFFTPadding)
+            theta = self.SUBAP_OVERSIZE*self.subapFOVrad/ (
+                    2*self.subapFFTPadding)
 
             #Magnitude of tilt required to get that angle
             A = theta*self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
@@ -828,6 +854,18 @@ class ShackHartmann(WFS):
                     self.wfsConfig.centThreshold)
         slope -= self.wfsConfig.pxlsPerSubap2/2.
         return slope
+
+
+    def getStatic(self):
+        """
+        Computes the static measurements, i.e., slopes with flat wavefront
+        """
+        
+        self.staticData = None
+
+        #Make flat wavefront
+        phs = numpy.zeros([self.simConfig.simSize]*2).astype(DTYPE)
+        self.staticData = self.iMatFrame(phs).copy().reshape(2,self.activeSubaps)
 #######################################################################
 
 
@@ -910,35 +948,51 @@ class ShackHartmann(WFS):
         for i in xrange(self.activeSubaps):
 
             x,y=self.detectorSubapCoords[i]
-
-            #Set default position to put arrays into (2 subap FOV)
-            x1 = int(round(x-self.wfsConfig.pxlsPerSubap/2.))
-            x2 = int(round(x+self.wfsConfig.pxlsPerSubap*3./2))
-            y1 = int(round(y-self.wfsConfig.pxlsPerSubap/2.))
-            y2 = int(round(y+self.wfsConfig.pxlsPerSubap*3./2.))
+    
+            #Set default position to put arrays into (SUBAP_OVERSIZE FOV)
+            x1 = int(round(
+                    x+self.wfsConfig.pxlsPerSubap/2.
+                    -self.wfsConfig.pxlsPerSubap2/2.))
+            x2 = int(round(
+                    x+self.wfsConfig.pxlsPerSubap/2.
+                    +self.wfsConfig.pxlsPerSubap2/2.))
+            y1 = int(round(
+                    y+self.wfsConfig.pxlsPerSubap/2.
+                    -self.wfsConfig.pxlsPerSubap2/2.))
+            y2 = int(round(
+                    y+self.wfsConfig.pxlsPerSubap/2.
+                    +self.wfsConfig.pxlsPerSubap2/2.))
 
             #Set defualt size of input array (i.e. all of it)
             x1_fp = int(0)
             x2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
-            y1_fp = int(round(0))
+            y1_fp = int(0)
             y2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
 
             #If at the edge of the field, may only fit a fraction in 
             if x==0:
-                x1 = int(0)
-                x1_fp = int(round(self.wfsConfig.pxlsPerSubap/2.))
+                x1 = 0
+                x1_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        -self.wfsConfig.pxlsPerSubap/2.))
 
             elif x==(self.detectorPxls-self.wfsConfig.pxlsPerSubap):
                 x2 = int(round(self.detectorPxls))
-                x2_fp = int(round(-1*self.wfsConfig.pxlsPerSubap/2.))
+                x2_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        +self.wfsConfig.pxlsPerSubap/2.))
 
             if y==0:
-                y1 = int(0)
-                y1_fp = int(round(self.wfsConfig.pxlsPerSubap/2.))
+                y1 = 0
+                y1_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        -self.wfsConfig.pxlsPerSubap/2.))
 
             elif y==(self.detectorPxls-self.wfsConfig.pxlsPerSubap):
                 y2 = int(self.detectorPxls)
-                y2_fp = int(round(-1*self.wfsConfig.pxlsPerSubap/2.))
+                y2_fp = int(round(
+                        self.wfsConfig.pxlsPerSubap2/2. 
+                        +self.wfsConfig.pxlsPerSubap/2.))
 
             self.wfsDetectorPlane[x1:x2, y1:y2] += (
                     self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp] )
@@ -984,7 +1038,10 @@ class ShackHartmann(WFS):
             self.centSubapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
                                                     y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
-        if self.wfsConfig.centMethod=="brightestPxl":
+        if self.wfsConfig.pxlsPerSubap==2:
+            slopes = aoSimLib.quadCell(self.centSubapArrays)
+
+        elif self.wfsConfig.centMethod=="brightestPxl":
             slopes = aoSimLib.brtPxlCentroid(
                     self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
@@ -992,19 +1049,22 @@ class ShackHartmann(WFS):
         else:
             slopes = aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
-                     )
-                     
-        if self.wfsConfig.pxlsPerSubap==2:
-            slopes = aoSimLib.quadCell(self.centSubapArrays)
+                     ) 
             
-        #shift slopes relative to subap centre
+        #shift slopes relative to subap centre and remove static offsets
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
-        
-        if self.wfsConfig.removeTT==True:
-            slopes = (slopes.T - slopes.mean(1)).T
+
+
+        if numpy.any(self.staticData):
+            slopes -= self.staticData
 
         self.slopes[:] = slopes.reshape(self.activeSubaps*2)
-        
+      
+        if self.wfsConfig.removeTT==True:
+            self.slopes[:self.activeSubaps] -= self.slopes[:self.activeSubaps].mean()
+            self.slopes[self.activeSubaps:] -= self.slopes[self.activeSubaps:].mean()
+ 
+
         if self.wfsConfig.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (
                     self.wfsConfig.angleEquivNoise * 
@@ -1025,6 +1085,13 @@ class ShackHartmann(WFS):
 #        |___/                             
 
 class Pyramid(WFS):
+    """
+    *Experimental* Pyramid WFS.
+
+    This is an early prototype for a Pyramid WFS. Currently, its at a very early stage. It doesn't oscillate, so performance aint too good at the minute.
+
+    To use, set the wfs parameter ``type'' to ``Pyramid''
+    """
     #oversampling for the first FFT from EField to focus (4 seems ok...)
     FOV_OVERSAMP = 4
 
@@ -1088,11 +1155,23 @@ class Pyramid(WFS):
         
         self.slopes = numpy.zeros( 2*self.activeSubaps )
         
-    def zeroData(self, detector=True, inter=True):
-        self.zeroPhaseData()
-        self.wfsDetectorPlane[:] = 0
-        self.paddedDetectorPlane[:] = 0
 
+    def zeroData(self, detector=True, inter=True):
+        """
+        Sets data structures in WFS to zero.
+        
+        Parameters:
+            detector (bool, optional): Zero the detector? default:True
+            inter (bool, optional): Zero intermediate arrays? default:True
+        """
+        
+        self.zeroPhaseData()
+        
+        if inter:
+            self.paddedDetectorPlane[:] = 0 
+        
+        if detector:
+            self.wfsDetectorPlane[:] = 0
 
     def calcFocalPlane(self):
         '''
@@ -1100,8 +1179,12 @@ class Pyramid(WFS):
         to transform to the focal plane, and scales for correct FOV.
         '''
         #Apply tilt fix and scale EField for correct FOV
-        self.EField*=numpy.exp(1j*self.tiltFix)
-        self.scaledEField = aoSimLib.zoom(  self.EField, 
+        self.pupilEField = self.EField[
+                self.simConfig.simPad:-self.simConfig.simPad,
+                self.simConfig.simPad:-self.simConfig.simPad
+                ]
+        self.pupilEField*=numpy.exp(1j*self.tiltFix)
+        self.scaledEField = aoSimLib.zoom(  self.pupilEField, 
                                             self.FOVPxlNo)*self.scaledMask
 
         #Go to the focus 
@@ -1137,10 +1220,8 @@ class Pyramid(WFS):
                         x*size:(x+1)*size,
                         y*size:(y+1)*size] += self.pupilImages[
                                                 2*x+y,
-                                                pSize:
-                                                pSize+size,
-                                                pSize:
-                                                pSize+size]
+                                                pSize:pSize+size,
+                                                pSize:pSize+size]
 
     def makeDetectorPlane(self):
     

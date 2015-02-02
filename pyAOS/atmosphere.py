@@ -123,11 +123,13 @@ class atmos:
                 if atmosConfig.subHarmonics:
                     self.wholeScrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], 
-                            self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
+                            self.wholeScrnSize, 1./self.pxlScale, 
+                            atmosConfig.L0[i], 0.01)
                 else:
                     self.wholeScrns[i] = ft_phase_screen(
                             self.scrnStrengths[i], 
-                            self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
+                            self.wholeScrnSize, 1./self.pxlScale,
+                            atmosConfig.L0[i], 0.01)
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
@@ -287,6 +289,9 @@ class atmos:
             self.scrnPos[i] = self.scrnPos[i]+self.windV[i]
             self.xCoords[i] += self.windV[i][0]
             self.yCoords[i] += self.windV[i][1]
+
+            #remove piston from phase screens
+            scrns[i] -= scrns[i].mean()
 
         return scrns
 
