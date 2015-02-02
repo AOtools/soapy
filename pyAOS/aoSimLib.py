@@ -186,17 +186,21 @@ def zoom(array, newSize, order=3):
         imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array.imag, copy=False,
                 kind=INTERP_KIND[order])                 
-        return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX) 
-                            + 1j*imagInterpObj(coordsY,coordsX)))
-            
+        #return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX) 
+        #                    + 1j*imagInterpObj(coordsY,coordsX)))
+        return (realInterpObj(coordsY,coordsX) 
+                            + 1j*imagInterpObj(coordsY,coordsX))
+
+        
+
     else:
 
         interpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array, copy=False,
                 kind=INTERP_KIND[order])
 
-        return numpy.flipud(numpy.rot90(interpObj(coordsX,coordsY)))
-
+        #return numpy.flipud(numpy.rot90(interpObj(coordsY,coordsX)))
+        return interpObj(coordsY,coordsX) 
 
 def zoom_rbs(array, newSize, order=3):
     """
@@ -231,8 +235,8 @@ def zoom_rbs(array, newSize, order=3):
                 numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
                 array.imag, kx=order, ky=order)
                          
-        return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX)
-                            + 1j*imagInterpObj(coordsY,coordsX)))
+        return realInterpObj(coordsY,coordsX)
+                            + 1j*imagInterpObj(coordsY,coordsX))
             
     else:
 
@@ -240,7 +244,7 @@ def zoom_rbs(array, newSize, order=3):
                 numpy.arange(array.shape[1]), array, kx=order, ky=order)
 
 
-        return numpy.flipud(numpy.rot90(interpObj(coordsY,coordsX)))
+        return interpObj(coordsY,coordsX)
 
 
 def interp1d_numpy(array, coords):
