@@ -108,10 +108,15 @@ class scienceCam:
            self.tiltFix = numpy.zeros((self.FOVPxlNo,)*2)
 
 
-    def metaPupilPos(self, height):
+    def getMetaPupilPos(self, height):
         '''
         Finds the centre of a metapupil at a given height,
         when offset by a given angle in arcsecs
+        Arguments:
+            height (float): Height of the layer in metres
+            
+        Returns:
+            ndarray: The position of the centre of the metapupil in metres
         '''
 
         #Convert positions into radians
@@ -122,32 +127,45 @@ class scienceCam:
 
         return sciCent
 
-    def metaPupilPhase(self, scrn, height):
+    def getMetaPupilPhase(self, scrn, height):
         '''
         Returns the phase across a metaPupil at some height
         and angular offset in arcsec
+                
+        Parameters:
+            scrn (ndarray): An array representing the phase screen
+            height (float): Height of the phase screen
+            
+        Return:
+            ndarray: The meta pupil at the specified height
         '''
 
-        sciCent = self.metaPupilPos(height) * self.simConfig.pxlScale
+        sciCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
         logger.debug("SciCents:({0},{1})".format(sciCent[0],sciCent[1]))
+        scrnX, scrnY = scrn.shape
 
-        scrnX,scrnY=scrn .shape
+
+        x1 = scrnX/2. + sciCent[0] - self.simConfig.simSize/2.0
+        x2 = scrnX/2. + sciCent[0] + self.simConfig.simSize/2.0
+        y1 = scrnY/2. + sciCent[1] - self.simConfig.simSize/2.0
+        y2 = scrnY/2. + sciCent[1] + self.simConfig.simSize/2.0
 
 
-        if      (scrnX/2+sciCent[0]-self.simConfig.simSize/2.0) < 0 \
-           or   (scrnX/2+sciCent[0]-self.simConfig.simSize/2.0) > scrnX \
-           or   (scrnX/2+sciCent[0]-self.simConfig.simSize/2.0) < 0 \
-           or   (scrnY/2+sciCent[1]-self.simConfig.simSize/2.0) > scrnY :
-
+        if x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY :
             raise ValueError(  "Sci Position seperation\
                                 requires larger scrn size" )
-
-        X1 = scrnX/2+sciCent[0]-self.simConfig.simSize/2.0
-        X2 = scrnX/2+sciCent[0]+self.simConfig.simSize/2.0
-        Y1 = scrnY/2+sciCent[1]-self.simConfig.simSize/2.0
-        Y2 = scrnY/2+sciCent[1]+self.simConfig.simSize/2.0
-
-        metaPupil=scrn[ X1:X2, Y1:Y2 ]
+        
+        if (x1.is_integer() and x2.is_integer()
+               and y1.is_integer() and y2.is_integer()):
+            #Old, simple integer based solution
+            metaPupil= scrn[ x1:x2, y1:y2]
+        else:
+            #Dirty, temporary fix to interpolate between phase points
+            xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
+            yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
+            scrnCoords = numpy.arange(scrnX)
+            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            metaPupil = interpObj(xCoords, yCoords)    
 
         return metaPupil
 
@@ -160,7 +178,7 @@ class scienceCam:
         '''
         totalPhase=numpy.zeros([self.simConfig.simSize]*2)
         for i in self.scrns:
-            phase=self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
+            phase=self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
 
             totalPhase+=phase
 
