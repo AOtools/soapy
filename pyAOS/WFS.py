@@ -381,7 +381,7 @@ class WFS(object):
     def getMetaPupilPos(self, height, GSPos=None):
         '''
         Finds the centre of a metapupil at a given height, 
-        when offset by a given angle in arcsecs, in units of phase pixels
+        when offset by a given angle in arsecs, in metres from the ()
         
         Arguments:
             height (float): Height of the layer in metres
@@ -389,7 +389,7 @@ class WFS(object):
                                     If not set, will use the WFS position
             
         Returns:
-            ndarray: The position of the centre of the metapupil in units of phase pixels
+            ndarray: The position of the centre of the metapupil in metres
         '''
         #if no GSPos given, use system pos and convert into radians
         if not numpy.any(GSPos):
@@ -440,7 +440,8 @@ class WFS(object):
                     "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
         
-        if x1.is_integer() and x2.is_integer and y1.is_integer and y2.is_integer():
+        if (x1.is_integer() and x2.is_integer() 
+                and y1.is_integer() and y2.is_integer()):
             #Old, simple integer based solution
             metaPupil= scrn[ x1:x2, y1:y2]
         else:
