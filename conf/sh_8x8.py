@@ -12,7 +12,7 @@ simConfiguration = {
 "Sim":{
     "filePrefix"    :  "sh_8x8",
     "logfile"       :   "sh_8x8.log",
-    "pupilSize"     :   64, 
+    "pupilSize"     :   128, 
     "nGS"           :   1,
     "nDM"           :   2,
     "nSci"          :   1,
