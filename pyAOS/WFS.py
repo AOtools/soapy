@@ -445,7 +445,6 @@ class WFS(object):
             #Old, simple integer based solution
             metaPupil= scrn[ x1:x2, y1:y2]
         else:
-            print("DO interp")
             #Dirty, temporary fix to interpolate between phase points
             xCoords = numpy.linspace(x1, x2-1, simSize)
             yCoords = numpy.linspace(y1, y2-1, simSize)
@@ -1070,19 +1069,12 @@ class ShackHartmann(WFS):
 
         if numpy.any(self.staticData):
             slopes -= self.staticData
-        
-        
-#        if self.wfsConfig.removeTT==True:
-#            print("\x1b[31m RemoveTT!")
-#            slopes = (slopes.T - slopes.mean(1)).T
 
         self.slopes[:] = slopes.reshape(self.activeSubaps*2)
       
         if self.wfsConfig.removeTT==True:
             self.slopes[:self.activeSubaps] -= self.slopes[:self.activeSubaps].mean()
             self.slopes[self.activeSubaps:] -= self.slopes[self.activeSubaps:].mean()
-        print(self.slopes[:self.activeSubaps].mean())
-        print(self.slopes[self.activeSubaps:].mean())
  
 
         if self.wfsConfig.angleEquivNoise and not self.iMat:
@@ -1092,7 +1084,6 @@ class ShackHartmann(WFS):
                     /self.wfsConfig.subapFOV )
             self.slopes += numpy.random.normal( 0, pxlEquivNoise, 
                                                 2*self.activeSubaps)
-
 
         return self.slopes
 
@@ -1106,6 +1097,13 @@ class ShackHartmann(WFS):
 #        |___/                             
 
 class Pyramid(WFS):
+    """
+    *Experimental* Pyramid WFS.
+
+    This is an early prototype for a Pyramid WFS. Currently, its at a very early stage. It doesn't oscillate, so performance aint too good at the minute.
+
+    To use, set the wfs parameter ``type'' to ``Pyramid''
+    """
     #oversampling for the first FFT from EField to focus (4 seems ok...)
     FOV_OVERSAMP = 4
 
@@ -1169,11 +1167,23 @@ class Pyramid(WFS):
         
         self.slopes = numpy.zeros( 2*self.activeSubaps )
         
-    def zeroData(self, detector=True, inter=True):
-        self.zeroPhaseData()
-        self.wfsDetectorPlane[:] = 0
-        self.paddedDetectorPlane[:] = 0
 
+    def zeroData(self, detector=True, inter=True):
+        """
+        Sets data structures in WFS to zero.
+        
+        Parameters:
+            detector (bool, optional): Zero the detector? default:True
+            inter (bool, optional): Zero intermediate arrays? default:True
+        """
+        
+        self.zeroPhaseData()
+        
+        if inter:
+            self.paddedDetectorPlane[:] = 0 
+        
+        if detector:
+            self.wfsDetectorPlane[:] = 0
 
     def calcFocalPlane(self):
         '''
@@ -1181,8 +1191,12 @@ class Pyramid(WFS):
         to transform to the focal plane, and scales for correct FOV.
         '''
         #Apply tilt fix and scale EField for correct FOV
-        self.EField*=numpy.exp(1j*self.tiltFix)
-        self.scaledEField = aoSimLib.zoom(  self.EField, 
+        self.pupilEField = self.EField[
+                self.simConfig.simPad:-self.simConfig.simPad,
+                self.simConfig.simPad:-self.simConfig.simPad
+                ]
+        self.pupilEField*=numpy.exp(1j*self.tiltFix)
+        self.scaledEField = aoSimLib.zoom(  self.pupilEField, 
                                             self.FOVPxlNo)*self.scaledMask
 
         #Go to the focus 
@@ -1218,10 +1232,8 @@ class Pyramid(WFS):
                         x*size:(x+1)*size,
                         y*size:(y+1)*size] += self.pupilImages[
                                                 2*x+y,
-                                                pSize:
-                                                pSize+size,
-                                                pSize:
-                                                pSize+size]
+                                                pSize:pSize+size,
+                                                pSize:pSize+size]
 
     def makeDetectorPlane(self):
     
