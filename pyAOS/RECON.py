@@ -104,14 +104,8 @@ class Reconstructor(object):
             dmNo = int(header["DMNO"])
             exec("dmActs = numpy.array({})".format(cMatHDU.header["DMACTS"]), globals())
             exec("dmTypes = %s"%header["DMTYPE"],globals())
-            print(cMatHDU.header["DMCOND"])
             exec("dmConds = numpy.array({})".format(cMatHDU.header["DMCOND"]),globals())
-            
-            print("dmConds: {}".format(self.dmConds))
-            print("loaded dmConds: {}".format(dmConds))
-
-            #print(dmConds==self.dmConds))
- 
+             
             if not numpy.allclose(dmConds,self.dmConds):
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:
@@ -156,8 +150,8 @@ class Reconstructor(object):
             if iMat.shape!=(self.dms[dm].acts,2*self.dms[dm].totalSubaps):
                 logger.warning("interaction matrix does not match required required size.")
                 raise Exception
-            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.pupilSize:
-                logger.warning("loaded DM shapes are not same size as current pupil.")
+            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.simSize:
+                logger.warning("loaded DM shapes are not same size as current sim.")
                 raise Exception
             else:
                 self.dms[dm].iMat = iMat
@@ -180,7 +174,7 @@ class Reconstructor(object):
                 self.loadIMat()
                 logger.info("Interaction Matrices loaded successfully")
             except:
-                traceback.print_exc()
+                #traceback.print_exc()
                 logger.warning("Load Interaction Matrices failed - will create new one.")
                 self.makeIMat(callback=callback,    
                          progressCallback=progressCallback)
@@ -196,7 +190,7 @@ class Reconstructor(object):
                 self.loadCMat()
                 logger.info("Command Matrix Loaded Successfully")
             except:
-                traceback.print_exc()
+                #traceback.print_exc()
                 logger.warning("Load Command Matrix failed - will create new one")
                 
                 self.calcCMat(callback, progressCallback)
@@ -226,15 +220,15 @@ class MVM(Reconstructor):
         control matrix
         '''
         acts = 0
-        dmIMat = numpy.empty_like(self.controlMatrix.T)
+        self.iMat = numpy.empty_like(self.controlMatrix.T)
         for dm in xrange(self.simConfig.nDM):
-            dmIMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
+            self.iMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
             acts+=self.dms[dm].acts
         
         logger.info("Invert iMat with cond: {}".format(
                 self.dms[dm].dmConfig.dmCond))
         self.controlMatrix = scipy.linalg.pinv(
-                dmIMat, self.dms[dm].dmConfig.dmCond
+                self.iMat, self.dms[dm].dmConfig.dmCond
                 )
             
 
@@ -252,7 +246,7 @@ class MVM_SeperateDMs(Reconstructor):
 
             dmIMat = self.dms[dm].iMat
 
-            #Old code which treats each DM iMat seperately
+            #Treats each DM iMat seperately
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
@@ -283,10 +277,12 @@ class MVM_SeperateDMs(Reconstructor):
                             ].reshape(2,
                                 self.dms[0].wfs.activeSubaps).mean(1)
             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-            slopes[self.dms[0].wfs.wfsConfig.dataStart:
-                            (self.dms[0].wfs.wfsConfig.dataStart
-                                +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
-            slopes[ self.dms[0].wfs.wfsConfig.dataStart
+            slopes[
+                    self.dms[0].wfs.wfsConfig.dataStart:
+                    (self.dms[0].wfs.wfsConfig.dataStart
+                        +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
+            slopes[ 
+                    self.dms[0].wfs.wfsConfig.dataStart
                         +self.dms[0].wfs.activeSubaps:
                     self.dms[0].wfs.wfsConfig.dataStart
                         +2*self.dms[0].wfs.activeSubaps] -= ttMean[1]

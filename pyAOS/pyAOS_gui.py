@@ -162,11 +162,6 @@ class GUI(QtGui.QMainWindow):
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
 
-
-        if self.config.sim.tipTilt:
-            self.ttPlot = self.makeImageItem(self.ui.dmLayout,
-                                            self.config.sim.pupilSize)
-            
         self.dmPlots = {}
         for dm in range(self.config.sim.nDM):
             self.dmPlots[dm] = self.makeImageItem(self.ui.dmLayout,
@@ -224,10 +219,22 @@ class GUI(QtGui.QMainWindow):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
                     self.wfsPlots[wfs].setImage(
                         plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-                        
+                try: 
+                    scaleValues = [min(self.minValues), max(self.maxValues)]
+                except (AttributeError, ValueError):
+                    scaleValues = None
+                self.minValues = []
+                self.maxValues = []
+
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
+                    wfsPhase = plotDict["wfsPhase"][wfs]
+                    self.minValues.append(wfsPhase.min())
+                    self.maxValues.append(wfsPhase.max())
+                    if not scaleValues:
+                        scaleValues = [wfsPhase.min(), wfsPhase.max()]
+
                     self.phasePlots[wfs].setImage(
-                        plotDict["wfsPhase"][wfs], lut=self.LUT)
+                            wfsPhase, lut=self.LUT, levels=scaleValues)
                         
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
@@ -238,9 +245,16 @@ class GUI(QtGui.QMainWindow):
                 self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
             
             for dm in range(self.config.sim.nDM):
+                
                 if numpy.any(plotDict["dmShape"][dm]) !=None:
+                    dmShape = plotDict["dmShape"][dm]
+                    if not scaleValues:
+                        scaleValues = [dmShape.min(), dmShape.max()]
+                    self.minValues.append(dmShape.min())
+                    self.maxValues.append(dmShape.max())
+
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
-                                            lut=self.LUT)
+                                            lut=self.LUT, levels=scaleValues)
            
             for sci in range(self.config.sim.nSci):
                 if numpy.any(plotDict["sciImg"][sci])!=None:
@@ -252,8 +266,14 @@ class GUI(QtGui.QMainWindow):
                                 plotDict["sciImg"][sci], lut=self.LUT)
                     
                 if numpy.any(plotDict["residual"][sci])!=None:
+                    residual = plotDict["residual"][sci]
+                    if not scaleValues:
+                        scaleValues = [residual.min(), residual.max()]
+                    self.minValues.append(residual.min())
+                    self.maxValues.append(residual.max())
+
                     self.resPlots[sci].setImage(
-                                plotDict["residual"][sci], lut=self.LUT)
+                            residual, lut=self.LUT, levels=scaleValues)
             
             if self.loopRunning:
                 self.updateStrehls()
@@ -292,8 +312,10 @@ class GUI(QtGui.QMainWindow):
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
                 if self.sim.config.wfs[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfs[wfs].GSHeight==0:
-                    cent = self.sim.wfss[wfs].getMetaPupilPos(
-    self.sim.config.atmos.scrnHeights[i])*self.sim.config.sim.pxlScale+self.config.sim.pupilSize
+                    cent = (self.sim.wfss[wfs].getMetaPupilPos(
+                            self.sim.config.atmos.scrnHeights[i])
+                            *self.sim.config.sim.pxlScale
+                            +self.config.sim.pupilSize)
 
                     if self.sim.wfss[wfs].radii!=None:
                         radius = self.sim.wfss[wfs].radii[i]
@@ -576,7 +598,7 @@ class LoopThread(QtCore.QThread):
 
 
 class IPythonConsole:
-    def __init__(self,layout,sim,gui):
+    def __init__(self, layout, sim, gui):
         # Create an in-process kernel
         # >>> print_process_id()
         # will print the same process ID as the main process
@@ -587,7 +609,23 @@ class IPythonConsole:
 
         self.kernel.shell.write("Welcome to AO Sim!")
 
-        self.kernel.shell.push({"sim":sim, "gui":gui})
+        config = sim.config
+        #Pass some useful objects to the user
+        usefulObjects = {    "sim" : sim,
+                            "gui" : gui,
+                            "config" : config,
+                            "simConfig" : sim.config.sim,
+                            "telConfig" : sim.config.tel,
+                            "atmosConfig" : sim.config.atmos}
+        
+        for i in range(sim.config.sim.nGS):
+            usefulObjects["wfs{}Config".format(i)] = sim.config.wfs[i]
+        for i in range(sim.config.sim.nDM):
+            usefulObjects["dm{}Config".format(i)] = sim.config.dm[i]
+        for i in range(sim.config.sim.nSci):
+            usefulObjects["sci{}Config".format(i)] = sim.config.sci[i]
+
+        self.kernel.shell.push(usefulObjects)
         #kernel.shell.push({'foo': 43, 'print_process_id': print_process_id})
 
         self.kernel_client = self.kernel_manager.client()

@@ -16,11 +16,11 @@ simConfiguration = {
     "nGS"           :   2,
     "nDM"           :   2,
     "nSci"          :   1,
-    "nIters"        :   1000,
+    "nIters"        :   5000,
     "loopTime"      :   1/400.0,
     "gain"          :   0.6,
-    "reconstructor" :   "MVM", 
-    "wfsMP"         :   True,
+    "reconstructor" :   "MVM_SeperateDMs", 
+    "wfsMP"         :   False,
     
     "verbosity"     :   2,
 
@@ -51,16 +51,16 @@ simConfiguration = {
 "WFS":{
     "GSPosition"    :   [(0,30),    (0,0)],
     "GSHeight"      :   [0,         90e3],
-    "subaps"        :   [2,         16],
+    "subaps"        :   [2,         8],
     "pxlsPerSubap"  :   [2,         14],
     "subapFOV"      :   [3.0,       5.0],
     "subapOversamp" :   [4,         4],
     "wavelength"    :   [600e-9]*2,
-    "bitDepth"      :   [8]*2,
+    "bitDepth"      :   [32]*2,
     "lgs"           :   [False,     True],
     "centMethod"    :   ["brightestPxl"]*2,
     "centThreshold" :   [0.2]*2,
-    "exposureTime"  :   [1./100,    None],
+    "exposureTime"  :   [None,      None],
     "removeTT"      :   [False,     True],
     },
 
@@ -76,11 +76,11 @@ simConfiguration = {
 
 "DM":{
     "dmType"        :   ["TT",     "Piezo"],
-    "dmActs"        :   [2,         17**2],
-    "dmCond"        :   [1e-15,      0.05],
+    "dmActs"        :   [2,         9**2],
+    "dmCond"        :   [1e-15,      0.07],
     "closed"        :   [True,      True],
-    "gain"          :   [0.5,       0.6],
-    "iMatValue"     :   [20,        10  ],
+    "gain"          :   [0.6,       0.6],
+    "iMatValue"     :   [0.2,        0.2  ],
     "wfs"           :   [0,         1],
     },
 
