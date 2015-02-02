@@ -461,7 +461,7 @@ class WFS(object):
                             int(round(simSize/2. + radius)),
                             int(round(simSize/2. - radius)):
                             int(round(simSize/2. + radius))],
-                        (simSize, simSize)
+                        (simSize, simSize), order=1
                         )
 
         return metaPupil
