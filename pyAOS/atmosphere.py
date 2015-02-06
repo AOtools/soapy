@@ -440,7 +440,8 @@ def pool_ft_sh_phase_screen(args):
 def ft_sh_phase_screen(r0, N, delta, L0, l0, FFT=None):
     '''
     Creates a random phase screen with Von Karmen statistics with added
-    sub-harmonics to augment tip-tilt modes
+    sub-harmonics to augment tip-tilt modes.
+    (Schmidt 2010)
     
     Args:
         r0 (float): r0 parameter of scrn in metres
@@ -519,7 +520,20 @@ def ift2(G, delta_f ,FFT=None):
     return g
 
 def ft_phase_screen(r0, N, delta, L0, l0, FFT=None):
+    '''
+    Creates a random phase screen with Von Karmen statistics.
+    (Schmidt 2010)
+    
+    Args:
+        r0 (float): r0 parameter of scrn in metres
+        N (int): Size of phase scrn in pxls
+        delta (float): size in Metres of each pxl
+        L0 (float): Size of outer-scale in metres
+        l0 (float): inner scale in metres
 
+    Returns:
+        ndarray: numpy array representing phase screen
+    '''
     delta = float(delta)
     r0 = float(r0)
     L0 = float(L0)
