@@ -151,14 +151,13 @@ class atmos:
                     r0_metres = r0/self.pxlScale
                     self.wholeScrns[i] *=(
                                  (self.scrnStrengths[i]/r0_metres)**(-5./6.)
-                                 #(self.scrnStrengths[i]/r0_metres)**(-5./3.)
                                          )
 
                 except KeyError:
-                    logger.info("no r0 info found in screen header - will assume its ok as it is")
+                    logger.warning("no r0 info found in screen header - will assume its ok as it is")
 
             if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
-                logger.info("Requested phase screen has different size to that input in config file....loading anyway")
+                logger.warning("Requested phase screen has different size to that input in config file....loading anyway")
 
             self.wholeScrnSize = self.wholeScrns[i].shape[0]
             if self.wholeScrnSize < self.scrnSize:
