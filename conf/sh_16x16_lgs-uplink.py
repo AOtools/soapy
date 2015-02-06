@@ -49,11 +49,11 @@ simConfiguration = {
     },
 
 "WFS":{
-    "GSPosition"    :   [(0,30),    (0,0)],
+    "GSPosition"    :   [(0,0),    (0,0)],
     "GSHeight"      :   [0,         90e3],
-    "subaps"        :   [2,         8],
-    "pxlsPerSubap"  :   [2,         14],
-    "subapFOV"      :   [3.0,       5.0],
+    "subaps"        :   [1,         16],
+    "pxlsPerSubap"  :   [10,         14],
+    "subapFOV"      :   [1.5,       3.0],
     "subapOversamp" :   [4,         4],
     "wavelength"    :   [600e-9]*2,
     "bitDepth"      :   [32]*2,
@@ -76,8 +76,8 @@ simConfiguration = {
 
 "DM":{
     "dmType"        :   ["TT",     "Piezo"],
-    "dmActs"        :   [2,         9**2],
-    "dmCond"        :   [1e-15,      0.07],
+    "dmActs"        :   [2,         17**2],
+    "dmCond"        :   [1e-15,      0.09],
     "closed"        :   [True,      True],
     "gain"          :   [0.6,       0.6],
     "iMatValue"     :   [0.2,        0.2  ],
