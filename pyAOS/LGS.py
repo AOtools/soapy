@@ -144,14 +144,29 @@ class LGSObj(object):
         GSCent = pos*self.simConfig.pxlScale
         scrnX,scrnY = scrn.shape
 
-        x1 = int(round(scrnX/2. + GSCent[0] - self.simConfig.simSize/2.))
-        x2 = int(round(scrnX/2. + GSCent[0] + self.simConfig.simSize/2.))
-        y1 = int(round(scrnY/2. + GSCent[1] - self.simConfig.simSize/2.))
-        y2 = int(round(scrnY/2. + GSCent[1] + self.simConfig.simSize/2.))
+        #x1 = int(round(scrnX/2. + GSCent[0] - self.simConfig.simSize/2.))
+        #x2 = int(round(scrnX/2. + GSCent[0] + self.simConfig.simSize/2.))
+        #y1 = int(round(scrnY/2. + GSCent[1] - self.simConfig.simSize/2.))
+        #y2 = int(round(scrnY/2. + GSCent[1] + self.simConfig.simSize/2.))
+
+        x1 = scrnX/2. + GSCent[0] - self.simConfig.simSize/2.
+        x2 = scrnX/2. + GSCent[0] + self.simConfig.simSize/2.
+        y1 = scrnY/2. + GSCent[1] - self.simConfig.simSize/2.
+        y2 = scrnY/2. + GSCent[1] + self.simConfig.simSize/2.
 
         logger.debug("LGS MetaPupil Coords: %i:%i,%i:%i"%(x1,x2,y1,y2))
 
-        metaPupil = scrn[ x1:x2, y1:y2 ].copy()
+        if (x1.is_integer() and x2.is_integer() 
+                and y1.is_integer() and y2.is_integer()):
+            metaPupil = scrn[ x1:x2, y1:y2 ].copy()
+
+        else:
+            xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
+            yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
+            scrnCoords = arange(self.simConfig.simSize)
+
+            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil
 
