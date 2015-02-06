@@ -30,10 +30,13 @@ try:
     BLUE = colorama.Fore.BLUE
     GREEN = colorama.Fore.GREEN
     MAGENTA = colorama.Fore.MAGENTA
+    COLOUR_RESET = colorama.Style.RESET_ALL
 except:
-    RED = BLUE = GREEN = MAGENTA = ""
+    COLOUR_RESET = RED = BLUE = GREEN = MAGENTA = ""
 
 COLOURS = {1 :RED, 2 :BLUE, 3:GREEN, 4:MAGENTA}
+
+
 
 LOGGING_LEVEL = 1
 LOGGING_FILE = None
@@ -55,7 +58,7 @@ def setStatusFunc(func):
 def statusMessage(i, maxIter, message):
 	if not STATUS_FUNC:
 		sys.stdout.flush()
-		sys.stdout.write(COLOURS[4]+"\r{0} of {1}: {2}".format(i+1,maxIter, message))
+		sys.stdout.write(COLOURS[4]+"\r{0} of {1}: {2}".format(i+1,maxIter, message)+COLOUR_RESET)
 
 	else:
 		STATUS_FUNC(message, i, maxIter)
