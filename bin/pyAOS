@@ -35,7 +35,7 @@ if __name__=="__main__":
     #Define parser and add arguments
     parser = ArgumentParser()
     parser.add_argument("configFile", nargs="?", action="store",
-            help="The AO config file you wish to simulate. Defaults to conf/testConf if none specified.")
+            help="The AO config file you wish to simulate. Defaults to conf/sh_8x8.py if none specified.")
     parser.add_argument("--gui","-g", action="store_true", dest="gui",
             help="Starts the AO gui to visualise your simulation")
     
@@ -54,7 +54,7 @@ if __name__=="__main__":
     if args.configFile!=None:
         configFile = args.configFile
     else:
-        configFile = bin_path+"/../conf/testConf.py"
+        configFile = bin_path+"/../conf/sh_8x8.py"
 
     #Run sim with given args
     
