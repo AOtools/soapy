@@ -186,8 +186,6 @@ def zoom(array, newSize, order=3):
         imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array.imag, copy=False,
                 kind=INTERP_KIND[order])                 
-        #return numpy.flipud(numpy.rot90(realInterpObj(coordsY,coordsX) 
-        #                    + 1j*imagInterpObj(coordsY,coordsX)))
         return (realInterpObj(coordsY,coordsX) 
                             + 1j*imagInterpObj(coordsY,coordsX))
 
@@ -269,22 +267,37 @@ def interp1d_numpy(array, coords):
 
     return interpArray
 
+
 def interp2d_numpy(array, xCoords, yCoords):
     """
-    A Numpy only inplementation array of 2d interpolation
+    A Numpy only inplementation array of 2d linear interpolation
 
     Parameters:
         array (ndarray): The 1d array to be interpolated
-        xCoords (ndarray): An array of x coords to return values
-        yCoords (ndarray): An array of y coords to return values
+        xCoords (ndarray): An array of coords to return values
+        yCoords (ndarray): An array of coords to return values
 
     Returns:
         ndarray: The interpolated array
     """ 
 
+    #xCoords, yCoords = numpy.meshgrid(yCoords, xCoords)
 
+    
+    xIntCoords = xCoords.astype("int")
+    yIntCoords = yCoords.astype("int")
 
+    arrayInt = array[xIntCoords, yIntCoords]
 
+    xGrad = array[
+            (xIntCoords+1).clip(0, array.shape[0]-1), yIntCoords] - arrayInt
+
+    yGrad = array[
+            xIntCoords, (yIntCoords+1).clip(0, array.shape[1]-1)] - arrayInt
+
+    interpArray = arrayInt + xGrad*(xCoords-xIntCoords) + yGrad*(yCoords-yIntCoords)
+
+    return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
 
 
 #######################
