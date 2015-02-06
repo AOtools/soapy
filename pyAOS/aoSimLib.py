@@ -268,14 +268,15 @@ def interp1d_numpy(array, coords):
     return interpArray
 
 
-def interp2d_numpy(array, xCoords, yCoords):
+def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
     """
     A Numpy only inplementation array of 2d linear interpolation
 
     Parameters:
-        array (ndarray): The 1d array to be interpolated
+        array (ndarray): The 2d array to be interpolated
         xCoords (ndarray): An array of coords to return values
         yCoords (ndarray): An array of coords to return values
+        interpArray (ndarray, optional): The array to plane the interpolated data
 
     Returns:
         ndarray: The interpolated array
@@ -295,7 +296,12 @@ def interp2d_numpy(array, xCoords, yCoords):
     yGrad = array[
             xIntCoords, (yIntCoords+1).clip(0, array.shape[1]-1)] - arrayInt
 
-    interpArray = arrayInt + xGrad*(xCoords-xIntCoords) + yGrad*(yCoords-yIntCoords)
+    if numpy.any(interpArray):
+        interpArray[:] = (arrayInt + xGrad*(xCoords-xIntCoords) 
+                            + yGrad*(yCoords-yIntCoords))
+    else:
+        interpArray = (arrayInt + xGrad*(xCoords-xIntCoords) 
+                            + yGrad*(yCoords-yIntCoords))
 
     return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
 
