@@ -118,7 +118,13 @@ class WFS(object):
             simConfig (confObj): The simulation configuration object
             wfsConfig (confObj): The WFS configuration object
             atmosConfig (confObj): The atmosphere configuration object
-            lgsConfig (confObj): The Laser Guide Star configuration object
+            lgsConfig (confObj): The Laser Guide Star configuratie
+    else:
+        configFile = bin_path+"/../conf/testConf.py"
+
+    #Run sim with given args
+    
+on object
             mask (ndarray): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
@@ -168,6 +174,12 @@ class WFS(object):
         #Phase power scaling factor for wfs wavelength
         self.r0Scale = self.phsWvl/self.wfsConfig.wavelength
 
+        #These are the coordinates of the sub-scrn to cut from the phase scrns
+        #For each scrn height they will be edited per 
+        self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
+        #self.xCoords = numpy.arange(self.simConfig.simSize).astype("float32")
+        #self.yCoords = self.xCoords.copy() 
+
     def initFFTs(self):
         pass
 
@@ -184,10 +196,6 @@ class WFS(object):
         self.wfsPhase = numpy.zeros( [self.simConfig.simSize]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.simConfig.simSize]*2, dtype=CDTYPE)
 
-        self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
-         
-    
-        self.ZERO_DATA = True
 
 
     def initLGS(self):
@@ -283,7 +291,7 @@ class WFS(object):
             # Ground Layer)
             radius = (self.simConfig.pupilSize/2.) * (
                     1-(float(self.atmosConfig.scrnHeights[i])/GSHeight))
-            radii[i]= numpy.round(radius)
+            radii[i]= radius
 
             #If scrn is above LGS, radius is 0
             if self.atmosConfig.scrnHeights[i]>=GSHeight:
@@ -418,9 +426,15 @@ class WFS(object):
         Return:
             ndarray: The meta pupil at the specified height
         '''
+
         #If no size of metapupil given, use system pupil size
         if not simSize:
             simSize = self.simConfig.simSize
+
+        #If the radius is 0, then 0 phase is returned
+        if radius==0:
+            return numpy.zeros((simSize, simSize))
+
 
         GSCent = self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
                     
@@ -439,31 +453,27 @@ class WFS(object):
             raise ValueError( 
                     "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
-        
-        if (x1.is_integer() and x2.is_integer() 
-                and y1.is_integer() and y2.is_integer()):
-            #Old, simple integer based solution
-            metaPupil= scrn[ x1:x2, y1:y2]
-        else:
-            #Dirty, temporary fix to interpolate between phase points
-            xCoords = numpy.linspace(x1, x2-1, simSize)
-            yCoords = numpy.linspace(y1, y2-1, simSize)
-            scrnCoords = numpy.arange(scrnX)
-            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)
-
+       
         #If the GS is not at infinity, take into account cone effect
         if self.wfsConfig.GSHeight!=0:
             if radius!=0:
-                metaPupil = aoSimLib.zoom(
-                        metaPupil[
-                            int(round(simSize/2. - radius)):
-                            int(round(simSize/2. + radius)),
-                            int(round(simSize/2. - radius)):
-                            int(round(simSize/2. + radius))],
-                        (simSize, simSize), order=1
-                        )
+                x1 += (0.5*self.simConfig.pupilSize - radius)
+                x2 -= (0.5*self.simConfig.pupilSize - radius)
+                y1 += (0.5*self.simConfig.pupilSize - radius)
+                y2 -= (0.5*self.simConfig.pupilSize - radius)
 
+        if (x1.is_integer() and x2.is_integer() 
+                and y1.is_integer() and y2.is_integer()) and radius==None:
+            #Old, simple integer based solution
+            metaPupil= scrn[ x1:x2, y1:y2]
+        else:
+            #If points are float, must interpolate. -1 as linspace goes to number
+            xCoords = numpy.linspace(x1, x2-1, simSize)
+            yCoords = numpy.linspace(y1, y2-1, simSize)
+            interpObj = interp2d(
+                    self.scrnCoords, self.scrnCoords, scrn, copy=False)
+            metaPupil = interpObj(xCoords, yCoords)
+        
         return metaPupil
 
     def makePhaseGeo(self, radii=None, GSPos=None):
