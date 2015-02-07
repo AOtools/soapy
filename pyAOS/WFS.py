@@ -93,6 +93,7 @@ import scipy.ndimage
 import scipy.optimize
 from scipy.interpolate import interp2d
 
+
 from . import AOFFT, aoSimLib, LGS, logger
 from .opticalPropagationLib import angularSpectrum
 
@@ -195,6 +196,8 @@ on object
 
         self.wfsPhase = numpy.zeros( [self.simConfig.simSize]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.simConfig.simSize]*2, dtype=CDTYPE)
+        self.metaPupil = numpy.zeros( 
+                (self.simConfig.simSize, self.simConfig.simSize))
 
 
 
@@ -465,16 +468,17 @@ on object
         if (x1.is_integer() and x2.is_integer() 
                 and y1.is_integer() and y2.is_integer()) and radius==None:
             #Old, simple integer based solution
-            metaPupil= scrn[ x1:x2, y1:y2]
+            self.metaPupil= scrn[ x1:x2, y1:y2]
         else:
             #If points are float, must interpolate. -1 as linspace goes to number
             xCoords = numpy.linspace(x1, x2-1, simSize)
             yCoords = numpy.linspace(y1, y2-1, simSize)
-            interpObj = interp2d(
-                    self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)
+            #interpObj = interp2d(
+            #        self.scrnCoords, self.scrnCoords, scrn, copy=False)
+            #self.metaPupil = interpObj(xCoords, yCoords)
+            aoSimLib.linterp2d(scrn, xCoords, yCoords, self.metaPupil)
         
-        return metaPupil
+        return self.metaPupil
 
     def makePhaseGeo(self, radii=None, GSPos=None):
         '''
@@ -822,6 +826,8 @@ class ShackHartmann(WFS):
               self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
         
         self.slopes = numpy.zeros( 2*self.activeSubaps )
+
+        self.scaledEField = numpy.zeros((self.scaledEFieldSize,)*2, dtype=CDTYPE)
     
     def initLGS(self):
         super(ShackHartmann, self).initLGS()
@@ -911,22 +917,26 @@ class ShackHartmann(WFS):
     def calcFocalPlane(self, intensity=1):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
+
+        Parameters:
+            intensity (float): The relative intensity to multiply the focal plane by.
         '''
 
         #Scale phase (EField) to correct size for FOV (plus a bit with padding)
-        self.scaledEField = aoSimLib.zoom( 
-                self.EField, self.scaledEFieldSize)*self.scaledMask
+        #self.scaledEField = aoSimLib.zoom( 
+        #        self.EField, self.scaledEFieldSize)*self.scaledMask
+        aoSimLib.zoom_numba(self.EField, self.scaledEField)
 
         #Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.) 
                 - (self.wfsConfig.subaps*self.subapFOVSpacing)/2.)))
-        self.scaledEField = self.scaledEField[coord:-coord, coord:-coord]
+        self.pupilEField = self.scaledEField[coord:-coord, coord:-coord]
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
             x,y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
-            self.subapArrays[i] = self.scaledEField[
+            self.subapArrays[i] = self.pupilEField[
                                     int(x):
                                     int(x+self.subapFOVSpacing) ,
                                     int(y):

@@ -27,6 +27,7 @@ import numpy
 from scipy.interpolate import interp2d,RectBivariateSpline
 #a lookup dict for interp2d order (expressed as 'kind')
 INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
+from numba import jit
 
 from . import AOFFT
 
@@ -266,6 +267,66 @@ def interp1d_numpy(array, coords):
     interpArray = arrayInt + grad*rem
 
     return interpArray
+
+@jit(nogil=True, nopython=True)
+def linterp2d(array, xCoords, yCoords, interpArray): 
+    """
+    2-D interpolation using purely python - fast if compiled with numba
+
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        xCoords (ndarray): A 1-D array of x-coordinates 
+        yCoords (ndarray): A 2-D array of y-coordinates
+        interpArray (ndarray): The array to place the calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+    for i in range(xCoords.shape[0]):
+        x = xCoords[i]
+        xInt = int(x)
+        for j in range(yCoords.shape[0]):
+            y = yCoords[j]
+            yInt = int(y)
+            xGrad = array[xInt+1, yInt] - array[xInt, yInt]
+            yGrad = array[xInt, yInt+1] - array[xInt, yInt]
+
+            interpArray[i,j] = (array[xInt, yInt] + xGrad*(x-xInt) 
+                    + yGrad*(y-yInt))
+    
+    return interpArray
+
+@jit(nogil=True, nopython=True)
+def zoom_numba(array, zoomArray):
+    """
+    2-D zoom interpolation using purely python - fast if compiled with numba.
+    Both the array to zoom and the output array are required as arguments, the
+    zoom level is calculated from the size of the new array.
+
+    Parameters:
+        array (ndarray): The 2-D array to zoom
+        zoomArray (ndarray): The array to place the calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``zoomArray''
+    """
+ 
+    for i in range(zoomArray.shape[0]):
+        x = i*float(array.shape[0]-1)/(zoomArray.shape[0]-0.99999)
+        xInt = int(x)
+        for j in range(zoomArray.shape[1]):
+            y = j*float(array.shape[1]-1)/(zoomArray.shape[1]-0.99999)
+            yInt = int(y)
+            
+            #print("x:{}, y:{}, xInt:{}, yInt:{}".format(x,y,xInt,yInt))
+
+            xGrad = array[xInt+1, yInt] - array[xInt, yInt]
+            yGrad = array[xInt, yInt+1] - array[xInt, yInt]
+
+            zoomArray[i,j] = (array[xInt, yInt] + xGrad*(x-xInt) 
+                    + yGrad*(y-yInt))
+
+    return zoomArray
 
 
 def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
