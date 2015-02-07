@@ -926,7 +926,7 @@ class ShackHartmann(WFS):
         #self.scaledEField = aoSimLib.zoom( 
         #        self.EField, self.scaledEFieldSize)*self.scaledMask
         aoSimLib.zoom_numba(self.EField, self.scaledEField)
-
+        self.scaledEField*=self.scaledMask
         #Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.) 
                 - (self.wfsConfig.subaps*self.subapFOVSpacing)/2.)))

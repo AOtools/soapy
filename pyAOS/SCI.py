@@ -79,6 +79,7 @@ class scienceCam:
         #fp = abs(AOFFT.ftShift2d(self.FFT()))**2
         #binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,)*2)
+        self.phsBuffer = numpy.zeros((self.padFOVPxlNo,)*2)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()        
@@ -191,11 +192,14 @@ class scienceCam:
         '''
 
         #Scaled the padded phase to the right size for the requried FOV
-        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
+        aoSimLib.zoom_numba(self.residual, self.phsBuffer)
+        self.phsBuffer*=self.r0Scale
+    
+        #phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
          
         #Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
-        phs = phs[coord:-coord, coord:-coord] 
+        phs = self.phsBuffer[coord:-coord, coord:-coord] 
 
         eField = numpy.exp(1j*(phs+self.tiltFix)) * self.scaledMask
 
