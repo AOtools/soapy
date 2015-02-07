@@ -206,7 +206,7 @@ class scienceCam:
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d( self.FFT() )
 
-        focalPlane = numpy.abs(focalPlane)**2
+        focalPlane = aoSimLib.absSquare(focalPlane)
 
         self.focalPlane = aoSimLib.binImgs( 
                 focalPlane , self.sciConfig.oversamp )

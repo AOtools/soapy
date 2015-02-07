@@ -42,13 +42,10 @@ guiFile_path = os.path.abspath(os.path.realpath(__file__)+"/..")
 #It can be changed in the GUI using the gradient slider in the top left
 #to get the LUT dictionary, use ``gui.gradient.saveState()''
 CMAP={'mode': 'rgb',
- 'ticks': [(0.31533696306403636, (27, 222, 222, 255)),
-  (0.8933823529411765, (199, 50, 13, 255)),
-  (0.733865287190744, (209, 191, 55, 255)),
-  (0.007515187841599431, (15, 6, 143, 255)),
-  (0.4424019607843137, (138, 240, 109, 255)),
-  (0.9959871589085072, (255, 5, 5, 255)),
-  (0.5460955536634461, (252, 255, 32, 255))]}
+ 'ticks': [ (0., (14, 66, 255, 255)),
+            (0.5, (255, 255, 255, 255)),
+            (1., (255, 26, 26, 255))]}
+
 
 class GUI(QtGui.QMainWindow):
     def __init__(self,sim,useOpenGL=False):

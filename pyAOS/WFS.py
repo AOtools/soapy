@@ -951,10 +951,11 @@ class ShackHartmann(WFS):
 
 
         if intensity==1:
-            self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
+            self.FPSubapArrays += aoSimLib.absSquare(
+                    AOFFT.ftShift2d(self.FFT()))
         else:
-            self.FPSubapArrays += intensity*numpy.abs(
-                    AOFFT.ftShift2d(self.FFT()))**2
+            self.FPSubapArrays += intensity*aoSimLib.absSuare(
+                    AOFFT.ftShift2d(self.FFT()))
     
 
     def makeDetectorPlane(self):
@@ -1239,7 +1240,7 @@ class Pyramid(WFS):
         self.iFFT.inputData[:,
                             :0.5*self.FOV_OVERSAMP*self.FOVPxlNo,
                             :0.5*self.FOV_OVERSAMP*self.FOVPxlNo] = self.quads
-        self.pupilImages = abs(AOFFT.ftShift2d(self.iFFT()))**2
+        self.pupilImages = aoSimLib.absSquare(AOFFT.ftShift2d(self.iFFT()))
 
         size = self.paddedDetectorPxls/2
         pSize = self.iFFTPadding/2.
