@@ -27,7 +27,7 @@ import numpy
 from scipy.interpolate import interp2d,RectBivariateSpline
 #a lookup dict for interp2d order (expressed as 'kind')
 INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
-from numba import jit
+from numba import jit, float32, float64, complex64, complex128, vectorize
 
 from . import AOFFT
 
@@ -366,6 +366,10 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 
     return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
 
+@vectorize([float32(complex64),
+            float64(complex128)])
+def absSquare(data):
+        return (data.real**2 + data.imag**2)
 
 #######################
 #WFS Functions
