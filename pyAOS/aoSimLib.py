@@ -371,6 +371,21 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 def absSquare(data):
         return (data.real**2 + data.imag**2)
 
+@jit
+def binImg_numba(img, binSize, newImg):
+    
+    for i in range(newImg.shape[0]):
+        x1 = i*binSize
+        for j in range(newImg.shape[1]):
+            y1 = j*binSize
+            newImg[i,j] = 0
+            for x in range(binSize):
+                for y in range(binSize):
+                    newImg[i,j] += img[x+x1, y+y1]
+
+    return newImg
+
+
 #######################
 #WFS Functions
 ######################
@@ -602,4 +617,63 @@ def zernikeArray(J, N):
             Zs[j-1] = zernike(j, N)
 
     return Zs
+
+
+###########################################
+
+def aziAvg(data):
+    """
+    Measures the azimuthal average of a 2d array
+
+    Parameters:
+
+        data (ndarray): A 2-d array of data
+
+    Returns:
+        ndarray: A 1-d vector of the azimuthal average
+    """
+
+    size = data.shape[0]
+    avg = numpy.empty(size/2, dtype="float")
+    for i in range(size/2):
+        ring = circle(i+1, size) - circle(i, size)
+        avg[i] = (ring*data).sum()/(ring.sum())
+
+    return avg
+
+def remapSubaps(wfsData, mask, xyOrder=1):
+    """
+    Remaps a 1-d vector of SH WFS back into a 2-d plane
+
+    Parameters:
+        wfsData (ndarray): The data to remap, must be multiple frames of data
+        mask (ndarray): A 2d mask, of size (nSubaps,nSubaps). Equals 1 where a subap is active, 0 otherwise
+        xyOrder (int, optional): Are slopes ordered mode 1, xxx..., yyy..., or mode 2, xyxyxy....?
+
+    Returns:
+        ndarray: 2, 2-d arrays for each frame of wfs data.    
+    """
+    
+
+    nSubaps = mask.shape[0]
+    totalSubaps = mask.sum()
+    nIters = wfsData.shape[0]
+    subaps2d = numpy.zeros((nIters, 2, nSubaps, nSubaps))
+
+    
+    for i in range(nIters):
+        n=0 
+        for x in range(nSubaps):
+            for y in range(nSubaps):
+
+                if mask[x,y] == 1:
+                    if xyOrder==1:
+                        subaps2d[i, 0, x, y] = wfsData[i, n]
+                        subaps2d[i, 1, x, y] = wfsData[i,n+totalSubaps/2]
+                    else:
+                        subaps2d[i, 0, x, y] = wfsData[i, 2*n]
+                        subaps2d[i, 1, x, y] = wfsData[i, 2*n+1]
+                    n+=1
+
+    return subaps2d
 
