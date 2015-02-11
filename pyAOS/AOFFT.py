@@ -161,7 +161,7 @@ class FFT(object):
                                 dtype)
             self.outputData[:] = numpy.zeros( inputSize,dtype=dtype)
 
-            logger.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS (currently set to: {})".format(fftw_FLAGS))
+            logger.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS \n\t (currently set to: {})".format(fftw_FLAGS))
             if direction=="FORWARD":
                 self.fftwPlan = pyfftw.FFTW(self.inputData,self.outputData,
                                 axes=axes, threads=THREADS,flags=fftw_FLAGS)
