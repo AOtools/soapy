@@ -282,6 +282,11 @@ def linterp2d(array, xCoords, yCoords, interpArray):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
+    if xCoords[-1] == array.shape[0]:
+        xCoords[-1] -= 1e-6
+    if yCoords[-1] == array.shape[1]:
+        yCoords[-1] == 1e-6
+
     for i in range(xCoords.shape[0]):
         x = xCoords[i]
         xInt = int(x)
