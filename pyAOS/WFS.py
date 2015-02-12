@@ -440,11 +440,14 @@ on object
                     
         #print("GSCent {}".format(GSCent))
         scrnX, scrnY = scrn.shape
-
-        x1 = scrnX/2. + GSCent[0] - simSize/2.0
-        x2 = scrnX/2. + GSCent[0] + simSize/2.0
-        y1 = scrnY/2. + GSCent[1] - simSize/2.0
-        y2 = scrnY/2. + GSCent[1] + simSize/2.0
+        #If the GS is not at infinity, take into account cone effect
+        if self.wfsConfig.GSHeight!=0:
+            fact = float(2*radius)/self.simConfig.pupilSize
+        
+        x1 = scrnX/2. + GSCent[0] - fact*simSize/2.0
+        x2 = scrnX/2. + GSCent[0] + fact*simSize/2.0
+        y1 = scrnY/2. + GSCent[1] - fact*simSize/2.0
+        y2 = scrnY/2. + GSCent[1] + fact*simSize/2.0
     
         #print("WFS Scrn Coords - x1: {0}, x2: {1}, y1: {2}, y2: {3}".format(
         #        x1,x2,y1,y2))
@@ -454,16 +457,9 @@ on object
                     "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
        
-        #If the GS is not at infinity, take into account cone effect
-        if self.wfsConfig.GSHeight!=0:
-            if radius!=0:
-                x1 += (0.5*self.simConfig.pupilSize - radius)
-                x2 -= (0.5*self.simConfig.pupilSize - radius)
-                y1 += (0.5*self.simConfig.pupilSize - radius)
-                y2 -= (0.5*self.simConfig.pupilSize - radius)
 
         if (x1.is_integer() and x2.is_integer() 
-                and y1.is_integer() and y2.is_integer()) and radius==None:
+                and y1.is_integer() and y2.is_integer()):
             #Old, simple integer based solution
             metaPupil= scrn[ x1:x2, y1:y2]
         else:
