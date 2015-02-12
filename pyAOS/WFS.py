@@ -200,7 +200,7 @@ on object
 
     def initLGS(self):
         """
-        Initialises the LGS objects for the WFS
+        Initialises tithe LGS objects for the WFS
         
         Creates and initialises the LGS objects if the WFS GS is a LGS. This
         included calculating the phases additions which are required if the
