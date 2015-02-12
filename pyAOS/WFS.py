@@ -174,7 +174,6 @@ on object
         #Phase power scaling factor for wfs wavelength
         self.r0Scale = self.phsWvl/self.wfsConfig.wavelength
 
-        interpArray (ndarray)
         #These are the coordinates of the sub-scrn to cut from the phase scrns
         #For each scrn height they will be edited per 
         self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
@@ -201,7 +200,7 @@ on object
 
     def initLGS(self):
         """
-        Initialises the LGS objects for the WFS
+        Initialises tithe LGS objects for the WFS
         
         Creates and initialises the LGS objects if the WFS GS is a LGS. This
         included calculating the phases additions which are required if the
