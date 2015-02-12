@@ -175,6 +175,7 @@ on object
         #Phase power scaling factor for wfs wavelength
         self.r0Scale = self.phsWvl/self.wfsConfig.wavelength
 
+        interpArray (ndarray)
         #These are the coordinates of the sub-scrn to cut from the phase scrns
         #For each scrn height they will be edited per 
         self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
@@ -445,8 +446,10 @@ on object
         scrnX, scrnY = scrn.shape
         #If the GS is not at infinity, take into account cone effect
         if self.wfsConfig.GSHeight!=0:
-            fact = float(2*radius)/self.simConfig.pupilSize
-        
+            fact = float(2*radius)/self.simConfig.pupilSize 
+        else: 
+            fact=1
+
         x1 = scrnX/2. + GSCent[0] - fact*simSize/2.0
         x2 = scrnX/2. + GSCent[0] + fact*simSize/2.0
         y1 = scrnY/2. + GSCent[1] - fact*simSize/2.0
