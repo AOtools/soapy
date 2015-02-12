@@ -522,8 +522,6 @@ class Sim(object):
                     self.openCorrection += self.runDM(  self.dmCommands, 
                                                         closed=False)
 
-                    #Run a tip-tilt mirror if set
-                    #ttShape, self.slopes = self.runTipTilt(self.slopes)
 
                     #Pass whole combined DM shapes to science target
                     self.runSciCams(

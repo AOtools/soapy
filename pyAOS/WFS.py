@@ -643,14 +643,12 @@ on object
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
                     self.EField *= numpy.exp(-1j*correction*self.r0Scale)
-                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
-    
+                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])    
         if read:
             self.makeDetectorPlane()
             self.calculateSlopes()
             self.zeroData(detector=False)
         
-
         return self.slopes
 
     def photoNoise(self):
