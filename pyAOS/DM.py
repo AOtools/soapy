@@ -113,12 +113,11 @@ class DM:
         Uses interaction matrix to calculate the final DM shape
         '''
 
-        self.newActCoeffs = dmCommands
+        self.newActCoeffs = dmCommands * self.wfs.r0Scale**(-2)
         
         #If loop is closed, only add residual measurements onto old
         #actuator values
         if closed:
-            #self.newActCoeffs += self.actCoeffs
             self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
 
         else:
