@@ -122,14 +122,6 @@ class DM:
         '''
         Uses interaction matrix to calculate the final DM shape.
 
-        Parameters:
-            dmCommands (ndarray): A vector containing the DM commands for each influence function.
-            closed (bool, optional): Bool indicating whether the DM is closed loop or not. If True (closed), will sum commands to last commands.
-
-        Returns:
-            ndarray: A 2-dimensional array of the DM shape
-        '''
-
         Given the supplied DM commands, this method will apply a gain and add 
         to the previous DM commands. This works differently for open or closed
         loop DMs. Multiplies each of the DM influence functions by the
