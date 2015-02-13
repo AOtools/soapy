@@ -232,7 +232,7 @@ class MVM(Reconstructor):
                 )
             
 
-class MVM_SeperateDMs(Reconstructor):
+class MVM_SeparateDMs(Reconstructor):
 
 
     def calcCMat(self,callback=None, progressCallback=None):

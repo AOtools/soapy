@@ -110,7 +110,14 @@ class DM:
 
     def dmFrame ( self, dmCommands, closed=False):
         '''
-        Uses interaction matrix to calculate the final DM shape
+        Uses interaction matrix to calculate the final DM shape.
+
+        Parameters:
+            dmCommands (ndarray): A vector containing the DM commands for each influence function.
+            closed (bool, optional): Bool indicating whether the DM is closed loop or not. If True (closed), will sum commands to last commands.
+
+        Returns:
+            ndarray: A 2-dimensional array of the DM shape
         '''
 
         self.newActCoeffs = dmCommands
@@ -118,12 +125,11 @@ class DM:
         #If loop is closed, only add residual measurements onto old
         #actuator values
         if closed:
-            #self.newActCoeffs += self.actCoeffs
             self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
 
         else:
             self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-                + ( (1-self.dmConfig.gain) * self.actCoeffs)
+                + ( (1.-self.dmConfig.gain) * self.actCoeffs)
         
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
@@ -181,7 +187,7 @@ class Piezo(DM):
         spacing to avoid strange edge effects
         """
         
-        #Create a "dmSize" - the pupilSize but with 1 extra actuator on each 
+        #Create a "dmSize" - the pupilSize but with 1 extr a actuator on each 
         #side
         dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 

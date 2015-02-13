@@ -512,7 +512,8 @@ class Sim(object):
                         self.dmCommands[:] = self.recon.reconstruct(self.slopes)
 
                     #Get dmShape from closed loop DMs
-                    self.closedCorrection += self.runDM(self.dmCommands, closed=True)
+                    self.closedCorrection += self.runDM(
+                            self.dmCommands, closed=True)
 
                     #Run WFS, with closed loop DM shape applied
                     self.slopes = self.runWfs(  dmShape=self.closedCorrection,
@@ -521,9 +522,6 @@ class Sim(object):
                     #Get DM shape for open loop DMs, add to closed loop DM shape
                     self.openCorrection += self.runDM(  self.dmCommands, 
                                                         closed=False)
-
-                    #Run a tip-tilt mirror if set
-                    #ttShape, self.slopes = self.runTipTilt(self.slopes)
 
                     #Pass whole combined DM shapes to science target
                     self.runSciCams(
@@ -537,7 +535,7 @@ class Sim(object):
                     #logger.statusMessage(i, self.config.sim.nIters, 
                     #                    "AO Loop")
                     
-                    self.printOutput(self.config.sim.filePrefix, i, strehl=True)
+                    self.printOutput(self.config.filename, i, strehl=True)
 
                     self.addToGuiQueue()
                 else:

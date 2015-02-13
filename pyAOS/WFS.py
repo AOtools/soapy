@@ -456,7 +456,7 @@ on object
 
         if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
             raise ValueError( 
-                    "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
+                    "GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
        
 
