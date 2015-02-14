@@ -376,9 +376,9 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 def absSquare(data):
         return (data.real**2 + data.imag**2)
 
-@jit
+@jit(nopython=True)
 def binImg_numba(img, binSize, newImg):
-    
+   
     for i in range(newImg.shape[0]):
         x1 = i*binSize
         for j in range(newImg.shape[1]):
@@ -394,6 +394,19 @@ def binImg_numba(img, binSize, newImg):
 #######################
 #WFS Functions
 ######################
+@jit(nopython=True)
+def chopImage(image, imageStack,  subImgCoords, subImgSize):
+    
+    for i in range(subImgCoords.shape[0]):
+        x = int(round(subImgCoords[i, 0]))
+        y = int(round(subImgCoords[i, 1]))
+
+        imageStack[i] = image[x:x+subImgSize, y:y+subImgSize]
+
+    return imageStack
+
+
+
 
 def findActiveSubaps(subaps, mask, threshold):
     '''
