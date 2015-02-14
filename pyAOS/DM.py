@@ -52,7 +52,9 @@ class DM:
             raise KeyError("DM attached to WFS {}, but that WFS is not specifed in config".format(self.wfs))
         
         self.totalSubaps = self.wfs.activeSubaps
-        
+       
+        self.commandFactor = numpy.sqrt(2)
+
     def getActiveActs(self):
         """
         Method returning the total number of actuators used by the DM - May be overwritten in DM classes
@@ -137,7 +139,7 @@ class DM:
         '''
         
         #Need to investigate why its necessary to multiply by the r0scale
-        self.newActCoeffs = dmCommands * self.wfs.r0Scale**(-2)
+        self.newActCoeffs = dmCommands * self.commandFactor#self.wfs.r0Scale**(-2)
         
         #If loop is closed, only add residual measurements onto old
         #actuator values
