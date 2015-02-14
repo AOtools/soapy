@@ -445,7 +445,7 @@ on object
             fact = float(2*radius)/self.simConfig.pupilSize 
         else: 
             fact=1
-
+            
         x1 = scrnX/2. + GSCent[0] - fact*simSize/2.0
         x2 = scrnX/2. + GSCent[0] + fact*simSize/2.0
         y1 = scrnY/2. + GSCent[1] - fact*simSize/2.0
