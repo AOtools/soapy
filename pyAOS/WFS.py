@@ -203,7 +203,7 @@ on object
 
     def initLGS(self):
         """
-        Initialises the LGS objects for the WFS
+        Initialises tithe LGS objects for the WFS
         
         Creates and initialises the LGS objects if the WFS GS is a LGS. This
         included calculating the phases additions which are required if the
@@ -448,7 +448,7 @@ on object
             fact = float(2*radius)/self.simConfig.pupilSize 
         else: 
             fact=1
-
+            
         x1 = scrnX/2. + GSCent[0] - fact*simSize/2.0
         x2 = scrnX/2. + GSCent[0] + fact*simSize/2.0
         y1 = scrnY/2. + GSCent[1] - fact*simSize/2.0
@@ -459,7 +459,7 @@ on object
 
         if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
             raise ValueError( 
-                    "GS separation requires larger screen size. \nheight: {4}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
+                    "GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
        
 

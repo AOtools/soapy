@@ -52,7 +52,9 @@ class DM:
             raise KeyError("DM attached to WFS {}, but that WFS is not specifed in config".format(self.wfs))
         
         self.totalSubaps = self.wfs.activeSubaps
-        
+       
+        self.commandFactor = numpy.sqrt(2)
+
     def getActiveActs(self):
         """
         Method returning the total number of actuators used by the DM - May be overwritten in DM classes
@@ -62,13 +64,24 @@ class DM:
         """
         return self.dmConfig.dmActs
 
-    def makeIMat(self, callback=None, progressCallback=None ):
-       '''
-       makes IMat
-       '''
-       self.makeIMatShapes()
+    def makeIMat(self, callback=None):
+        '''
+        Makes DM Interation Matrix
 
-       if self.dmConfig.rotation:
+        Initially, the DM influence functions are created using the method
+        ``makeIMatShapes'', then if a rotation is specified these are rotated.
+        Each of the influence functions is passed to the specified ``WFS'' and 
+        wfs measurements recorded.
+
+        Parameters:
+            callback (function): Function to be called on each WFS run
+
+        Returns:
+            ndarray: 2-dimensional interaction matrix
+        '''
+        self.makeIMatShapes()
+
+        if self.dmConfig.rotation:
            self.iMatShapes = rotate(    
                    self.iMatShapes, self.dmConfig.rotation,
                    order=self.dmConfig.interpOrder, axes=(-2,-1)
@@ -81,13 +94,13 @@ class DM:
                    rotShape[2]/2. - self.simConfig.simSize/2.:
                    rotShape[2]/2. + self.simConfig.simSize/2.
                    ]
-       
 
-       iMat = numpy.zeros( (self.iMatShapes.shape[0],2*self.totalSubaps) )
 
-       subap=0
+        iMat = numpy.zeros( (self.iMatShapes.shape[0],2*self.totalSubaps) )
 
-       for i in xrange(self.iMatShapes.shape[0]):
+        subap=0
+
+        for i in xrange(self.iMatShapes.shape[0]):
            iMat[i,subap:subap+(2*self.wfs.activeSubaps)] =(
                    self.wfs.iMatFrame( 
                             self.iMatShapes[i]*self.dmConfig.iMatValue)
@@ -97,23 +110,36 @@ class DM:
            logger.debug("DM IMat act: %i"%i)
 
            self.dmShape = self.iMatShapes[i]
-       
-           if callback!=None:
 
+           if callback!=None:
                callback() 
-       
+
            logger.statusMessage(i, self.iMatShapes.shape[0],
                     "Generating {} Actuator DM iMat".format(self.acts))
 
-       self.iMat = iMat
-       return iMat
+        self.iMat = iMat
+        return iMat
 
     def dmFrame ( self, dmCommands, closed=False):
         '''
-        Uses interaction matrix to calculate the final DM shape
-        '''
+        Uses interaction matrix to calculate the final DM shape.
 
-        self.newActCoeffs = dmCommands * self.wfs.r0Scale**(-2)
+        Given the supplied DM commands, this method will apply a gain and add 
+        to the previous DM commands. This works differently for open or closed
+        loop DMs. Multiplies each of the DM influence functions by the
+        corresponding DM command, then sums to create the final DM shape. 
+        Lastly, the mean value is subtracted to avoid piston terms building up.
+
+        Parameters:
+            dmCommands (ndarray): A 1-dimensional vector of the multiplying factor of each DM influence function
+            closed (bool, optional): Specifies how to great gain. If ``True'' (closed) then ``dmCommands'' are multiplied by gain and summed with previous commands. If ``False'' (open), then ``dmCommands'' are multiplied by gain, and summed withe previous commands multiplied by (1-gain).
+
+        Returns:
+            ndarray: A 2-d array with the DM shape
+        '''
+        
+        #Need to investigate why its necessary to multiply by the r0scale
+        self.newActCoeffs = dmCommands * self.commandFactor#self.wfs.r0Scale**(-2)
         
         #If loop is closed, only add residual measurements onto old
         #actuator values
@@ -122,7 +148,7 @@ class DM:
 
         else:
             self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-                + ( (1-self.dmConfig.gain) * self.actCoeffs)
+                + ( (1.-self.dmConfig.gain) * self.actCoeffs)
         
         self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
         
@@ -180,7 +206,7 @@ class Piezo(DM):
         spacing to avoid strange edge effects
         """
         
-        #Create a "dmSize" - the pupilSize but with 1 extra actuator on each 
+        #Create a "dmSize" - the pupilSize but with 1 extr a actuator on each 
         #side
         dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 

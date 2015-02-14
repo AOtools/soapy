@@ -315,12 +315,13 @@ def zoom_numba(array, zoomArray):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``zoomArray''
     """
- 
+
+    jCoords = range(zoomArray.shape[1])
     for i in range(zoomArray.shape[0]):
-        x = i*float(array.shape[0]-1)/(zoomArray.shape[0]-0.99999)
+        x = i*float(array.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
         xInt = int(x)
-        for j in range(zoomArray.shape[1]):
-            y = j*float(array.shape[1]-1)/(zoomArray.shape[1]-0.99999)
+        for j in jCoords:
+            y = j*float(array.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
             yInt = int(y)
             
             #print("x:{}, y:{}, xInt:{}, yInt:{}".format(x,y,xInt,yInt))
