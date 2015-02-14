@@ -162,9 +162,7 @@ class Reconstructor(object):
  
         for dm in xrange(self.simConfig.nDM):
             logger.info("Creating Interaction Matrix on DM %d..."%dm)
-            self.dms[dm].makeIMat(callback=callback, 
-                                        progressCallback=progressCallback)
-
+            self.dms[dm].makeIMat(callback=callback) 
         
     def makeCMat(self,loadIMat=True, loadCMat=True, callback=None, 
                         progressCallback=None):
