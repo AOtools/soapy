@@ -471,10 +471,10 @@ on object
             #If points are float, must interpolate. -1 as linspace goes to number
             xCoords = numpy.linspace(x1, x2-1, simSize)
             yCoords = numpy.linspace(y1, y2-1, simSize)
-            #interpObj = interp2d(
-            #        self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            #self.metaPupil = interpObj(xCoords, yCoords)
-            aoSimLib.linterp2d(scrn, xCoords, yCoords, self.metaPupil)
+            interpObj = interp2d(
+                    self.scrnCoords, self.scrnCoords, scrn, copy=False)
+            self.metaPupil = interpObj(xCoords, yCoords)
+            #aoSimLib.linterp2d(scrn, xCoords, yCoords, self.metaPupil)
         
         return self.metaPupil
 
@@ -920,7 +920,7 @@ class ShackHartmann(WFS):
 
         #Scale phase (EField) to correct size for FOV (plus a bit with padding)
         #self.scaledEField = aoSimLib.zoom( 
-        #        self.EField, self.scaledEFieldSize)*self.scaledMask
+        #       self.EField, self.scaledEFieldSize)*self.scaledMask
         aoSimLib.zoom_numba(self.EField, self.scaledEField)
         self.scaledEField*=self.scaledMask
         #Now cut out only the eField across the pupilSize
@@ -950,7 +950,7 @@ class ShackHartmann(WFS):
             self.FPSubapArrays += aoSimLib.absSquare(
                     AOFFT.ftShift2d(self.FFT()))
         else:
-            self.FPSubapArrays += intensity*aoSimLib.absSuare(
+            self.FPSubapArrays += intensity*aoSimLib.absSquare(
                     AOFFT.ftShift2d(self.FFT()))
     
 

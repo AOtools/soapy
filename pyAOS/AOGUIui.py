@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Wed Oct 29 16:35:32 2014
-#      by: PyQt4 UI code generator 4.11.2
+# Created: Thu Feb 12 19:12:04 2015
+#      by: PyQt4 UI code generator 4.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(897, 532)
+        MainWindow.resize(829, 653)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.gridLayout = QtGui.QGridLayout(self.centralwidget)
@@ -41,15 +41,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.setObjectName(_fromUtf8("horizontalLayout_6"))
         self.verticalLayout = QtGui.QVBoxLayout()
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
-        self.progressLabel = QtGui.QLabel(self.layoutWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.progressLabel.sizePolicy().hasHeightForWidth())
-        self.progressLabel.setSizePolicy(sizePolicy)
-        self.progressLabel.setText(_fromUtf8(""))
-        self.progressLabel.setObjectName(_fromUtf8("progressLabel"))
-        self.verticalLayout.addWidget(self.progressLabel)
         self.progressBar = QtGui.QProgressBar(self.layoutWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -280,10 +271,19 @@ class Ui_MainWindow(object):
         self.stopButton.setObjectName(_fromUtf8("stopButton"))
         self.verticalLayout_9.addWidget(self.stopButton)
         self.horizontalLayout.addLayout(self.verticalLayout_9)
-        self.gridLayout.addWidget(self.splitter_4, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.splitter_4, 1, 0, 1, 1)
+        self.progressLabel = QtGui.QLabel(self.centralwidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.progressLabel.sizePolicy().hasHeightForWidth())
+        self.progressLabel.setSizePolicy(sizePolicy)
+        self.progressLabel.setText(_fromUtf8(""))
+        self.progressLabel.setObjectName(_fromUtf8("progressLabel"))
+        self.gridLayout.addWidget(self.progressLabel, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menuBar = QtGui.QMenuBar(MainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 897, 22))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 829, 22))
         self.menuBar.setObjectName(_fromUtf8("menuBar"))
         self.menuFile = QtGui.QMenu(self.menuBar)
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
