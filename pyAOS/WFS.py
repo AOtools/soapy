@@ -32,7 +32,7 @@ Example:
         from pyAOS import WFS, confParse
     
         config = confParse.Configurator("config_file.py")
-        config.readFile()
+        config.readfile()
         config.loadSimParams()
         config.calcParams()
     
