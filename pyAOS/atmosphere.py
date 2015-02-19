@@ -85,7 +85,7 @@ class atmos:
 
     The method ``randomScrns`` returns a set of random phase screens with the smame statistics as the ``atmos`` object.
     '''
-    def __init__(self, simConfig, atmosConfig):
+    def __init__(self, simConfig, atmosConfig, mpPool=None):
 
         self.scrnSize = simConfig.scrnSize
         self.windDirs = atmosConfig.windDirs
@@ -308,16 +308,6 @@ class atmos:
                 scrns[i] = ft_sh_phase_screen(
                         self.scrnStrengths[i], self.scrnSize, 
                         (self.pxlScale**(-1.)), L0, l0)
-
-        # pool = Pool(2)
-        # args = []
-        # for i in xrange(self.scrnNo):
-        #     args.append((self.scrnStrengths[i], self.scrnSize, 
-        #                 self.pxlScale**(-1.), L0, l0))
-
-
-        # scrns = pool.map(pool_ft_sh_phase_screen, args)
-
         return scrns
 
 
