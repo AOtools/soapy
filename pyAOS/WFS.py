@@ -53,7 +53,28 @@ Example:
 Shack-Hartmann WFS
 ^^^^^^^^^^^^^^^^^^
 
-A Shack-Hartmann WFS is also included in the module, this contains further methods to make the focal plane, then calculate the slopes to send to the reconstructor.
+A Shack-Hartmann WFS is also included in the module, this contains further methods to make the focal plane, thhase(self, scrn, height, pos):
+
+        GSCent = pos*self.simConfig.pxlScale
+        scrnX,scrnY = scrn.shape
+
+        #x1 = int(round(scrnX/2. + GSCent[0] - self.simConfig.simSize/2.))
+        #x2 = int(round(scrnX/2. + GSCent[0] + self.simConfig.simSize/2.))
+        #y1 = int(round(scrnY/2. + GSCent[1] - self.simConfig.simSize/2.))
+        #y2 = int(round(scrnY/2. + GSCent[1] + self.simConfig.simSize/2.))
+
+        x1 = scrnX/2. + GSCent[0] - self.simConfig.simSize/2.
+        x2 = scrnX/2. + GSCent[0] + self.simConfig.simSize/2.
+        y1 = scrnY/2. + GSCent[1] - self.simConfig.simSize/2.
+        y2 = scrnY/2. + GSCent[1] + self.simConfig.simSize/2.
+
+        logger.debug("LGS MetaPupil Coords: %i:%i,%i:%i"%(x1,x2,y1,y2))
+
+        if (x1.is_integer() and x2.is_integer() 
+                and y1.is_integer() and y2.is_integer()):
+            metaPupil = scrn[ x1:x2, y1:y2 ].copy()
+
+en calculate the slopes to send to the reconstructor.
 
 Example:
     Using the config objects from above...::
@@ -438,7 +459,7 @@ on object
 
         GSCent = self.getMetaPupilPos(height, GSPos) * self.simConfig.pxlScale
                     
-        #print("GSCent {}".format(GSCent))
+        logger.debug("GSCent {}".format(GSCent))
         scrnX, scrnY = scrn.shape
         #If the GS is not at infinity, take into account cone effect
         if self.wfsConfig.GSHeight!=0:
@@ -451,8 +472,8 @@ on object
         y1 = scrnY/2. + GSCent[1] - fact*simSize/2.0
         y2 = scrnY/2. + GSCent[1] + fact*simSize/2.0
     
-        #print("WFS Scrn Coords - x1: {0}, x2: {1}, y1: {2}, y2: {3}".format(
-        #        x1,x2,y1,y2))
+        logger.debug("WFS Scrn Coords - ({0}:{1}, {2}:{3})".format(
+                x1,x2,y1,y2))
 
         if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
             raise ValueError( 
@@ -481,6 +502,7 @@ on object
         '''
         
         for i in self.scrns:
+            logger.debug("Layer: {}".format(i))
             if radii:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],

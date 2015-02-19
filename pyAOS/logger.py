@@ -43,8 +43,18 @@ LOGGING_FILE = None
 STATUS_FUNC = None
 
 def setLoggingLevel(level):
-	global LOGGING_LEVEL
-	LOGGING_LEVEL = level
+    """
+    sets which messages are printed from logger.
+
+    if logging level is set to 0, nothing is printed. if set to 1, only
+    warnings are printed. if set to 2, warnings and info is printed. if set
+    to 3 detailed debugging info is printed.
+
+    parameters:
+        level (int): the desired logging level
+    """
+    global LOGGING_LEVEL
+    LOGGING_LEVEL = level
 
 def setLoggingFile(logFile):
 	global LOGGING_FILE
@@ -81,7 +91,7 @@ def _printMessage(message, level=3):
 		if LOGGING_LEVEL>2 or level==1:
 			curframe = inspect.currentframe()
 			calframe = inspect.getouterframes(curframe, 2)
-			message = calframe[2][1].split("/")[-1]+" - "+calframe[2][3] + ": " + message
+			message = calframe[2][1].split("/")[-1]+" -> "+calframe[2][3] + ": " + message
 
 		if LOGGING_FILE:
 			with open(LOGGING_FILE, "a") as File:

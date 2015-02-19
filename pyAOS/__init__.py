@@ -137,6 +137,19 @@ class Sim(object):
         self.config.readfile()
         self.config.loadSimParams()
 
+    def setLoggingLevel(self, level):
+        """
+        sets which messages are printed from logger.
+
+        if logging level is set to 0, nothing is printed. if set to 1, only
+        warnings are printed. if set to 2, warnings and info is printed. if set
+        to 3 detailed debugging info is printed.
+
+        parameters:
+            level (int): the desired logging level
+        """
+        logger.setLoggingLevel(level)
+
     def aoinit(self):
         '''
         Initialises all simulation objects.
@@ -193,7 +206,12 @@ class Sim(object):
         self.config.sim.totalWfsData = 0
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for wfs in xrange(self.config.sim.nGS):
-            wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
+            try:
+                wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
+            except AttributeError:
+                raise confParse.ConfigurationError("No WFS of type {} found.".format(self.config.wfs[wfs].type))
+
+
             self.wfss[wfs]=wfsClass(    
                     self.config.sim, self.config.wfs[wfs], 
                     self.config.atmos, self.config.lgs[wfs], self.mask)
@@ -215,7 +233,10 @@ class Sim(object):
         self.dmShape = numpy.zeros( [self.config.sim.simSize]*2 )
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
-            dmObj = eval( "DM."+self.config.dm[dm].dmType)
+            try:
+                dmObj = eval( "DM."+self.config.dm[dm].dmType)
+            except AttributeError:
+                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dm[dm].dmType))
 
             self.dms[dm] = dmObj(
                         self.config.sim, self.config.dm[dm],
@@ -232,7 +253,10 @@ class Sim(object):
 
         #init Reconstructor
         logger.info("Initialising Reconstructor...")
-        reconObj = eval("RECON."+self.config.sim.reconstructor)
+        try:
+            reconObj = eval("RECON."+self.config.sim.reconstructor)
+        except AttributeError:
+            raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
         self.recon = reconObj(  self.config.sim, self.dms, 
                                 self.wfss, self.atmos, self.runWfs
                                 )
