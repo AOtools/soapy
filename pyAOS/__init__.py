@@ -175,7 +175,9 @@ class Sim(object):
         self.mask = numpy.pad(
                 self.mask, self.config.sim.simPad, mode="constant")
 
-        self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
+        #Initialise the atmosphere
+        self.atmos = atmosphere.atmos(
+                self.config.sim, self.config.atmos)
 
         #Find if WFSs should each have own process
         if self.config.sim.wfsMP:
@@ -254,9 +256,7 @@ class Sim(object):
 
         #Init data storage
         logger.info("Initialise Data Storage...")
-        self.initSaveData()
-
-        
+        self.initSaveData() 
 
         self.iters=0
 
@@ -268,7 +268,6 @@ class Sim(object):
         self.Trecon = 0
         self.Timat = 0
         self.Tatmos = 0
-
 
         logger.info("Initialisation Complete!")
 
@@ -307,6 +306,7 @@ class Sim(object):
                 callback=self.addToGuiQueue, progressCallback=progressCallback)
         self.Timat+= time.time()-t
 
+
     def runWfs_noMP(self, scrns = None, dmShape=None, wfsList=None,
                     loopIter=None):
         """
@@ -331,6 +331,7 @@ class Sim(object):
             wfsList=range(self.config.sim.nGS)
         
         slopesSize = 0
+
         for wfs in wfsList:
            slopesSize+=self.wfss[wfs].activeSubaps*2
         slopes = numpy.zeros( (slopesSize) )
@@ -365,7 +366,7 @@ class Sim(object):
         from all WFSs are returned. Each WFS is allocated a separate process 
         to complete the frame, giving a significant increase in speed, 
         especially for computationally heavy WFSs.
-        
+
         Args:
             scrns (list): List of phase screens passing over telescope
             dmShape (ndarray, optional): 2-dimensional array of the total corrector shape
@@ -853,6 +854,7 @@ def multiWfs(scrns, wfsObj, dmShape, read, queue):
     res = [ slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
 
     queue.put(res)
+
 
 
 if __name__ == "__main__":
