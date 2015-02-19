@@ -268,7 +268,7 @@ def interp1d_numpy(array, coords):
 
     return interpArray
 
-@jit(nogil=True, nopython=True)
+@jit
 def linterp2d(array, xCoords, yCoords, interpArray): 
     """
     2-D interpolation using purely python - fast if compiled with numba
@@ -282,10 +282,13 @@ def linterp2d(array, xCoords, yCoords, interpArray):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
-    if xCoords[-1] == array.shape[0]:
-        xCoords[-1] -= 1e-6
-    if yCoords[-1] == array.shape[1]:
-        yCoords[-1] == 1e-6
+    if xCoords[-1] == array.shape[0]-1:
+        xCoords[-1] -= 1e-4
+    if yCoords[-1] == array.shape[1]-1:
+        yCoords[-1] -= 1e-4
+
+    #print (yCoords.max())
+    #print (xCoords.max())
 
     for i in range(xCoords.shape[0]):
         x = xCoords[i]
@@ -293,6 +296,8 @@ def linterp2d(array, xCoords, yCoords, interpArray):
         for j in range(yCoords.shape[0]):
             y = yCoords[j]
             yInt = int(y)
+
+            #print("x:{}, y:{}, xInt:{}, yInt:{}".format(x,y,xInt,yInt))
             xGrad = array[xInt+1, yInt] - array[xInt, yInt]
             yGrad = array[xInt, yInt+1] - array[xInt, yInt]
 
