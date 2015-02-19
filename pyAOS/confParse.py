@@ -70,8 +70,12 @@ class Configurator(object):
     def readfile(self):
 
         #Exec the config file, which should contain a dict ``simConfiguration``
-        with open(self.filename) as file_:
-            exec(file_.read(), globals())
+        try:
+            with open(self.filename) as file_:
+                exec(file_.read(), globals())
+        except:
+            raise ConfigurationError(
+                    "Error loading config file: {}".format(self.filename))
 
         self.configDict = simConfiguration
 
@@ -191,6 +195,7 @@ class Configurator(object):
 class ConfigObj(object):
     def __init__(self):
 
+        #This is the index of the config object, i.e. WFS 1, 2, 3..N
         self.N = None
 
     def warnAndExit(self, param):
@@ -221,6 +226,9 @@ class ConfigObj(object):
                 except IndexError:
                     raise ConfigurationError(
                                 "Not enough values for {0}".format(param))
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
 
             for param in self.optionalParams:
                 try:
@@ -230,18 +238,27 @@ class ConfigObj(object):
                 except IndexError:
                     raise ConfigurationError(
                                 "Not enough values for {0}".format(param))
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
         else:
             for param in self.requiredParams:
                 try:
                     self.__setattr__(param, configDict[param])
                 except KeyError:
                     self.warnAndExit(param)
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
 
             for param in self.optionalParams:
                 try:
                     self.__setattr__(param[0], configDict[param[0]])
                 except KeyError:
                     self.warnAndDefault(param[0], param[1])
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
 
     def calcParams(self):
         """

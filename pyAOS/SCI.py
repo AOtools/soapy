@@ -142,7 +142,7 @@ class scienceCam:
         '''
 
         sciCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
-        logger.debug("SciCents:({0},{1})".format(sciCent[0],sciCent[1]))
+        logger.debug("SciCent:({0},{1})".format(sciCent[0],sciCent[1]))
         scrnX, scrnY = scrn.shape
 
 
@@ -151,6 +151,8 @@ class scienceCam:
         y1 = scrnY/2. + sciCent[1] - self.simConfig.simSize/2.0
         y2 = scrnY/2. + sciCent[1] + self.simConfig.simSize/2.0
 
+        logger.debug("Sci scrn Coords: ({0}:{1}, {2}:{3})".format(
+                x1,x2,y1,y2))
 
         if x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY :
             raise ValueError(  "Sci Position seperation\
