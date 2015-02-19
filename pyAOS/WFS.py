@@ -1047,7 +1047,15 @@ class ShackHartmann(WFS):
 
     def calculateSlopes(self):
         '''
-        returns wfs slopes from wfsFocalPlane
+        Calculates are returns the measured WFS slopes
+        
+        Chopes the ``wfsDetectorPlane`` into a vector of sub-apertures, 
+        which are then fed into the chosen centroider. Any static offsets
+        are subtracted, if requested the average tip-tilt can be removed,
+        and finally, some noise can be added.
+
+        Returns 
+            ndarray: 1-D vector of WFS centroids
         '''
 
         #Sort out FP into subaps
@@ -1055,8 +1063,9 @@ class ShackHartmann(WFS):
             x,y = self.detectorSubapCoords[i]
             x = int(x)
             y = int(y)
-            self.centSubapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
-                                                    y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
+            self.centSubapArrays[i] = self.wfsDetectorPlane[ 
+                    x:x+self.wfsConfig.pxlsPerSubap,
+                    y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
         if self.wfsConfig.pxlsPerSubap==2:
             slopes = aoSimLib.quadCell(self.centSubapArrays)
