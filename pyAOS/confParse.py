@@ -291,6 +291,8 @@ class SimConfig(ConfigObj):
         ``learnAtmos``      str: if ``random``, then 
                             random phase screens used for 
                             `learn`                             ``random``
+        ``procs''           int: number of processes to use 
+                            in multiprocessing operations       ``1``
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -345,6 +347,7 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"), 
+                                ("procs", 1),
                         ]
 
         self.initParams()
