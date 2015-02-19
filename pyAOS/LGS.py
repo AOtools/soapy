@@ -126,7 +126,7 @@ class LGSObj(object):
 
 
 
-    def metaPupilPos(self,height):
+    def metaPupilPos(self, height):
 
         #Convert positions into radians
 
@@ -135,27 +135,22 @@ class LGSObj(object):
         #Position of centre of GS metapupil off axis at required height
         GSCent = numpy.tan(GSPos)*height
 
-
         return GSCent
-
 
     
     def metaPupilPhase(self, scrn, height, pos):
 
         GSCent = pos*self.simConfig.pxlScale
         scrnX,scrnY = scrn.shape
-
-        #x1 = int(round(scrnX/2. + GSCent[0] - self.simConfig.simSize/2.))
-        #x2 = int(round(scrnX/2. + GSCent[0] + self.simConfig.simSize/2.))
-        #y1 = int(round(scrnY/2. + GSCent[1] - self.simConfig.simSize/2.))
-        #y2 = int(round(scrnY/2. + GSCent[1] + self.simConfig.simSize/2.))
+        
+        logger.debug("LGS Cent: ({})".format(GSCent))
 
         x1 = scrnX/2. + GSCent[0] - self.simConfig.simSize/2.
         x2 = scrnX/2. + GSCent[0] + self.simConfig.simSize/2.
         y1 = scrnY/2. + GSCent[1] - self.simConfig.simSize/2.
         y2 = scrnY/2. + GSCent[1] + self.simConfig.simSize/2.
 
-        logger.debug("LGS MetaPupil Coords: %i:%i,%i:%i"%(x1,x2,y1,y2))
+        logger.debug("LGS MetaPupil Coords: ({}:{}, {}:{})".format(x1,x2,y1,y2))
 
         if (x1.is_integer() and x2.is_integer() 
                 and y1.is_integer() and y2.is_integer()):
@@ -172,13 +167,14 @@ class LGSObj(object):
         return metaPupil
 
     
-    def getPupilPhase(self,scrns):
+    def getPupilPhase(self, scrns):
         self.pupilWavefront = numpy.zeros( 
                 (self.simConfig.simSize,self.simConfig.simSize), dtype="complex64")
 
         #Stack and sum up the wavefront front the 
         #phase screens in the LGS meta pupils
         for layer in scrns:
+            logger.debug("layer: {}".format(layer))
             self.pupilWavefront += self.metaPupilPhase(
                             scrns[layer],
                             self.atmosConfig.scrnHeights[layer], 
@@ -399,6 +395,7 @@ class PhysicalLGS(LGSObj):
         #Keep track of total height for use later.
         self.ht = self.z
         for i in xrange(1,len(scrns)):
+            logger.debug("Propagate layer: {}".format(i))
             self.phs = self.metaPupilPhase(scrns[i],
                                       self.atmosConfig.scrnHeights[i],
                                       self.pupilPos[i] )
