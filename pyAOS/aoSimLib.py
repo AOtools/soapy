@@ -23,6 +23,7 @@ A module containing useful functions used throughout pyAOS
 '''
 
 import numpy
+import matplotlib.pylab as plt
 
 from scipy.interpolate import interp2d,RectBivariateSpline
 #a lookup dict for interp2d order (expressed as 'kind')
@@ -402,6 +403,8 @@ def simpleCentroid(img,threshold_frac=0):
     y_centroid+=0.5
     x_centroid+=0.5
 
+    print y_centroid.mean()
+
     return numpy.array([y_centroid,x_centroid])
 
 def brtPxlCentroid(img, nPxls):
@@ -412,6 +415,8 @@ def brtPxlCentroid(img, nPxls):
      Finds the nPxlsth brightest pixel, subtracts that value from frame, 
     sets anything below 0 to 0, and finally takes centroid
     """
+
+    print img.shape
 
     if len(img.shape)==2:
         pxlValue = numpy.sort(img.flatten())[-nPxls]
@@ -426,6 +431,64 @@ def brtPxlCentroid(img, nPxls):
         img.clip(0, img.max(), out=img)
 
     return simpleCentroid(img)
+
+def convolver(x, y):
+    '''
+    INPUT:  x (y,x), y (y, x)
+    2D convolution using FFT, fastest way of generating correlations.
+    OUTPUT: cc (y,x)
+    '''
+
+    fr = numpy.fft.fft2(x)
+    fr2 = numpy.fft.fft2(y[::-1, ::-1])
+    m, n = fr.shape
+
+    cc = (numpy.fft.ifft2(fr*fr2)).real
+    cc = numpy.roll(cc, -m/2+1, axis=0)
+    cc = numpy.roll(cc, -n/2+1, axis=1)
+
+    return cc
+
+def correlationCentriod(im, ref, threshold_fac=0.8):
+    '''
+    Correlation Centroider, currently only works for 3d img shape (to be fixed?)
+    '''
+
+    nt, ny, nx = im.shape
+    corr = numpy.zeros((im.shape))
+
+    for frame in range(nt):
+        corr[frame] = convolver(im[frame], ref)
+
+    cents = numpy.zeros((2, nt))
+
+    for frame in range(nt):
+        # Find brightest pixel.
+        index_y, index_x = numpy.unravel_index(corr[frame].argmax(),
+                                               corr[frame].shape)
+
+        # Apply threshold
+        working_corr = corr[frame] - corr[frame].min()
+        mx = working_corr.max()
+        bg = threshold_fac*mx
+        working_corr = numpy.clip(working_corr, bg, mx) - bg
+
+        # Centroid
+        s_y, s_x = working_corr.shape
+        XRAMP = numpy.arange(s_x)
+        YRAMP = numpy.arange(s_y)
+        XRAMP.shape = (1, s_x)
+        YRAMP.shape = (s_y,  1)
+
+        si = working_corr.sum()
+        if si == 0:
+            si = 1
+        cx = (working_corr * XRAMP).sum() / si
+        cy = (working_corr * YRAMP).sum() / si
+
+        cents[:, frame] = cx, cy
+
+    return cents
 
 def quadCell(img):
     

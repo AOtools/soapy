@@ -32,7 +32,7 @@ Example:
         from pyAOS import WFS, confParse
     
         config = confParse.Configurator("config_file.py")
-        config.readFile()
+        config.readfile()
         config.loadSimParams()
         config.calcParams()
     
@@ -1066,6 +1066,11 @@ class ShackHartmann(WFS):
                     self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
                                             )
+
+        elif self.wfsConfig.centMethod=="correlation":
+            slopes = aoSimLib.correlationCentriod(self.centSubapArrays,
+                                                  self.wfsConfig.reference_image)
+            
         else:
             slopes = aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
@@ -1095,6 +1100,21 @@ class ShackHartmann(WFS):
 
         return self.slopes
 
+# __          __  ______      _____   _    _ 
+# \ \        / / |  ____|    / ____| | |  | |
+#  \ \  /\  / /  | |__      | (___   | |__| |
+#   \ \/  \/ /   |  __|      \___ \  |  __  |
+#    \  /\  /    | |         ____) | | |  | |
+#     \/  \/     |_|        |_____/  |_|  |_|
+
+class WideFieldShackHartmann(ShackHartmann):
+    """
+    *Experimental* Wide-field Shack-Hartmann WFS, based on Shack-Hartmann
+    Class
+    """
+
+    reference_image = numpy.zeros((10, 10))
+
 #  ______                          _     _ 
 #  | ___ \                        (_)   | |
 #  | |_/ /   _ _ __ __ _ _ __ ___  _  __| |
@@ -1110,7 +1130,7 @@ class Pyramid(WFS):
 
     This is an early prototype for a Pyramid WFS. Currently, its at a very early stage. It doesn't oscillate, so performance aint too good at the minute.
 
-    To use, set the wfs parameter ``type'' to ``Pyramid''
+    To use, set the wfs parameter ``type'' to ``Pyramid'' type is a list of length number of wfs.
     """
     #oversampling for the first FFT from EField to focus (4 seems ok...)
     FOV_OVERSAMP = 4
