@@ -53,7 +53,12 @@ class DM:
         
         self.totalSubaps = self.wfs.activeSubaps
        
-        self.commandFactor = numpy.sqrt(2)
+        #This is a quick fix, as there seems to be a scaling issue between
+        #WFS slopes and the DM commands which I dont understand. 
+        #Doesnt matter in closed loop, but ruins correction in open loop.
+        #Multiplying DM commands by this fixes things. Will explore more 
+        #thoroughly soon. apr - 19thFeb2015
+        self.commandFactor = 1.7
 
     def getActiveActs(self):
         """
