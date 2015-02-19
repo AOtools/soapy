@@ -20,6 +20,7 @@ from .import aoSimLib, AOFFT
 from . import logger
 
 import scipy.optimize
+from scipy.interpolate import interp2d
 
 #xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
@@ -163,7 +164,7 @@ class LGSObj(object):
         else:
             xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
             yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
-            scrnCoords = arange(self.simConfig.simSize)
+            scrnCoords = numpy.arange(self.simConfig.scrnSize)
 
             interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
             metaPupil = interpObj(xCoords, yCoords)
