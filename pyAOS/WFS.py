@@ -1068,8 +1068,9 @@ class ShackHartmann(WFS):
                                             )
 
         elif self.wfsConfig.centMethod=="correlation":
-            slopes = aoSimLib.correlationCentriod(self.centSubapArrays,
-                                                  self.wfsConfig.reference_image)
+            slopes = aoSimLib.correlationCentriod(
+                    self.centSubapArrays, self.wfsConfig.referenceImage,
+                    self.wfsConfig.centThreshold)
             
         else:
             slopes = aoSimLib.simpleCentroid(

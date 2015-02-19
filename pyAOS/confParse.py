@@ -494,6 +494,7 @@ class WfsConfig(ConfigObj):
                                 ("centMethod", "simple"),
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
+                                ("referenceImage", None),
                             ]
         self.initParams()
 

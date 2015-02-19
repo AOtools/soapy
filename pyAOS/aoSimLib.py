@@ -462,6 +462,8 @@ def correlationCentriod(im, ref, threshold_fac=0.8):
 
     cents = numpy.zeros((2, nt))
 
+    # corr = im
+
     for frame in range(nt):
         # Find brightest pixel.
         index_y, index_x = numpy.unravel_index(corr[frame].argmax(),
