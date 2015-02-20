@@ -113,6 +113,7 @@ import numpy.random
 import scipy.ndimage
 import scipy.optimize
 from scipy.interpolate import interp2d
+from astropy.io import fits
 
 from . import AOFFT, aoSimLib, LGS, logger
 from .opticalPropagationLib import angularSpectrum
@@ -731,7 +732,16 @@ class ShackHartmann(WFS):
                 ))
         #Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
-        
+
+        # For correlation centroider, open reference image.
+        if self.wfsConfig.referenceImage[-5:]==".fits":
+            rawRef = fits.open("./conf/"+self.wfsConfig.referenceImage)[0].data
+            self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
+                    self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
+            for i in range(self.activeSubaps):
+                self.wfsConfig.referenceImage[i] = rawRef[self.detectorSubapCoords[i, 0]:self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
+                        self.detectorSubapCoords[i, 1]:self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+
     def findActiveSubaps(self):
         '''
         Finds the subapertures which are not empty space
@@ -1136,7 +1146,7 @@ class WideFieldShackHartmann(ShackHartmann):
     Class
     """
 
-    reference_image = numpy.zeros((10, 10))
+    referenceImage = numpy.zeros((10, 10))
 
 #  ______                          _     _ 
 #  | ___ \                        (_)   | |

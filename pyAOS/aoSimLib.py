@@ -403,8 +403,6 @@ def simpleCentroid(img,threshold_frac=0):
     y_centroid+=0.5
     x_centroid+=0.5
 
-    print y_centroid.mean()
-
     return numpy.array([y_centroid,x_centroid])
 
 def brtPxlCentroid(img, nPxls):
@@ -415,8 +413,6 @@ def brtPxlCentroid(img, nPxls):
      Finds the nPxlsth brightest pixel, subtracts that value from frame, 
     sets anything below 0 to 0, and finally takes centroid
     """
-
-    print img.shape
 
     if len(img.shape)==2:
         pxlValue = numpy.sort(img.flatten())[-nPxls]
@@ -434,9 +430,13 @@ def brtPxlCentroid(img, nPxls):
 
 def convolver(x, y):
     '''
-    INPUT:  x (y,x), y (y, x)
-    2D convolution using FFT, fastest way of generating correlations.
-    OUTPUT: cc (y,x)
+    2D convolution using FFT, use to generate cross-correlations.
+
+    Args:
+        x (array): subap image
+        y (array): reference image
+    Returns:
+        ndarray: cross-correlation of x and y
     '''
 
     fr = numpy.fft.fft2(x)
@@ -451,18 +451,24 @@ def convolver(x, y):
 
 def correlationCentriod(im, ref, threshold_fac=0.8):
     '''
-    Correlation Centroider, currently only works for 3d img shape (to be fixed?)
+    Correlation Centroider, currently only works for 3d im shape.
+    Performs a simple thresholded COM on the correlation.
+
+    Args:
+        im: subap images
+        ref: reference image
+        threshold_fac: threshold for COM (0=all pixels, 1=brightest pixel)
+    Returns:
+        ndarray: centroids of im, given as x, y
     '''
 
     nt, ny, nx = im.shape
     corr = numpy.zeros((im.shape))
 
     for frame in range(nt):
-        corr[frame] = convolver(im[frame], ref)
+        corr[frame] = convolver(im[frame], ref[frame])
 
     cents = numpy.zeros((2, nt))
-
-    # corr = im
 
     for frame in range(nt):
         # Find brightest pixel.
