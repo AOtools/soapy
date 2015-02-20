@@ -713,7 +713,7 @@ class ShackHartmann(WFS):
         self.findActiveSubaps()
 
         # For correlation centroider, open reference image.
-        if self.wfsConfig.referenceImage[-5:]==".fits":
+        if self.wfsConfig.centMethod=="correlation":
             rawRef = fits.open("./conf/"+self.wfsConfig.referenceImage)[0].data
             self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
                     self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
