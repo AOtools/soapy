@@ -428,7 +428,7 @@ def brtPxlCentroid(img, nPxls):
 
     return simpleCentroid(img)
 
-def convolver(x, y):
+def corrConvolve(x, y):
     '''
     2D convolution using FFT, use to generate cross-correlations.
 
@@ -455,44 +455,42 @@ def correlationCentriod(im, ref, threshold_fac=0.8):
     Performs a simple thresholded COM on the correlation.
 
     Args:
-        im: subap images
-        ref: reference image
+        im: subap images (t, y, x)
+        ref: reference image (t, y, x)
         threshold_fac: threshold for COM (0=all pixels, 1=brightest pixel)
     Returns:
         ndarray: centroids of im, given as x, y
     '''
 
     nt, ny, nx = im.shape
-    corr = numpy.zeros((im.shape))
-
-    for frame in range(nt):
-        corr[frame] = convolver(im[frame], ref[frame])
 
     cents = numpy.zeros((2, nt))
 
     for frame in range(nt):
+        # Correlate frame with reference image
+        corr = corrConvolve(im[frame], ref[frame])
         # Find brightest pixel.
-        index_y, index_x = numpy.unravel_index(corr[frame].argmax(),
-                                               corr[frame].shape)
+        index_y, index_x = numpy.unravel_index(corr.argmax(),
+                                               corr.shape)
 
         # Apply threshold
-        working_corr = corr[frame] - corr[frame].min()
-        mx = working_corr.max()
+        corr -= corr.min()
+        mx = corr.max()
         bg = threshold_fac*mx
-        working_corr = numpy.clip(working_corr, bg, mx) - bg
+        corr = numpy.clip(corr, bg, mx) - bg
 
         # Centroid
-        s_y, s_x = working_corr.shape
+        s_y, s_x = corr.shape
         XRAMP = numpy.arange(s_x)
         YRAMP = numpy.arange(s_y)
         XRAMP.shape = (1, s_x)
         YRAMP.shape = (s_y,  1)
 
-        si = working_corr.sum()
+        si = corr.sum()
         if si == 0:
             si = 1
-        cx = (working_corr * XRAMP).sum() / si
-        cy = (working_corr * YRAMP).sum() / si
+        cx = (corr * XRAMP).sum() / si
+        cy = (corr * YRAMP).sum() / si
 
         cents[:, frame] = cx, cy
 
