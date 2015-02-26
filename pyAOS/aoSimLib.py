@@ -606,3 +606,23 @@ def zernikeArray(J, N):
 
     return Zs
 
+
+def aziAvg(data):
+    """
+    Measures the azimuthal average of a 2d array
+
+    Parameters:
+
+        data (ndarray): A 2-d array of data
+
+    Returns:
+        ndarray: A 1-d vector of the azimuthal average
+    """
+
+    size = data.shape[0]
+    avg = numpy.empty(size/2, dtype="float")
+    for i in range(size/2):
+        ring = circle(i+1, size) - circle(i, size)
+        avg[i] = (ring*data).sum()/(ring.sum())
+
+    return avg
