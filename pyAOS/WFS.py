@@ -714,7 +714,7 @@ class ShackHartmann(WFS):
 
         # For correlation centroider, open reference image.
         if self.wfsConfig.centMethod=="correlation":
-            rawRef = fits.open("./conf/"+self.wfsConfig.referenceImage)[0].data
+            rawRef = fits.open("./conf/correlationRef/"+self.wfsConfig.referenceImage)[0].data
             self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
                     self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
             for i in range(self.activeSubaps):
