@@ -1112,20 +1112,6 @@ class ShackHartmann(WFS):
 
         return self.slopes
 
-# __          __  ______      _____   _    _ 
-# \ \        / / |  ____|    / ____| | |  | |
-#  \ \  /\  / /  | |__      | (___   | |__| |
-#   \ \/  \/ /   |  __|      \___ \  |  __  |
-#    \  /\  /    | |         ____) | | |  | |
-#     \/  \/     |_|        |_____/  |_|  |_|
-
-class WideFieldShackHartmann(ShackHartmann):
-    """
-    *Experimental* Wide-field Shack-Hartmann WFS, based on Shack-Hartmann
-    Class
-    """
-
-    referenceImage = numpy.zeros((10, 10))
 
 #  ______                          _     _ 
 #  | ___ \                        (_)   | |
