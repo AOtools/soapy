@@ -466,7 +466,7 @@ class WfsConfig(ConfigObj):
         ``referenceImage``  array: Reference images used in
                             the correlation centroider. Full
                             image plane image, each subap has
-                            a separate reference image          None
+                            a separate reference image          ``None``
         ``angleEquivNoise`` float: width of gaussian noise 
                             added to slopes measurements
                             in arc-secs                        ``0``
