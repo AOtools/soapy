@@ -461,8 +461,12 @@ class WfsConfig(ConfigObj):
                             to be used for wavefront sensing?   ``0.5``
         ``lgs``             bool: is WFS an LGS?                ``False``
         ``centMethod``      string: Method used for 
-                            Centroiding. Can be `simple` or
-                            `brightestPxl`                      ``simple``
+                            Centroiding. Can be `simple`,
+                            `brightestPxl`, or `correlation`    ``simple``
+        ``referenceImage``  array: Reference images used in
+                            the correlation centroider. Full
+                            image plane image, each subap has
+                            a separate reference image          ``None``
         ``angleEquivNoise`` float: width of gaussian noise 
                             added to slopes measurements
                             in arc-secs                        ``0``
@@ -511,6 +515,7 @@ class WfsConfig(ConfigObj):
                                 ("centMethod", "simple"),
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
+                                ("referenceImage", None),
                             ]
         self.initParams()
 

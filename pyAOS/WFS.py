@@ -92,6 +92,7 @@ import numpy.random
 import scipy.ndimage
 import scipy.optimize
 from scipy.interpolate import interp2d
+from astropy.io import fits
 
 from . import AOFFT, aoSimLib, LGS, logger
 from .opticalPropagationLib import angularSpectrum
@@ -710,7 +711,16 @@ class ShackHartmann(WFS):
                 ))
         #Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
-        
+
+        # For correlation centroider, open reference image.
+        if self.wfsConfig.centMethod=="correlation":
+            rawRef = fits.open("./conf/"+self.wfsConfig.referenceImage)[0].data
+            self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
+                    self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
+            for i in range(self.activeSubaps):
+                self.wfsConfig.referenceImage[i] = rawRef[self.detectorSubapCoords[i, 0]:self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
+                        self.detectorSubapCoords[i, 1]:self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+
     def findActiveSubaps(self):
         '''
         Finds the subapertures which are not empty space
@@ -1067,6 +1077,12 @@ class ShackHartmann(WFS):
                     self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
                                             )
+
+        elif self.wfsConfig.centMethod=="correlation":
+            slopes = aoSimLib.correlationCentriod(
+                    self.centSubapArrays, self.wfsConfig.referenceImage,
+                    self.wfsConfig.centThreshold)
+            
         else:
             slopes = aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
@@ -1096,6 +1112,7 @@ class ShackHartmann(WFS):
 
         return self.slopes
 
+
 #  ______                          _     _ 
 #  | ___ \                        (_)   | |
 #  | |_/ /   _ _ __ __ _ _ __ ___  _  __| |
@@ -1111,7 +1128,7 @@ class Pyramid(WFS):
 
     This is an early prototype for a Pyramid WFS. Currently, its at a very early stage. It doesn't oscillate, so performance aint too good at the minute.
 
-    To use, set the wfs parameter ``type'' to ``Pyramid''
+    To use, set the wfs parameter ``type'' to ``Pyramid'' type is a list of length number of wfs.
     """
     #oversampling for the first FFT from EField to focus (4 seems ok...)
     FOV_OVERSAMP = 4
