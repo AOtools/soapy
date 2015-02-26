@@ -23,7 +23,6 @@ A module containing useful functions used throughout pyAOS
 '''
 
 import numpy
-import matplotlib.pylab as plt
 
 from scipy.interpolate import interp2d,RectBivariateSpline
 #a lookup dict for interp2d order (expressed as 'kind')
