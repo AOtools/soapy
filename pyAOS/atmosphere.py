@@ -57,6 +57,7 @@ import scipy.fftpack as fft
 from . import AOFFT, logger
 import scipy.interpolate
 #from multiprocessing import Pool
+import os
 
 
 #Use either pyfits or astropy for fits file handling
@@ -434,6 +435,55 @@ class Screen(object):
 def pool_ft_sh_phase_screen(args):
 
     return ft_sh_phase_screen(*args)
+
+
+def makePhaseScreens(
+        nScrns, r0, N, pxlScale, L0, l0, returnScrns=True, DIR=None):
+    """
+    Creates and saves a set of phase screens to be used by the simulation.
+
+    Creates ``nScrns`` phase screens, with the required parameters, then saves 
+    them to the directory specified by ``DIR``. Each screen is given a FITS
+    header with its value of r0, which will be scaled by on simulation when
+    its loaded.
+
+    Parameters:
+        nScrns (int): The number of screens to make.
+        r0 (float): r0 value of the phase screens.
+        N (int): Number of elements across each screen.
+        pxlScale (float): Size of each element in metres.
+        L0 (float): Outer scale of each screen.
+        l0 (float): Inner scale of each screen.
+        returnScrns (bool): Whether to return a list of screens. True by default, but if screens are very large, it might be preferred that they aren't kept in memory after being saved.
+        DIR (str, optional): The directory to save the screens.
+   
+    Returns:
+        list: A list conaining all the screens.
+    """
+   
+    #Make directory if it doesnt exist already
+    if DIR:
+        if not os.path.isdir(DIR):
+            os.makedirs(DIR)
+    
+    #An empty container to put our screens in
+    if returnScrns:
+        scrns = []
+
+    #Now loop over and create all the screens (Currently with the same params)
+    for i in range(nScrns):
+        scrn = ft_sh_phase_screen(r0, N, pxlScale, L0, l0)
+        if returnScrns:
+            scrns.append(scrn)
+
+        #If given a directory, save them too!
+        if DIR!=None:
+            hdu = fits.PrimaryHDU(scrn)
+            hdu.header["R0"] = str(r0)
+            hdu.writeto(DIR+"/scrn{}.fits".format(i))
+    
+    if returnScrns:
+        return scrns
 
 
 def ft_sh_phase_screen(r0, N, delta, L0, l0, FFT=None):
