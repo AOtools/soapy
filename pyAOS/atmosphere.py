@@ -479,7 +479,7 @@ def makePhaseScreens(
         #If given a directory, save them too!
         if DIR!=None:
             hdu = fits.PrimaryHDU(scrn)
-            hdu.header["R0"] = str(r0)
+            hdu.header["R0"] = str(r0/pxlScale)
             hdu.writeto(DIR+"/scrn{}.fits".format(i))
     
     if returnScrns:
