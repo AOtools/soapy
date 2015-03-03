@@ -92,7 +92,13 @@ import numpy.random
 import scipy.ndimage
 import scipy.optimize
 from scipy.interpolate import interp2d
-from astropy.io import fits
+try:
+    from astropy.io import fits
+except ImportError:
+    try:
+        import pyfits as fits
+    except ImportError:
+        raise ImportError("PyAOS requires either pyfits or astropy")
 
 from . import AOFFT, aoSimLib, LGS, logger
 from .opticalPropagationLib import angularSpectrum
