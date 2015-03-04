@@ -84,6 +84,7 @@ class DM:
         Returns:
             ndarray: 2-dimensional interaction matrix
         '''
+        logger.info("Making DM Influence Functions...")
         self.makeIMatShapes()
 
         if self.dmConfig.rotation:
