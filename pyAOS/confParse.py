@@ -476,7 +476,7 @@ class WfsConfig(ConfigObj):
         ``exposureTime``    float: Exposure time of the WFS 
                             camera - must be higher than 
                             loopTime. If None, will be 
-                            set to loopTime.                    None
+                            set to loopTime.                    ``None``
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
