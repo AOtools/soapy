@@ -582,8 +582,10 @@ class LgsConfig(ConfigObj):
                              Number of layers to simulate for 
                              elongation.                         ``10``
         ``launchPosition``   tuple: The launch position of 
-                             the LGS in units of the pupil, 
-                             where ``(0,0)`` is the centre.      ``(0,0)``
+                             the LGS in units of the pupil
+                             radii, where ``(0,0)`` is the 
+                             centre launched case, and 
+                             ``(1,0)`` is side-launched.          ``(0,0)``
         ``fftwThreads``      int: number of threads for fftw 
                              to use. If ``0``, will use 
                              system processor number.             ``1``
