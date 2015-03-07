@@ -20,6 +20,7 @@ from .import aoSimLib, AOFFT
 from . import logger
 
 import scipy.optimize
+from scipy.interpolate import interp2d
 
 #xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
@@ -51,8 +52,9 @@ class LGSObj(object):
         phsWvl = 550e-9
         self.r0scale = phsWvl / self.lgsConfig.wavelength
 
-        self.mask = aoSimLib.circle(self.LGSPupilSize/2,
-                                    self.simConfig.pupilSize)
+        self.mask = aoSimLib.circle(
+                0.5*lgsConfig.lgsPupilDiam*self.simConfig.pxlScale,
+                self.simConfig.simSize)
         self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
@@ -61,13 +63,13 @@ class LGSObj(object):
                 )
 
         self.FFT = AOFFT.FFT(
-                (simConfig.pupilSize, simConfig.pupilSize), 
+                (simConfig.simSize, simConfig.simSize), 
                 axes=(0,1),mode="pyfftw",
                 dtype = "complex64",direction="FORWARD", 
                 THREADS=lgsConfig.fftwThreads, 
                 fftw_FLAGS=(lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
-        self.iFFT = AOFFT.FFT((simConfig.pupilSize,simConfig.pupilSize),
+        self.iFFT = AOFFT.FFT((simConfig.simSize,simConfig.simSize),
                 axes=(0,1),mode="pyfftw",
                 dtype="complex64",direction="BACKWARD", 
                 THREADS=lgsConfig.fftwThreads, 
@@ -124,7 +126,7 @@ class LGSObj(object):
 
 
 
-    def metaPupilPos(self,height):
+    def metaPupilPos(self, height):
 
         #Convert positions into radians
 
@@ -133,35 +135,46 @@ class LGSObj(object):
         #Position of centre of GS metapupil off axis at required height
         GSCent = numpy.tan(GSPos)*height
 
-
         return GSCent
 
-
     
-    def metaPupilPhase(self,scrn,height,pos):
+    def metaPupilPhase(self, scrn, height, pos):
 
         GSCent = pos*self.simConfig.pxlScale
         scrnX,scrnY = scrn.shape
+        
+        logger.debug("LGS Cent: ({})".format(GSCent))
 
-        x1 = int(round(scrnX/2. + GSCent[0] - self.simConfig.pupilSize/2.))
-        x2 = int(round(scrnX/2. + GSCent[0] + self.simConfig.pupilSize/2.))
-        y1 = int(round(scrnY/2. + GSCent[1] - self.simConfig.pupilSize/2.))
-        y2 = int(round(scrnY/2. + GSCent[1] + self.simConfig.pupilSize/2.))
+        x1 = scrnX/2. + GSCent[0] - self.simConfig.simSize/2.
+        x2 = scrnX/2. + GSCent[0] + self.simConfig.simSize/2.
+        y1 = scrnY/2. + GSCent[1] - self.simConfig.simSize/2.
+        y2 = scrnY/2. + GSCent[1] + self.simConfig.simSize/2.
 
-        logger.debug("LGS MetaPupil Coords: %i:%i,%i:%i"%(x1,x2,y1,y2))
+        logger.debug("LGS MetaPupil Coords: ({}:{}, {}:{})".format(x1,x2,y1,y2))
 
-        metaPupil = scrn[ x1:x2, y1:y2 ].copy()
+        if (x1.is_integer() and x2.is_integer() 
+                and y1.is_integer() and y2.is_integer()):
+            metaPupil = scrn[ x1:x2, y1:y2 ].copy()
+
+        else:
+            xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
+            yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
+            scrnCoords = numpy.arange(self.simConfig.scrnSize)
+
+            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil
 
     
-    def getPupilPhase(self,scrns):
+    def getPupilPhase(self, scrns):
         self.pupilWavefront = numpy.zeros( 
-                (self.simConfig.pupilSize,self.simConfig.pupilSize), dtype="complex64")
+                (self.simConfig.simSize,self.simConfig.simSize), dtype="complex64")
 
         #Stack and sum up the wavefront front the 
         #phase screens in the LGS meta pupils
         for layer in scrns:
+            logger.debug("layer: {}".format(layer))
             self.pupilWavefront += self.metaPupilPhase(
                             scrns[layer],
                             self.atmosConfig.scrnHeights[layer], 
@@ -170,10 +183,10 @@ class LGSObj(object):
         
         #reduce to size of LGS pupil
         self.pupilWavefront = self.pupilWavefront[
-                        0.5*(self.simConfig.pupilSize-self.LGSPupilSize):
-                        0.5*(self.simConfig.pupilSize+self.LGSPupilSize),
-                        0.5*(self.simConfig.pupilSize-self.LGSPupilSize):
-                        0.5*(self.simConfig.pupilSize+self.LGSPupilSize)  ]
+                        0.5*(self.simConfig.simSize-self.LGSPupilSize):
+                        0.5*(self.simConfig.simSize+self.LGSPupilSize),
+                        0.5*(self.simConfig.simSize-self.LGSPupilSize):
+                        0.5*(self.simConfig.simSize+self.LGSPupilSize)  ]
                         
         return self.pupilWavefront
         
@@ -351,7 +364,7 @@ class PhysicalLGS(LGSObj):
         g = numpy.fft.ifftshift(self.iFFT()) * (N * delta_f)**2
         return g
         
-    def LGSPSF(self,scrns):
+    def LGSPSF(self, scrns):
         '''
         Computes the LGS PSF for each frame by propagating
         light to each turbulent layer with a fresnel algorithm
@@ -382,17 +395,18 @@ class PhysicalLGS(LGSObj):
         #Keep track of total height for use later.
         self.ht = self.z
         for i in xrange(1,len(scrns)):
+            logger.debug("Propagate layer: {}".format(i))
             self.phs = self.metaPupilPhase(scrns[i],
                                       self.atmosConfig.scrnHeights[i],
                                       self.pupilPos[i] )
 
             self.z = self.atmosConfig.scrnHeights[i]-self.atmosConfig.scrnHeights[i-1]
 
-            if self.z == 0:
-                self.U *= numpy.exp(-1j * self.phs)
-            else:
-                self.U = self.angularSpectrum(self.U*numpy.exp(-1j*self.phs),
+            if self.z != 0:
+                self.U = self.angularSpectrum(self.U,
                                            self.lgsConfig.wavelength, self.d1, self.d2, self.z)
+            
+            self.U*=self.phs
             self.ht += self.z
 
         #Finally, propagate to the last layer.
@@ -408,20 +422,20 @@ class PhysicalLGS(LGSObj):
         
         #Now fit this grid onto size WFS is expecting
         crop = self.subapFFTPadding/2.
-        if self.simConfig.pupilSize>self.subapFFTPadding:
+        if self.simConfig.simSize>self.subapFFTPadding:
             
             self.PSF = self.psf1[   
-                    int(numpy.round(0.5*self.simConfig.pupilSize-crop)):
-                    int(numpy.round(0.5*self.simConfig.pupilSize+crop)),
-                    int(numpy.round(0.5*self.simConfig.pupilSize-crop)):
-                    int(numpy.round(0.5*self.simConfig.pupilSize+crop))  
+                    int(numpy.round(0.5*self.simConfig.simSize-crop)):
+                    int(numpy.round(0.5*self.simConfig.simSize+crop)),
+                    int(numpy.round(0.5*self.simConfig.simSize-crop)):
+                    int(numpy.round(0.5*self.simConfig.simSize+crop))  
                     ]
                                     
         else:
             self.PSF = numpy.zeros((self.subapFFTPadding, self.subapFFTPadding))
-            self.PSF[   int(numpy.round(crop-self.simConfig.pupilSize*0.5)):
-                        int(numpy.round(crop+self.simConfig.pupilSize*0.5)),
-                        int(numpy.round(crop-self.simConfig.pupilSize*0.5)):
-                        int(numpy.round(crop+self.simConfig.pupilSize*0.5))] = self.psf1
+            self.PSF[   int(numpy.round(crop-self.simConfig.simSize*0.5)):
+                        int(numpy.round(crop+self.simConfig.simSize*0.5)),
+                        int(numpy.round(crop-self.simConfig.simSize*0.5)):
+                        int(numpy.round(crop+self.simConfig.simSize*0.5))] = self.psf1
                                                                      
                                                                     

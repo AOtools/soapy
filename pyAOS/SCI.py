@@ -36,10 +36,20 @@ class scienceCam:
         self.FOVPxlNo = numpy.round(
                 self.telConfig.telDiam * self.FOVrad
                 / self.sciConfig.wavelength)
-
-        self.scaleFactor = float(self.FOVPxlNo)/self.simConfig.pupilSize
-
-        self.scaledMask = numpy.round(aoSimLib.zoom(self.mask,self.FOVPxlNo))
+    
+        self.padFOVPxlNo = int(round(
+                self.FOVPxlNo*float(self.simConfig.simSize)
+                /self.simConfig.pupilSize)
+                )
+        if self.padFOVPxlNo%2 != self.FOVPxlNo%2:
+            self.padFOVPxlNo+=1
+       
+        mask = self.mask[
+                self.simConfig.simPad:-self.simConfig.simPad,
+                self.simConfig.simPad:-self.simConfig.simPad
+                ]
+        self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
+                ).astype("float32")
 
         #Init FFT object
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.oversamp
@@ -56,23 +66,57 @@ class scienceCam:
                         fftw_FLAGS=(sciConfig.fftwFlag,"FFTW_DESTROY_INPUT"),
                         THREADS=sciConfig.fftwThreads)
 
-        #Calculate ideal PSF for purposes of strehl calculation
-        self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
-                                            =(numpy.exp(1j*self.scaledMask)
-                                                    *self.scaledMask)
-        fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        binFp = aoSimLib.binImgs(fp,self.sciConfig.oversamp)
-        self.psfMax = binFp.max()        
-        self.longExpStrehl = 0
-        self.instStrehl = 0 
         #Get phase scaling factor to get r0 in other wavelength   
-        phsWvl = 550e-9  
+        phsWvl = 500e-9  
         self.r0Scale = phsWvl/self.sciConfig.wavelength
 
-    def metaPupilPos(self, height):
+        self.calcTiltCorrect()
+
+        #Calculate ideal PSF for purposes of strehl calculation
+        #self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
+        #                                    =(numpy.exp(1j*self.scaledMask)
+        #                                            *self.scaledMask)
+        #fp = abs(AOFFT.ftShift2d(self.FFT()))**2
+        #binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
+        self.residual = numpy.zeros((self.simConfig.simSize,)*2)
+        self.calcFocalPlane()
+        self.bestPSF = self.focalPlane.copy()
+        self.psfMax = self.bestPSF.max()        
+        self.longExpStrehl = 0
+        self.instStrehl = 0 
+
+
+
+    def calcTiltCorrect(self):
+        """
+        Calculates the required tilt to add to avoid  the PSF being centred
+        on one pixel only
+        """
+
+        #Only required if pxl number is even
+        if not self.sciConfig.pxls%2:
+            #Need to correct for half a pixel angle
+            theta = float(self.FOVrad)/(2*self.FFTPadding)
+
+            #Find magnitude of tilt from this angle
+            A = theta*self.telConfig.telDiam/(2*self.sciConfig.wavelength)*2*numpy.pi
+
+            coords = numpy.linspace(-1,1, self.FOVPxlNo)
+            X,Y = numpy.meshgrid(coords, coords)
+            self.tiltFix = -1*A*(X+Y)
+        else:
+           self.tiltFix = numpy.zeros((self.FOVPxlNo,)*2)
+
+
+    def getMetaPupilPos(self, height):
         '''
         Finds the centre of a metapupil at a given height,
         when offset by a given angle in arcsecs
+        Arguments:
+            height (float): Height of the layer in metres
+            
+        Returns:
+            ndarray: The position of the centre of the metapupil in metres
         '''
 
         #Convert positions into radians
@@ -83,32 +127,47 @@ class scienceCam:
 
         return sciCent
 
-    def metaPupilPhase(self, scrn, height):
+    def getMetaPupilPhase(self, scrn, height):
         '''
         Returns the phase across a metaPupil at some height
         and angular offset in arcsec
+                
+        Parameters:
+            scrn (ndarray): An array representing the phase screen
+            height (float): Height of the phase screen
+            
+        Return:
+            ndarray: The meta pupil at the specified height
         '''
 
-        sciCent = self.metaPupilPos(height) * self.simConfig.pxlScale
-        logger.debug("SciCents:({0},{1})".format(sciCent[0],sciCent[1]))
+        sciCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
+        logger.debug("SciCent:({0},{1})".format(sciCent[0],sciCent[1]))
+        scrnX, scrnY = scrn.shape
 
-        scrnX,scrnY=scrn.shape
 
+        x1 = scrnX/2. + sciCent[0] - self.simConfig.simSize/2.0
+        x2 = scrnX/2. + sciCent[0] + self.simConfig.simSize/2.0
+        y1 = scrnY/2. + sciCent[1] - self.simConfig.simSize/2.0
+        y2 = scrnY/2. + sciCent[1] + self.simConfig.simSize/2.0
 
-        if      (scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0) < 0 \
-           or   (scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0) > scrnX \
-           or   (scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0) < 0 \
-           or   (scrnY/2+sciCent[1]-self.simConfig.pupilSize/2.0) > scrnY :
+        logger.debug("Sci scrn Coords: ({0}:{1}, {2}:{3})".format(
+                x1,x2,y1,y2))
 
+        if x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY :
             raise ValueError(  "Sci Position seperation\
                                 requires larger scrn size" )
-
-        X1 = scrnX/2+sciCent[0]-self.simConfig.pupilSize/2.0
-        X2 = scrnX/2+sciCent[0]+self.simConfig.pupilSize/2.0
-        Y1 = scrnY/2+sciCent[1]-self.simConfig.pupilSize/2.0
-        Y2 = scrnY/2+sciCent[1]+self.simConfig.pupilSize/2.0
-
-        metaPupil=scrn[ X1:X2, Y1:Y2 ]
+        
+        if (x1.is_integer() and x2.is_integer()
+               and y1.is_integer() and y2.is_integer()):
+            #Old, simple integer based solution
+            metaPupil= scrn[ x1:x2, y1:y2]
+        else:
+            #Dirty, temporary fix to interpolate between phase points
+            xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
+            yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
+            scrnCoords = numpy.arange(scrnX)
+            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            metaPupil = flipud(rot90(interpObj(yCoords, xCoords)))
 
         return metaPupil
 
@@ -119,34 +178,38 @@ class scienceCam:
         Returns the total phase on a science Camera which is offset
         by a given angle
         '''
-        totalPhase=numpy.zeros([self.simConfig.pupilSize]*2)
+        totalPhase=numpy.zeros([self.simConfig.simSize]*2)
         for i in self.scrns:
-
-            phase=self.metaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
+            phase=self.getMetaPupilPhase(self.scrns[i],self.atmosConfig.scrnHeights[i])
 
             totalPhase+=phase
-        totalPhase *= self.mask
 
         self.phase=totalPhase
 
     def calcFocalPlane(self):
         '''
-        takes the calculated pupil phase, and uses FFT
-        to transform to the focal plane, and scales for correct FOV.
+        Takes the calculated pupil phase, scales for the correct FOV, 
+        and uses an FFT to transform to the focal plane.
         '''
 
-        phs = aoSimLib.zoom(self.residual, self.FOVPxlNo) *self.r0Scale
+        #Scaled the padded phase to the right size for the requried FOV
+        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
+         
+        #Chop out the phase across the pupil before the fft
+        coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
+        phs = phs[coord:-coord, coord:-coord] 
 
-        eField = numpy.exp(1j*phs)*self.scaledMask
+        eField = numpy.exp(1j*(phs+self.tiltFix)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d( self.FFT() )
 
         focalPlane = numpy.abs(focalPlane)**2
 
-        self.focalPlane = aoSimLib.binImgs( focalPlane , self.sciConfig.oversamp )
+        self.focalPlane = aoSimLib.binImgs( 
+                focalPlane , self.sciConfig.oversamp )
 
-    def frame(self,scrns,phaseCorrection=None):
+    def frame(self, scrns, phaseCorrection=None):
 
         self.scrns = scrns
         self.calcPupilPhase()
@@ -157,6 +220,9 @@ class scienceCam:
             self.residual = self.phase
             
         self.calcFocalPlane()
+        
+        #Here so when viewing data, that outside of the pupil isn't visible.
+        #self.residual*=self.mask
 
         self.instStrehl =  self.focalPlane.max()/self.psfMax
 

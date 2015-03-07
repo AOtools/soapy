@@ -57,6 +57,7 @@ import scipy.fftpack as fft
 from . import AOFFT, logger
 import scipy.interpolate
 #from multiprocessing import Pool
+import os
 
 
 #Use either pyfits or astropy for fits file handling
@@ -96,12 +97,14 @@ class atmos:
         self.r0 = atmosConfig.r0
         self.looptime = simConfig.loopTime
 
+        atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths, 
+                dtype="float32")
+
         atmosConfig.scrnStrengths /= (
                             atmosConfig.scrnStrengths[:self.scrnNo].sum())
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *atmosConfig.scrnStrengths)**(-3./5.) )
-
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
 
@@ -121,11 +124,13 @@ class atmos:
                 if atmosConfig.subHarmonics:
                     self.wholeScrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], 
-                            self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
+                            self.wholeScrnSize, 1./self.pxlScale, 
+                            atmosConfig.L0[i], 0.01)
                 else:
                     self.wholeScrns[i] = ft_phase_screen(
                             self.scrnStrengths[i], 
-                            self.wholeScrnSize, 1./self.pxlScale, 30., 0.01)
+                            self.wholeScrnSize, 1./self.pxlScale,
+                            atmosConfig.L0[i], 0.01)
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
@@ -147,14 +152,13 @@ class atmos:
                     r0_metres = r0/self.pxlScale
                     self.wholeScrns[i] *=(
                                  (self.scrnStrengths[i]/r0_metres)**(-5./6.)
-                                 #(self.scrnStrengths[i]/r0_metres)**(-5./3.)
                                          )
 
                 except KeyError:
-                    logger.info("no r0 info found in screen header - will assume its ok as it is")
+                    logger.warning("no r0 info found in screen header - will assume its ok as it is")
 
             if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
-                logger.info("Requested phase screen has different size to that input in config file....loading anyway")
+                logger.warning("Requested phase screen has different size to that input in config file....loading anyway")
 
             self.wholeScrnSize = self.wholeScrns[i].shape[0]
             if self.wholeScrnSize < self.scrnSize:
@@ -199,6 +203,23 @@ class atmos:
             self.yCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][1]
 
 
+    def saveScrns(self, DIR):
+        """
+        Saves the currently loaded phase screens to file, 
+        saving the r0 value in the fits header (in units of pixels).
+
+        Args:
+            DIR (string): The directory to save the screens
+        """
+
+        for scrn in range(self.scrnNo):
+            logger.info("Write Sreen {}....".format(scrn))
+            hdu = fits.PrimaryHDU(self.wholeScrns[scrn])
+            hdu.header["R0"] = "{:.2f}".format(
+                    self.scrnStrengths[scrn]*self.pxlScale)
+            hdu.writeto(DIR+"/scrn{}.fits".format(scrn))
+            logger.info("Done!")
+        
 
     def moveScrns(self):
         """
@@ -268,6 +289,9 @@ class atmos:
             self.scrnPos[i] = self.scrnPos[i]+self.windV[i]
             self.xCoords[i] += self.windV[i][0]
             self.yCoords[i] += self.windV[i][1]
+
+            #remove piston from phase screens
+            scrns[i] -= scrns[i].mean()
 
         return scrns
 
@@ -413,10 +437,60 @@ def pool_ft_sh_phase_screen(args):
     return ft_sh_phase_screen(*args)
 
 
+def makePhaseScreens(
+        nScrns, r0, N, pxlScale, L0, l0, returnScrns=True, DIR=None):
+    """
+    Creates and saves a set of phase screens to be used by the simulation.
+
+    Creates ``nScrns`` phase screens, with the required parameters, then saves 
+    them to the directory specified by ``DIR``. Each screen is given a FITS
+    header with its value of r0, which will be scaled by on simulation when
+    its loaded.
+
+    Parameters:
+        nScrns (int): The number of screens to make.
+        r0 (float): r0 value of the phase screens.
+        N (int): Number of elements across each screen.
+        pxlScale (float): Size of each element in metres.
+        L0 (float): Outer scale of each screen.
+        l0 (float): Inner scale of each screen.
+        returnScrns (bool): Whether to return a list of screens. True by default, but if screens are very large, it might be preferred that they aren't kept in memory after being saved.
+        DIR (str, optional): The directory to save the screens.
+   
+    Returns:
+        list: A list conaining all the screens.
+    """
+   
+    #Make directory if it doesnt exist already
+    if DIR:
+        if not os.path.isdir(DIR):
+            os.makedirs(DIR)
+    
+    #An empty container to put our screens in
+    if returnScrns:
+        scrns = []
+
+    #Now loop over and create all the screens (Currently with the same params)
+    for i in range(nScrns):
+        scrn = ft_sh_phase_screen(r0, N, pxlScale, L0, l0)
+        if returnScrns:
+            scrns.append(scrn)
+
+        #If given a directory, save them too!
+        if DIR!=None:
+            hdu = fits.PrimaryHDU(scrn)
+            hdu.header["R0"] = str(r0/pxlScale)
+            hdu.writeto(DIR+"/scrn{}.fits".format(i))
+    
+    if returnScrns:
+        return scrns
+
+
 def ft_sh_phase_screen(r0, N, delta, L0, l0, FFT=None):
     '''
     Creates a random phase screen with Von Karmen statistics with added
-    sub-harmonics to augment tip-tilt modes
+    sub-harmonics to augment tip-tilt modes.
+    (Schmidt 2010)
     
     Args:
         r0 (float): r0 parameter of scrn in metres
@@ -495,7 +569,20 @@ def ift2(G, delta_f ,FFT=None):
     return g
 
 def ft_phase_screen(r0, N, delta, L0, l0, FFT=None):
+    '''
+    Creates a random phase screen with Von Karmen statistics.
+    (Schmidt 2010)
+    
+    Args:
+        r0 (float): r0 parameter of scrn in metres
+        N (int): Size of phase scrn in pxls
+        delta (float): size in Metres of each pxl
+        L0 (float): Size of outer-scale in metres
+        l0 (float): inner scale in metres
 
+    Returns:
+        ndarray: numpy array representing phase screen
+    '''
     delta = float(delta)
     r0 = float(r0)
     L0 = float(L0)

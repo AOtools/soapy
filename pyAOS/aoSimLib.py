@@ -23,7 +23,11 @@ A module containing useful functions used throughout pyAOS
 '''
 
 import numpy
+
 from scipy.interpolate import interp2d,RectBivariateSpline
+#a lookup dict for interp2d order (expressed as 'kind')
+INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
+
 from . import AOFFT
 
 #xrange now just "range" in python3. 
@@ -36,7 +40,7 @@ except NameError:
 def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
     '''
-    Convolves 2, 2 dimensional arrays
+    Convolves two, 2-dimensional arrays
 
     Uses the AOFFT library to do fast convolution of 2, 2-dimensional numpy ndarrays. The FFT mode, and some parameters can be set in the arguments.
 
@@ -93,11 +97,52 @@ def circle(radius, size, centre_offset=(0,0)):
     x-=centre_offset[0]
     y-=centre_offset[1]
 
-    mask = x*x + y*y <= radius*radius+0.5
+    radius+=0.5
+
+    mask = x*x + y*y <= radius*radius
     
     C = numpy.zeros((size, size))
     C[mask] = 1
     return C
+
+def gaussian2d(size, width, amplitude=1., cent=None):
+    '''
+    Generates 2D gaussian distribution
+
+
+    Args:
+        size (tuple, float): Dimensions of Array to place gaussian
+        width (tuple, float): Width of distribution. 
+                                Accepts tuple for x and y values.
+        amplitude (float): Amplitude of guassian distribution
+        cent (tuple): Centre of distribution on grid.
+    '''
+
+    try:
+        xSize = size[0]
+        ySize = size[1]
+    except (TypeError, IndexError):
+        xSize = ySize = size
+
+    try:
+        xWidth = float(width[0])
+        yWidth = float(width[1])
+    except (TypeError, IndexError):
+        xWidth = yWidth = float(width)
+
+    if not cent:
+        xCent = size[0]/2.
+        yCent = size[1]/2.
+    else:
+        xCent = cent[0]
+        yCent = cent[1]
+
+    X,Y = numpy.meshgrid(range(0, xSize), range(0, ySize))
+    
+    image = amplitude * numpy.exp(
+            -(((xCent-X)/xWidth)**2 + ((yCent-Y)/yWidth)**2)/2)
+
+    return image
 
 
 
@@ -108,7 +153,7 @@ def zoom(array, newSize, order=3):
     """
     A Class to zoom 2-dimensional arrays using interpolation
 
-    Uses the scipy `RectBivariateSpline` interpolation routine to zoom into an array. Can cope with real of complex data.
+    Uses the scipy `Interp2d` interpolation routine to zoom into an array. Can cope with real of complex data.
 
     Parameters:
         array (ndarray): 2-dimensional array to zoom
@@ -118,7 +163,57 @@ def zoom(array, newSize, order=3):
     Returns:
         ndarray : zoom array of new size.
     """
-    
+   
+    if order not in INTERP_KIND:
+       raise ValueError("Order can either be 1, 3, or 5 only")
+
+    try:
+        xSize = newSize[0]
+        ySize = newSize[1]
+
+    except (IndexError, TypeError):
+        xSize = ySize = newSize
+
+    coordsX = numpy.linspace(0, array.shape[0]-1, xSize)
+    coordsY = numpy.linspace(0, array.shape[1]-1, ySize)
+
+    #If array is complex must do 2 interpolations
+    if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
+
+        realInterpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array.real, copy=False, 
+                kind=INTERP_KIND[order])
+        imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array.imag, copy=False,
+                kind=INTERP_KIND[order])                 
+        return (realInterpObj(coordsY,coordsX) 
+                            + 1j*imagInterpObj(coordsY,coordsX))
+
+        
+
+    else:
+
+        interpObj = interp2d(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array, copy=False,
+                kind=INTERP_KIND[order])
+
+        #return numpy.flipud(numpy.rot90(interpObj(coordsY,coordsX)))
+        return interpObj(coordsY,coordsX) 
+
+def zoom_rbs(array, newSize, order=3):
+    """
+    A Class to zoom 2-dimensional arrays using RectBivariateSpline interpolation
+
+    Uses the scipy ``RectBivariateSpline`` interpolation routine to zoom into an array. Can cope with real of complex data. May be slower than above ``zoom``, as RBS routine copies data.
+
+    Parameters:
+        array (ndarray): 2-dimensional array to zoom
+        newSize (tuple): the new size of the required array
+        order (int, optional): Order of interpolation to use. default is 3
+
+    Returns:
+        ndarray : zoom array of new size.
+    """
     try:
         xSize = newSize[0]
         ySize = newSize[1]
@@ -131,36 +226,102 @@ def zoom(array, newSize, order=3):
 
     #If array is complex must do 2 interpolations
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
-        # realInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#                 numpy.arange(array.shape[1]), array.real, kx=order, ky=order)
-#         imagInterpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#        numpy.arange(array.shape[1]), array.imag, kx=order, ky=order)
-           
-        realInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.real, copy=False)
-        imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.imag, copy=False)                 
-        return realInterpObj(coordsX,coordsY) \
-                            + 1j*imagInterpObj(coordsX,coordsY)
+        realInterpObj = RectBivariateSpline(   
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+                array.real, kx=order, ky=order)
+        imagInterpObj = RectBivariateSpline(   
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+                array.imag, kx=order, ky=order)
+                         
+        return (realInterpObj(coordsY,coordsX)
+                            + 1j*imagInterpObj(coordsY,coordsX))
             
     else:
 
-        # interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
-#        numpy.arange(array.shape[1]), array, kx=order, ky=order)
-        interpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array, copy=False)
+        interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
+                numpy.arange(array.shape[1]), array, kx=order, ky=order)
 
-        return interpObj(coordsX,coordsY)
+
+        return interpObj(coordsY,coordsX)
+
+
+def interp1d_numpy(array, coords):
+    """
+    A Numpy only inplementation array of 1d interpolation
+
+    Parameters:
+        array (ndarray): The 1d array to be interpolated
+        coords (ndarray): An array of coords to return values
+
+    Returns:
+        ndarray: The interpolated array
+    """ 
+    intCoords = coords.astype("int")
+    arrayInt = array[intCoords] 
+    arrayInt1 = array[(intCoords+1).clip(0,array.shape[0]-1)]
+    grad = arrayInt1 - arrayInt
+
+    rem = coords - intCoords
+
+    interpArray = arrayInt + grad*rem
+
+    return interpArray
+
+
+def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
+    """
+    A Numpy only inplementation array of 2d linear interpolation
+
+    Parameters:
+        array (ndarray): The 2d array to be interpolated
+        xCoords (ndarray): An array of coords to return values
+        yCoords (ndarray): An array of coords to return values
+        interpArray (ndarray, optional): The array to plane the interpolated data
+
+    Returns:
+        ndarray: The interpolated array
+    """ 
+
+    #xCoords, yCoords = numpy.meshgrid(yCoords, xCoords)
+
+    
+    xIntCoords = xCoords.astype("int")
+    yIntCoords = yCoords.astype("int")
+
+    arrayInt = array[xIntCoords, yIntCoords]
+
+    xGrad = array[
+            (xIntCoords+1).clip(0, array.shape[0]-1), yIntCoords] - arrayInt
+
+    yGrad = array[
+            xIntCoords, (yIntCoords+1).clip(0, array.shape[1]-1)] - arrayInt
+
+    if numpy.any(interpArray):
+        interpArray[:] = (arrayInt + xGrad*(xCoords-xIntCoords) 
+                            + yGrad*(yCoords-yIntCoords))
+    else:
+        interpArray = (arrayInt + xGrad*(xCoords-xIntCoords) 
+                            + yGrad*(yCoords-yIntCoords))
+
+    return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
 
 
 #######################
 #WFS Functions
 ######################
 
-def findActiveSubaps(subaps,mask,threshold):
+def findActiveSubaps(subaps, mask, threshold):
     '''
     Finds the subapertures which are "seen" be through the
     pupil function. Returns the coords of those subaps
+    
+    Parameters:
+        subaps (int): The number of subaps in x (assumes square)
+        mask (ndarray): A pupil mask, where is transparent when 1, and opaque when 0
+        threshold (float): The mean value across a subap to make it "active"
+        
+    Returns:
+        ndarray: An array of active subap coords
     '''
 
     subapCoords = []
@@ -169,8 +330,10 @@ def findActiveSubaps(subaps,mask,threshold):
 
     for x in range(subaps):
         for y in range(subaps):
-            subap = mask[   x*xSpacing:(x+1)*xSpacing,
-                            y*ySpacing:(y+1)*ySpacing ]
+            subap = mask[   
+                    numpy.round(x*xSpacing): numpy.round((x+1)*xSpacing),
+                    numpy.round(y*ySpacing): numpy.round((y+1)*ySpacing) 
+                    ]
 
             if subap.mean() >= threshold:
                 subapCoords.append( [x*xSpacing, y*ySpacing])
@@ -178,7 +341,7 @@ def findActiveSubaps(subaps,mask,threshold):
     subapCoords = numpy.array( subapCoords )
     return subapCoords
 
-def binImgs(data,n):
+def binImgs(data, n):
     '''
     Bins one or more images down by the given factor
     bins. n must be a factor of data.shape, who knows what happens
@@ -264,6 +427,74 @@ def brtPxlCentroid(img, nPxls):
 
     return simpleCentroid(img)
 
+def corrConvolve(x, y):
+    '''
+    2D convolution using FFT, use to generate cross-correlations.
+
+    Args:
+        x (array): subap image
+        y (array): reference image
+    Returns:
+        ndarray: cross-correlation of x and y
+    '''
+
+    fr = numpy.fft.fft2(x)
+    fr2 = numpy.fft.fft2(y[::-1, ::-1])
+    m, n = fr.shape
+
+    cc = (numpy.fft.ifft2(fr*fr2)).real
+    cc = numpy.roll(cc, -m/2+1, axis=0)
+    cc = numpy.roll(cc, -n/2+1, axis=1)
+
+    return cc
+
+def correlationCentriod(im, ref, threshold_fac=0.8):
+    '''
+    Correlation Centroider, currently only works for 3d im shape.
+    Performs a simple thresholded COM on the correlation.
+
+    Args:
+        im: subap images (t, y, x)
+        ref: reference image (t, y, x)
+        threshold_fac: threshold for COM (0=all pixels, 1=brightest pixel)
+    Returns:
+        ndarray: centroids of im, given as x, y
+    '''
+
+    nt, ny, nx = im.shape
+
+    cents = numpy.zeros((2, nt))
+
+    for frame in range(nt):
+        # Correlate frame with reference image
+        corr = corrConvolve(im[frame], ref[frame])
+        # Find brightest pixel.
+        index_y, index_x = numpy.unravel_index(corr.argmax(),
+                                               corr.shape)
+
+        # Apply threshold
+        corr -= corr.min()
+        mx = corr.max()
+        bg = threshold_fac*mx
+        corr = numpy.clip(corr, bg, mx) - bg
+
+        # Centroid
+        s_y, s_x = corr.shape
+        XRAMP = numpy.arange(s_x)
+        YRAMP = numpy.arange(s_y)
+        XRAMP.shape = (1, s_x)
+        YRAMP.shape = (s_y,  1)
+
+        si = corr.sum()
+        if si == 0:
+            si = 1
+        cx = (corr * XRAMP).sum() / si
+        cy = (corr * YRAMP).sum() / si
+
+        cents[:, frame] = cx, cy
+
+    return cents
+
 def quadCell(img):
     
     xSum = img.sum(-2)
@@ -276,7 +507,14 @@ def quadCell(img):
 
 def zernike(j, N):
     """
-     Creates the Zernike polynomial with mode index j, where i = 1 corresponds to piston  
+     Creates the Zernike polynomial with mode index j, 
+     where j = 1 corresponds to piston.
+
+     Args: 
+        j (int): The noll j number of the zernike mode
+        N (int): The diameter of the zernike more in pixels
+     Returns:
+        ndarray: The Zernike mode
      """
     n,m = zernIndex(j);
 
@@ -368,3 +606,23 @@ def zernikeArray(J, N):
 
     return Zs
 
+
+def aziAvg(data):
+    """
+    Measures the azimuthal average of a 2d array
+
+    Parameters:
+
+        data (ndarray): A 2-d array of data
+
+    Returns:
+        ndarray: A 1-d vector of the azimuthal average
+    """
+
+    size = data.shape[0]
+    avg = numpy.empty(size/2, dtype="float")
+    for i in range(size/2):
+        ring = circle(i+1, size) - circle(i, size)
+        avg[i] = (ring*data).sum()/(ring.sum())
+
+    return avg

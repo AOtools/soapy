@@ -43,20 +43,20 @@ simConfiguration = {
     },
 
 "Telescope":{
-   "telDiam"        :   8.,  #Metres
-   "obs"            :   1.1, #Central Obscuration
+   "telDiam"        :   4.2,  #Metres
+   "obs"            :   1., #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
     "GSPosition"    :   [(0,0),    (0,0)],
     "GSHeight"      :   [0,         90e3],
-    "subaps"        :   [1,         16],
-    "pxlsPerSubap"  :   [10,         14],
-    "subapFOV"      :   [1.5,       3.0],
+    "subaps"        :   [1,         8],
+    "pxlsPerSubap"  :   [20,         14],
+    "subapFOV"      :   [2.0,       5.0],
     "subapOversamp" :   [4,         4],
     "wavelength"    :   [600e-9]*2,
-    "bitDepth"      :   [32]*2,
+    "bitDepth"      :   [8]*2,
     "lgs"           :   [False,     True],
     "centMethod"    :   ["brightestPxl"]*2,
     "centThreshold" :   [0.2]*2,
@@ -76,17 +76,17 @@ simConfiguration = {
 
 "DM":{
     "dmType"        :   ["TT",     "Piezo"],
-    "dmActs"        :   [2,         17**2],
-    "dmCond"        :   [1e-15,      0.09],
+    "dmActs"        :   [2,         9**2],
+    "dmCond"        :   [1e-15,      0.07],
     "closed"        :   [True,      True],
     "gain"          :   [0.6,       0.6],
-    "iMatValue"     :   [0.2,        0.2  ],
+    "iMatValue"     :   [1.,        0.2  ],
     "wfs"           :   [0,         1],
     },
 
 "Science":{
     "position"      :   [(0,0)],
-    "FOV"           :   [1.5],
+    "FOV"           :   [4.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
     "oversamp"      :   [2],

@@ -104,14 +104,8 @@ class Reconstructor(object):
             dmNo = int(header["DMNO"])
             exec("dmActs = numpy.array({})".format(cMatHDU.header["DMACTS"]), globals())
             exec("dmTypes = %s"%header["DMTYPE"],globals())
-            print(cMatHDU.header["DMCOND"])
             exec("dmConds = numpy.array({})".format(cMatHDU.header["DMCOND"]),globals())
-            
-            print("dmConds: {}".format(self.dmConds))
-            print("loaded dmConds: {}".format(dmConds))
-
-            #print(dmConds==self.dmConds))
- 
+             
             if not numpy.allclose(dmConds,self.dmConds):
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:
@@ -156,8 +150,8 @@ class Reconstructor(object):
             if iMat.shape!=(self.dms[dm].acts,2*self.dms[dm].totalSubaps):
                 logger.warning("interaction matrix does not match required required size.")
                 raise Exception
-            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.pupilSize:
-                logger.warning("loaded DM shapes are not same size as current pupil.")
+            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.simSize:
+                logger.warning("loaded DM shapes are not same size as current sim.")
                 raise Exception
             else:
                 self.dms[dm].iMat = iMat
@@ -168,9 +162,7 @@ class Reconstructor(object):
  
         for dm in xrange(self.simConfig.nDM):
             logger.info("Creating Interaction Matrix on DM %d..."%dm)
-            self.dms[dm].makeIMat(callback=callback, 
-                                        progressCallback=progressCallback)
-
+            self.dms[dm].makeIMat(callback=callback) 
         
     def makeCMat(self,loadIMat=True, loadCMat=True, callback=None, 
                         progressCallback=None):
@@ -180,7 +172,7 @@ class Reconstructor(object):
                 self.loadIMat()
                 logger.info("Interaction Matrices loaded successfully")
             except:
-                traceback.print_exc()
+                #traceback.print_exc()
                 logger.warning("Load Interaction Matrices failed - will create new one.")
                 self.makeIMat(callback=callback,    
                          progressCallback=progressCallback)
@@ -188,7 +180,6 @@ class Reconstructor(object):
                 logger.info("Interaction Matrices Done")
                 
         else:
-            
             self.makeIMat(callback=callback, progressCallback=progressCallback)
             logger.info("Interaction Matrices Done")
         
@@ -197,7 +188,7 @@ class Reconstructor(object):
                 self.loadCMat()
                 logger.info("Command Matrix Loaded Successfully")
             except:
-                traceback.print_exc()
+                #traceback.print_exc()
                 logger.warning("Load Command Matrix failed - will create new one")
                 
                 self.calcCMat(callback, progressCallback)
@@ -217,10 +208,6 @@ class Reconstructor(object):
         self.Trecon += time.time()-t
         return dmCommands
 
-            
-
- 
-
 
 class MVM(Reconstructor):
 
@@ -231,17 +218,40 @@ class MVM(Reconstructor):
         control matrix
         '''
         acts = 0
+        self.iMat = numpy.empty_like(self.controlMatrix.T)
+        for dm in xrange(self.simConfig.nDM):
+            self.iMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
+            acts+=self.dms[dm].acts
+        
+        logger.info("Invert iMat with cond: {}".format(
+                self.dms[dm].dmConfig.dmCond))
+        self.controlMatrix = scipy.linalg.pinv(
+                self.iMat, self.dms[dm].dmConfig.dmCond
+                )
+            
+
+class MVM_SeparateDMs(Reconstructor):
+
+
+    def calcCMat(self,callback=None, progressCallback=None):
+        '''
+        Uses DM object makeIMat methods, then inverts each to create a 
+        control matrix
+        '''
+        acts = 0
+
         for dm in xrange(self.simConfig.nDM):
 
             dmIMat = self.dms[dm].iMat
 
+            #Treats each DM iMat seperately
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
-                dmCMat = scipy.linalg.pinv( dmIMat, 
+                dmCMat = scipy.linalg.pinv( dmIMat,
                                             self.dms[dm].dmConfig.dmCond)
 
-            self.controlMatrix[ 
+            self.controlMatrix[
                     self.dms[dm].wfs.wfsConfig.dataStart:
                     (self.dms[dm].wfs.activeSubaps*2
                                 +self.dms[dm].wfs.wfsConfig.dataStart),
@@ -253,7 +263,7 @@ class MVM(Reconstructor):
         Returns DM commands given some slopes
         
         First, if there's a TT mirror, remove the TT from the TT WFS (the 1st
-        WFS slopes) and get TT commands to send to the mirror. This slopes may
+        WFS slopes) and get TT commands to send to the mirror. These slopes may
         then be used to reconstruct commands for others DMs, or this could be 
         the responsibility of other WFSs depending on the config file.
         """
@@ -262,13 +272,15 @@ class MVM(Reconstructor):
             ttMean = slopes[self.dms[0].wfs.wfsConfig.dataStart:
                             (self.dms[0].wfs.activeSubaps*2
                                 +self.dms[0].wfs.wfsConfig.dataStart)
-                            ].reshape(2,  
+                            ].reshape(2,
                                 self.dms[0].wfs.activeSubaps).mean(1)
             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-            slopes[self.dms[0].wfs.wfsConfig.dataStart:
-                            (self.dms[0].wfs.wfsConfig.dataStart
-                                +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
-            slopes[ self.dms[0].wfs.wfsConfig.dataStart
+            slopes[
+                    self.dms[0].wfs.wfsConfig.dataStart:
+                    (self.dms[0].wfs.wfsConfig.dataStart
+                        +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
+            slopes[ 
+                    self.dms[0].wfs.wfsConfig.dataStart
                         +self.dms[0].wfs.activeSubaps:
                     self.dms[0].wfs.wfsConfig.dataStart
                         +2*self.dms[0].wfs.activeSubaps] -= ttMean[1]
@@ -278,6 +290,8 @@ class MVM(Reconstructor):
 
             return numpy.append(ttCommands, dmCommands)
 
+        
+    
         #get dm commands for the calculated on axis slopes
         dmCommands = self.controlMatrix.T.dot(slopes)
         return dmCommands
@@ -316,7 +330,7 @@ class LgsTT(MVM):
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
-        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
+        if tomoMat.shape != (2*self.wfss[1].activeSubaps, self.simConfig.totalWfsData - self.wfss[2].wfsConfig.dataStart):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:
@@ -393,6 +407,7 @@ class LgsTT(MVM):
 
         super(LgsTT, self).calcCMat(callback, progressCallback)
 
+
     def reconstruct(self, slopes):
         """
         Determine DM commands using previously made
@@ -403,7 +418,7 @@ class LgsTT(MVM):
             ndarray: array to commands to be sent to DM
         """
   
-        #Get off axis slopes nd remove *common* TT
+        #Get off axis slopes and remove *common* TT
         offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
         offSlopes = self.removeCommonTT(offSlopes,[2,3,4,5])
         

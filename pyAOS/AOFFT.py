@@ -56,9 +56,9 @@ class FFT(object):
     then be transformed. 
     
     Usually, its best to best to pass the data when performing the fft, either
-    calling the class directly (`fftobj(fftData)`) or calling the `fft` method of the 
+    calling the class directly (``fftobj(fftData)``) or calling the ``fft`` method of the 
     class. If though, you're certain the array to transform is C-contiguous, 
-    and its size is the same as `inputSize`, then you can set:: 
+    and its size is the same as ``inputSize``, then you can set:: 
         
         fftObj.inputData = fftData
     
@@ -66,7 +66,7 @@ class FFT(object):
         
         outputData = fftObj()
         
-    where `fftData` is the data to be transformed. This is faster, as it avoids
+    where ``fftData`` is the data to be transformed. This is faster, as it avoids
     an array copying operation, but is dangerous as the FFT may fail if the 
     input data is not correct.
 
@@ -74,8 +74,8 @@ class FFT(object):
     Parameters:
         inputSize (tuple): The size of the input array, including any padding
         axes (tuple, optional): The axes to transform. defaults to the last.
-        mode (string, optional): Which FFT library to use, can by `'pyfftw'`, `'scipy'` or `'gpu'`. Defaults to `'pyfftw'`.
-        dtype (string, optional): The data type to transform, defaults to `'complex64'`
+        mode (string, optional): Which FFT library to use, can by ``'pyfftw'``, ``'scipy'`` or ``'gpu'``. Defaults to ``'pyfftw'``.
+        dtype (string, optional): The data type to transform, defaults to ``'complex64'``
      '''
 
     def __init__(self,inputSize, axes=(-1,),mode="pyfftw",dtype="complex64",
@@ -161,7 +161,8 @@ class FFT(object):
                                 dtype)
             self.outputData[:] = numpy.zeros( inputSize,dtype=dtype)
 
-            logger.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS (currently set to: {})".format(fftw_FLAGS))
+            logger.info("Generating fftw3 plan....\nIf this takes too long, change fftw_FLAGS.")
+            logger.debug("currently set to: {})".format(fftw_FLAGS))
             if direction=="FORWARD":
                 self.fftwPlan = pyfftw.FFTW(self.inputData,self.outputData,
                                 axes=axes, threads=THREADS,flags=fftw_FLAGS)
@@ -191,7 +192,7 @@ class FFT(object):
         Perform the fft of `data`.
         
         Parameters:
-            data (ndarray, optional): The data to transform. Optional as sometimes it can be faster to access `inputData` directly, though if and only if the data will be c-contiguous.
+            data (ndarray, optional): The data to transform. Optional as sometimes it can be faster to access ``inputData`` directly, though if and only if the data will be c-contiguous.
 
         Returns:
             ndarray: The transformed data

@@ -23,14 +23,38 @@ or both. The verbosity can also be adjusted between 0 and 3, where all is logged
 """
 import inspect
 import sys
+try:
+    import colorama
+    colorama.init()
+    RED = colorama.Fore.RED
+    BLUE = colorama.Fore.BLUE
+    GREEN = colorama.Fore.GREEN
+    MAGENTA = colorama.Fore.MAGENTA
+    COLOUR_RESET = colorama.Style.RESET_ALL
+except:
+    COLOUR_RESET = RED = BLUE = GREEN = MAGENTA = ""
+
+COLOURS = {1 :RED, 2 :BLUE, 3:GREEN, 4:MAGENTA}
+
+
 
 LOGGING_LEVEL = 1
 LOGGING_FILE = None
 STATUS_FUNC = None
 
 def setLoggingLevel(level):
-	global LOGGING_LEVEL
-	LOGGING_LEVEL = level
+    """
+    sets which messages are printed from logger.
+
+    if logging level is set to 0, nothing is printed. if set to 1, only
+    warnings are printed. if set to 2, warnings and info is printed. if set
+    to 3 detailed debugging info is printed.
+
+    parameters:
+        level (int): the desired logging level
+    """
+    global LOGGING_LEVEL
+    LOGGING_LEVEL = level
 
 def setLoggingFile(logFile):
 	global LOGGING_FILE
@@ -44,7 +68,7 @@ def setStatusFunc(func):
 def statusMessage(i, maxIter, message):
 	if not STATUS_FUNC:
 		sys.stdout.flush()
-		sys.stdout.write("\r{0} of {1}: {2}".format(i+1,maxIter, message))
+		sys.stdout.write(COLOURS[4]+"\r{0} of {1}: {2}".format(i+1,maxIter, message)+COLOUR_RESET)
 
 	else:
 		STATUS_FUNC(message, i, maxIter)
@@ -62,15 +86,16 @@ def _printMessage(message, level=3):
 		message(str): The message to log
 	"""
 
+
 	if LOGGING_LEVEL>=level:
 		if LOGGING_LEVEL>2 or level==1:
 			curframe = inspect.currentframe()
 			calframe = inspect.getouterframes(curframe, 2)
-			message = calframe[2][1].split("/")[-1]+" - "+calframe[2][3] + ": " + message
+			message = calframe[2][1].split("/")[-1]+" -> "+calframe[2][3] + ": " + message
 
 		if LOGGING_FILE:
 			with open(LOGGING_FILE, "a") as File:
-				File.write(message+"\n")
+				File.write(COLOURS[level]+message+"\n")
 
 		if STATUS_FUNC:
 			STATUS_FUNC(message)
@@ -116,119 +141,3 @@ def warning(message):
 	"""
 	_printMessage(message,1)
 
-
-
-# class Logger(object):
-# 	"""
-# 	The object providing a common interface for all logging.
-
-# 	Args:
-# 		filename (string): Filename of the file to log to. If ``None``, then logging isn't saved to file.
-# 		verbosity (int): controls amount of output. Can be set to 0,1,2,3
-# 	"""
-# 	def __init__(self):
-
-# 		self.loggingFile = LOGGING_FILE
-# 		self.verbosity = LOGGING_LEVEL
-
-
-# 	def _setVerbosity(self, v):
-# 		global LOGGING_LEVEL
-
-# 		if v<0:
-# 			self._verbosity = 0
-# 		elif v>3:
-# 			self._verbosity = 3
-# 		else:
-# 			self._verbosity = int(v)	
-
-# 		LOGGING_LEVEL = self.verbosity
-# 		self.debug("Logging level set to: %d"%self._verbosity)
-
-# 	def _getVerbosity(self):
-		
-# 		return self._verbosity
-
-# 	def _setLoggingFile(self, f):
-# 		global LOGGING_FILE
-
-# 		self._loggingFile = f
-# 		LOGGING_FILE = self.loggingFile
-
-# 	def _getLoggingFile(self):
-# 		return self._loggingFile
-
-
-# 	def _printMessage(self, message):
-# 		"""
-# 		Internal function to add debug info to message and print
-
-# 		Args:
-# 			message(str): The message to log
-# 		"""
-
-# 		curframe = inspect.currentframe()
-# 		calframe = inspect.getouterframes(curframe, 2)
-
-# 		logMessage = calframe[2][1].split("/")[-1]+" - "+calframe[2][3] + ": " + message
-# 		if self.loggingFile:
-# 			with open(self.filename, "w") as File:
-# 				File.write(logMessage+"\n")
-# 		print(logMessage)
-
-# 	def print_(self, message):
-# 		"""
-# 		Always logs message, regardless of verbosity level
-
-# 		Args:
-# 			message(str): The message to log
-# 		"""
-
-# 		self._printMessage(message)
-
-
-# 	def info(self, message):
-# 		"""
-# 		Logs message if verbosity is 2 or higher. Useful for information which is not vital, but good to know.
-
-# 		Args:
-# 			message (string): The message to log
-# 		"""
-		
-# 		if self.verbosity>=2:
-# 			#self._printMessage("Info: {0}".format(message))
-# 			print(message)
-# 		else:
-# 			pass
-
-
-# 	def debug(self, message):
-# 		"""
-# 		Logs messages if debug level is 3. Intended for very detailed debugging information.
-
-# 		Args:
-# 			message (string): The message to log
-# 		"""
-# 		if self.verbosity>=3:
-# 			self._printMessage("Debug: {0}".format(message))
-		
-# 		else:
-# 			pass
-
-# 	def warning(self, message):
-# 		"""
-# 		Logs messages if debug level is 1 or over. Intended for warnings
-
-# 		Args:
-# 			message (string): The message to log
-# 		"""
-# 		if self.verbosity>=1:
-# 			self._printMessage("WARNING: {0}".format(message))		
-# 		else:
-# 			pass
-		
-# 	verbosity = property(_getVerbosity, _setVerbosity, doc="The verbosity level of the logger. If 0, nothing is logged, if 1 debug is logged, if 2 debug and info is logged")	
-# 	loggingFile = property(_getLoggingFile, _setLoggingFile)
-	
-	
-	

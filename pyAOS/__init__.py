@@ -22,9 +22,9 @@
 '''
 The main pyAOS Simulation module
 
-This module contains the `Sim` class, which can be used to run an end-to-end simulation. Initally, a configuration file is read, the system is initialised, interaction and command matrices calculated and finally a loop run. The simulation outputs some information to the console during the simulation.
+This module contains the ``Sim`` class, which can be used to run an end-to-end simulation. Initally, a configuration file is read, the system is initialised, interaction and command matrices calculated and finally a loop run. The simulation outputs some information to the console during the simulation.
 
-    The `Sim` class holds all configuration information and data from the simulation. 
+    The ``Sim`` class holds all configuration information and data from the simulation. 
 
 Examples:
     
@@ -33,16 +33,16 @@ Examples:
         import pyAOS
         sim = pyAOS.Sim("sh_8x8_4.2m.py")
 
-    Configuration information has now been loaded, and can be accessed through the `config` attribute of the `sim` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
+    Configuration information has now been loaded, and can be accessed through the ``config`` attribute of the ``sim`` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
 
-        sim.config.sim.pupilSize
-        sim.config.sim.wfs[0].pxlsPerSubap = 10
+        print(sim.config.sim.pupilSize)
+        sim.config.wfs[0].pxlsPerSubap = 10
 
     Next, the system is initialised, this entails calculating various parameters in the system sub-modules, so must be done after changing some simulation parameters::
 
         sim.aoinit()
 
-    DM Interation and command matrices are calculated now. If `sim.config.sim.filePrefix` is not `None`, then these matrices will be saved in `data/filePrefix`(data will be saved here also in a time-stamped directory)::
+    DM Interation and command matrices are calculated now. If ``sim.config.sim.filePrefix`` is not ``None``, then these matrices will be saved in `data/filePrefix`(data will be saved here also in a time-stamped directory)::
 
         sim.makeIMat()
 
@@ -51,14 +51,12 @@ Examples:
 
         sim.aoloop()
 
-    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to `data/filePrefix` (if it is not set to `None`). Data can also be accessed from the simulation class, e.g. `sim.allSlopes`, `sim.longStrehl`
+    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/filePrefix`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes`, `sim.longStrehl`
 
 
 :Author:
     Andrew Reeves
 
-:Version:
-    0.6.1
 '''
 
 #sim imports
@@ -97,8 +95,6 @@ try:
     xrange
 except NameError:
     xrange = range
-
-__version__ = 0.5
 
 
 class Sim(object):
@@ -141,6 +137,19 @@ class Sim(object):
         self.config.readfile()
         self.config.loadSimParams()
 
+    def setLoggingLevel(self, level):
+        """
+        sets which messages are printed from logger.
+
+        if logging level is set to 0, nothing is printed. if set to 1, only
+        warnings are printed. if set to 2, warnings and info is printed. if set
+        to 3 detailed debugging info is printed.
+
+        parameters:
+            level (int): the desired logging level
+        """
+        logger.setLoggingLevel(level)
+
     def aoinit(self):
         '''
         Initialises all simulation objects.
@@ -160,7 +169,6 @@ class Sim(object):
 
         #calculate some params from read ones
         #calculated
-        self.aoloop = self.loop#eval("self."+self.config.sim.aoloopMode)
         self.config.calcParams()
 
         #Init Pupil Mask
@@ -173,7 +181,11 @@ class Sim(object):
                         self.config.tel.obs*self.config.sim.pxlScale/2., 
                         self.config.sim.pupilSize
                         )
-   
+        else:
+            self.mask = self.config.tel.mask.copy()
+    
+        self.mask = numpy.pad(
+                self.mask, self.config.sim.simPad, mode="constant")
 
         self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
@@ -187,15 +199,18 @@ class Sim(object):
         else:
             self.runWfs = self.runWfs_noMP
 
-
-
         #init WFSs
         logger.info("Initialising WFSs....")
         self.wfss = {}
         self.config.sim.totalWfsData = 0
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for wfs in xrange(self.config.sim.nGS):
-            wfsClass = eval("reikna_WFS.{}".format(self.config.wfs[wfs].type))
+            try:
+                wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
+            except AttributeError:
+                raise confParse.ConfigurationError("No WFS of type {} found.".format(self.config.wfs[wfs].type))
+
+
             self.wfss[wfs]=wfsClass(    
                     self.config.sim, self.config.wfs[wfs], 
                     self.config.atmos, self.config.lgs[wfs], self.mask)
@@ -206,21 +221,21 @@ class Sim(object):
             logger.info("WFS {0}: {1} measurements".format(wfs,
                      self.wfss[wfs].activeSubaps*2))
 
-
-
         #init DMs
         logger.info("Initialising DMs...")
-        if self.config.sim.tipTilt:
-            self.TT = DM.TT1(self.config.sim.pupilSize, self.wfss[0], self.mask)
+
 
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
         self.dmAct1 = []
-        self.dmShape = numpy.zeros( [self.config.sim.pupilSize]*2 )
+        self.dmShape = numpy.zeros( [self.config.sim.simSize]*2 )
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
-            dmObj = eval( "DM."+self.config.dm[dm].dmType)
+            try:
+                dmObj = eval( "DM."+self.config.dm[dm].dmType)
+            except AttributeError:
+                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dm[dm].dmType))
 
             self.dms[dm] = dmObj(
                         self.config.sim, self.config.dm[dm],
@@ -237,7 +252,10 @@ class Sim(object):
 
         #init Reconstructor
         logger.info("Initialising Reconstructor...")
-        reconObj = eval("RECON."+self.config.sim.reconstructor)
+        try:
+            reconObj = eval("RECON."+self.config.sim.reconstructor)
+        except AttributeError:
+            raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
         self.recon = reconObj(  self.config.sim, self.dms, 
                                 self.wfss, self.atmos, self.runWfs
                                 )
@@ -296,10 +314,6 @@ class Sim(object):
         """
         t = time.time()
         logger.info("Making interaction Matrices...")
-        if self.config.sim.tipTilt:
-            logger.info("Generating Tip Tilt IMat")
-            self.TT.makeIMat(self.addToGuiQueue,
-                                    progressCallback=progressCallback)
 
         if forceNew:
             loadIMat=False
@@ -368,7 +382,12 @@ class Sim(object):
         """
         Runs all WFSs using multiprocessing
         
-        Runs a single frame for each WFS in wfsList, passing the given phase screens and optional dmShape (if WFS in closed loop). If LGSs are present it will also deals with LGS propagation. Finally, the slopes from all WFSs are returned. Each WFS is allocated a separate process to complete the frame, giving a significant increase in speed, especially for computationally heavy WFSs.
+        Runs a single frame for each WFS in wfsList, passing the given phase 
+        screens and optional dmShape (if WFS in closed loop). If LGSs are 
+        present it will also deals with LGS propagation. Finally, the slopes 
+        from all WFSs are returned. Each WFS is allocated a separate process 
+        to complete the frame, giving a significant increase in speed, 
+        especially for computationally heavy WFSs.
         
         Args:
             scrns (list): List of phase screens passing over telescope
@@ -416,13 +435,11 @@ class Sim(object):
 
         for proc in xrange(len(wfsList)):
             wfs = wfsList[proc]
-            
-            result = wfsQueues[proc].get()
 
             (slopes[s:s+self.wfss[wfs].activeSubaps*2],
                     self.wfss[wfs].wfsDetectorPlane,
                     self.wfss[wfs].uncorrectedPhase,
-                    lgsPsf) = result
+                    lgsPsf) = wfsQueues[proc].get()
             
             if numpy.any(lgsPsf)!=None:
                 self.wfss[wfs].LGS.psf1 = lgsPsf
@@ -431,34 +448,7 @@ class Sim(object):
             s += self.wfss[wfs].activeSubaps*2
             
         self.Twfs+=time.time()-t_wfs
-        return slopes
-
-
-    def runTipTilt(self,slopes,closed=True):
-        """
-        Runs a single frame of the Tip-Tilt Mirror
-
-        Uses a previously created interaction matrix to calculate the correction required for the given slopes from a tip-tilt (TT) mirror. Returns the phase of the TT mirror and also the now TT corrected slopes. If no TT mirror is present in the system, then an array of zeros is returns and the slopes are unchanged.
-
-        Args:
-            slopes (ndarray): An array of WFS slope values
-            closed (bool, optional): if True, TT acts in closed loop and the mirror shape is only updated from previous shape based on set TT gain value
-        Returns:
-            ndArray: New shape of the TT mirror
-            ndArray: TT corrected slopes
-        """
-
-        self.dmShape[:] = 0
-        if self.config.sim.tipTilt:
-            #calculate the shape of TT Mirror
-            self.dmShape += self.TT.dmFrame(slopes,self.config.sim.ttGain)
-
-            #Then remove TT signal from slopes
-            xySlopes = slopes.reshape(2,self.TT.wfs.activeSubaps)
-            xySlopes = (xySlopes.T - xySlopes.mean(1)).T
-            slopes = xySlopes.reshape(self.TT.wfs.activeSubaps*2)
-
-        return self.dmShape, slopes
+        return slopes 
 
 
     def runDM(self,dmCommands,closed=True):
@@ -507,69 +497,75 @@ class Sim(object):
 
         self.Tsci +=time.time()-t
 
-    def loop(self):
+    def aoloop(self):
         """
         Main AO Loop - loop open
 
-        Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Open loop, i.e., the WFSs are executed before the DM with no DM information being sent back to the WFSs.
+        Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. 
         """
         
         self.iters=1
         self.correct=1
         self.go = True
-        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
 
+        #Circular buffers to hold loop iteration correction data
+        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
         self.closedCorrection = numpy.zeros(self.dmShape.shape)
         self.openCorrection = self.closedCorrection.copy()
         self.dmCommands = numpy.zeros( self.config.sim.totalActs )
+        
+        try:
+            for i in xrange(self.config.sim.nIters):
+                if self.go:
 
-        for i in xrange(self.config.sim.nIters):
-            if self.go:
+                    #get next phase screens
+                    t = time.time()
+                    self.scrns = self.atmos.moveScrns()
+                    self.Tatmos = time.time()-t
 
-                #get next phase screens
-                t = time.time()
-                self.scrns = self.atmos.moveScrns()
-                self.Tatmos = time.time()-t
+                    #Reset correction
+                    self.closedCorrection[:] = 0
+                    self.openCorrection[:] = 0
 
-                #Reset correction
-                self.closedCorrection[:] = 0
-                self.openCorrection[:] = 0
+                    #Run Loop...
+                    ########################################
 
-                #Run Loop...
+                    #Get dmCommands from reconstructor
+                    if self.config.sim.nDM:
+                        self.dmCommands[:] = self.recon.reconstruct(self.slopes)
 
-                #Get dmCommands from reconstructor
-                if self.config.sim.nDM:
-                    self.dmCommands[:] = self.recon.reconstruct(self.slopes)
+                    #Get dmShape from closed loop DMs
+                    self.closedCorrection += self.runDM(
+                            self.dmCommands, closed=True)
 
-                #Get dmShape from closed loop DMs
-                self.closedCorrection += self.runDM(self.dmCommands, closed=True)
+                    #Run WFS, with closed loop DM shape applied
+                    self.slopes = self.runWfs(  dmShape=self.closedCorrection,
+                                                loopIter=i)
 
-                #Run WFS, with closed loop DM shape applied
-                self.slopes = self.runWfs(  dmShape=self.closedCorrection,
-                                            loopIter=i)
+                    #Get DM shape for open loop DMs, add to closed loop DM shape
+                    self.openCorrection += self.runDM(  self.dmCommands, 
+                                                        closed=False)
 
-                #Get DM shape for open loop DMs, add to closed loop DM shape
-                self.openCorrection += self.runDM(  self.dmCommands, 
-                                                    closed=False)
+                    #Pass whole combined DM shapes to science target
+                    self.runSciCams(
+                                self.openCorrection+self.closedCorrection)
+                    
+                    #Save Data
+                    self.storeData(i)
 
-                #Run a tip-tilt mirror if set
-                ttShape, self.slopes = self.runTipTilt(self.slopes)
+                    self.iters = i
 
-                #Pass whole combine DM shapes to science target
-                self.runSciCams(
-                            self.openCorrection+self.closedCorrection+ttShape)
-                
-                #Save Data
-                self.storeData(i)
+                    #logger.statusMessage(i, self.config.sim.nIters, 
+                    #                    "AO Loop")
+                    
+                    self.printOutput(self.config.filename, i, strehl=True)
 
-                self.iters = i
-
-                logger.statusMessage(i, self.config.sim.nIters, 
-                                    "AO Loop")
-
-                self.addToGuiQueue()
-            else:
-                break
+                    self.addToGuiQueue()
+                else:
+                    break
+        except KeyboardInterrupt:
+            self.go = False
+            logger.info("\nSim exited by user\n") 
 
         #Finally save data after loop is over.
         self.saveData()
@@ -610,7 +606,6 @@ class Sim(object):
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
 
-
             shutil.copyfile( self.configFile, self.path+"/conf.py" )
 
         #Init Strehl Saving
@@ -623,7 +618,14 @@ class Sim(object):
         if self.config.sim.saveSciRes and self.config.sim.nSci>0:
             for sci in xrange(self.config.sim.nSci):
                 self.sciPhase.append(
-                    numpy.empty( (self.config.sim.nIters, self.config.sim.pupilSize, self.config.sim.pupilSize)))
+                    numpy.empty( 
+                            (self.config.sim.nIters, self.config.sim.simSize, 
+                            self.config.sim.simSize)))
+
+        #Init science WFE saving
+        self.WFE = numpy.zeros(
+                    (self.config.sim.nSci, self.config.sim.nIters)
+                    )
 
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
@@ -634,8 +636,7 @@ class Sim(object):
         #Init DM Command Data saving
         if self.config.sim.saveDmCommands:
             ttActs = 0
-            if self.config.sim.tipTilt:
-                ttActs = 2
+
             self.allDmCommands = numpy.empty( (self.config.sim.nIters, ttActs+self.config.sim.totalActs))
 
         else:
@@ -656,26 +657,21 @@ class Sim(object):
         else:
             self.lgsPsfs = None
 
-
-
-
-    def storeData(self,i):
+    def storeData(self, i):
         """
         Stores data from each frame in an appropriate data structure.
 
         Called on each frame to store the simulation data into various data structures corresponding to different data sources in the system. 
 
         Args:
-            i(int): The system iteration number
+            i (int): The system iteration number
         """
         if self.config.sim.saveSlopes:
             self.allSlopes[i] = self.slopes
 
         if self.config.sim.saveDmCommands:
             act=0
-            if self.config.sim.tipTilt:
-                self.allDmCommands[i,:2] = self.TT.dmCommands
-                act=2
+
             self.allDmCommands[i,act:] = self.dmCommands
 
         #Quick bodge to save lgs psfs as images
@@ -690,6 +686,9 @@ class Sim(object):
             for sci in xrange(self.config.sim.nSci):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
+                res = self.sciCams[sci].residual*self.sciCams[sci].r0Scale
+                self.WFE[sci,i] =  numpy.sqrt(
+                        ((res-res.mean())**2).sum()/self.mask.sum())
             
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
@@ -724,6 +723,8 @@ class Sim(object):
                 fits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs, 
                                 clobber=True)
 
+            if self.config.sim.saveWFE:
+                fits.writeto(self.path+"/WFS.fits", self.WFS, clobber=True)
 
             if self.config.sim.saveStrehl:
                 fits.writeto(self.path+"/instStrehl.fits", self.instStrehl,
@@ -753,7 +754,7 @@ class Sim(object):
         return datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 
-    def printOutput(self,label,iter,strehl=False):
+    def printOutput(self, label, iter, strehl=False):
         """
         Prints simulation information  to the console
 
@@ -763,15 +764,15 @@ class Sim(object):
             iter(int): simulation frame number
             strehl(float, optional): current strehl ration if science cameras are present to record it.
         """
-        
-        string = "%s Frame: %d      \n"%(label,iter)
+        string = label
         if strehl:
-            string += "Strehl:      %2.2f   "%(sim.longStrehl[iter])
-            string += "inst Strehl  %2.2f   "%(sim.instStrehl[iter])
+            string += "  Strehl -- "
+            for sci in xrange(self.config.sim.nSci):
+                string += "sci_{0}: inst {1:.2f}, long {2:.2f}".format(
+                        sci, self.sciCams[sci].instStrehl, 
+                        self.sciCams[sci].longExpStrehl)
             
-        sys.stdout.write(string)
-        sys.stdout.flush()
-            
+        logger.statusMessage(iter, self.config.sim.nIters, string )
         
 
     def addToGuiQueue(self):
@@ -790,7 +791,7 @@ class Sim(object):
                 for i in xrange(self.config.sim.nGS):
                     wfsFocalPlane[i] = self.wfss[i].wfsDetectorPlane.copy().astype("float32")
                     try:
-                        wfsPhase[i] = self.wfss[i].uncorrectedPhase.copy()
+                        wfsPhase[i] = self.wfss[i].uncorrectedPhase
                     except AttributeError:
                         wfsPhase[i] = None
                         pass
@@ -809,7 +810,7 @@ class Sim(object):
                 dmShape = {}
                 for i in xrange(self.config.sim.nDM):
                     try:
-                        dmShape[i] = self.dms[i].dmShape.copy()
+                        dmShape[i] = self.dms[i].dmShape.copy()*self.mask
                     except AttributeError:
                         dmShape[i] = None
 
@@ -827,7 +828,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].residual.copy()
+                        residual[i] = self.sciCams[i].residual.copy()*self.mask
                     except AttributeError:
                         residual[i] = None
 
@@ -895,3 +896,7 @@ if __name__ == "__main__":
     sim.aoloop()
 
 
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

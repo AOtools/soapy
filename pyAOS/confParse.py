@@ -28,6 +28,11 @@ The ``ConfigObj`` provides a base class used by other module configuration objec
 import numpy
 from . import logger
 
+#How much bigger to make the simulation than asked for. The value is a ratio
+#of how much to pad on each side
+SIM_OVERSIZE = 0.1
+
+
 class ConfigurationError(Exception):
     pass
 
@@ -65,39 +70,43 @@ class Configurator(object):
     def readfile(self):
 
         #Exec the config file, which should contain a dict ``simConfiguration``
-        with open(self.filename) as file_:
-            exec(file_.read(), globals())
+        try:
+            with open(self.filename) as file_:
+                exec(file_.read(), globals())
+        except:
+            raise ConfigurationError(
+                    "Error loading config file: {}".format(self.filename))
 
         self.configDict = simConfiguration
 
     def loadSimParams(self):
 
-        logger.debug("Load Sim Params...")
+        logger.debug("\nLoad Sim Params...")
         self.sim.loadParams(self.configDict["Sim"])
 
-        logger.debug("Load Atmosphere Params...")
+        logger.debug("\nLoad Atmosphere Params...")
         self.atmos.loadParams(self.configDict["Atmosphere"])
 
-        logger.debug("Load Telescope Params...")
+        logger.debug("\nLoad Telescope Params...")
         self.tel.loadParams(self.configDict["Telescope"])
 
-        logger.debug("Load WFS Params...")
         for wfs in range(self.sim.nGS):
+            logger.debug("Load WFS {} Params...".format(wfs))
             self.wfs.append(WfsConfig(wfs))
             self.wfs[wfs].loadParams(self.configDict["WFS"])
 
-        logger.debug("Load LGS Params")
         for lgs in range(self.sim.nGS):
+            logger.debug("Load LGS {} Params".format(lgs))
             self.lgs.append(LgsConfig(lgs))
             self.lgs[lgs].loadParams(self.configDict["LGS"])
 
-        logger.debug("Load DM Params")
         for dm in range(self.sim.nDM):
+            logger.debug("Load DM {} Params".format(dm))
             self.dm.append(DmConfig(dm))
             self.dm[dm].loadParams(self.configDict["DM"])
 
-        logger.debug("Load Science Params")
         for sci in range(self.sim.nSci):
+            logger.debug("Load Science {} Params".format(sci))
             self.sci.append(SciConfig(sci))
             self.sci[sci].loadParams(self.configDict["Science"])
 
@@ -109,10 +118,30 @@ class Configurator(object):
         self.sim.pxlScale = (float(self.sim.pupilSize)/
                                     self.tel.telDiam)
 
-        #furthest out GS defines the sub-scrn size
+        #We oversize the pupil to what we'll call the "simulation size"
+        self.sim.simSize = int(self.sim.pupilSize 
+                + 2*numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
+        self.sim.simPad = int(numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
+
+
+        #furthest out GS or SCI target defines the sub-scrn size
         gsPos = []
         for gs in range(self.sim.nGS):
-            gsPos.append(self.wfs[gs].GSPosition)
+            pos = self.wfs[gs].GSPosition
+            #Need to add bit if the GS is an elongation off-axis LGS
+            if self.lgs[gs].elongationDepth:
+                #This calculation is done more explicitely in teh WFS module
+                #in the ``calcElongPos`` method
+                maxLaunch = abs(numpy.array(
+                        self.lgs[gs].launchPosition)).max()*self.tel.telDiam/2.
+                dh = numpy.array([  -1*self.lgs[gs].elongationDepth/2.,
+                                    self.lgs[gs].elongationDepth/2.])
+                H = self.wfs[gs].GSHeight
+                theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
+                        (3600*180/numpy.pi)).max()
+                pos+=theta_n         
+            gsPos.append(pos)
+               
         for sci in range(self.sim.nSci):
             gsPos.append(self.sci[sci].position)
 
@@ -124,7 +153,13 @@ class Configurator(object):
         self.sim.scrnSize = numpy.ceil(
                 2*self.sim.pxlScale*self.atmos.scrnHeights.max()
                 *maxGSPos*numpy.pi/(3600.*180) 
-                )+self.sim.pupilSize
+                )+self.sim.simSize
+        
+        #Make scrnSize even
+        if self.sim.scrnSize%2!=0:
+            self.sim.scrnSize+=1
+
+
 
         #Check if any WFS use physical propogation.
         #If so, make oversize phase scrns
@@ -142,11 +177,25 @@ class Configurator(object):
                 wfs.exposureTime = self.sim.loopTime
 
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
-        logger.info("subScreenSize: {}".format(self.sim.scrnSize))
+        logger.info("subScreenSize: {:d} simulation pixels".format(int(self.sim.scrnSize)))
+
+        #If lgs sodium layer profile is none, set it to 1s for each layer
+        for lgs in self.lgs:
+            if not numpy.any(lgs.naProfile):
+                lgs.naProfile = numpy.ones(lgs.elongationLayers)
+            if len(lgs.naProfile)<lgs.elongationLayers:
+                raise ConfigurationError("Not enough values for naProfile")
+
+        #If outer scale is None, set all to 100m
+        if self.atmos.L0==None:
+            self.atmos.L0 = []
+            for scrn in range(self.atmos.scrnNo):
+                self.atmos.L0.append(100.)
 
 class ConfigObj(object):
     def __init__(self):
 
+        #This is the index of the config object, i.e. WFS 1, 2, 3..N
         self.N = None
 
     def warnAndExit(self, param):
@@ -159,7 +208,7 @@ class ConfigObj(object):
         message = "{0} not set, default to {1}".format(param, newValue)
         self.__setattr__(param, newValue)
 
-        logger.info(message)
+        logger.debug(message)
 
     def initParams(self):
         for param in self.requiredParams:
@@ -177,6 +226,9 @@ class ConfigObj(object):
                 except IndexError:
                     raise ConfigurationError(
                                 "Not enough values for {0}".format(param))
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
 
             for param in self.optionalParams:
                 try:
@@ -186,18 +238,27 @@ class ConfigObj(object):
                 except IndexError:
                     raise ConfigurationError(
                                 "Not enough values for {0}".format(param))
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
         else:
             for param in self.requiredParams:
                 try:
                     self.__setattr__(param, configDict[param])
                 except KeyError:
                     self.warnAndExit(param)
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
 
             for param in self.optionalParams:
                 try:
                     self.__setattr__(param[0], configDict[param[0]])
                 except KeyError:
                     self.warnAndDefault(param[0], param[1])
+                except:
+                    raise ConfigurationError(
+                            "Failed while loading {0}. Check config file.".format(param))
 
     def calcParams(self):
         """
@@ -234,10 +295,6 @@ class SimConfig(ConfigObj):
                             for available reconstructors.       ``"MVM"``
         ``filePrefix``      str: directory name to store 
                             simulation data                     ``None``
-        ``tipTilt``         bool: Does system use tip-tilt 
-                            Mirror                              ``False``
-        ``ttGain``          float: loop gain of tip-tilt 
-                            Mirror                              ``0.6``
         ``wfsMP``           bool: Each WFS uses its own 
                             process                             ``False``
         ``verbosity``       int: debug output for the 
@@ -298,14 +355,13 @@ class SimConfig(ConfigObj):
                                 ("saveStrehl", False),
                                 ("saveWfsFrames", False),
                                 ("saveSciPsf", False),
+                                ("saveWFE", False),
                                 ("saveSciRes", False),
-                                ("tipTilt", False),
-                                ("ttGain", 0.6),
                                 ("wfsMP", False),
                                 ("verbosity", 2),
                                 ("logfile", None),
                                 ("learnIters", 0),
-                                ("learnAtmos", "random"),
+                                ("learnAtmos", "random"), 
                         ]
 
         self.initParams()
@@ -324,7 +380,7 @@ class AtmosConfig(ConfigObj):
         ``scrnStrength``        list, float: Relative layer scrnStrength
         ``windDirs``            list, float: Wind directions in degrees.
         ``windSpeeds``          list, float: Wind velocities in m/s
-        ``r0``                  float: integrated seeing strength 
+        ``r0``                  float: integrated  seeing strength 
                                 (metres at 550nm)
         ``wholeScrnSize``       int: Size of the phase screens to store in the
                                 ``atmosphere`` object
@@ -341,6 +397,9 @@ class AtmosConfig(ConfigObj):
                             generation algorithm for better
                             tip-tilt statistics - useful
                             for small phase screens.             ``False``
+        ``L0''              list, float: Outer scale of each
+                            layer. Kolmogorov turbulence if
+                            ``None``.                           ``None``
         ==================  =================================   ===========    
     """
 
@@ -358,6 +417,7 @@ class AtmosConfig(ConfigObj):
 
         self.optionalParams = [ ("scrnNames",None),
                                 ("subHarmonics",False),
+                                ("L0", None)
                                 ]
 
         self.initParams()
@@ -401,8 +461,12 @@ class WfsConfig(ConfigObj):
                             to be used for wavefront sensing?   ``0.5``
         ``lgs``             bool: is WFS an LGS?                ``False``
         ``centMethod``      string: Method used for 
-                            Centroiding. Can be `simple` or
-                            `brightestPxl`                      ``simple``
+                            Centroiding. Can be `simple`,
+                            `brightestPxl`, or `correlation`    ``simple``
+        ``referenceImage``  array: Reference images used in
+                            the correlation centroider. Full
+                            image plane image, each subap has
+                            a separate reference image          ``None``
         ``angleEquivNoise`` float: width of gaussian noise 
                             added to slopes measurements
                             in arc-secs                        ``0``
@@ -412,7 +476,7 @@ class WfsConfig(ConfigObj):
         ``exposureTime``    float: Exposure time of the WFS 
                             camera - must be higher than 
                             loopTime. If None, will be 
-                            set to loopTime.                    None
+                            set to loopTime.                    ``None``
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
@@ -451,6 +515,7 @@ class WfsConfig(ConfigObj):
                                 ("centMethod", "simple"),
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
+                                ("referenceImage", None),
                             ]
         self.initParams()
 
@@ -517,13 +582,18 @@ class LgsConfig(ConfigObj):
                              Number of layers to simulate for 
                              elongation.                         ``10``
         ``launchPosition``   tuple: The launch position of 
-                             the LGS in units of the pupil, 
-                             where ``(0,0)`` is the centre.      ``(0,0)``
+                             the LGS in units of the pupil
+                             radii, where ``(0,0)`` is the 
+                             centre launched case, and 
+                             ``(1,0)`` is side-launched.          ``(0,0)``
         ``fftwThreads``      int: number of threads for fftw 
                              to use. If ``0``, will use 
                              system processor number.             ``1``
         ``fftwFlag``         str: Flag to pass to FFTW 
                              when preparing plan.                 ``FFTW_PATIENT``
+        ``naProfile``        list: The relative sodium layer
+                             strength for each elongation
+                             layer. If None, all equal.          ``None''
         ==================== =================================   ===========  
 
     """
@@ -543,7 +613,8 @@ class LgsConfig(ConfigObj):
                                 ("fftwThreads", 0),
                                 ("elongationDepth", 0),
                                 ("elongationLayers", 10),
-                                ("launchPosition",  numpy.array([0,0]))
+                                ("launchPosition",  numpy.array([0,0])),
+                                ("naProfile", None),
                                 ]
 
 
@@ -581,6 +652,14 @@ class DmConfig(ConfigObj):
                              when making iMat                    ``10``
         ``wfs``              int: which Wfs to take iMat and
                              use to correct for.                 ``0``
+        ``rotation``         float: A DM rotation with respect
+                             to the pupil in degrees             ``0''
+        ``interpOrder''      Order of interpolation for dm,
+                             including piezo actuators and
+                             rotation.                           ``1''
+        ``gaussWidth''       float: Width of Guass DM actuator
+                             as a fraction of the 
+                             inter-actuator spacing.             ``0.5''
         ==================== =================================   ===========  
         """
 
@@ -598,9 +677,12 @@ class DmConfig(ConfigObj):
 
 
         self.optionalParams = [ 
-                                ("closed",True),
-                                ("iMatValue",10),
-                                ("wfs", 0)
+                                ("closed", True),
+                                ("iMatValue", 10),
+                                ("wfs", 0),
+                                ("rotation", 0),
+                                ("interpOrder", 2),
+                                ("gaussWidth", 0.5),
                                 ]
         self.initParams()
 
