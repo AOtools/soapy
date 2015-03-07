@@ -327,7 +327,7 @@ on object
         #elongation "layer"
         #Define these to make it easier
         h = self.elongHeights[elongLayer]
-        dh = h-self.wfsConfig.GSHeight
+        dh = h - self.wfsConfig.GSHeight
         H = self.lgsConfig.height
         d = numpy.array(self.lgsLaunchPos).astype('float32') * self.telDiam/2.
         D = self.telDiam
@@ -346,7 +346,8 @@ on object
             - numpy.sqrt( (dh+H)**2 + (D/2. - d + (dh+H)*theta )**2 )    )
 
 
-        phaseAddition = numpy.zeros( (  self.simConfig.pupilSize, self.simConfig.pupilSize) )
+        phaseAddition = numpy.zeros( 
+                (  self.simConfig.pupilSize, self.simConfig.pupilSize) )
 
         phaseAddition +=( (self.elongZs[2]/self.elongZs[2].max())
                              * focalPathDiff )
