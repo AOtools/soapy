@@ -89,8 +89,6 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 
 import numpy
 import numpy.random
-import scipy.ndimage
-import scipy.optimize
 from scipy.interpolate import interp2d
 try:
     from astropy.io import fits
@@ -225,7 +223,7 @@ on object
                                             self.lgsConfig, self.atmosConfig
                                             )
             else:
-                LGSClass = LGS.GeometricLGS( self.simConfig, self.wfsConfig,
+                self.LGS = LGS.GeometricLGS( self.simConfig, self.wfsConfig,
                                              self.lgsConfig, self.atmosConfig
                                              )
 
