@@ -42,7 +42,7 @@ Examples:
 
         sim.aoinit()
 
-    DM Interation and command matrices are calculated now. If ``sim.config.sim.filePrefix`` is not ``None``, then these matrices will be saved in `data/filePrefix`(data will be saved here also in a time-stamped directory)::
+    DM Interation and command matrices are calculated now. If ``sim.config.sim.filePrefix`` is not ``None``, then these matrices will be saved in ``data/filePrefix`` (data will be saved here also in a time-stamped directory)::
 
         sim.makeIMat()
 
@@ -137,6 +137,7 @@ class Sim(object):
         self.config = confParse.Configurator(self.configFile)
         self.config.readfile()
         self.config.loadSimParams()
+        logger.info("Loaded configuration file successfully!")
 
     def setLoggingLevel(self, level):
         """
