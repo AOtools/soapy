@@ -1,4 +1,5 @@
-mock
-sphinxcontrib-napoleon
-sphinx_rtd_theme
+numpy
+scipy
+astropy
 ipython
+pyfftw
