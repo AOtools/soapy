@@ -301,7 +301,8 @@ class atmos:
 
     def randomScrns(self, subharmonics=True):
         """
-        Generated random phase screens defined by the atmosphere object parameters.
+        Generated random phase screens defined by the atmosphere 
+        object parameters.
 
         Returns:
             dict : a dictionary containing the new set of phase screens
@@ -311,16 +312,18 @@ class atmos:
        
         args = []
        
-        if self.mpPool==None:
+        if self.mpPool == None:
             for i in xrange(self.scrnNo):
                 if subharmonics:
                     scrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], self.scrnSize, 
-                            (self.pxlScale**(-1.)), L0, l0)
+                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
+                            0.01)
                 else:
                     scrns[i] = ft_phase_screen(
                             self.scrnStrengths[i], self.scrnSize, 
-                            (self.pxlScale**(-1.)), L0, l0)
+                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i], 
+                            0.01)
 
         else:
             if subharmonics: 
