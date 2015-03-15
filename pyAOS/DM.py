@@ -58,7 +58,7 @@ class DM:
         #Doesnt matter in closed loop, but ruins correction in open loop.
         #Multiplying DM commands by this fixes things. Will explore more 
         #thoroughly soon. apr - 19thFeb2015
-        self.commandFactor = 1.7
+        self.commandFactor = 1.
 
     def getActiveActs(self):
         """
@@ -87,6 +87,8 @@ class DM:
         logger.info("Making DM Influence Functions...")
         self.makeIMatShapes()
 
+        self.iMatShapes *= self.dmConfig.iMatValue
+
         if self.dmConfig.rotation:
            self.iMatShapes = rotate(    
                    self.iMatShapes, self.dmConfig.rotation,
@@ -108,10 +110,11 @@ class DM:
 
         for i in xrange(self.iMatShapes.shape[0]):
            iMat[i,subap:subap+(2*self.wfs.activeSubaps)] =(
-                   self.wfs.iMatFrame( 
-                            self.iMatShapes[i]*self.dmConfig.iMatValue)
-                   /self.dmConfig.iMatValue
-                   )
+                   self.wfs.frame( 
+                            self.iMatShapes[i], iMatFrame=True
+                            #*self.dmConfig.iMatValue)
+                   #/self.dmConfig.iMatValue
+                   ))
 
            logger.debug("DM IMat act: %i"%i)
 
@@ -356,7 +359,7 @@ class TT1:
 
         for i in xrange(2):
             self.dmShape = self.iMatShapes[i]
-            slopes = self.wfs.iMatFrame(self.iMatShapes[i]
+            slopes = self.wfs.frame(self.iMatShapes[i], iMatFrame=True
                                             ).reshape(2,
                                             self.wfs.activeSubaps)
             iMat[i] = slopes.mean(1)
