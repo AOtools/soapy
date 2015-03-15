@@ -769,5 +769,3 @@ def remapSubaps(wfsData, mask, xyOrder=1):
 
     return subaps2d
 
-=======
->>>>>>> master

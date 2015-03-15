@@ -315,11 +315,11 @@ class atmos:
             for i in xrange(self.scrnNo):
                 if subharmonics:
                     scrns[i] = ft_sh_phase_screen(
-                            yself.scrnStrengths[i], self.scrnSize, 
+                            self.scrnStrengths[i], self.scrnSize, 
                             (self.pxlScale**(-1.)), L0, l0)
                 else:
                     scrns[i] = ft_phase_screen(
-                            yself.scrnStrengths[i], self.scrnSize, 
+                            self.scrnStrengths[i], self.scrnSize, 
                             (self.pxlScale**(-1.)), L0, l0)
 
         else:
@@ -332,7 +332,7 @@ class atmos:
 
             else:
                 for i in range(self.scrnNo):
-                    args.append( 
+                    args.append(
                             (ft_phase_screen,  self.scrnStrengths[i], 
                             self.scrnSize, (self.pxlScale**(-1.)), 
                             self.atmosConfig.L0[i], 0.01))
