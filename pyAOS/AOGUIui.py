@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Thu Feb 12 19:12:04 2015
+# Created: Sun Mar 15 18:14:40 2015
 #      by: PyQt4 UI code generator 4.11.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -328,5 +328,5 @@ class Ui_MainWindow(object):
         self.actionTrue.setText(_translate("MainWindow", "True", None))
         self.actionFalse.setText(_translate("MainWindow", "False", None))
         self.loadParamsAction.setText(_translate("MainWindow", "Load Configuration File", None))
-        self.reloadParamsAction.setText(_translate("MainWindow", "re-load configuation file", None))
+        self.reloadParamsAction.setText(_translate("MainWindow", "Reload Current Configuation File", None))
 
