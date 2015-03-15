@@ -3,7 +3,7 @@ Simulation
 
 High level interface to run and examine a simulation
 
-.. automodule:: pyAOS
+.. automodule:: pyAOS.simulation
     :members:
     :undoc-members:
     :show-inheritance:
