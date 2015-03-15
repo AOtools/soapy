@@ -1,4 +1,8 @@
-mock
-sphinxcontrib-napoleon
-sphinx_rtd_theme
+numpy
+scipy
+astropy
+pyfftw
+PyQt4
+pyqtgraph
+matplotlib
 ipython
