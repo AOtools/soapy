@@ -116,8 +116,9 @@ class Sim(object):
     def __init__(self, configFile=None):
         if not configFile:
             configFile = "conf/testConf.py"
-
+        
         self.readParams(configFile)
+        logger.info("Loaded config file successfully!")
 
         self.guiQueue = None
         self.go = False

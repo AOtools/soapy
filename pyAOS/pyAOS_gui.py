@@ -47,7 +47,7 @@ CMAP={'mode': 'rgb',
             (1., (255, 26, 26, 255))]}
         
 class GUI(QtGui.QMainWindow):
-    def __init__(self,sim,useOpenGL=False):
+    def __init__(self, sim, useOpenGL=False):
         self.app = QtGui.QApplication([])
         QtGui.QMainWindow.__init__(self)
 
