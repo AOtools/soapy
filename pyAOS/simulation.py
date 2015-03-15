@@ -51,7 +51,7 @@ Examples:
 
         sim.aoloop()
 
-    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/filePrefix`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes`, `sim.longStrehl`
+    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/filePrefix`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes``, ``sim.longStrehl``
 
 
 :Author:
