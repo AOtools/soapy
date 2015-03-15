@@ -1,5 +1,8 @@
 numpy
 scipy
 astropy
-ipython
 pyfftw
+PyQt4
+pyqtgraph
+matplotlib
+ipython
