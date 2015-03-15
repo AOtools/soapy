@@ -435,7 +435,7 @@
   </action>
   <action name="reloadParamsAction">
    <property name="text">
-    <string>re-load configuation file</string>
+    <string>Reload Current Configuration File</string>
    </property>
   </action>
  </widget>
