@@ -268,7 +268,7 @@ def interp1d_numpy(array, coords):
 
     return interpArray
 
-@jit
+@jit(nopython=True)
 def linterp2d(array, xCoords, yCoords, interpArray): 
     """
     2-D interpolation using purely python - fast if compiled with numba
@@ -306,7 +306,7 @@ def linterp2d(array, xCoords, yCoords, interpArray):
     
     return interpArray
 
-@jit(nogil=True, nopython=True)
+@jit(nopython=True)
 def zoom_numba(array, zoomArray):
     """
     2-D zoom interpolation using purely python - fast if compiled with numba.
