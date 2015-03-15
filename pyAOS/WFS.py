@@ -53,28 +53,7 @@ Example:
 Shack-Hartmann WFS
 ^^^^^^^^^^^^^^^^^^
 
-A Shack-Hartmann WFS is also included in the module, this contains further methods to make the focal plane, thhase(self, scrn, height, pos):
-
-        GSCent = pos*self.simConfig.pxlScale
-        scrnX,scrnY = scrn.shape
-
-        #x1 = int(round(scrnX/2. + GSCent[0] - self.simConfig.simSize/2.))
-        #x2 = int(round(scrnX/2. + GSCent[0] + self.simConfig.simSize/2.))
-        #y1 = int(round(scrnY/2. + GSCent[1] - self.simConfig.simSize/2.))
-        #y2 = int(round(scrnY/2. + GSCent[1] + self.simConfig.simSize/2.))
-
-        x1 = scrnX/2. + GSCent[0] - self.simConfig.simSize/2.
-        x2 = scrnX/2. + GSCent[0] + self.simConfig.simSize/2.
-        y1 = scrnY/2. + GSCent[1] - self.simConfig.simSize/2.
-        y2 = scrnY/2. + GSCent[1] + self.simConfig.simSize/2.
-
-        logger.debug("LGS MetaPupil Coords: %i:%i,%i:%i"%(x1,x2,y1,y2))
-
-        if (x1.is_integer() and x2.is_integer() 
-                and y1.is_integer() and y2.is_integer()):
-            metaPupil = scrn[ x1:x2, y1:y2 ].copy()
-
-en calculate the slopes to send to the reconstructor.
+A Shack-Hartmann WFS is also included in the module, this contains further methods to make the focal plane, then calculate the slopes to send to the reconstructor.
 
 Example:
     Using the config objects from above...::
@@ -110,9 +89,14 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 
 import numpy
 import numpy.random
-import scipy.ndimage
-import scipy.optimize
 from scipy.interpolate import interp2d
+try:
+    from astropy.io import fits
+except ImportError:
+    try:
+        import pyfits as fits
+    except ImportError:
+        raise ImportError("PyAOS requires either pyfits or astropy")
 
 
 from . import AOFFT, aoSimLib, LGS, logger
@@ -242,7 +226,7 @@ on object
                                             self.lgsConfig, self.atmosConfig
                                             )
             else:
-                LGSClass = LGS.GeometricLGS( self.simConfig, self.wfsConfig,
+                self.LGS = LGS.GeometricLGS( self.simConfig, self.wfsConfig,
                                              self.lgsConfig, self.atmosConfig
                                              )
 
@@ -344,7 +328,7 @@ on object
         #elongation "layer"
         #Define these to make it easier
         h = self.elongHeights[elongLayer]
-        dh = h-self.wfsConfig.GSHeight
+        dh = h - self.wfsConfig.GSHeight
         H = self.lgsConfig.height
         d = numpy.array(self.lgsLaunchPos).astype('float32') * self.telDiam/2.
         D = self.telDiam
@@ -363,7 +347,8 @@ on object
             - numpy.sqrt( (dh+H)**2 + (D/2. - d + (dh+H)*theta )**2 )    )
 
 
-        phaseAddition = numpy.zeros( (  self.simConfig.pupilSize, self.simConfig.pupilSize) )
+        phaseAddition = numpy.zeros( 
+                (  self.simConfig.pupilSize, self.simConfig.pupilSize) )
 
         phaseAddition +=( (self.elongZs[2]/self.elongZs[2].max())
                              * focalPathDiff )
@@ -733,7 +718,16 @@ class ShackHartmann(WFS):
                 ))
         #Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
-        
+
+        # For correlation centroider, open reference image.
+        if self.wfsConfig.centMethod=="correlation":
+            rawRef = fits.open("./conf/correlationRef/"+self.wfsConfig.referenceImage)[0].data
+            self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
+                    self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
+            for i in range(self.activeSubaps):
+                self.wfsConfig.referenceImage[i] = rawRef[self.detectorSubapCoords[i, 0]:self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
+                        self.detectorSubapCoords[i, 1]:self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+
     def findActiveSubaps(self):
         '''
         Finds the subapertures which are not empty space
@@ -1097,6 +1091,12 @@ class ShackHartmann(WFS):
                     self.centSubapArrays, (self.wfsConfig.centThreshold*
                                 (self.wfsConfig.pxlsPerSubap**2))
                                             )
+
+        elif self.wfsConfig.centMethod=="correlation":
+            slopes = aoSimLib.correlationCentriod(
+                    self.centSubapArrays, self.wfsConfig.referenceImage,
+                    self.wfsConfig.centThreshold)
+            
         else:
             slopes = aoSimLib.simpleCentroid(
                     self.centSubapArrays, self.wfsConfig.centThreshold
@@ -1126,6 +1126,7 @@ class ShackHartmann(WFS):
 
         return self.slopes
 
+
 #  ______                          _     _ 
 #  | ___ \                        (_)   | |
 #  | |_/ /   _ _ __ __ _ _ __ ___  _  __| |
@@ -1141,7 +1142,7 @@ class Pyramid(WFS):
 
     This is an early prototype for a Pyramid WFS. Currently, its at a very early stage. It doesn't oscillate, so performance aint too good at the minute.
 
-    To use, set the wfs parameter ``type'' to ``Pyramid''
+    To use, set the wfs parameter ``type'' to ``Pyramid'' type is a list of length number of wfs.
     """
     #oversampling for the first FFT from EField to focus (4 seems ok...)
     FOV_OVERSAMP = 4

@@ -531,6 +531,74 @@ def brtPxlCentroid(img, nPxls):
 
     return simpleCentroid(img)
 
+def corrConvolve(x, y):
+    '''
+    2D convolution using FFT, use to generate cross-correlations.
+
+    Args:
+        x (array): subap image
+        y (array): reference image
+    Returns:
+        ndarray: cross-correlation of x and y
+    '''
+
+    fr = numpy.fft.fft2(x)
+    fr2 = numpy.fft.fft2(y[::-1, ::-1])
+    m, n = fr.shape
+
+    cc = (numpy.fft.ifft2(fr*fr2)).real
+    cc = numpy.roll(cc, -m/2+1, axis=0)
+    cc = numpy.roll(cc, -n/2+1, axis=1)
+
+    return cc
+
+def correlationCentriod(im, ref, threshold_fac=0.8):
+    '''
+    Correlation Centroider, currently only works for 3d im shape.
+    Performs a simple thresholded COM on the correlation.
+
+    Args:
+        im: subap images (t, y, x)
+        ref: reference image (t, y, x)
+        threshold_fac: threshold for COM (0=all pixels, 1=brightest pixel)
+    Returns:
+        ndarray: centroids of im, given as x, y
+    '''
+
+    nt, ny, nx = im.shape
+
+    cents = numpy.zeros((2, nt))
+
+    for frame in range(nt):
+        # Correlate frame with reference image
+        corr = corrConvolve(im[frame], ref[frame])
+        # Find brightest pixel.
+        index_y, index_x = numpy.unravel_index(corr.argmax(),
+                                               corr.shape)
+
+        # Apply threshold
+        corr -= corr.min()
+        mx = corr.max()
+        bg = threshold_fac*mx
+        corr = numpy.clip(corr, bg, mx) - bg
+
+        # Centroid
+        s_y, s_x = corr.shape
+        XRAMP = numpy.arange(s_x)
+        YRAMP = numpy.arange(s_y)
+        XRAMP.shape = (1, s_x)
+        YRAMP.shape = (s_y,  1)
+
+        si = corr.sum()
+        if si == 0:
+            si = 1
+        cx = (corr * XRAMP).sum() / si
+        cy = (corr * YRAMP).sum() / si
+
+        cents[:, frame] = cx, cy
+
+    return cents
+
 def quadCell(img):
     
     xSum = img.sum(-2)
@@ -701,3 +769,5 @@ def remapSubaps(wfsData, mask, xyOrder=1):
 
     return subaps2d
 
+=======
+>>>>>>> master

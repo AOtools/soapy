@@ -464,8 +464,12 @@ class WfsConfig(ConfigObj):
                             to be used for wavefront sensing?   ``0.5``
         ``lgs``             bool: is WFS an LGS?                ``False``
         ``centMethod``      string: Method used for 
-                            Centroiding. Can be `simple` or
-                            `brightestPxl`                      ``simple``
+                            Centroiding. Can be `simple`,
+                            `brightestPxl`, or `correlation`    ``simple``
+        ``referenceImage``  array: Reference images used in
+                            the correlation centroider. Full
+                            image plane image, each subap has
+                            a separate reference image          ``None``
         ``angleEquivNoise`` float: width of gaussian noise 
                             added to slopes measurements
                             in arc-secs                        ``0``
@@ -475,7 +479,7 @@ class WfsConfig(ConfigObj):
         ``exposureTime``    float: Exposure time of the WFS 
                             camera - must be higher than 
                             loopTime. If None, will be 
-                            set to loopTime.                    None
+                            set to loopTime.                    ``None``
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
@@ -514,6 +518,7 @@ class WfsConfig(ConfigObj):
                                 ("centMethod", "simple"),
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
+                                ("referenceImage", None),
                             ]
         self.initParams()
 
@@ -580,8 +585,10 @@ class LgsConfig(ConfigObj):
                              Number of layers to simulate for 
                              elongation.                         ``10``
         ``launchPosition``   tuple: The launch position of 
-                             the LGS in units of the pupil, 
-                             where ``(0,0)`` is the centre.      ``(0,0)``
+                             the LGS in units of the pupil
+                             radii, where ``(0,0)`` is the 
+                             centre launched case, and 
+                             ``(1,0)`` is side-launched.          ``(0,0)``
         ``fftwThreads``      int: number of threads for fftw 
                              to use. If ``0``, will use 
                              system processor number.             ``1``

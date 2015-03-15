@@ -84,6 +84,7 @@ class DM:
         Returns:
             ndarray: 2-dimensional interaction matrix
         '''
+        logger.info("Making DM Influence Functions...")
         self.makeIMatShapes()
 
         if self.dmConfig.rotation:
@@ -174,7 +175,8 @@ class Zernike(DM):
         shapes = aoSimLib.zernikeArray(
                         int(self.acts+3),int(self.simConfig.pupilSize))[3:]
 
- 
+    
+        pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
                 shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
                 ) 

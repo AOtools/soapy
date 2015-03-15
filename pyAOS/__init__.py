@@ -169,7 +169,6 @@ class Sim(object):
 
         #calculate some params from read ones
         #calculated
-        self.aoloop = self.loop#eval("self."+self.config.sim.aoloopMode)
         self.config.calcParams()
 
         #Init Pupil Mask
@@ -499,11 +498,11 @@ class Sim(object):
 
         self.Tsci +=time.time()-t
 
-    def loop(self):
+    def aoloop(self):
         """
         Main AO Loop - loop open
 
-        Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. Runs sim Open loop, i.e., the WFSs are executed before the DM with no DM information being sent back to the WFSs.
+        Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters. 
         """
         
         self.iters=1
