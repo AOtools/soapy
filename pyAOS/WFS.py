@@ -587,7 +587,7 @@ on object
         self.wfsConfig.removeTT=False
 
         self.zeroData()
-        self.EField[:] =  numpy.exp(1j*phs*self.r0Scale)
+        self.EField[:] =  numpy.exp(1j*phs)#*self.r0Scale)
         self.calcFocalPlane()
         self.makeDetectorPlane()
         self.calculateSlopes()
@@ -602,7 +602,7 @@ on object
         self.wfsPhase[:] = 0
         
 
-    def frame(self, scrns, correction=None, read=True):
+    def frame(self, scrns, correction=None, read=True, iMatFrame=False):
         '''
         Runs one WFS frame
         
@@ -615,11 +615,26 @@ on object
             scrns (list): A list or dict containing the phase screens
             correction (ndarray, optional): The correction term to take from the phase screens before the WFS is run.
             read (bool, optional): Should the WFS be read out? if False, then WFS image is calculated but slopes not calculated. defaults to True.
+            iMatFrame (bool, optional): If True, will assume an interaction matrix is being measured. Turns off some AO loop features before running
             
         Returns:
             ndarray: WFS Measurements
         '''
-        
+     
+       #If iMatFrame, turn off unwanted effects
+        if iMatFrame:
+            self.iMat = True
+            removeTT = self.wfsConfig.removeTT
+            self.wfsConfig.removeTT = False
+            elong = self.elong
+            self.elong = 0
+
+
+        #If scrns is not dict or list, assume array and put in list
+        t = type(scrns)
+        if t!=dict and t!=list:
+            scrns = [scrns]
+
         self.zeroData(detector=read, inter=False)
         self.scrns = {}
         #Scale phase to WFS wvl
@@ -651,6 +666,11 @@ on object
             self.calculateSlopes()
             self.zeroData(detector=False)
         
+        #Turn back on stuff disabled for iMat
+        if iMatFrame:
+            self.iMat=False
+            self.wfsConfig.removeTT = removeTT
+            self.elong = elong
 
         return self.slopes
 
@@ -894,9 +914,10 @@ class ShackHartmann(WFS):
         
         self.staticData = None
 
-        #Make flat wavefront
+        #Make flat wavefront, and run through WFS in iMat mode to turn off features
         phs = numpy.zeros([self.simConfig.simSize]*2).astype(DTYPE)
-        self.staticData = self.iMatFrame(phs).copy().reshape(2,self.activeSubaps)
+        self.staticData = self.frame(
+                phs, iMatFrame=True).copy().reshape(2,self.activeSubaps)
 #######################################################################
 
 
@@ -1033,7 +1054,7 @@ class ShackHartmann(WFS):
             self.wfsDetectorPlane[x1:x2, y1:y2] += (
                     self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp] )
 
-        if self.wfsConfig.SNR and self.iMat!=True:
+        if self.wfsConfig.SNR:
 
             self.photonNoise()
             self.readNoise(self.wfsDetectorPlane)
