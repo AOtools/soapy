@@ -219,7 +219,7 @@ on object
         
         #Choose the correct LGS object, either with physical or geometric 
         # or geometric propagation.
-        if self.wfsConfig.lgs:     
+        if self.lgsConfig.lgsUplink:     
             if  (self.lgsConfig.propagationMode=="phys" or 
                     self.lgsConfig.propagationMode=="physical"):
                 self.LGS = LGS.PhysicalLGS( self.simConfig, self.wfsConfig, 
@@ -234,15 +234,15 @@ on object
             self.LGS = None
 
         self.lgsLaunchPos = None
-        self.elong=0
+        self.elong = 0
         self.elongLayers = 0
-        if self.LGS:
+        if self.wfsConfig.lgs:
             self.lgsLaunchPos = self.lgsConfig.launchPosition
             #LGS Elongation##############################
             if (self.wfsConfig.GSHeight!=0 and 
                     self.lgsConfig.elongationDepth!=0):
-                self.elong = self.LGS.lgsConfig.elongationDepth
-                self.elongLayers = self.LGS.lgsConfig.elongationLayers
+                self.elong = self.lgsConfig.elongationDepth
+                self.elongLayers = self.lgsConfig.elongationLayers
 
                 #Get Heights of elong layers
                 self.elongHeights = numpy.linspace(
