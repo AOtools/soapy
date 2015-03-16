@@ -231,7 +231,12 @@ class MVM(Reconstructor):
             
 
 class MVM_SeparateDMs(Reconstructor):
+    """
+    Reconstructor which treats a each DM Separately.
 
+    Similar to ``MVM`` reconstructor, except each DM has its own control matrix.
+    Its is assumed that each DM is associated with a different WFS.
+    """
 
     def calcCMat(self,callback=None, progressCallback=None):
         '''
@@ -492,7 +497,9 @@ class LearnAndApply(Reconstructor):
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
-        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
+        if tomoMat.shape != (
+                2*self.wfss[0].activeSubaps, 
+                self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:
@@ -570,13 +577,13 @@ class LearnAndApply(Reconstructor):
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
         
-
-
+        #Dont make global reconstructor. Will reconstruct on-axis slopes, then
+        #dmcommands explicitly
         #self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
         logger.info("Done.")
         
 
-    def reconstruct(self,slopes):
+    def reconstruct(self, slopes):
         """
         Determine DM commands using previously made 
         reconstructor from slopes. 
