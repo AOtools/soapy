@@ -451,6 +451,12 @@ class WfsConfig(ConfigObj):
         ``propagationMode`` string: Mode of light propogation 
                             from GS. Can be "physical" or 
                             "geometric".                       ``"geometric"``
+        ``subapFieldStop``  bool: if True, add a field stop to
+                            the wfs to prevent spots wandering
+                            into adjacent sub-apertures. if
+                            False, oversample subap FOV by a
+                            factor of 2 to allow into adjacent
+                            subaps.                             ``True``
         ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
@@ -507,14 +513,15 @@ class WfsConfig(ConfigObj):
                                 ("fftwFlag", "FFTW_PATIENT"),
                                 ("SNR", 0),
                                 ("angleEquivNoise", 0),
+                                ("subapFieldStop", True),
                                 ("bitDepth", 32),
                                 ("removeTT", "False"),
                                 ("angleEquivNoise", 0),
                                 ("subapOversamp", 2),
                                 ("GSHeight", 0),
                                 ("subapThreshold", 0.5),
-                                ("lgs",False),
-                                ("centThreshold",0.3),
+                                ("lgs", False),
+                                ("centThreshold", 0.3),
                                 ("centMethod", "simple"),
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),

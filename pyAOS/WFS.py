@@ -646,8 +646,16 @@ on object
             self.scrns[i] = scrns[i].copy()*self.r0Scale
     
         #If no elongation
-        if self.elong==0:
-            self.makePhase(self.radii)
+        if self.elong == 0:
+            #If imate frame, dont want to make it off-axis
+            if iMatFrame:
+                try:
+                    self.EField[:] = numpy.exp(1j*scrns[0])
+                except ValueError:
+                    raise ValueError("If iMat Frame, scrn must be ``simSize``")
+            else:
+                self.makePhase(self.radii)
+
             self.uncorrectedPhase = self.wfsPhase.copy()
             if numpy.any(correction):
                 self.EField *= numpy.exp(-1j*correction*self.r0Scale)
@@ -722,7 +730,7 @@ class ShackHartmann(WFS):
                                 * self.subapFOVrad/ self.wfsConfig.wavelength)
 
         #make twice as big to double subap FOV
-        if self.wfsConfig.subaps==1:
+        if self.wfsConfig.subapFieldStop==True:
             self.SUBAP_OVERSIZE = 1
         else:
             self.SUBAP_OVERSIZE = 2
