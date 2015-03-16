@@ -407,7 +407,7 @@ class AtmosConfig(ConfigObj):
                             generation algorithm for better
                             tip-tilt statistics - useful
                             for small phase screens.             ``False``
-        ``L0''              list, float: Outer scale of each
+        ``L0``              list, float: Outer scale of each
                             layer. Kolmogorov turbulence if
                             ``None``.                           ``None``
         ==================  =================================   ===========    
