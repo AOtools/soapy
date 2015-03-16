@@ -477,10 +477,10 @@ on object
             #If points are float, must interpolate. -1 as linspace goes to number
             xCoords = numpy.linspace(x1, x2-1, simSize)
             yCoords = numpy.linspace(y1, y2-1, simSize)
-            interpObj = interp2d(
-                    self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            self.metaPupil = interpObj(xCoords, yCoords)
-            #aoSimLib.linterp2d(scrn, xCoords, yCoords, self.metaPupil)
+            #interpObj = interp2d(
+            #       self.scrnCoords, self.scrnCoords, scrn, copy=False)
+            #self.metaPupil = interpObj(xCoords, yCoords)
+            aoSimLib.linterp2d(scrn, xCoords, yCoords, self.metaPupil)
         
         return self.metaPupil
 
