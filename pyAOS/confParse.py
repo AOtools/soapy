@@ -192,6 +192,13 @@ class Configurator(object):
             for scrn in range(self.atmos.scrnNo):
                 self.atmos.L0.append(100.)
 
+        #Check if SH WFS with 1 subap. Feild stop must be FOV
+        for wfs in self.wfs:
+            if wfs.subaps==1 and wfs.subapFieldStop==False:
+                logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
+                wfs.subapFieldStop = True
+
+
 class ConfigObj(object):
     def __init__(self):
 
@@ -308,6 +315,8 @@ class SimConfig(ConfigObj):
         ``learnAtmos``      str: if ``random``, then 
                             random phase screens used for 
                             `learn`                             ``random``
+        ``procs''           int: The number of proccesses to 
+                            use                                 ``1''
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -362,6 +371,7 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"), 
+                                ("procs", 1),
                         ]
 
         self.initParams()
@@ -453,7 +463,7 @@ class WfsConfig(ConfigObj):
                             into adjacent sub-apertures. if
                             False, oversample subap FOV by a
                             factor of 2 to allow into adjacent
-                            subaps.                             ``True``
+                            subaps.                             ``False``
         ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
@@ -510,7 +520,7 @@ class WfsConfig(ConfigObj):
                                 ("fftwFlag", "FFTW_PATIENT"),
                                 ("SNR", 0),
                                 ("angleEquivNoise", 0),
-                                ("subapFieldStop", True),
+                                ("subapFieldStop", False),
                                 ("bitDepth", 32),
                                 ("removeTT", "False"),
                                 ("angleEquivNoise", 0),
