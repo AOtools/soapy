@@ -38,7 +38,6 @@ try:
 except NameError:
     xrange = range
 
-import past.builtins
 
 def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
@@ -308,7 +307,7 @@ def linterp2d(array, xCoords, yCoords, interpArray):
     
     return interpArray
 
-@jit(nopython=False)
+@jit(nopython=True)
 def zoom_numba(array, zoomArray):
     """
     2-D zoom interpolation using purely python - fast if compiled with numba.
@@ -324,7 +323,7 @@ def zoom_numba(array, zoomArray):
     """
 
     jCoords = xrange(zoomArray.shape[1])
-    for i in range(int32(zoomArray.shape[0])):
+    for i in xrange(int32(zoomArray.shape[0])):
         x = i*float32(array.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
         xInt = int32(x)
         for j in jCoords:
