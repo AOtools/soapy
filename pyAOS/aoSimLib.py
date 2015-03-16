@@ -269,8 +269,9 @@ def interp1d_numpy(array, coords):
 
     return interpArray
 
+
 @jit(nopython=True)
-def linterp2d(array, xCoords, yCoords, interpArray): 
+def linterp2d_numba(data, xCoords, yCoords, interpArray):
     """
     2-D interpolation using purely python - fast if compiled with numba
 
@@ -283,32 +284,34 @@ def linterp2d(array, xCoords, yCoords, interpArray):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
-    if xCoords[-1] == array.shape[0]-1:
-        xCoords[-1] -= 1e-4
-    if yCoords[-1] == array.shape[1]-1:
-        yCoords[-1] -= 1e-4
 
-    #print (yCoords.max())
-    #print (xCoords.max())
 
+    if xCoords[-1] == data.shape[0]-1:
+        xCoords[-1] -= 1e-6
+    if yCoords[-1] == data.shape[1]-1:
+        yCoords[-1] -= 1e-6
+
+    jRange = xrange(yCoords.shape[0])
     for i in xrange(xCoords.shape[0]):
         x = xCoords[i]
-        xInt = int32(x)
-        for j in xrange(yCoords.shape[0]):
-            y = yCoords[j]
-            yInt = int32(y)
+        x1 = int32(x)
+        for j in jRange: 
 
-            #print("x:{}, y:{}, xInt:{}, yInt:{}".format(x,y,xInt,yInt))
-            xGrad = array[xInt+1, yInt] - array[xInt, yInt]
-            yGrad = array[xInt, yInt+1] - array[xInt, yInt]
+            y = yCoords[j] 
+            y1 = int32(y)
 
-            interpArray[i,j] = (array[xInt, yInt] + xGrad*(x-xInt) 
-                    + yGrad*(y-yInt))
+            xGrad1 = data[x1+1, y1] - data[x1, y1]
+            a1 = data[x1, y1] + xGrad1*(x-x1)
+
+            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
+            a2 = data[x1, y1+1] + xGrad2*(x-x1)
+
+            yGrad = a2 - a1
+            interpArray[i,j] = a1 + yGrad*(y-y1)
     
-    return interpArray
 
 @jit(nopython=True)
-def zoom_numba(array, zoomArray):
+def zoom_numba(data, zoomArray):
     """
     2-D zoom interpolation using purely python - fast if compiled with numba.
     Both the array to zoom and the output array are required as arguments, the
@@ -322,21 +325,22 @@ def zoom_numba(array, zoomArray):
         interpArray (ndarray): A pointer to the calculated ``zoomArray''
     """
 
-    jCoords = xrange(zoomArray.shape[1])
     for i in xrange(int32(zoomArray.shape[0])):
-        x = i*float32(array.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
-        xInt = int32(x)
-        for j in jCoords:
-            y = j*float32(array.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
-            yInt = int32(y)
+        x = i*float32(data.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
+        x1 = int32(x)
+        for j in xrange(zoomArray.shape[1]):
+            y = j*float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
+            y1 = int32(y)
             
-            #print("x:{}, y:{}, xInt:{}, yInt:{}".format(x,y,xInt,yInt))
+            xGrad1 = data[x1+1, y1] - data[x1, y1]
+            a1 = data[x1, y1] + xGrad1*(x-x1)
 
-            xGrad = array[xInt+1, yInt] - array[xInt, yInt]
-            yGrad = array[xInt, yInt+1] - array[xInt, yInt]
+            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
+            a2 = data[x1, y1+1] + xGrad2*(x-x1)
 
-            zoomArray[i,j] = (array[xInt, yInt] + xGrad*(x-xInt) 
-                    + yGrad*(y-yInt))
+            yGrad = a2 - a1
+            zoomArray[i,j] = a1 + yGrad*(y-y1)
+
 
     return zoomArray
 

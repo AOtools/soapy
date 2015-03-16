@@ -86,6 +86,9 @@ class scienceCam:
         self.longExpStrehl = 0
         self.instStrehl = 0 
 
+        #Init a circular buffer for interpolation
+        self.metaPupil = numpy.zeros((self.simConfig.simSize,)*2)
+
 
 
     def calcTiltCorrect(self):
@@ -161,16 +164,18 @@ class scienceCam:
         if (x1.is_integer() and x2.is_integer()
                and y1.is_integer() and y2.is_integer()):
             #Old, simple integer based solution
-            metaPupil= scrn[ x1:x2, y1:y2]
+            self.metaPupil= scrn[ x1:x2, y1:y2]
         else:
-            #Dirty, temporary fix to interpolate between phase points
             xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
             yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
-            scrnCoords = numpy.arange(scrnX)
-            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
-            metaPupil = flipud(rot90(interpObj(yCoords, xCoords)))
+            #scrnCoords = numpy.arange(scrnX)
+            #interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            #metaPupil = interpObj(yCoords, xCoords)
+            aoSimLib.linterp2d_numba(scrn, xCoords, yCoords, self.metaPupil)
 
-        return metaPupil
+
+
+        return self.metaPupil
 
 
     def calcPupilPhase(self):

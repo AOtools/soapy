@@ -480,7 +480,7 @@ on object
             #interpObj = interp2d(
             #       self.scrnCoords, self.scrnCoords, scrn, copy=False)
             #self.metaPupil = interpObj(xCoords, yCoords)
-            aoSimLib.linterp2d(scrn, xCoords, yCoords, self.metaPupil)
+            aoSimLib.linterp2d_numba(scrn, xCoords, yCoords, self.metaPupil)
         
         return self.metaPupil
 
