@@ -27,7 +27,7 @@ import numpy
 from scipy.interpolate import interp2d,RectBivariateSpline
 #a lookup dict for interp2d order (expressed as 'kind')
 INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
-from numba import jit, float32, float64, complex64, complex128, vectorize
+from numba import jit, float32, float64, complex64, complex128, vectorize, int32
 
 from . import AOFFT
 
@@ -37,6 +37,8 @@ try:
     xrange
 except NameError:
     xrange = range
+
+import past.builtins
 
 def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
@@ -290,12 +292,12 @@ def linterp2d(array, xCoords, yCoords, interpArray):
     #print (yCoords.max())
     #print (xCoords.max())
 
-    for i in range(xCoords.shape[0]):
+    for i in xrange(xCoords.shape[0]):
         x = xCoords[i]
-        xInt = int(x)
-        for j in range(yCoords.shape[0]):
+        xInt = int32(x)
+        for j in xrange(yCoords.shape[0]):
             y = yCoords[j]
-            yInt = int(y)
+            yInt = int32(y)
 
             #print("x:{}, y:{}, xInt:{}, yInt:{}".format(x,y,xInt,yInt))
             xGrad = array[xInt+1, yInt] - array[xInt, yInt]
@@ -306,7 +308,7 @@ def linterp2d(array, xCoords, yCoords, interpArray):
     
     return interpArray
 
-@jit(nopython=True)
+@jit(nopython=False)
 def zoom_numba(array, zoomArray):
     """
     2-D zoom interpolation using purely python - fast if compiled with numba.
@@ -321,13 +323,13 @@ def zoom_numba(array, zoomArray):
         interpArray (ndarray): A pointer to the calculated ``zoomArray''
     """
 
-    jCoords = range(zoomArray.shape[1])
-    for i in range(zoomArray.shape[0]):
-        x = i*float(array.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
-        xInt = int(x)
+    jCoords = xrange(zoomArray.shape[1])
+    for i in range(int32(zoomArray.shape[0])):
+        x = i*float32(array.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
+        xInt = int32(x)
         for j in jCoords:
-            y = j*float(array.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
-            yInt = int(y)
+            y = j*float32(array.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
+            yInt = int32(y)
             
             #print("x:{}, y:{}, xInt:{}, yInt:{}".format(x,y,xInt,yInt))
 
@@ -385,13 +387,13 @@ def absSquare(data):
 @jit(nopython=True)
 def binImg_numba(img, binSize, newImg):
    
-    for i in range(newImg.shape[0]):
+    for i in xrange(newImg.shape[0]):
         x1 = i*binSize
-        for j in range(newImg.shape[1]):
+        for j in xrange(newImg.shape[1]):
             y1 = j*binSize
             newImg[i,j] = 0
-            for x in range(binSize):
-                for y in range(binSize):
+            for x in xrange(binSize):
+                for y in xrange(binSize):
                     newImg[i,j] += img[x+x1, y+y1]
 
     return newImg
@@ -403,9 +405,9 @@ def binImg_numba(img, binSize, newImg):
 @jit(nopython=True)
 def chopImage(image, imageStack,  subImgCoords, subImgSize):
     
-    for i in range(subImgCoords.shape[0]):
-        x = int(round(subImgCoords[i, 0]))
-        y = int(round(subImgCoords[i, 1]))
+    for i in xrange(subImgCoords.shape[0]):
+        x = int32(round(subImgCoords[i, 0]))
+        y = int32(round(subImgCoords[i, 1]))
 
         imageStack[i] = image[x:x+subImgSize, y:y+subImgSize]
 
