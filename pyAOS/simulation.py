@@ -71,7 +71,6 @@ from . import aoSimLib
 #standard python imports
 import numpy
 import datetime
-import sys
 import os
 import time
 import traceback
