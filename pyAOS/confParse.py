@@ -192,6 +192,13 @@ class Configurator(object):
             for scrn in range(self.atmos.scrnNo):
                 self.atmos.L0.append(100.)
 
+        #Check if SH WFS with 1 subap. Feild stop must be FOV
+        for wfs in self.wfs:
+            if wfs.subaps==1 and wfs.subapFieldStop==False:
+                logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
+                wfs.subapFieldStop = True
+
+
 class ConfigObj(object):
     def __init__(self):
 
