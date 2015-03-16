@@ -719,7 +719,7 @@ class ShackHartmann(WFS):
                                 * self.subapFOVrad/ self.wfsConfig.wavelength)
 
         #make twice as big to double subap FOV
-        if self.wfsConfig.subaps==1:
+        if self.wfsConfig.subapFieldStop==True:
             self.SUBAP_OVERSIZE = 1
         else:
             self.SUBAP_OVERSIZE = 2
