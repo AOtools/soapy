@@ -463,7 +463,7 @@ class WfsConfig(ConfigObj):
                             into adjacent sub-apertures. if
                             False, oversample subap FOV by a
                             factor of 2 to allow into adjacent
-                            subaps.                             ``True``
+                            subaps.                             ``False``
         ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
@@ -520,7 +520,7 @@ class WfsConfig(ConfigObj):
                                 ("fftwFlag", "FFTW_PATIENT"),
                                 ("SNR", 0),
                                 ("angleEquivNoise", 0),
-                                ("subapFieldStop", True),
+                                ("subapFieldStop", False),
                                 ("bitDepth", 32),
                                 ("removeTT", "False"),
                                 ("angleEquivNoise", 0),
