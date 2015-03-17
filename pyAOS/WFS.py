@@ -969,7 +969,8 @@ class ShackHartmann(WFS):
         #Scale phase (EField) to correct size for FOV (plus a bit with padding)
         #self.scaledEField = aoSimLib.zoom( 
         #       self.EField, self.scaledEFieldSize)*self.scaledMask
-        aoSimLib.zoom_numba(self.EField, self.scaledEField)
+        aoSimLib.zoom_numba(
+                self.EField, self.scaledEField, threads = self.simConfig.procs)
         self.scaledEField*=self.scaledMask
         #Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.) 

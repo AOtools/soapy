@@ -200,7 +200,9 @@ class scienceCam:
         '''
 
         #Scaled the padded phase to the right size for the requried FOV
-        aoSimLib.zoom_numba(self.residual, self.phsBuffer)
+        aoSimLib.zoom_numba(
+                self.residual, self.phsBuffer, self.simConfig.procs
+                )
         self.phsBuffer*=self.r0Scale
     
         #phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale

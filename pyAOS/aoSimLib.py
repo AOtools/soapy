@@ -310,10 +310,79 @@ def linterp2d(data, xCoords, yCoords, interpArray):
             yGrad = a2 - a1
             interpArray[i,j] = a1 + yGrad*(y-y1)
     return interpArray
-    
+   
+def zoom_numba(data, zoomArray, threads=None):
+    """
+    A function which deals with threaded numba interpolation.
 
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        xCoords (ndarray): A 1-D array of x-coordinates 
+        yCoords (ndarray): A 2-D array of y-coordinates
+        interpArray (ndarray): The array to place the calculation
+        threads (int): Number of threads to use for calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+    
+    if threads!=1 and threads!=None:
+    
+        nx = zoomArray.shape[0]
+
+        Ts = []
+        for t in range(threads):
+            Ts.append(Thread(target=zoom_numbaThread, 
+                args = (
+                    data, 
+                    numpy.array([int(t*nx/threads), int((t+1)*nx/threads)]),
+                    zoomArray)
+                ))
+            Ts[t].start()
+
+        for T in Ts:
+            T.join()
+    
+    else:
+        zoom_numba1(data, zoomArray)
+
+    return zoomArray
+
+@numba.jit(nopython=True, nogil=True)
+def zoom_numbaThread(data,  chunkIndices, zoomArray):
+    """
+    2-D zoom interpolation using purely python - fast if compiled with numba.
+    Both the array to zoom and the output array are required as arguments, the
+    zoom level is calculated from the size of the new array.
+
+    Parameters:
+        array (ndarray): The 2-D array to zoom
+        zoomArray (ndarray): The array to place the calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``zoomArray''
+    """
+
+    for i in xrange(chunkIndices[0], chunkIndices[1]):
+        x = i*numba.float32(data.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
+        x1 = numba.int32(x)
+        for j in xrange(zoomArray.shape[1]):
+            y = j*numba.float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
+            y1 = numba.int32(y)
+            
+            xGrad1 = data[x1+1, y1] - data[x1, y1]
+            a1 = data[x1, y1] + xGrad1*(x-x1)
+
+            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
+            a2 = data[x1, y1+1] + xGrad2*(x-x1)
+
+            yGrad = a2 - a1
+            zoomArray[i,j] = a1 + yGrad*(y-y1)
+
+
+    return zoomArray
 @numba.jit(nopython=True)
-def zoom_numba(data, zoomArray):
+def zoom_numba1(data, zoomArray):
     """
     2-D zoom interpolation using purely python - fast if compiled with numba.
     Both the array to zoom and the output array are required as arguments, the
