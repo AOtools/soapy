@@ -309,9 +309,9 @@ class atmos:
         """
 
         scrns = {}
-       
         args = []
-       
+    
+        #If no MP pool, just make screen sequentialy. 
         if self.mpPool == None:
             for i in xrange(self.scrnNo):
                 if subharmonics:
@@ -325,6 +325,7 @@ class atmos:
                             (self.pxlScale**(-1.)), self.atmosConfig.L0[i], 
                             0.01)
 
+        #If there is a pool, use it
         else:
             if subharmonics: 
                 for i in range(self.scrnNo):
@@ -332,14 +333,15 @@ class atmos:
                             (ft_sh_phase_screen,  self.scrnStrengths[i], 
                             self.scrnSize, (self.pxlScale**(-1.)), 
                             self.atmosConfig.L0[i], 0.01))
-
+            
             else:
                 for i in range(self.scrnNo):
-                    args.append(
+
+                    args.append( 
                             (ft_phase_screen,  self.scrnStrengths[i], 
                             self.scrnSize, (self.pxlScale**(-1.)), 
                             self.atmosConfig.L0[i], 0.01))
-            print("Do MP") 
+            
             #Do the calculation using the multi-process pool, put into dict
             s = self.mpPool.map(mpWrap, args)
             for i in range(self.scrnNo):
@@ -349,6 +351,13 @@ class atmos:
 
 
 class Screen(object):
+    """
+    A very experimental ``PhaseScreen`` object, which would act like a big 
+    array, but if sliced with floats would interpolate. Not used in the
+    simulation
+
+    apr - 19Feb2015
+    """
 
     def __init__(self, scrn, subscrnSize, order=3):
 

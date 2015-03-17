@@ -171,8 +171,9 @@ class scienceCam:
             #scrnCoords = numpy.arange(scrnX)
             #interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
             #metaPupil = interpObj(yCoords, xCoords)
-            aoSimLib.linterp2d_numba(scrn, xCoords, yCoords, self.metaPupil)
-
+            aoSimLib.linterp2d_numba(
+                    scrn, xCoords, yCoords, self.metaPupil,
+                    threads = self.simConfig.procs)
 
 
         return self.metaPupil

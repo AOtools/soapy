@@ -27,7 +27,8 @@ import numpy
 from scipy.interpolate import interp2d,RectBivariateSpline
 #a lookup dict for interp2d order (expressed as 'kind')
 INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
-from numba import jit, float32, float64, complex64, complex128, vectorize, int32
+import numba
+from threading import Thread
 
 from . import AOFFT
 
@@ -270,8 +271,8 @@ def interp1d_numpy(array, coords):
     return interpArray
 
 
-@jit(nopython=True)
-def linterp2d_numba(data, xCoords, yCoords, interpArray):
+@numba.jit(nopython=True)
+def linterp2d(data, xCoords, yCoords, interpArray):
     """
     2-D interpolation using purely python - fast if compiled with numba
 
@@ -294,11 +295,11 @@ def linterp2d_numba(data, xCoords, yCoords, interpArray):
     jRange = xrange(yCoords.shape[0])
     for i in xrange(xCoords.shape[0]):
         x = xCoords[i]
-        x1 = int32(x)
+        x1 = numba.int32(x)
         for j in jRange: 
 
             y = yCoords[j] 
-            y1 = int32(y)
+            y1 = numba.int32(y)
 
             xGrad1 = data[x1+1, y1] - data[x1, y1]
             a1 = data[x1, y1] + xGrad1*(x-x1)
@@ -311,7 +312,7 @@ def linterp2d_numba(data, xCoords, yCoords, interpArray):
     return interpArray
     
 
-@jit(nopython=True)
+@numba.jit(nopython=True)
 def zoom_numba(data, zoomArray):
     """
     2-D zoom interpolation using purely python - fast if compiled with numba.
@@ -326,12 +327,12 @@ def zoom_numba(data, zoomArray):
         interpArray (ndarray): A pointer to the calculated ``zoomArray''
     """
 
-    for i in xrange(int32(zoomArray.shape[0])):
-        x = i*float32(data.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
-        x1 = int32(x)
+    for i in xrange(numba.int32(zoomArray.shape[0])):
+        x = i*numba.float32(data.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
+        x1 = numba.int32(x)
         for j in xrange(zoomArray.shape[1]):
-            y = j*float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
-            y1 = int32(y)
+            y = j*numba.float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
+            y1 = numba.int32(y)
             
             xGrad1 = data[x1+1, y1] - data[x1, y1]
             a1 = data[x1, y1] + xGrad1*(x-x1)
@@ -345,7 +346,7 @@ def zoom_numba(data, zoomArray):
 
     return zoomArray
 
-def threadInterp(data, xCoords, yCoords, interpArray, threads):
+def linterp2d_numba(data, xCoords, yCoords, interpArray, threads=None):
     """
     A function which deals with threaded numba interpolation.
 
@@ -359,26 +360,31 @@ def threadInterp(data, xCoords, yCoords, interpArray, threads):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
+    
+    if threads!=1 and threads!=None:
+    
+        nx = xCoords.shape[0]
 
-    nx = xCoords.shape[0]
+        Ts = []
+        for t in range(threads):
+            Ts.append(Thread(target=linterp2d_thread, 
+                args = (
+                    data, xCoords, yCoords, 
+                    numpy.array([int(t*nx/threads), int((t+1)*nx/threads)]),
+                    interpArray)
+                ))
+            Ts[t].start()
 
-    Ts = []
-    for t in range(threads):
-        Ts.append(Thread(target=linterp2d_numbaThread, 
-            args = (
-                data, xCoords, yCoords, 
-                numpy.array([int(t*nx/threads), int((t+1)*nx/threads)]),
-                interpArray)
-            ))
-        Ts[t].start()
-
-    for T in Ts:
-        T.join()
+        for T in Ts:
+            T.join()
+    
+    else:
+        linterp2d(data, xCoords, yCoords, interpArray)
 
     return interpArray
 
 @numba.jit(nopython=True, nogil=True)
-def linterp2d_numbaThread(data, xCoords, yCoords, chunkIndices, interpArray):
+def linterp2d_thread(data, xCoords, yCoords, chunkIndices, interpArray):
     """
     2-D interpolation using purely python - fast if compiled with numba
     This version also accepts a parameter specifying how much of the array
@@ -458,12 +464,12 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 
     return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
 
-@vectorize([float32(complex64),
-            float64(complex128)])
+@numba.vectorize([numba.float32(numba.complex64),
+            numba.float64(numba.complex128)])
 def absSquare(data):
         return (data.real**2 + data.imag**2)
 
-@jit(nopython=True)
+@numba.jit(nopython=True)
 def binImg_numba(img, binSize, newImg):
    
     for i in xrange(newImg.shape[0]):
@@ -481,12 +487,12 @@ def binImg_numba(img, binSize, newImg):
 #######################
 #WFS Functions
 ######################
-@jit(nopython=True)
+@numba.jit(nopython=True)
 def chopImage(image, imageStack,  subImgCoords, subImgSize):
     
     for i in xrange(subImgCoords.shape[0]):
-        x = int32(round(subImgCoords[i, 0]))
-        y = int32(round(subImgCoords[i, 1]))
+        x = numba.int32(round(subImgCoords[i, 0]))
+        y = numba.int32(round(subImgCoords[i, 1]))
 
         imageStack[i] = image[x:x+subImgSize, y:y+subImgSize]
 

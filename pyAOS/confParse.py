@@ -159,8 +159,6 @@ class Configurator(object):
         if self.sim.scrnSize%2!=0:
             self.sim.scrnSize+=1
 
-
-
         #Check if any WFS use physical propogation.
         #If so, make oversize phase scrns
         wfsPhys = False
@@ -197,6 +195,17 @@ class Configurator(object):
             if wfs.subaps==1 and wfs.subapFieldStop==False:
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
                 wfs.subapFieldStop = True
+    
+        #Use the simulation ``procs`` value to determine how many threads in 
+        #multi-threaded/processed operations
+        for wfs in self.wfs:
+            wfs.fftwThreads = self.sim.procs
+        for lgs in self.lgs:
+            lgs.fftwThreads = self.sim.procs
+        for sci in self.sci:
+            sci.fftwThreads = self.sim.procs
+
+        
 
 
 class ConfigObj(object):
@@ -315,8 +324,8 @@ class SimConfig(ConfigObj):
         ``learnAtmos``      str: if ``random``, then 
                             random phase screens used for 
                             `learn`                             ``random``
-        ``procs''           int: The number of proccesses to 
-                            use                                 ``1''
+        ``procs``           int: number of processes to use 
+                            in multiprocessing operations       ``1``
         ==================  =================================   ===============
 
     Data Saving (all default to False):

@@ -74,7 +74,7 @@ import datetime
 import os
 import time
 import traceback
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Pool
 from argparse import ArgumentParser
 import shutil
 
@@ -168,6 +168,11 @@ class Sim(object):
         logger.setLoggingFile(self.config.sim.logfile)
         logger.info("Starting Sim: {}".format(self.timeStamp()))
 
+        #Make a pool of mp workers to do some work
+        #This will always exist in this class, but in other sim modules may 
+        #not be there (so musn't be relied upon!)
+        self.mpPool = Pool(self.config.sim.procs)
+
         #calculate some params from read ones
         #calculated
         self.config.calcParams()
@@ -188,7 +193,8 @@ class Sim(object):
         self.mask = numpy.pad(
                 self.mask, self.config.sim.simPad, mode="constant")
 
-        self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
+        self.atmos = atmosphere.atmos(
+                self.config.sim, self.config.atmos, self.mpPool)
 
         #Find if WFSs should each have own process
         if self.config.sim.wfsMP:
