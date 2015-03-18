@@ -706,25 +706,28 @@ class WooferTweeter(Reconstructor):
                 dmCMat = numpy.linalg.pinv(
                                     dmIMat, self.dms[dm].dmConfig.dmCond)
             
-            if dm != self.simConfig.nDM-1:
-                self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-                acts+=self.dms[dm].acts
+            #if dm != self.simConfig.nDM-1:
+            #    self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+            #    acts+=self.dms[dm].acts
             
             dmCMats.append(dmCMat)
         
         
-        
-        for dm in range(self.simConfig.nDM):
-
+        self.controlMatrix[:, 0:self.dms[0].acts]
+        acts = self.dms[0].acts
+        for dm in range(1, self.simConfig.nDM):
             
             #This is the matrix which converts from Low order DM commands
             #to high order DM commands, via slopes
-            lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
+            lowToHighTransform = self.dms[dm-1].iMat.T.dot( dmCMats[dm-1].T )
 
-            highOrderCMat = dmCMats[-1].T.dot( 
+            highOrderCMat = dmCMats[dm].T.dot( 
                     numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
-                                
-            self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
+            
+            dmCMats[dm] = highOrderCMat
+
+            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = highOrderCMat.T
+            acts += self.dms[dm].acts
             
 #####################################
 #Experimental....
