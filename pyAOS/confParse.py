@@ -291,9 +291,9 @@ class SimConfig(ConfigObj):
         =============   ===================
         **Parameter**   **Description** 
         -------------   -------------------
-        pupilSize       int: Number of phase points across the simulation pupil
-        nIters          int: Number of iteration to run simulation
-        loopTime        float: Time between simulation frames (1/framerate)
+        ``pupilSize``   int: Number of phase points across the simulation pupil
+        ``nIters``      int: Number of iteration to run simulation
+        ``loopTime``    float: Time between simulation frames (1/framerate)
         =============   ===================
 
 
@@ -380,7 +380,6 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"), 
-                                ("procs", 1),
                         ]
 
         self.initParams()

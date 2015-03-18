@@ -231,7 +231,12 @@ class MVM(Reconstructor):
             
 
 class MVM_SeparateDMs(Reconstructor):
+    """
+    Reconstructor which treats a each DM Separately.
 
+    Similar to ``MVM`` reconstructor, except each DM has its own control matrix.
+    Its is assumed that each DM is associated with a different WFS.
+    """
 
     def calcCMat(self,callback=None, progressCallback=None):
         '''
@@ -492,7 +497,9 @@ class LearnAndApply(Reconstructor):
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
-        if tomoMat.shape != (2*self.wfss[0].activeSubaps, self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
+        if tomoMat.shape != (
+                2*self.wfss[0].activeSubaps, 
+                self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:
@@ -570,13 +577,13 @@ class LearnAndApply(Reconstructor):
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
         
-
-
+        #Dont make global reconstructor. Will reconstruct on-axis slopes, then
+        #dmcommands explicitly
         #self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
         logger.info("Done.")
         
 
-    def reconstruct(self,slopes):
+    def reconstruct(self, slopes):
         """
         Determine DM commands using previously made 
         reconstructor from slopes. 
@@ -681,8 +688,8 @@ class WooferTweeter(Reconstructor):
     def calcCMat(self,callback=None, progressCallback=None):
         '''
         Creates control Matrix. 
-        Assumes that DM 0 (or 1 if TT used) is low order, 
-        and DM 1 (or 2 if TT used) is high order.
+        Assumes that DM 0  is low order, 
+        and DM 1 is high order.
         '''
 
         if self.simConfig.nDM==1:
@@ -699,20 +706,28 @@ class WooferTweeter(Reconstructor):
                 dmCMat = numpy.linalg.pinv(
                                     dmIMat, self.dms[dm].dmConfig.dmCond)
             
-            if dm != self.simConfig.nDM-1:
-                self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-                acts+=self.dms[dm].acts
+            #if dm != self.simConfig.nDM-1:
+            #    self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+            #    acts+=self.dms[dm].acts
             
             dmCMats.append(dmCMat)
+        
+        
+        self.controlMatrix[:, 0:self.dms[0].acts]
+        acts = self.dms[0].acts
+        for dm in range(1, self.simConfig.nDM):
             
-        #This is the matrix which converts from Low order DM commands
-        #to high order DM commands, via slopes
-        lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
+            #This is the matrix which converts from Low order DM commands
+            #to high order DM commands, via slopes
+            lowToHighTransform = self.dms[dm-1].iMat.T.dot( dmCMats[dm-1].T )
 
-        highOrderCMat = dmCMats[-1].T.dot( 
-                numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
-                            
-        self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
+            highOrderCMat = dmCMats[dm].T.dot( 
+                    numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
+            
+            dmCMats[dm] = highOrderCMat
+
+            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = highOrderCMat.T
+            acts += self.dms[dm].acts
             
 #####################################
 #Experimental....
