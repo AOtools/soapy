@@ -688,8 +688,8 @@ class WooferTweeter(Reconstructor):
     def calcCMat(self,callback=None, progressCallback=None):
         '''
         Creates control Matrix. 
-        Assumes that DM 0 (or 1 if TT used) is low order, 
-        and DM 1 (or 2 if TT used) is high order.
+        Assumes that DM 0  is low order, 
+        and DM 1 is high order.
         '''
 
         if self.simConfig.nDM==1:
@@ -711,15 +711,20 @@ class WooferTweeter(Reconstructor):
                 acts+=self.dms[dm].acts
             
             dmCMats.append(dmCMat)
-            
-        #This is the matrix which converts from Low order DM commands
-        #to high order DM commands, via slopes
-        lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
+        
+        
+        
+        for dm in range(self.simConfig.nDM):
 
-        highOrderCMat = dmCMats[-1].T.dot( 
-                numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
-                            
-        self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
+            
+            #This is the matrix which converts from Low order DM commands
+            #to high order DM commands, via slopes
+            lowToHighTransform = self.dms[self.simConfig.nDM-2].iMat.T.dot( dmCMats[-2].T )
+
+            highOrderCMat = dmCMats[-1].T.dot( 
+                    numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
+                                
+            self.controlMatrix[:,acts:acts+self.dms[self.simConfig.nDM-1].acts] = highOrderCMat.T
             
 #####################################
 #Experimental....
