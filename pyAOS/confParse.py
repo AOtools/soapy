@@ -380,6 +380,7 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"), 
+                                ("procs", 1),
                         ]
 
         self.initParams()
