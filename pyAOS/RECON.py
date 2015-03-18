@@ -699,7 +699,8 @@ class WooferTweeter(Reconstructor):
         dmCMats = []
         for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
-            
+           
+            logger.info("Invert DM {} IMat with conditioning:{}".format(dm,self.dms[dm].dmConfig.dmCond))
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
@@ -719,7 +720,7 @@ class WooferTweeter(Reconstructor):
             
             #This is the matrix which converts from Low order DM commands
             #to high order DM commands, via slopes
-            lowToHighTransform = self.dms[dm-1].iMat.T.dot( dmCMats[dm-1].T )
+            lowToHighTransform = self.dms[dm-1].iMat.T.dot( dmCMats[dm-1] )
 
             highOrderCMat = dmCMats[dm].T.dot( 
                     numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
