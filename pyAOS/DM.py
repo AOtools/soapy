@@ -182,7 +182,7 @@ class Zernike(DM):
         pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
                 shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                ) 
+                ).astype("float32") 
 
 class Piezo(DM):
 
@@ -220,7 +220,7 @@ class Piezo(DM):
         #side
         dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
-        shapes = numpy.zeros( (self.acts, dmSize, dmSize) )
+        shapes = numpy.zeros( (self.acts, dmSize, dmSize), dtype="float32")
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]
@@ -241,13 +241,13 @@ class Piezo(DM):
 
         if dmSize>self.simConfig.simSize:
             coord = int(round(dmSize/2. - self.simConfig.simSize/2.))
-            self.iMatShapes = shapes[:,coord:-coord, coord:-coord]# * self.mask
+            self.iMatShapes = shapes[:,coord:-coord, coord:-coord].astype("float32")
         
         else:
             pad = int(round((self.simConfig.simSize - dmSize)/2))
             self.iMatShapes = numpy.pad(
                     shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                    )#*self.mask
+                    ).astype("float32")
 
 
 class GaussStack(Piezo):
