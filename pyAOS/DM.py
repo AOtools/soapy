@@ -176,7 +176,7 @@ class Zernike(DM):
         '''
 
         shapes = aoSimLib.zernikeArray(
-                        int(self.acts+3),int(self.simConfig.pupilSize))[3:]
+                        int(self.acts+1),int(self.simConfig.pupilSize))[1:]
 
     
         pad = self.simConfig.simPad
