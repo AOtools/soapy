@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Sun Mar 15 18:14:40 2015
+# Created: Fri Mar 20 20:04:37 2015
 #      by: PyQt4 UI code generator 4.11.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -296,11 +296,18 @@ class Ui_MainWindow(object):
         self.loadParamsAction.setObjectName(_fromUtf8("loadParamsAction"))
         self.reloadParamsAction = QtGui.QAction(MainWindow)
         self.reloadParamsAction.setObjectName(_fromUtf8("reloadParamsAction"))
+        self.actionClose = QtGui.QAction(MainWindow)
+        self.actionClose.setObjectName(_fromUtf8("actionClose"))
+        self.actionClose_2 = QtGui.QAction(MainWindow)
+        self.actionClose_2.setObjectName(_fromUtf8("actionClose_2"))
         self.menuFile.addAction(self.loadParamsAction)
         self.menuFile.addAction(self.reloadParamsAction)
+        self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionClose_2)
         self.menuBar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
+        QtCore.QObject.connect(self.actionClose_2, QtCore.SIGNAL(_fromUtf8("activated()")), MainWindow.close)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -328,5 +335,7 @@ class Ui_MainWindow(object):
         self.actionTrue.setText(_translate("MainWindow", "True", None))
         self.actionFalse.setText(_translate("MainWindow", "False", None))
         self.loadParamsAction.setText(_translate("MainWindow", "Load Configuration File", None))
-        self.reloadParamsAction.setText(_translate("MainWindow", "Reload Current Configuation File", None))
+        self.reloadParamsAction.setText(_translate("MainWindow", "Reload Current Configuration File", None))
+        self.actionClose.setText(_translate("MainWindow", "Close", None))
+        self.actionClose_2.setText(_translate("MainWindow", "Close", None))
 
