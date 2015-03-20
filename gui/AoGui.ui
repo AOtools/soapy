@@ -415,6 +415,8 @@
     </property>
     <addaction name="loadParamsAction"/>
     <addaction name="reloadParamsAction"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose_2"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -438,7 +440,34 @@
     <string>Reload Current Configuration File</string>
    </property>
   </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
+  <action name="actionClose_2">
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>actionClose_2</sender>
+   <signal>activated()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>414</x>
+     <y>326</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
