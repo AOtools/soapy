@@ -438,7 +438,7 @@ def pool_ft_sh_phase_screen(args):
 
 
 def makePhaseScreens(
-        nScrns, r0, N, pxlScale, L0, l0, returnScrns=True, DIR=None):
+        nScrns, r0, N, pxlScale, L0, l0, returnScrns=True, DIR=None, SH=False):
     """
     Creates and saves a set of phase screens to be used by the simulation.
 
@@ -456,6 +456,8 @@ def makePhaseScreens(
         l0 (float): Inner scale of each screen.
         returnScrns (bool): Whether to return a list of screens. True by default, but if screens are very large, it might be preferred that they aren't kept in memory after being saved.
         DIR (str, optional): The directory to save the screens.
+        SH (bool, optional): If True, add sub-harmonics to screens for more 
+                accurate power spectra, though screens no-longer periodic.
    
     Returns:
         list: A list conaining all the screens.
@@ -472,7 +474,11 @@ def makePhaseScreens(
 
     #Now loop over and create all the screens (Currently with the same params)
     for i in range(nScrns):
-        scrn = ft_sh_phase_screen(r0, N, pxlScale, L0, l0)
+        if SH:
+            scrn = ft_sh_phase_screen(r0, N, pxlScale, L0, l0)
+        else:
+            scrn = ft_phase_screen(r0, N, pxlScale, L0, l0)
+
         if returnScrns:
             scrns.append(scrn)
 
