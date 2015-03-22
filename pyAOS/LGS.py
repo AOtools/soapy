@@ -318,7 +318,7 @@ class PhysicalLGS(LGSObj):
         self.FOVPatch = self.subapFOVRad*self.lgsConfig.height
         
     
-    def angularSpectrum(self,Uin,wvl,d1,d2,z):
+    def angularSpectrum(self, Uin, wvl, d1, d2, z):
         N = Uin.shape[0] #Assumes Uin is square.
         k = 2*numpy.pi/wvl     #optical wavevector
 
@@ -352,13 +352,13 @@ class PhysicalLGS(LGSObj):
         
         return Uout
         
-    def ft2(self,g,delta):
+    def ft2(self, g, delta):
         self.FFT.inputData[:] = numpy.fft.fftshift(g)
         G = numpy.fft.fftshift( self.FFT() * delta**2 )
 
         return G
 
-    def ift2(self,G,delta_f):
+    def ift2(self, G, delta_f):
         N = G.shape[0]
         self.iFFT.inputData[:] = numpy.fft.ifftshift(G)
         g = numpy.fft.ifftshift(self.iFFT()) * (N * delta_f)**2
