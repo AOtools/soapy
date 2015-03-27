@@ -271,45 +271,6 @@ def interp1d_numpy(array, coords):
     return interpArray
 
 
-@numba.jit(nopython=True)
-def linterp2d(data, xCoords, yCoords, interpArray):
-    """
-    2-D interpolation using purely python - fast if compiled with numba
-
-    Parameters:
-        array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
-        yCoords (ndarray): A 2-D array of y-coordinates
-        interpArray (ndarray): The array to place the calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``interpArray''
-    """
-
-
-    if xCoords[-1] == data.shape[0]-1:
-        xCoords[-1] -= 1e-6
-    if yCoords[-1] == data.shape[1]-1:
-        yCoords[-1] -= 1e-6
-
-    jRange = xrange(yCoords.shape[0])
-    for i in xrange(xCoords.shape[0]):
-        x = xCoords[i]
-        x1 = numba.int32(x)
-        for j in jRange: 
-
-            y = yCoords[j] 
-            y1 = numba.int32(y)
-
-            xGrad1 = data[x1+1, y1] - data[x1, y1]
-            a1 = data[x1, y1] + xGrad1*(x-x1)
-
-            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
-            a2 = data[x1, y1+1] + xGrad2*(x-x1)
-
-            yGrad = a2 - a1
-            interpArray[i,j] = a1 + yGrad*(y-y1)
-    return interpArray
    
 def zoom_numba(data, zoomArray, threads=None):
     """
@@ -494,6 +455,48 @@ def linterp2d_thread(data, xCoords, yCoords, chunkIndices, interpArray):
             interpArray[i,j] = a1 + yGrad*(y-y1)
 
     return interpArray
+
+
+@numba.jit(nopython=True)
+def linterp2d(data, xCoords, yCoords, interpArray):
+    """
+    2-D interpolation using purely python - fast if compiled with numba
+
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        xCoords (ndarray): A 1-D array of x-coordinates 
+        yCoords (ndarray): A 2-D array of y-coordinates
+        interpArray (ndarray): The array to place the calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+
+
+    if xCoords[-1] == data.shape[0]-1:
+        xCoords[-1] -= 1e-6
+    if yCoords[-1] == data.shape[1]-1:
+        yCoords[-1] -= 1e-6
+
+    jRange = xrange(yCoords.shape[0])
+    for i in xrange(xCoords.shape[0]):
+        x = xCoords[i]
+        x1 = numba.int32(x)
+        for j in jRange: 
+
+            y = yCoords[j] 
+            y1 = numba.int32(y)
+
+            xGrad1 = data[x1+1, y1] - data[x1, y1]
+            a1 = data[x1, y1] + xGrad1*(x-x1)
+
+            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
+            a2 = data[x1, y1+1] + xGrad2*(x-x1)
+
+            yGrad = a2 - a1
+            interpArray[i,j] = a1 + yGrad*(y-y1)
+    return interpArray
+
 
 
 def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
