@@ -80,7 +80,9 @@ class Configurator(object):
         self.configDict = simConfiguration
 
     def loadSimParams(self):
-
+       
+        self.readfile()
+ 
         logger.debug("\nLoad Sim Params...")
         self.sim.loadParams(self.configDict["Sim"])
 
@@ -109,8 +111,8 @@ class Configurator(object):
             logger.debug("Load Science {} Params".format(sci))
             self.sci.append(SciConfig(sci))
             self.sci[sci].loadParams(self.configDict["Science"])
-
-
+        self.calcParams()
+        
     def calcParams(self):
         """
         Calculates some parameters from the configuration parameters.
