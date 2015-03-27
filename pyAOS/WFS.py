@@ -123,25 +123,27 @@ class WFS(object):
             simConfig (confObj): The simulation configuration object
             wfsConfig (confObj): The WFS configuration object
             atmosConfig (confObj): The atmosphere configuration object
-            lgsConfig (confObj): The Laser Guide Star configuratie
-    else:
-        configFile = bin_path+"/../conf/testConf.py"
-
-    #Run sim with given args
-    
-on object
-            mask (ndarray): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
+            lgsConfig (confObj): The Laser Guide Star configuration
+            mask (ndarray, optional): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
-    def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig, mask):
+    def __init__(self, simConfig, wfsConfig, atmosConfig, lgsConfig=None, 
+            mask=None):
 
         self.simConfig = simConfig
         self.wfsConfig = wfsConfig
         self.atmosConfig = atmosConfig
         self.lgsConfig = lgsConfig
 
-        self.mask = mask
-        
+        #If supplied use the mask
+        if numpy.any(mask):
+            self.mask = mask
+        else:
+            self.mask = aoSimLib.circle(
+                    self.simConfig.pupilSize/2., self.simConfig.simSize,
+                    )
+
+
         self.iMat=False
         self.phsWvl = 500e-9
 
@@ -163,7 +165,8 @@ on object
         
         #Init LGS, FFTs and allocate some data arrays
         self.initFFTs()
-        self.initLGS()
+        if self.lgsConfig:
+            self.initLGS()
         self.allocDataArrays()
         
         self.calcTiltCorrect()
@@ -626,7 +629,8 @@ on object
             self.iMat = True
             removeTT = self.wfsConfig.removeTT
             self.wfsConfig.removeTT = False
-            elong = self.elong
+            if self.lgsConfig:
+                elong = self.elong
             self.elong = 0
 
 
@@ -642,7 +646,7 @@ on object
             self.scrns[i] = scrns[i].copy()*self.r0Scale
     
         #If no elongation
-        if self.elong == 0:
+        if self.lgsConfig and self.elong == 0:
             #If imate frame, dont want to make it off-axis
             if iMatFrame:
                 try:
@@ -658,7 +662,7 @@ on object
             self.calcFocalPlane()
 
         #If LGS elongation simulated
-        if self.elong!=0:
+        if self.lgsConfig and self.elong!=0:
             for i in xrange(self.elongLayers):
                 self.zeroPhaseData()
 
@@ -678,7 +682,8 @@ on object
         if iMatFrame:
             self.iMat=False
             self.wfsConfig.removeTT = removeTT
-            self.elong = elong
+            if self.lgsConfig:
+                self.elong = elong
 
         return self.slopes
 
@@ -697,7 +702,7 @@ on object
     def calculateSlopes(self):
         self.slopes = numpy.zeros(2*self.activeSubaps)
 
-    def zeroData(self):
+    def zeroData(self, detector=True, inter=True):
         self.zeroPhaseData()
 
 #   _____ _   _ 
@@ -806,7 +811,8 @@ class ShackHartmann(WFS):
                 fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
 
         #If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
-        if self.lgsConfig.lgsUplink:
+        #This works even if no lgsConfig.lgsUplink as ``and`` short circuits
+        if self.lgsConfig and self.lgsConfig.lgsUplink:
             self.iFFT = AOFFT.FFT(
                     inputSize = (self.activeSubaps,
                                         self.subapFFTPadding,
@@ -998,7 +1004,7 @@ class ShackHartmann(WFS):
         '''
 
         #If required, convolve with LGS PSF
-        if self.LGS and self.lgsConfig.lgsUplink and self.iMat!=True:
+        if self.lgsConfig and self.LGS and self.lgsConfig.lgsUplink and self.iMat!=True:
             self.LGSUplink()
 
         #bins back down to correct size and then
