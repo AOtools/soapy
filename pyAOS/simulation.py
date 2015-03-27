@@ -134,7 +134,6 @@ class Sim(object):
             self.configFile = configFile
 
         self.config = confParse.Configurator(self.configFile)
-        self.config.readfile()
         self.config.loadSimParams()
         logger.info("Loaded configuration file successfully!")
 
