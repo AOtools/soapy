@@ -166,7 +166,9 @@ class WFS(object):
         
         #Init LGS, FFTs and allocate some data arrays
         self.initFFTs()
-        if self.lgsConfig:
+        print("WHOAOAOA:")
+        print(self.config.lgs)
+        if self.lgsConfig and self.wfsConfig.lgs:
             self.initLGS()
         self.allocDataArrays()
         

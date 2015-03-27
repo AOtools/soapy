@@ -163,7 +163,8 @@ class Reconstructor(object):
         for dm in xrange(self.simConfig.nDM):
             logger.info("Creating Interaction Matrix on DM %d..."%dm)
             self.dms[dm].makeIMat(callback=callback) 
-        
+       
+
     def makeCMat(self,loadIMat=True, loadCMat=True, callback=None, 
                         progressCallback=None):
         
@@ -611,6 +612,12 @@ class LearnAndApply(Reconstructor):
         dmCommands = self.controlMatrix.T.dot(slopes)
         return dmCommands
 
+
+#####################################
+#Experimental....
+#####################################
+
+
 class GLAO_4LGS(MVM):
     """
     Reconstructor of LGS TT prediction algorithm.
@@ -729,10 +736,7 @@ class WooferTweeter(Reconstructor):
 
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = highOrderCMat.T
             acts += self.dms[dm].acts
-            
-#####################################
-#Experimental....
-#####################################
+
 
 class ANN(Reconstructor):
     """
