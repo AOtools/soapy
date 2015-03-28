@@ -461,9 +461,9 @@ class WfsConfig(ConfigObj):
         ==================      ===================
 
     Optional:
-        =================== =================================  ===========
+        =================== ================================== ===========
         **Parameter**       **Description**                    **Default**
-        ------------------- ---------------------------------  -----------
+        ------------------- ---------------------------------- -----------
         ``type``            string: Which WFS object to load
                             from WFS.py?                        ``ShackHartmann``
         ``propagationMode`` string: Mode of light propogation 
@@ -509,7 +509,7 @@ class WfsConfig(ConfigObj):
                             system processor number.           ``1``
         ``fftwFlag``        str: Flag to pass to FFTW 
                             when preparing plan.               ``FFTW_PATIENT``
-        =================== =================================  =========== 
+        =================== ================================== =========== 
 
 
         """
