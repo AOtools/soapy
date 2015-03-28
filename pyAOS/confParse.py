@@ -478,7 +478,7 @@ class WfsConfig(ConfigObj):
         ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
-                            reconstruction.                    ``False``
+                            reconstruction.                     ``False``
         ``subapOversamp``   int: Multiplied by the number of
                             of phase points required for FOV 
                             to increase fidelity from FFT.      ``2``
@@ -496,10 +496,10 @@ class WfsConfig(ConfigObj):
                             a separate reference image          ``None``
         ``angleEquivNoise`` float: width of gaussian noise 
                             added to slopes measurements
-                            in arc-secs                        ``0``
+                            in arc-secs                         ``0``
         ``centThreshold``   float: Centroiding threshold as
                             a fraction of the max subap
-                            value.                             ``0.1``
+                            value.                              ``0.1``
         ``exposureTime``    float: Exposure time of the WFS 
                             camera - must be higher than 
                             loopTime. If None, will be 
