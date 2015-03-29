@@ -166,8 +166,6 @@ class WFS(object):
         
         #Init LGS, FFTs and allocate some data arrays
         self.initFFTs()
-        print("WHOAOAOA:")
-        print(self.config.lgs)
         if self.lgsConfig and self.wfsConfig.lgs:
             self.initLGS()
         self.allocDataArrays()
@@ -637,7 +635,7 @@ class WFS(object):
             self.iMat = True
             removeTT = self.wfsConfig.removeTT
             self.wfsConfig.removeTT = False
-            if self.lgsConfig:
+            if self.wfsConfig.lgs:
                 elong = self.elong
             self.elong = 0
 
@@ -689,7 +687,7 @@ class WFS(object):
         if iMatFrame:
             self.iMat=False
             self.wfsConfig.removeTT = removeTT
-            if self.lgsConfig:
+            if self.wfsConfig.lgs:
                 self.elong = elong
 
         return self.slopes
@@ -1019,7 +1017,7 @@ class ShackHartmann(WFS):
         '''
 
         #If required, convolve with LGS PSF
-        if self.lgsConfig and self.LGS and self.lgsConfig.lgsUplink and self.iMat!=True:
+        if self.wfsConfig.lgs and self.LGS and self.lgsConfig.lgsUplink and self.iMat!=True:
             self.LGSUplink()
 
         #bins back down to correct size and then
