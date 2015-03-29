@@ -302,167 +302,7 @@ class MVM_SeparateDMs(Reconstructor):
         return dmCommands
 
 
-class LgsTT(MVM):
-    """
-    Reconstructor of LGS TT prediction algorithm.
-    
-    Uses one TT DM and a high order DM. The TT WFS controls the TT DM and
-    the second WFS controls the high order DM. The TT WFS and DM are
-    assumed to be the first in the system.
-    """
-    
-    def saveCMat(self):
-        cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
-        tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
-
-        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        cMatHDU.header["DMNO"] = self.simConfig.nDM
-        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
-        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
-        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
-
-        tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
-
-        tomoMatHDU.writeto(tomoMatFilename, clobber=True)
-        cMatHDU.writeto(cMatFilename, clobber=True)
-
-    def loadCMat(self):
-
-        super(LgsTT, self).loadCMat()
-
-        #Load tomo reconstructor
-        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
-        tomoMat = fits.getdata(tomoFilename)
-
-        #And check its the right size
-        if tomoMat.shape != (2*self.wfss[1].activeSubaps, self.simConfig.totalWfsData - self.wfss[2].wfsConfig.dataStart):
-            logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
-            raise Exception
-        else:
-            self.tomoRecon = tomoMat
-
-
-    def initControlMatrix(self):
-
-        self.controlShape = (2*self.wfss[0].activeSubaps+2*self.wfss[1].activeSubaps,
-                             self.simConfig.totalActs)
-        self.controlMatrix = numpy.zeros( self.controlShape )
-    
-
-    def learn(self,callback=None, progressCallback=None):
-        '''
-        Takes "self.learnFrames" WFS frames, and computes the tomographic
-        reconstructor for the system. This method uses the "truth" sensor, and
-        assumes that this is WFS0
-        '''
-
-        self.learnSlopes = numpy.zeros(
-                (self.learnIters,
-                self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2)
-                )
-        for f in xrange(self.learnIters):
-            self.learnIter=f
-
-            scrns = self.moveScrns()
-            self.learnSlopes[f] = self.runWfs(
-                    scrns, wfsList=range(1, self.simConfig.nGS)
-                    )
-
-            logger.statusMessage(f, self.learnIters, "Performing Learn")
-            if callback!=None:
-                callback()
-            if progressCallback!=None:
-               progressCallback("Performing Learn", f, self.learnIters )
-
-
-        if self.simConfig.saveLearn:
-            fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.filePrefix+"/learn.fits",
-                            clobber=True )
-
-
-    def calcCMat(self,callback=None, progressCallback=None):
-        '''
-        Uses the slopes recorded in the "learn" and DM interaction matrices
-        to create a CMat.
-        '''
-      
-        logger.info("Performing Learn....")
-        self.learn(callback, progressCallback)
-        logger.info("Done. Creating Tomographic Reconstructor...")
-
-        if progressCallback!=None:
-            progressCallback(1,1, "Calculating Covariance Matrices")
-
-        #Need to remove all *common* TT from off-axis learn slopes
-        self.learnSlopes[:, 2*self.wfss[1].activeSubaps:] = self.removeCommonTT(
-                self.learnSlopes[:, 2*self.wfss[1].activeSubaps:], [2,3,4,5])
-
-        self.covMat = numpy.cov(self.learnSlopes.T)
-        Conoff = self.covMat[   :2*self.wfss[1].activeSubaps,
-                                2*self.wfss[1].activeSubaps:     ]
-        Coffoff = self.covMat[  2*self.wfss[1].activeSubaps:,
-                                2*self.wfss[1].activeSubaps:    ]
-
-        logger.info("Inverting offoff Covariance Matrix")
-        iCoffoff = numpy.linalg.pinv(Coffoff)
-
-        self.tomoRecon = Conoff.dot(iCoffoff)
-        logger.info("Done. \nCreating full reconstructor....")
-
-        super(LgsTT, self).calcCMat(callback, progressCallback)
-
-
-    def reconstruct(self, slopes):
-        """
-        Determine DM commands using previously made
-        reconstructor from slopes.
-        Args:
-            slopes (ndarray): array of slopes to reconstruct from
-        Returns:
-            ndarray: array to commands to be sent to DM
-        """
-  
-        #Get off axis slopes and remove *common* TT
-        offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
-        offSlopes = self.removeCommonTT(offSlopes,[2,3,4,5])
-        
-        #Use the tomo matrix to get pseudo on-axis slopes
-        psuedoOnSlopes = self.tomoRecon.dot(offSlopes)
-        
-        #Combine on-axis slopes with TT measurements
-        slopes = numpy.append(
-                slopes[:self.wfss[1].wfsConfig.dataStart], psuedoOnSlopes)
-        
-        #Send to command matrices to get dmCommands
-        return super(LgsTT, self).reconstruct(slopes)
-
-
-    def removeCommonTT(self, slopes, wfsList):
-        
-        xSlopesShape = numpy.array(slopes.shape)
-        xSlopesShape[-1] /= 2.
-        xSlopes = numpy.zeros(xSlopesShape)
-        ySlopes = numpy.zeros(xSlopesShape)
-        
-        for i in range(len(wfsList)):
-            wfs = wfsList[i]
-            wfsSubaps = self.wfss[wfs].activeSubaps
-            xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps]
-            ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps]
-            
-        xSlopes = (xSlopes.T - xSlopes.mean(-1)).T
-        ySlopes = (ySlopes.T - ySlopes.mean(-1)).T
-        
-        for i in range(len(wfsList)):
-            wfs = wfsList[i]
-            wfsSubaps = self.wfss[wfs].activeSubaps
-            
-            slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps] = xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
-            slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps] = ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
-        
-        return slopes
-            
+           
 
 class LearnAndApply(Reconstructor):
     '''
@@ -609,8 +449,182 @@ class LearnAndApply(Reconstructor):
 
         #get dm commands for the calculated on axis slopes
         dmCommands = self.controlMatrix.T.dot(slopes)
-        return dmCommands
+        return dmCommands           
 
+
+class LearnAndApplyLTAO(Reconstructor):
+    '''
+    Class to perform a simply learn and apply algorithm, where
+    "learn" slopes are recorded, and an interaction matrix between off-axis 
+    and on-axis WFS is computed from these slopes. 
+
+    This is an ``
+    Assumes that on-axis sensor is WFS 1
+    '''
+
+    def saveCMat(self):
+        cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
+        tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+
+        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
+        cMatHDU.header["DMNO"] = self.simConfig.nDM
+        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
+        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
+        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
+        
+        tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
+
+        tomoMatHDU.writeto(tomoMatFilename, clobber=True)
+        cMatHDU.writeto(cMatFilename, clobber=True)
+
+    def loadCMat(self):
+            
+        super(LearnAndApply, self).loadCMat()
+
+        #Load tomo reconstructor
+        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        tomoMat = fits.getdata(tomoFilename)
+
+        #And check its the right size
+        if tomoMat.shape != (
+                2*self.wfss[0].activeSubaps, 
+                self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
+            logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
+            raise Exception
+        else:
+            self.tomoRecon = tomoMat
+
+
+    def initControlMatrix(self):
+
+        self.controlShape = (2*(self.wfss[0].activeSubaps+self.wfss[1].activeSubaps), self.simConfig.totalActs)
+        self.controlMatrix = numpy.zeros( self.controlShape )
+    
+
+    def learn(self, callback=None, progressCallback=None):
+        '''
+        Takes "self.learnFrames" WFS frames, and computes the tomographic
+        reconstructor for the system. This method uses the "truth" sensor, and
+        assumes that this is WFS0
+        '''
+
+        self.learnSlopes = numpy.zeros( (self.learnIters,self.simConfig.totalWfsData) )
+        for i in xrange(self.learnIters):
+            self.learnIter=i            
+
+            scrns = self.moveScrns()
+            self.learnSlopes[i] = self.runWfs(scrns)
+            
+
+            logger.statusMessage(i, self.learnIters, "Performing Learn")
+            if callback!=None:
+                callback()
+            if progressCallback!=None:
+               progressCallback("Performing Learn", i, self.learnIters ) 
+            
+        if self.simConfig.saveLearn:
+            #FITS.Write(self.learnSlopes,self.simConfig.filePrefix+"/learn.fits")
+            fits.PrimaryHDU(self.learnSlopes).writeto(
+                            self.simConfig.filePrefix+"/learn.fits",clobber=True )
+
+
+    def calcCMat(self,callback=None, progressCallback=None):
+        '''
+        Uses the slopes recorded in the "learn" and DM interaction matrices
+        to create a CMat.
+        '''
+
+        logger.info("Performing Learn....")
+        self.learn(callback, progressCallback)
+        logger.info("Done. Creating Tomographic Reconstructor...")
+        
+        if progressCallback!=None:
+            progressCallback(1,1, "Calculating Covariance Matrices")
+        
+        self.covMat = numpy.cov(self.learnSlopes.T)
+        Conoff = self.covMat[   :2*self.wfss[0].activeSubaps,
+                                2*self.wfss[0].activeSubaps:     ]
+        Coffoff = self.covMat[  2*self.wfss[0].activeSubaps:,
+                                2*self.wfss[0].activeSubaps:    ]
+        
+        logger.info("Inverting offoff Covariance Matrix")
+        iCoffoff = numpy.linalg.pinv(Coffoff)
+        
+        self.tomoRecon = Conoff.dot(iCoffoff)
+        logger.info("Done. \nCreating full reconstructor....")
+        
+        #Same code as in "MVM" class to create dm-slopes reconstructor.
+        acts = 0
+        for dm in xrange(self.simConfig.nDM):
+            dmIMat = self.dms[dm].iMat
+            
+            if dmIMat.shape[0]==dmIMat.shape[1]:
+                dmCMat = numpy.inv(dmIMat)
+            else:
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
+            
+            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+            acts += self.dms[dm].acts
+        
+        #Dont make global reconstructor. Will reconstruct on-axis slopes, then
+        #dmcommands explicitly
+        #self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
+        logger.info("Done.")
+        
+
+    def reconstruct(self, slopes):
+        """
+        Determine DM commands using previously made 
+        reconstructor from slopes. 
+        Args:
+            slopes (ndarray): array of slopes to reconstruct from
+        Returns:
+            ndarray: array to comands to be sent to DM 
+        """
+
+        #Retreive pseudo on-axis slopes from tomo reconstructor
+        slopes_HO = self.tomoRecon.dot(
+                slopes[self.wfss[2].wfsConfig.dataStart:])
+        
+        #Probably should remove TT from these slopes
+        nSubaps = slopes_HO.shape[0]
+        slopes_HO[:nSubaps] -= slopes_HO[:nSubaps].mean()
+        slopes_HO[nSubaps:] -= slopes_HO[nSubaps:].mean()
+    
+
+        slopes_TT = slopes[:self.wfss[1].wfsConfig.dataStart]
+
+        ttCommands = self.controlMatrix[
+                :self.wfss[1].wfsConfig.dataStart,:2].T.dot(slopes_TT)
+
+        hoCommands = self.controlMatrix[
+                self.wfss[1].wfsConfig.dataStart:,2:].T.dot(slopes_HO)
+
+        #if self.dms[0].dmConfig.dmType=="TT":
+        #    ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
+        #    ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
+        #    slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
+        #    slopes[self.wfss[0].activeSubaps:] -= ttMean[1]
+
+        #    #get dm commands for the calculated on axis slopes
+        #    dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
+
+        #    return numpy.append(ttCommands, dmCommands)
+
+        #get dm commands for the calculated on axis slopes
+
+       # dmCommands = self.controlMatrix.T.dot(slopes)
+        
+        return numpy.append(ttCommands, hoCommands)
+
+
+<<<<<<< HEAD
+=======
+
+#####################################
+#Experimental....
+#####################################
+>>>>>>> 54a3946... made (sortof) working LTAO with a TT sensor mode
 class GLAO_4LGS(MVM):
     """
     Reconstructor of LGS TT prediction algorithm.
@@ -730,10 +744,174 @@ class WooferTweeter(Reconstructor):
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = highOrderCMat.T
             acts += self.dms[dm].acts
             
+<<<<<<< HEAD
 #####################################
 #Experimental....
 #####################################
+=======
 
+class LgsTT(MVM):
+    """
+    Reconstructor of LGS TT prediction algorithm.
+    
+    Uses one TT DM and a high order DM. The TT WFS controls the TT DM and
+    the second WFS controls the high order DM. The TT WFS and DM are
+    assumed to be the first in the system.
+    """
+    
+    def saveCMat(self):
+        cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
+        tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+
+        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
+        cMatHDU.header["DMNO"] = self.simConfig.nDM
+        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
+        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
+        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
+
+        tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
+
+        tomoMatHDU.writeto(tomoMatFilename, clobber=True)
+        cMatHDU.writeto(cMatFilename, clobber=True)
+
+    def loadCMat(self):
+
+        super(LgsTT, self).loadCMat()
+
+        #Load tomo reconstructor
+        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        tomoMat = fits.getdata(tomoFilename)
+
+        #And check its the right size
+        if tomoMat.shape != (2*self.wfss[1].activeSubaps, self.simConfig.totalWfsData - self.wfss[2].wfsConfig.dataStart):
+            logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
+            raise Exception
+        else:
+            self.tomoRecon = tomoMat
+
+
+    def initControlMatrix(self):
+
+        self.controlShape = (2*self.wfss[0].activeSubaps+2*self.wfss[1].activeSubaps,
+                             self.simConfig.totalActs)
+        self.controlMatrix = numpy.zeros( self.controlShape )
+    
+
+    def learn(self,callback=None, progressCallback=None):
+        '''
+        Takes "self.learnFrames" WFS frames, and computes the tomographic
+        reconstructor for the system. This method uses the "truth" sensor, and
+        assumes that this is WFS0
+        '''
+
+        self.learnSlopes = numpy.zeros(
+                (self.learnIters,
+                self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2)
+                )
+        for f in xrange(self.learnIters):
+            self.learnIter=f
+
+            scrns = self.moveScrns()
+            self.learnSlopes[f] = self.runWfs(
+                    scrns, wfsList=range(1, self.simConfig.nGS)
+                    )
+
+            logger.statusMessage(f, self.learnIters, "Performing Learn")
+            if callback!=None:
+                callback()
+            if progressCallback!=None:
+               progressCallback("Performing Learn", f, self.learnIters )
+
+>>>>>>> 54a3946... made (sortof) working LTAO with a TT sensor mode
+
+        if self.simConfig.saveLearn:
+            fits.PrimaryHDU(self.learnSlopes).writeto(
+                            self.simConfig.filePrefix+"/learn.fits",
+                            clobber=True )
+
+
+    def calcCMat(self,callback=None, progressCallback=None):
+        '''
+        Uses the slopes recorded in the "learn" and DM interaction matrices
+        to create a CMat.
+        '''
+      
+        logger.info("Performing Learn....")
+        self.learn(callback, progressCallback)
+        logger.info("Done. Creating Tomographic Reconstructor...")
+
+        if progressCallback!=None:
+            progressCallback(1,1, "Calculating Covariance Matrices")
+
+        #Need to remove all *common* TT from off-axis learn slopes
+        self.learnSlopes[:, 2*self.wfss[1].activeSubaps:] = self.removeCommonTT(
+                self.learnSlopes[:, 2*self.wfss[1].activeSubaps:], [2,3,4,5])
+
+        self.covMat = numpy.cov(self.learnSlopes.T)
+        Conoff = self.covMat[   :2*self.wfss[1].activeSubaps,
+                                2*self.wfss[1].activeSubaps:     ]
+        Coffoff = self.covMat[  2*self.wfss[1].activeSubaps:,
+                                2*self.wfss[1].activeSubaps:    ]
+
+        logger.info("Inverting offoff Covariance Matrix")
+        iCoffoff = numpy.linalg.pinv(Coffoff)
+
+        self.tomoRecon = Conoff.dot(iCoffoff)
+        logger.info("Done. \nCreating full reconstructor....")
+
+        super(LgsTT, self).calcCMat(callback, progressCallback)
+
+
+    def reconstruct(self, slopes):
+        """
+        Determine DM commands using previously made
+        reconstructor from slopes.
+        Args:
+            slopes (ndarray): array of slopes to reconstruct from
+        Returns:
+            ndarray: array to commands to be sent to DM
+        """
+  
+        #Get off axis slopes and remove *common* TT
+        offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
+        offSlopes = self.removeCommonTT(offSlopes,[2,3,4,5])
+        
+        #Use the tomo matrix to get pseudo on-axis slopes
+        psuedoOnSlopes = self.tomoRecon.dot(offSlopes)
+        
+        #Combine on-axis slopes with TT measurements
+        slopes = numpy.append(
+                slopes[:self.wfss[1].wfsConfig.dataStart], psuedoOnSlopes)
+        
+        #Send to command matrices to get dmCommands
+        return super(LgsTT, self).reconstruct(slopes)
+
+
+    def removeCommonTT(self, slopes, wfsList):
+        
+        xSlopesShape = numpy.array(slopes.shape)
+        xSlopesShape[-1] /= 2.
+        xSlopes = numpy.zeros(xSlopesShape)
+        ySlopes = numpy.zeros(xSlopesShape)
+        
+        for i in range(len(wfsList)):
+            wfs = wfsList[i]
+            wfsSubaps = self.wfss[wfs].activeSubaps
+            xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps]
+            ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps]
+            
+        xSlopes = (xSlopes.T - xSlopes.mean(-1)).T
+        ySlopes = (ySlopes.T - ySlopes.mean(-1)).T
+        
+        for i in range(len(wfsList)):
+            wfs = wfsList[i]
+            wfsSubaps = self.wfss[wfs].activeSubaps
+            
+            slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps] = xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+            slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps] = ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+        
+        return slopes
+ 
 class ANN(Reconstructor):
     """
     Reconstructs using a neural net
