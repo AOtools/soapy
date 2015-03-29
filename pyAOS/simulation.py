@@ -117,7 +117,7 @@ class Sim(object):
             configFile = "conf/testConf.py"
         
         self.readParams(configFile)
-        logger.info("Loaded config file successfully!")
+        #logger.info("Loaded config file successfully!")
 
         self.guiQueue = None
         self.go = False
