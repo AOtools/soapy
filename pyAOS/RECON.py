@@ -618,13 +618,10 @@ class LearnAndApplyLTAO(Reconstructor):
         return numpy.append(ttCommands, hoCommands)
 
 
-<<<<<<< HEAD
-=======
 
 #####################################
 #Experimental....
 #####################################
->>>>>>> 54a3946... made (sortof) working LTAO with a TT sensor mode
 class GLAO_4LGS(MVM):
     """
     Reconstructor of LGS TT prediction algorithm.
@@ -744,11 +741,6 @@ class WooferTweeter(Reconstructor):
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = highOrderCMat.T
             acts += self.dms[dm].acts
             
-<<<<<<< HEAD
-#####################################
-#Experimental....
-#####################################
-=======
 
 class LgsTT(MVM):
     """
@@ -822,7 +814,6 @@ class LgsTT(MVM):
             if progressCallback!=None:
                progressCallback("Performing Learn", f, self.learnIters )
 
->>>>>>> 54a3946... made (sortof) working LTAO with a TT sensor mode
 
         if self.simConfig.saveLearn:
             fits.PrimaryHDU(self.learnSlopes).writeto(
