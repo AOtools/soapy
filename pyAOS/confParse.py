@@ -609,7 +609,7 @@ class LgsConfig(ConfigObj):
                              when preparing plan.                 ``FFTW_PATIENT``
         ``naProfile``        list: The relative sodium layer
                              strength for each elongation
-                             layer. If None, all equal.          ``None''
+                             layer. If None, all equal.          ``None``
         ==================== =================================   ===========  
 
     """
