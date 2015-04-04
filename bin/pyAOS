@@ -43,6 +43,8 @@ if __name__=="__main__":
             action="store_true", help="Use opengl for gui plotting")
     parser.add_argument("-i", "--interactive", dest="interactive", 
                         action="store_true", help="Open sim using ipython interactive mode")
+    parser.add_argument("-v", "--verbosity", dest="verbosity",
+            action="store", help="How much information to print about the simulation")
     
     
     bin_path = os.path.abspath(os.path.realpath(__file__)+"/..")
@@ -57,7 +59,8 @@ if __name__=="__main__":
         configFile = bin_path+"/../conf/sh_8x8.py"
 
     #Run sim with given args
-    
+    pyAOS.logger.setLoggingLevel(args.verbosity)
+
     #init sim with conf file
     sim = pyAOS.Sim(configFile)
 
