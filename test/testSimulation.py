@@ -1,12 +1,16 @@
 import unittest
 
 import pyAOS
+
 import numpy
+
+pyAOS.logger.setLoggingLevel(3)
 
 RESULTS = {
         "8x8": 0.76,
         "8x8_offAxis": 0.30,
         "8x8_zernike": 0.65,
+        "8x8_lgs"    : 0.65
         }
 
 
@@ -70,12 +74,13 @@ class TestSimpleSCAO(unittest.TestCase):
                 sim.longStrehl[0,-1], RESULTS["8x8_zernike"], atol=0.2)
 
 
-class TestLgsAO:
 
-    def testElongation(self):
+    def testCone(self):
 
-        sim = pyAOS.Sim("../conf/sh_8x8_lgs_elongation.py")
-        
+        sim = pyAOS.Sim("../conf/sh_8x8_lgs.py")
+        sim.config.sim.filePrefix = None
+        sim.config.sim.logfile = None
+        sim.config.sim.nIters = 100
 
         sim.aoinit()
 
@@ -85,7 +90,7 @@ class TestLgsAO:
 
         #Check results are ok
         assert numpy.allclose(
-                sim.longStrehl[0,-1], RESULTS["8x8_zernike"], atol=0.2)
+                sim.longStrehl[0,-1], RESULTS["8x8_lgs"], atol=0.2)
 
 
 if __name__ == '__main__':
