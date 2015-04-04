@@ -695,7 +695,7 @@ class DmConfig(ConfigObj):
         self.optionalParams = [ 
                                 ("closed", True),
                                 ("iMatValue", 10),
-                                ("wfs", 0),
+                                ("wfs", None),
                                 ("rotation", 0),
                                 ("interpOrder", 2),
                                 ("gaussWidth", 0.5),
