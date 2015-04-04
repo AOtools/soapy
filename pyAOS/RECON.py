@@ -257,9 +257,9 @@ class MVM_SeparateDMs(Reconstructor):
                                             self.dms[dm].dmConfig.dmCond)
 
             self.controlMatrix[
-                    self.dms[dm].wfs.wfsConfig.dataStart:
-                    (self.dms[dm].wfs.activeSubaps*2
-                                +self.dms[dm].wfs.wfsConfig.dataStart),
+                    self.dms[dm].wfss[0].wfsConfig.dataStart:
+                    (self.dms[dm].wfss[0].activeSubaps*2
+                                +self.dms[dm].wfss[0].wfsConfig.dataStart),
                                     acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
 
