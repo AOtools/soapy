@@ -577,6 +577,85 @@ class Sim(object):
         self.saveData()
         self.finishUp()
 
+    def threshOpt(self):
+
+        self.iters = 1
+        self.correct = 1
+        self.go = True
+
+        iterations = 10
+
+        # Circular buffers to hold loop iteration correction data
+        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
+        self.closedCorrection = numpy.zeros(self.dmShape.shape)
+        self.openCorrection = self.closedCorrection.copy()
+        self.dmCommands = numpy.zeros( self.config.sim.totalActs )
+
+        try:
+            for i in xrange(iterations):
+                if self.go:
+
+                    #get next phase screens
+                    t = time.time()
+                    self.scrns = self.atmos.moveScrns()
+                    self.Tatmos = time.time()-t
+
+                    #Reset correction
+                    self.closedCorrection[:] = 0
+                    self.openCorrection[:] = 0
+
+                    #Run Loop...
+                    ########################################
+
+                    t_wfs = time.time()
+                    
+                    wfsList=range(self.config.sim.nGS)
+                    
+                    slopesSize = 0
+                    for wfs in wfsList:
+                       slopesSize+=self.wfss[wfs].activeSubaps*2
+                    # slopes = numpy.zeros( (slopesSize) )
+                   
+                    s = 0
+                    for wfs in wfsList:
+                        #check if due to read out WFS
+                        if i:
+                            read=False
+                            if (int(float(self.config.sim.loopTime*i)
+                                    /self.config.wfs[wfs].exposureTime) 
+                                                    != self.wfsFrameNo[wfs]):
+                                self.wfsFrameNo[wfs]+=1
+                                read=True
+                        else:
+                            read = True
+
+                        self.wfss[wfs].frame(self.scrns, self.closedCorrection, read=read)
+                        s += self.wfss[wfs].activeSubaps*2
+
+
+                        imPlane = self.wfss[wfs].wfsDetectorPlane
+
+                        import matplotlib.pylab as plt
+                        plt.ion()
+                        plt.figure(1)
+                        plt.clf()
+                        plt.imshow(imPlane)
+                        plt.colorbar()
+                        plt.draw()
+                        raw_input()
+
+                    self.Twfs+=time.time()-t_wfs
+
+                    self.iters = i
+
+                else:
+                    break
+        except KeyboardInterrupt:
+            self.go = False
+            logger.info("\nSim exited by user\n") 
+
+        return None
+
     def finishUp(self):
         """
         Prints a message to the console giving timing data. Used on sim end.
