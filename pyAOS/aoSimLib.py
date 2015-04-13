@@ -505,6 +505,33 @@ def quadCell(img):
     
     return numpy.array([xCent, yCent])
 
+def threshOpt(subapImages, noReferences=10):
+    pcts = numpy.arange(0.05, 0.95, 0.3)
+
+    i_t, i_n, i_y, i_x = subapImages.shape
+    references = subapImages[:noReferences]
+    fCents = numpy.zeros((len(pcts), noReferences, i_t, 2, i_n))
+    radialErrorEstimate = numpy.zeros((len(pcts)))
+
+    for ref in range(noReferences):
+        for i, threshold in enumerate(pcts):
+            for frame in range(i_t):
+                fCents[i, ref, frame] = correlationCentriod(subapImages[frame], references[ref], threshold)
+            for subap in range(i_n):
+                fCents[i, ref, :, 0, subap] -= numpy.average(fCents[i, ref, :, 0, subap])
+                fCents[i, ref, :, 1, subap] -= numpy.average(fCents[i, ref, :, 1, subap])
+
+    for i in range(len(pcts)):
+        delta = numpy.std(fCents[i], axis=0)
+        errorEstimate = numpy.average(delta)
+        radialErrorEstimate[i] = errorEstimate
+
+    threshValue = pcts[numpy.where(radialErrorEstimate == numpy.min(radialErrorEstimate))[0][0]]
+
+    print threshValue
+
+    return threshValue
+
 def zernike(j, N):
     """
      Creates the Zernike polynomial with mode index j, 

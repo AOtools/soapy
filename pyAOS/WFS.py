@@ -751,13 +751,19 @@ class ShackHartmann(WFS):
         self.findActiveSubaps()
 
         # For correlation centroider, open reference image.
-        if self.wfsConfig.centMethod=="correlation":
+        if self.wfsConfig.centMethod == "correlation":
             rawRef = fits.open("./conf/correlationRef/"+self.wfsConfig.referenceImage)[0].data
             self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
                     self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
             for i in range(self.activeSubaps):
                 self.wfsConfig.referenceImage[i] = rawRef[self.detectorSubapCoords[i, 0]:self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
                         self.detectorSubapCoords[i, 1]:self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+
+
+        # Calculate optimum threshold for centroid if set to "auto"
+        if self.wfsConfig.centThreshold == 'auto':
+            subapImages = numpy.zeros((20, 70, 10, 10))
+            self.wfsConfig.centThreshold = aoSimLib.threshOpt(subapImages)
 
     def findActiveSubaps(self):
         '''
