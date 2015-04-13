@@ -11,7 +11,7 @@ simConfiguration = {
 
 "Sim":{
     "filePrefix"    :  "sh_8x8_learn&apply",
-    "pupilSize"     :   64, 
+    "pupilSize"     :   128, 
     "nGS"           :   5,
     "nDM"           :   1,
     "nSci"          :   1,
@@ -64,12 +64,11 @@ simConfiguration = {
     },
 
 "DM":{
-
     "dmType"        :   [ "Piezo"],
     "dmActs"        :   [9**2],
     "dmCond"        :   [0.05],
     "closed"        :   [False],
-    "gain"          :   0.6,
+    "gain"          :   [0.6],
     },
 
 "Science":{

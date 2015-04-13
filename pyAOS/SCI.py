@@ -79,11 +79,15 @@ class scienceCam:
         #fp = abs(AOFFT.ftShift2d(self.FFT()))**2
         #binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,)*2)
+        self.phsBuffer = numpy.zeros((self.padFOVPxlNo,)*2)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()        
         self.longExpStrehl = 0
         self.instStrehl = 0 
+
+        #Init a circular buffer for interpolation
+        self.metaPupil = numpy.zeros((self.simConfig.simSize,)*2)
 
 
 
@@ -160,16 +164,19 @@ class scienceCam:
         if (x1.is_integer() and x2.is_integer()
                and y1.is_integer() and y2.is_integer()):
             #Old, simple integer based solution
-            metaPupil= scrn[ x1:x2, y1:y2]
+            self.metaPupil= scrn[ x1:x2, y1:y2]
         else:
-            #Dirty, temporary fix to interpolate between phase points
             xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
             yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
-            scrnCoords = numpy.arange(scrnX)
-            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
-            metaPupil = flipud(rot90(interpObj(yCoords, xCoords)))
+            #scrnCoords = numpy.arange(scrnX)
+            #interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
+            #metaPupil = interpObj(yCoords, xCoords)
+            aoSimLib.linterp2d_numba(
+                    scrn, xCoords, yCoords, self.metaPupil,
+                    threads = self.simConfig.procs)
 
-        return metaPupil
+
+        return self.metaPupil
 
 
     def calcPupilPhase(self):
@@ -193,18 +200,23 @@ class scienceCam:
         '''
 
         #Scaled the padded phase to the right size for the requried FOV
-        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
+        aoSimLib.zoom_numba(
+                self.residual, self.phsBuffer, self.simConfig.procs
+                )
+        self.phsBuffer*=self.r0Scale
+    
+        #phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
          
         #Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
-        phs = phs[coord:-coord, coord:-coord] 
+        phs = self.phsBuffer[coord:-coord, coord:-coord] 
 
         eField = numpy.exp(1j*(phs+self.tiltFix)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d( self.FFT() )
 
-        focalPlane = numpy.abs(focalPlane)**2
+        focalPlane = aoSimLib.absSquare(focalPlane)
 
         self.focalPlane = aoSimLib.binImgs( 
                 focalPlane , self.sciConfig.oversamp )
