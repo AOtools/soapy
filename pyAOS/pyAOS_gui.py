@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import os
-os.environ["QT_API"]="pyqt"
+os.environ["QT_API"]="pyqt5"
 from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
 from IPython.qt.inprocess import QtInProcessKernelManager
 from IPython.lib import guisupport
@@ -10,7 +10,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
  
 
-from PyQt4 import QtGui,QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 import pyqtgraph
 from .AOGUIui import Ui_MainWindow
 from . import logger
