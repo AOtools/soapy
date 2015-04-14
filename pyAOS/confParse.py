@@ -621,7 +621,7 @@ class LgsConfig(ConfigObj):
                              when preparing plan.                 ``FFTW_PATIENT``
         ``naProfile``        list: The relative sodium layer
                              strength for each elongation
-                             layer. If None, all equal.          ``None''
+                             layer. If None, all equal.          ``None``
         ==================== =================================   ===========  
 
     """
@@ -707,7 +707,7 @@ class DmConfig(ConfigObj):
         self.optionalParams = [ 
                                 ("closed", True),
                                 ("iMatValue", 10),
-                                ("wfs", 0),
+                                ("wfs", None),
                                 ("rotation", 0),
                                 ("interpOrder", 2),
                                 ("gaussWidth", 0.5),

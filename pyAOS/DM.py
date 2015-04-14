@@ -41,24 +41,24 @@ class DM:
        
         self.actCoeffs = numpy.zeros( (self.acts) )
        
+        #Sort out which WFS(s) observes the DM (for iMat making)
+        if self.dmConfig.wfs!=None:
+            try:
+                #Make sure the specifed WFS actually exists
+                self.wfss = [wfss[self.dmConfig.wfs]]
+                self.wfs = self.wfss[0]
+            except KeyError:
+                raise KeyError("DM attached to WFS {}, but that WFS is not specifed in config".format(self.dmConfig.wfs))
+        else:
+            self.wfss = wfss
+        
         #find the total number of WFS subaps, and make imat
         #placeholder
+        print(self.wfss)
         self.totalSubaps = 0
+        for nWfs in range(len(self.wfss)):
+            self.totalSubaps += self.wfss[nWfs].activeSubaps 
 
-        try:
-            #Make sure the specifed WFS actually exists
-            self.wfs = wfss[self.dmConfig.wfs]
-        except KeyError:
-            raise KeyError("DM attached to WFS {}, but that WFS is not specifed in config".format(self.wfs))
-        
-        self.totalSubaps = self.wfs.activeSubaps
-       
-        #This is a quick fix, as there seems to be a scaling issue between
-        #WFS slopes and the DM commands which I dont understand. 
-        #Doesnt matter in closed loop, but ruins correction in open loop.
-        #Multiplying DM commands by this fixes things. Will explore more 
-        #thoroughly soon. apr - 19thFeb2015
-        self.commandFactor = 1.
 
     def getActiveActs(self):
         """
@@ -104,27 +104,30 @@ class DM:
                    ]
 
 
-        iMat = numpy.zeros( (self.iMatShapes.shape[0],2*self.totalSubaps) )
-
+        iMat = numpy.zeros( (self.iMatShapes.shape[0], 2*self.totalSubaps) )
         subap=0
+        
+        for nWfs in range(len(self.wfss)):
+            for i in xrange(self.iMatShapes.shape[0]):
+                
+                logger.debug("subap: {}".format(subap))
+                iMat[i,subap:subap+(2*self.wfss[nWfs].activeSubaps)] =(
+                       self.wfss[nWfs].frame( 
+                                self.iMatShapes[i], iMatFrame=True
+                                #*self.dmConfig.iMatValue)
+                       #/self.dmConfig.iMatValue
+                       ))
+                
+                
+                self.dmShape = self.iMatShapes[i]
 
-        for i in xrange(self.iMatShapes.shape[0]):
-           iMat[i,subap:subap+(2*self.wfs.activeSubaps)] =(
-                   self.wfs.frame( 
-                            self.iMatShapes[i], iMatFrame=True
-                            #*self.dmConfig.iMatValue)
-                   #/self.dmConfig.iMatValue
-                   ))
+                if callback!=None:
+                    callback() 
 
-           logger.debug("DM IMat act: %i"%i)
-
-           self.dmShape = self.iMatShapes[i]
-
-           if callback!=None:
-               callback() 
-
-           logger.statusMessage(i, self.iMatShapes.shape[0],
-                    "Generating {} Actuator DM iMat".format(self.acts))
+                logger.statusMessage(i, self.iMatShapes.shape[0],
+                        "Generating {} Actuator DM iMat".format(self.acts))
+            
+            subap += 2*self.wfss[nWfs].activeSubaps
 
         self.iMat = iMat
         return iMat
@@ -146,10 +149,8 @@ class DM:
         Returns:
             ndarray: A 2-d array with the DM shape
         '''
-        
-        #Need to investigate why its necessary to multiply by the r0scale
-        self.newActCoeffs = dmCommands * self.commandFactor#self.wfs.r0Scale**(-2)
-        
+        self.newActCoeffs = dmCommands
+
         #If loop is closed, only add residual measurements onto old
         #actuator values
         if closed:
