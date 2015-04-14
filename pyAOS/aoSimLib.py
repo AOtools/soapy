@@ -769,7 +769,7 @@ def quadCell(img):
     return numpy.array([xCent, yCent])
 
 def threshOpt(subapImages, noReferences=10):
-    pcts = numpy.arange(0.05, 0.95, 0.3)
+    pcts = numpy.arange(0.05, 0.95, 0.1)
 
     i_t, i_n, i_y, i_x = subapImages.shape
     references = subapImages[:noReferences]
@@ -777,6 +777,7 @@ def threshOpt(subapImages, noReferences=10):
     radialErrorEstimate = numpy.zeros((len(pcts)))
 
     for ref in range(noReferences):
+        print ref
         for i, threshold in enumerate(pcts):
             for frame in range(i_t):
                 fCents[i, ref, frame] = correlationCentriod(subapImages[frame], references[ref], threshold)
@@ -789,9 +790,9 @@ def threshOpt(subapImages, noReferences=10):
         errorEstimate = numpy.average(delta)
         radialErrorEstimate[i] = errorEstimate
 
-    threshValue = pcts[numpy.where(radialErrorEstimate == numpy.min(radialErrorEstimate))[0][0]]
+    print radialErrorEstimate
 
-    print threshValue
+    threshValue = pcts[numpy.where(radialErrorEstimate == numpy.min(radialErrorEstimate))[0][0]]
 
     return threshValue
 

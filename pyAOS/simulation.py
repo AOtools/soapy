@@ -581,9 +581,11 @@ class Sim(object):
 
         self.iters = 1
         self.correct = 1
-        self.go = True
 
-        iterations = 10
+        iterations = 100
+        wfsSize = self.wfss[0].wfsConfig.pxlsPerSubap*self.wfss[0].wfsConfig.subaps
+        imPlanes = numpy.zeros((iterations, wfsSize, wfsSize))
+        ims = numpy.zeros((iterations, self.wfss[0].activeSubaps, self.wfss[0].wfsConfig.pxlsPerSubap, self.wfss[0].wfsConfig.pxlsPerSubap))
 
         # Circular buffers to hold loop iteration correction data
         self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
@@ -591,70 +593,50 @@ class Sim(object):
         self.openCorrection = self.closedCorrection.copy()
         self.dmCommands = numpy.zeros( self.config.sim.totalActs )
 
-        try:
-            for i in xrange(iterations):
-                if self.go:
+        for i in xrange(iterations):
+            #get next phase screens
+            t = time.time()
+            self.scrns = self.atmos.moveScrns()
+            self.Tatmos = time.time()-t
 
-                    #get next phase screens
-                    t = time.time()
-                    self.scrns = self.atmos.moveScrns()
-                    self.Tatmos = time.time()-t
+            #Reset correction
+            self.closedCorrection[:] = 0
+            self.openCorrection[:] = 0
 
-                    #Reset correction
-                    self.closedCorrection[:] = 0
-                    self.openCorrection[:] = 0
+            #Run Loop...
+            ########################################
 
-                    #Run Loop...
-                    ########################################
-
-                    t_wfs = time.time()
-                    
-                    wfsList=range(self.config.sim.nGS)
-                    
-                    slopesSize = 0
-                    for wfs in wfsList:
-                       slopesSize+=self.wfss[wfs].activeSubaps*2
-                    # slopes = numpy.zeros( (slopesSize) )
-                   
-                    s = 0
-                    for wfs in wfsList:
-                        #check if due to read out WFS
-                        if i:
-                            read=False
-                            if (int(float(self.config.sim.loopTime*i)
-                                    /self.config.wfs[wfs].exposureTime) 
-                                                    != self.wfsFrameNo[wfs]):
-                                self.wfsFrameNo[wfs]+=1
-                                read=True
-                        else:
-                            read = True
-
-                        self.wfss[wfs].frame(self.scrns, self.closedCorrection, read=read)
-                        s += self.wfss[wfs].activeSubaps*2
-
-
-                        imPlane = self.wfss[wfs].wfsDetectorPlane
-
-                        import matplotlib.pylab as plt
-                        plt.ion()
-                        plt.figure(1)
-                        plt.clf()
-                        plt.imshow(imPlane)
-                        plt.colorbar()
-                        plt.draw()
-                        raw_input()
-
-                    self.Twfs+=time.time()-t_wfs
-
-                    self.iters = i
-
+            t_wfs = time.time()
+            
+            wfsList=range(self.config.sim.nGS)
+                       
+            s = 0
+            for wfs in wfsList:
+                #check if due to read out WFS
+                if i:
+                    read=False
+                    if (int(float(self.config.sim.loopTime*i)
+                            /self.config.wfs[wfs].exposureTime) 
+                                            != self.wfsFrameNo[wfs]):
+                        self.wfsFrameNo[wfs]+=1
+                        read=True
                 else:
-                    break
-        except KeyboardInterrupt:
-            self.go = False
-            logger.info("\nSim exited by user\n") 
+                    read = True
 
-        return None
+                self.wfss[wfs].frame(self.scrns, self.closedCorrection, read=read)
+                s += self.wfss[wfs].activeSubaps*2
+
+                imPlanes[i] = self.wfss[wfs].wfsDetectorPlane
+
+            self.Twfs+=time.time()-t_wfs
+            self.iters = i
+
+        for i in range(self.wfss[0].activeSubaps):
+            ims[:, i] = imPlanes[:, self.wfss[0].detectorSubapCoords[i, 0]:self.wfss[0].detectorSubapCoords[i, 0]+self.wfss[0].wfsConfig.pxlsPerSubap,
+                    self.wfss[0].detectorSubapCoords[i, 1]:self.wfss[0].detectorSubapCoords[i, 1]+self.wfss[0].wfsConfig.pxlsPerSubap]
+
+        self.wfss[0].wfsConfig.centThreshold = aoSimLib.threshOpt(ims)
+
 
     def finishUp(self):
         """
