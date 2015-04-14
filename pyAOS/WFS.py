@@ -145,6 +145,8 @@ class WFS(object):
 
 
         self.iMat=False
+
+        #Set from knowledge of atmosphere module
         self.phsWvl = 500e-9
 
         self.calcInitParams()
@@ -159,7 +161,7 @@ class WFS(object):
         if wfsConfig.propagationMode=="physical":
             self.makePhase = self.makePhasePhysical
             self.physEField = numpy.zeros(
-                (2*self.simConfig.pupilSize,)*2, dtype=CDTYPE)
+                (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
         else:
             self.makePhase = self.makePhaseGeo
         
@@ -429,7 +431,7 @@ class WFS(object):
             scrn (ndarray): An array representing the phase screen
             height (float): Height of the phase screen
             radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
-            pupilSize (ndarray, optional): Size of screen to return. If not set, will use system pupil size.
+            simSize (ndarray, optional): Size of screen to return. If not set, will use system pupil size.
             GSPos (tuple, optional): Angular position of guide star. If not set will use system position.
             
         Return:
@@ -487,6 +489,10 @@ class WFS(object):
         '''
         Creates the total phase on a wavefront sensor which 
         is offset by a given angle
+
+        Parameters
+            radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
+            GSPos (dict, optional): Position of GS in pixels. If not given uses GS position
         '''
         
         for i in self.scrns:
@@ -504,63 +510,72 @@ class WFS(object):
             
         self.EField[:] = numpy.exp(1j*self.wfsPhase)
 
+
     def makePhasePhysical(self, radii=None, GSPos=None):
         '''
         Finds total WFS complex amplitude by propagating light down
-        phase scrns'''
+        phase scrns
 
-        scrnNo = len(self.scrns)-1
-        ht = self.atmosConfig.scrnHeights[scrnNo]
-        delta = (self.simConfig.pxlScale)**-1. #Grid spacing
+        Parameters
+            radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
+            GSPos (dict, optional): Position of GS in pixels. If not given uses GS position.
+        '''
+
+        scrnNo = len(self.scrns)-1  #Number of layers (0 indexed)
+        ht = self.atmosConfig.scrnHeights[scrnNo] #Height of highest layer
+        delta = (self.simConfig.pxlScale)**-1. #Grid spacing for propagation
         
         #Get initial Phase for highest scrn and turn to efield
         if radii:
             phase1 = self.getMetaPupilPhase(
                         self.scrns[scrnNo], ht, radius=radii[scrnNo],
-                        pupilSize=2*self.simConfig.pupilSize, GSPos=GSPos )
+                        GSPos=GSPos)
+                        #pupilSize=2*self.simConfig.pupilSize, GSPos=GSPos )
         else:
             phase1 = self.getMetaPupilPhase(self.scrns[scrnNo], ht,
-                        pupilSize=2*self.simConfig.pupilSize, GSPos=GSPos)
+                        GSPos=GSPos)
+                        #pupilSize=2*self.simConfig.pupilSize, GSPos=GSPos)
         
-        self.physEField[:] = numpy.exp(1j*phase1)
+        self.EField[:] = numpy.exp(1j*phase1)
         #Loop through remaining scrns in reverse order - update ht accordingly
         for i in range(scrnNo)[::-1]:
             #Get propagation distance for this layer
             z = ht - self.atmosConfig.scrnHeights[i]
             ht -= z            
             #Do ASP for last layer to next
-            self.physEField[:] = angularSpectrum(
-                        self.physEField, self.wfsConfig.wavelength, 
+            self.EField[:] = angularSpectrum(
+                        self.EField, self.wfsConfig.wavelength, 
                         delta, delta, z )
             
             #Get phase for this layer
             if radii:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            radius=radii[i], GSPos=GSPos,
-                            pupilSize=2*self.simConfig.pupilSize)
+                            radius=radii[i], GSPos=GSPos)
+                            #pupilSize=2*self.simConfig.pupilSize)
             else:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            pupilSize=2*self.simConfig.pupilSize,
+                            #pupilSize=2*self.simConfig.pupilSize,
                             GSPos=GSPos)
             
             #Add add phase from this layer
-            self.physEField *= numpy.exp(1j*phase)
+            self.EField *= numpy.exp(1j*phase)
         
         #If not already at ground, propagate the rest of the way.
         if self.atmosConfig.scrnHeights[0]!=0:
-            self.physEField[:] = angularSpectrum(
-                    self.physEField, self.wfsConfig.wavelength, 
+            self.EField[:] = angularSpectrum(
+                    self.EField, self.wfsConfig.wavelength, 
                     delta, delta, ht
                     )
 
         #Multiply EField by aperture
-        self.EField[:] = self.physEField[
-                            self.simConfig.pupilSize/2.:
-                            3*self.simConfig.pupilSize/2.,
-                            self.simConfig.pupilSize/2.:
-                            3*self.simConfig.pupilSize/2.] * self.mask
+        #self.EField[:] *= self.mask
+        #self.EField[:] = self.physEField[
+        #                    self.simConfig.pupilSize/2.:
+        #                    3*self.simConfig.pupilSize/2.,
+        #                    self.simConfig.pupilSize/2.:
+        #                    3*self.simConfig.pupilSize/2.] * self.mask
 
 ######################################################
 
