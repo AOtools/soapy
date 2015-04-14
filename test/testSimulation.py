@@ -10,7 +10,8 @@ RESULTS = {
         "8x8": 0.76,
         "8x8_offAxis": 0.30,
         "8x8_zernike": 0.65,
-        "8x8_lgs"    : 0.65
+        "8x8_lgs"    : 0.65,
+        "8x8_phys": 0.76,
         }
 
 
@@ -32,6 +33,22 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8"], atol=0.2)
 
+    def testPhysProp(self):
+        sim = pyAOS.Sim("../conf/sh_8x8.py")
+        sim.config.sim.filePrefix = None
+        sim.config.sim.logfile = None
+        sim.config.sim.nIters = 100
+        sim.config.wfs[0].GSPosition=(0,0)
+        sim.config.wfs[0].propagationMode="physical"
+        
+        sim.aoinit()
+
+        sim.makeIMat(forceNew=True)
+
+        sim.aoloop()
+
+        #Check results are ok
+        assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_phys"], atol=0.2)
 
     def testOffAxis(self):
         sim = pyAOS.Sim("../conf/sh_8x8.py")
