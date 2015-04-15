@@ -27,3 +27,5 @@ Alternatively, the GUI can be started with::
     pyAOS -g <configFilename>
 
 The use the buttons to initialise the simulation, make interaction matrices and run the AO loop. The interactive python console can be used to view data or change parameters
+
+.. image:: imgs/gui_shot.png
