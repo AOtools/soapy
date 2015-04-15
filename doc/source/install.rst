@@ -80,3 +80,12 @@ Once you have ``pip``, the required libraries can be installed by using the ``re
     pip -r requirements.txt
     
 and all the requirements should be installed for you!
+
+=======
+Testing
+=======
+Once you think everything is installed, tests can be run by navigating to the ``test`` directory and running ::
+    
+    python testSimulation.py
+
+Currenlty, this only runs system wide tests, but further, more atomic tests will be added in future.

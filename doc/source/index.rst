@@ -14,6 +14,7 @@ Contents:
 
    intro.rst
    install.rst
+   tutorial.rst
    Configuration.rst
    sim.rst
    atmos.rst
