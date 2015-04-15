@@ -1,7 +1,7 @@
 Introduction
 ************
 
-pyAOS is a Montecarlo Adaptive Optics (AO) simulation written exclusively in the Python programming language. It is aimed at rapidly developing new AO concepts and being a learning tool for those new to the field of AO. 
+PyAOS is a Montecarlo Adaptive Optics (AO) simulation written exclusively in the Python programming language. It is aimed at rapidly developing new AO concepts and being a learning tool for those new to the field of AO. 
 
 The code can be used as an end to end simulation, where the entire system parameters are controlled by a configuration file. This can be used from the Python command line, python scripts or a GUI which is included.
 
@@ -25,3 +25,5 @@ Data will now be saved in the directory specified as `filePrefix` in the configu
 Alternatively, the GUI can be started with::
 
     pyAOS -g <configFilename>
+
+The use the buttons to initialise the simulation, make interaction matrices and run the AO loop. The interactive python console can be used to view data or change parameters

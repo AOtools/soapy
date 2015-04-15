@@ -17,11 +17,9 @@
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-The pyAOS Wavefront Sensor module.
+The PyAOS WFS module. 
 
-^^^^^^^^^
-WFS Class
-^^^^^^^^^
+WFS in PyAOS are represented by 
 
 This module contains a number of classes which simulate different adaptive optics wavefront sensor (WFS) types. All wavefront sensor classes can inherit from the base ``WFS`` class. The class provides the methods required to calculate phase over a WFS pointing in a given WFS direction and accounts for Laser Guide Star (LGS) geometry such as cone effect and elongation. This is  If only pupil images (or complex amplitudes) are required, then this class can be used stand-alone.
 
@@ -40,7 +38,7 @@ Example:
     
         wfs = WFS.WFS(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
     
-    Set the WFS scrns (these should be made in advance, perhaps by the atmosphere module). Then run the WFS::
+    Set the WFS scrns (these should be made in advance, perhaps by the :py:mod:`pyAOS.atmosphere` module). Then run the WFS::
     
         wfs.scrns = phaseScrnList
         wfs.makePhase()
@@ -49,9 +47,6 @@ Example:
     
         frameEField = wfs.EField
     
-^^^^^^^^^^^^^^^^^^
-Shack-Hartmann WFS
-^^^^^^^^^^^^^^^^^^
 
 A Shack-Hartmann WFS is also included in the module, this contains further methods to make the focal plane, then calculate the slopes to send to the reconstructor.
 
@@ -70,7 +65,6 @@ Example:
         wfsDetector = shWfs.wfsDetectorPlane
 
         
-^^^^^^^^^^^^^^^
 Adding new WFSs
 ^^^^^^^^^^^^^^^
 

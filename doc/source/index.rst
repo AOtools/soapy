@@ -18,8 +18,8 @@ Contents:
    sim.rst
    atmos.rst
    wfs.rst
-   lgs.rst
    dms.rst
+   lgs.rst
    recon.rst
    sci.rst
    utils.rst

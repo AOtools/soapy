@@ -1,9 +1,14 @@
+******************
 Wave-front Sensors
-==================
+******************
 
-Classes simulating AO WFSs
-
+==========
+WFS Module
+==========
 .. automodule:: pyAOS.WFS
+
+Base WFS Class
+==============
 
 .. autoclass:: pyAOS.WFS.WFS
     :members:
