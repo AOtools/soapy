@@ -10,8 +10,8 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8",
-    "logfile"       :   "sh_8x8.log",
+    "filePrefix"    :  "sh_8x8_lgs",
+    "logfile"       :   "sh_8x8_lgs.log",
     "pupilSize"     :   128, 
     "nGS"           :   1,
     "nDM"           :   2,
