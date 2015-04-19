@@ -31,7 +31,6 @@ Examples:
         from pyAOS import confParse, atmosphere
 
         config = confParse.Configurator("sh_8x8.py")
-        config.readfile()
         config.loadSimParams() 
 
     Initialise the amosphere (creating or loading phase screens)::
