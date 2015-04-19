@@ -30,9 +30,7 @@ Example:
         from pyAOS import WFS, confParse
     
         config = confParse.Configurator("config_file.py")
-        config.readfile()
         config.loadSimParams()
-        config.calcParams()
     
     Initialise the wave-front sensor::
     
@@ -93,6 +91,7 @@ except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
 from . import AOFFT, aoSimLib, LGS, logger
+from .tools import centroiders
 from .opticalPropagationLib import angularSpectrum
 
 #xrange now just "range" in python3. 
@@ -654,8 +653,21 @@ class WFS(object):
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.r0Scale
     
+    
+        #If LGS elongation simulated
+        if self.wfsConfig.lgs and self.elong!=0:
+            for i in xrange(self.elongLayers):
+                self.zeroPhaseData()
+
+                self.makePhase(self.elongRadii[i], self.elongPos[i])
+                self.uncorrectedPhase = self.wfsPhase.copy()
+                self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
+                if numpy.any(correction):
+                    self.EField *= numpy.exp(-1j*correction*self.r0Scale)
+                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
+
         #If no elongation
-        if self.lgsConfig and self.elong == 0:
+        else:
             #If imate frame, dont want to make it off-axis
             if iMatFrame:
                 try:
@@ -670,17 +682,7 @@ class WFS(object):
                 self.EField *= numpy.exp(-1j*correction*self.r0Scale)
             self.calcFocalPlane()
 
-        #If LGS elongation simulated
-        if self.lgsConfig and self.elong!=0:
-            for i in xrange(self.elongLayers):
-                self.zeroPhaseData()
 
-                self.makePhase(self.elongRadii[i], self.elongPos[i])
-                self.uncorrectedPhase = self.wfsPhase.copy()
-                self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
-                if numpy.any(correction):
-                    self.EField *= numpy.exp(-1j*correction*self.r0Scale)
-                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
     
         if read:
             self.makeDetectorPlane()
@@ -709,7 +711,7 @@ class WFS(object):
         pass
 
     def calculateSlopes(self):
-        self.slopes = numpy.zeros(2*self.activeSubaps)
+        self.slopes = self.EField
 
     def zeroData(self, detector=True, inter=True):
         self.zeroPhaseData()
@@ -729,6 +731,7 @@ class ShackHartmann(WFS):
         Calculate some parameters to be used during initialisation
         """
         super(ShackHartmann, self).calcInitParams()
+
         self.subapFOVrad = self.wfsConfig.subapFOV * numpy.pi / (180. * 3600)
         self.subapDiam = self.telDiam/self.wfsConfig.subaps
         
@@ -765,8 +768,11 @@ class ShackHartmann(WFS):
             self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
                     self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
             for i in range(self.activeSubaps):
-                self.wfsConfig.referenceImage[i] = rawRef[self.detectorSubapCoords[i, 0]:self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
-                        self.detectorSubapCoords[i, 1]:self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+                self.wfsConfig.referenceImage[i] = rawRef[
+                        self.detectorSubapCoords[i, 0]:
+                        self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
+                        self.detectorSubapCoords[i, 1]:
+                        self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
 
     def findActiveSubaps(self):
         '''
@@ -884,6 +890,7 @@ class ShackHartmann(WFS):
         super(ShackHartmann, self).initLGS()
         #Tell the LGS a bit about the WFS 
         #(TODO-get rid of this and put into LGS object init)
+        print("Run INITLGS")
         if self.LGS:       
             self.LGS.setWFSParams(
                     self.SUBAP_OVERSIZE*self.subapFOVrad,
@@ -1118,25 +1125,35 @@ class ShackHartmann(WFS):
             self.centSubapArrays[i] = self.wfsDetectorPlane[ x:x+self.wfsConfig.pxlsPerSubap,
                                                     y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
-        if self.wfsConfig.pxlsPerSubap==2:
-            slopes = aoSimLib.quadCell(self.centSubapArrays)
+        #if self.wfsConfig.pxlsPerSubap==2:
+        #    slopes = aoSimLib.quadCell(self.centSubapArrays)
 
-        elif self.wfsConfig.centMethod=="brightestPxl":
-            slopes = aoSimLib.brtPxlCentroid(
-                    self.centSubapArrays, (self.wfsConfig.centThreshold*
-                                (self.wfsConfig.pxlsPerSubap**2))
-                                            )
+        #elif self.wfsConfig.centMethod=="brightestPxl":
+        #    slopes = aoSimLib.brtPxlCentroid(
+        #            self.centSubapArrays, (self.wfsConfig.centThreshold*
+        #                        (self.wfsConfig.pxlsPerSubap**2))
+        #                                    )
 
-        elif self.wfsConfig.centMethod=="correlation":
-            slopes = aoSimLib.correlationCentriod(
-                    self.centSubapArrays, self.wfsConfig.referenceImage,
-                    self.wfsConfig.centThreshold)
-            
-        else:
-            slopes = aoSimLib.simpleCentroid(
-                    self.centSubapArrays, self.wfsConfig.centThreshold
-                     ) 
-            
+        #elif self.wfsConfig.centMethod=="correlation":
+        #    slopes = aoSimLib.correlationCentriod(
+        #            self.centSubapArrays, self.wfsConfig.centThreshold,
+        #            self.wfsConfig.referenceImage)
+        #    
+        #else:
+        #    slopes = aoSimLib.simpleCentroid(
+        #            self.centSubapArrays, self.wfsConfig.centThreshold
+        #             ) 
+        #apr: 19-04-15
+
+        #Eval the specified centroider, have to give all possible args
+        #in case they're required. 
+        slopes = eval("centroiders."+self.wfsConfig.centMethod)(
+                self.centSubapArrays, 
+                threshold=self.wfsConfig.centThreshold,
+                ref=self.wfsConfig.referenceImage
+                     )
+
+
         #shift slopes relative to subap centre and remove static offsets
         slopes-=self.wfsConfig.pxlsPerSubap/2.0
 
