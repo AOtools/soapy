@@ -71,7 +71,7 @@ which will initialise the simulation before dropping you into an interaction ipy
 
     import pyAOS                                #Imports python library
     sim = pyAOS.Sim("/path/to/configFile.py")   #Loads the configuration file
-    sim.aoinit()                                #Initialised all AO simulated objects
+    sim.aoinit()                                #Initialises all AO simulated objects
 
 The above code would also be used in scripts to run the simulation.
 
@@ -80,6 +80,7 @@ To measure the interaction matrix run::
     sim.aoinit()
 
 or::
+
     sim.aoinit(forceNew=True)
 
 if you'd like to force the creation of interaction matrices, command matrices and DM influence functions.
