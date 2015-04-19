@@ -1,4 +1,4 @@
-
+.. _basicUsage:
 
 Basic Usage
 ***********
@@ -104,4 +104,6 @@ and::
 
     sim.longStrehl
 
-Which are the instantaneous and long exposure strehl ratio for each science target. Each of these is of shape ``sim.config.sim.nSci`` by ``sim.config.sim.nIters``. Note that this is even the case for only a single science target, so the science target Strehl ratios is always accessed with ``sim.longStrehl[0]``.
+Which are the instantaneous and long exposure strehl ratio for each science target. Each of these is of shape ``sim.config.sim.nSci`` by ``sim.config.sim.nIters``. Note that this is even the case for only a single science target, when the science target Strehl ratios are always accessed with ``sim.longStrehl[0]``. Strehl ratios may also saved in the ``filePrefix`` directory as ``instStrehl.fits`` and ``longStrehl.fits``.
+
+There are many other data sources available to save or access from the simulation, these are listed in :ref:`dataSources`.

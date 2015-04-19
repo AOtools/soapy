@@ -16,6 +16,7 @@ Contents:
    install.rst
    basicUsage.rst
    Configuration.rst
+   dataSources.rst
    sim.rst
    atmos.rst
    wfs.rst

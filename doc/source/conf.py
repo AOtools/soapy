@@ -41,7 +41,7 @@ import pyAOS
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+#needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -160,6 +160,12 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_context = {
+    'css_files': [
+        '_static/theme_overrides.css',  # overrides for wide tables in RTD theme
+        ],
+    }
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
