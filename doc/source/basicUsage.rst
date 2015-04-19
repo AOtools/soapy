@@ -77,11 +77,11 @@ The above code would also be used in scripts to run the simulation.
 
 To measure the interaction matrix run::
     
-    sim.aoinit()
+    sim.makeIMat()
 
 or::
 
-    sim.aoinit(forceNew=True)
+    sim.makeIMat(forceNew=True)
 
 if you'd like to force the creation of interaction matrices, command matrices and DM influence functions.
 
@@ -93,3 +93,15 @@ You should now see a rolling counter of the frame number and current Strehl rati
 
 Retrieving Simulation Data
 --------------------------
+
+After a simulation run has completed, the resulting data must be retrieved for analysis. The data stored by PyAOS depends on the parameters set in the ``sim`` group in the configuration file. Once a ``aoloop`` has completed, the data will be saved into the ``filePrefix`` directory, in a further, time-stamped directory for that particular run. Whithin the simulation, the data is stored in numpy array structures which can be accessed either after the run has completed or during the run (if it is run in the, or in a python thread on the command line). 
+
+The strehl ratio of each science target is always stored. Internally, it is kept in the arrays::
+    
+    sim.instStrehl
+
+and::
+
+    sim.longStrehl
+
+Which are the instantaneous and long exposure strehl ratio for each science target. Each of these is of shape ``sim.config.sim.nSci`` by ``sim.config.sim.nIters``. Note that this is even the case for only a single science target, so the science target Strehl ratios is always accessed with ``sim.longStrehl[0]``.
