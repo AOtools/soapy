@@ -45,8 +45,6 @@ If your starting with python from scratch, there a couple of options. For Ubuntu
     
     sudo apt-get install python-numpy python-scipy python-pyfftw python-pyfits python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
     
-for pyqtgraph, go to http://www.pyqtgraph.org and download the .deb file
-    
 for Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names. Again, get pyqtgraph from http://www.pyqtgraph.org, but download the source. pyqtgraph, like most python packages is pretty easy to install from source, just download the package, unpack, navigate into the package and run ``sudo python setup.py install``
     
 for mac os, all of these packages can be install via macports, with 
@@ -56,6 +54,6 @@ for mac os, all of these packages can be install via macports, with
     
 For any OS (including Windows), python distributions exist which include lots of python packages useful for science. A couple of good examples are Enthought Canopy (https://www.enthought.com), which is free for academics, and Anaconda (https://store.continuum.io/cshop/anaconda/) which is also free.
 
-A lot of python packages are listed on https://pypi.python.org/pypi. Usually when python is installed, a script called ``easy_install`` is installed also, which can be used to get any package on pypi with ``easy_install <package>``.
+A lot of python packages are listed on https://pypi.python.org/pypi. Usually when python is installed, a script called ``easy_install`` is installed also, which can be used to get any package on pypi with ``easy_install <package>``. Pip is a more recent python package manager which is currently reccommended for use, which can be found either through your system package manager or with ``easy_install pip``. The to install packages use ``pip install <package>``.
 
 
