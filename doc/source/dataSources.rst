@@ -19,5 +19,8 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                  |                  |each science target |
 |             |                  |                  |frame               |
 +-------------+------------------+------------------+--------------------+
-
-
+|Long exposure|``longStrehl``    |``longStrehl``    |The Long exposure   |
+|Strehl ratio |                  |                  |Strehl ratio for    |
+|             |                  |                  |each science target |
+|             |                  |                  |frame               |
++-------------+------------------+------------------+--------------------+
