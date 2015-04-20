@@ -12,7 +12,7 @@ Once all the requirements outlined below are met, you are ready to install PyAOS
 
 If downloading the code as a zip, you can choose which version to use with the drop down box on the left of the page, entitled ``branch:master``. Whilst I try not to, the master branch will occasionally be broken so you might want to get the latest stable version by clicking "tags" in the dropdown list, and selecting the most recent version number.
 
-Once the code is downloaded (and unzipped) or cloned, navigate to the resulting directory using the command line. You can import it into python straight away from its directory and to use the ``pyAOS`` script, run ::
+Once the code is downloaded (and unzipped) or cloned, navigate to the resulting directory using the command line. You can import it into python straight away from this directory. To use the ``pyAOS`` script, run::
 
 python pyAOS <options> <configfile>
 
@@ -21,7 +21,7 @@ If you wish to have it available elsewhere on your system, either set the relava
 
     python setup.py install
 
-This latter method will require superuser permissions for your system and should setup the paths for you. You should now be able to run ``pyAOS`` and import pyAOS into python from any directory on your system.
+This latter method may require superuser permissions for your system and should setup the paths for you. You should now be able to run ``pyAOS`` and import pyAOS into python from any directory on your system.
 
 ==================
 Required Libraries
