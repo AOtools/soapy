@@ -54,6 +54,6 @@ for mac os, all of these packages can be install via macports, with
     
 For any OS (including Windows), python distributions exist which include lots of python packages useful for science. A couple of good examples are Enthought Canopy (https://www.enthought.com), which is free for academics, and Anaconda (https://store.continuum.io/cshop/anaconda/) which is also free.
 
-A lot of python packages are listed on https://pypi.python.org/pypi. Usually when python is installed, a script called ``easy_install`` is installed also, which can be used to get any package on pypi with ``easy_install <package>``. Pip is a more recent python package manager which is currently reccommended for use, which can be found either through your system package manager or with ``easy_install pip``. The to install packages use ``pip install <package>``.
+A lot of python packages are listed on https://pypi.python.org/pypi. Usually when python is installed, a script called ``easy_install`` is installed also, which can be used to get any package on pypi with ``easy_install <package>``. Pip is a more recent python package manager which is currently reccommended for use, which can be found either through your system package manager or with ``easy_install pip``. Then to install packages use ``pip install <package>``.
 
 
