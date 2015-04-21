@@ -19,7 +19,7 @@ simConfiguration = {
     "nIters"        :   5000,
     "loopTime"      :   1/400.0,
     "gain"          :   0.6,
-    "reconstructor" :   "MVM_SeperateDMs", 
+    "reconstructor" :   "MVM_SeparateDMs", 
     "wfsMP"         :   False,
     
     "verbosity"     :   2,
@@ -43,8 +43,8 @@ simConfiguration = {
     },
 
 "Telescope":{
-   "telDiam"        :   4.2,  #Metres
-   "obs"            :   1., #Central Obscuration
+   "telDiam"        :   8.,  #Metres
+   "obs"            :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
@@ -86,7 +86,7 @@ simConfiguration = {
 
 "Science":{
     "position"      :   [(0,0)],
-    "FOV"           :   [4.0],
+    "FOV"           :   [2.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
     "oversamp"      :   [2],
