@@ -24,8 +24,13 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                  |                  |each science target  |
 |             |                  |                  |frame                |
 +-------------+------------------+------------------+---------------------+
+|Wavefront    |``WFE``           |``WFE``           |The corrected wave-  |
+|Error        |                  |                  |front error for each |
+|             |                  |                  |science target       |
++-------------+------------------+------------------+---------------------+
 |WFS          |``slopes``        | ``allSlopes``    |All WFS measurements |
 |measurements |                  |                  |stored in a numpy    |
 |             |                  |                  |array of size        |
 |             |                  |                  |(nIters, totalSlopes)|
 +-------------+------------------+------------------+---------------------+
+
