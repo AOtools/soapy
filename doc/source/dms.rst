@@ -8,6 +8,7 @@ Base DM Class
 -------------
 .. autoclass:: pyAOS.DM.DM
         :members:
+        :show-inheritance:
 
 Real DM Classes
 ---------------
