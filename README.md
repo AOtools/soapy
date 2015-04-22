@@ -41,11 +41,11 @@ pyAOS doesn't have too many requirements in terms of external libraries, though 
     ipython
     
 
-If your starting with python from scratch, there a couple of options. For Ubuntu (and probably debian) linux users, all these packages can be installed via apt-get:
+If your starting with python from scratch, there a couple of options. For Ubuntu linux (14.04+) users, all these packages can be installed via apt-get:
     
     sudo apt-get install python-numpy python-scipy python-pyfftw python-pyfits python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
     
-for Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names. Again, get pyqtgraph from http://www.pyqtgraph.org, but download the source. pyqtgraph, like most python packages is pretty easy to install from source, just download the package, unpack, navigate into the package and run ``sudo python setup.py install``
+For Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names. 
     
 for mac os, all of these packages can be install via macports, with 
     
