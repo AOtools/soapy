@@ -17,11 +17,12 @@
 #     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-The pyAOS module simulating the atmosphere.
 
-Contains an ``atmos`` object, which can be used to create or load a specified number of phase screens corresponding to atmospheric turbulence layers. The layers can then be moved wiht the ``moveScrns`` method, at a specified wind velocity and direction, where the screen is interpolated if it does not fall on an integer number of pixels. Alternatively, random screens with the same statistics as the global phase screens can be generated using the ``randomScrns`` method.
+The PyAOS module used to simulate the atmosphere.
 
-The module also contains a number of functions used to create the phase screens, many of these are ported from the book `Numerical Simulation of Optical Propagation`, Schmidt, 2010.
+This module contains an ``atmos`` object, which can be used to create or load a specified number of phase screens corresponding to atmospheric turbulence layers. The layers can then be moved with the ``moveScrns`` method, at a specified wind velocity and direction, where the screen is interpolated if it does not fall on an integer number of pixels. Alternatively, random screens with the same statistics as the global phase screens can be generated using the ``randomScrns`` method.
+
+The module also contains a number of functions used to create the phase screens, many of these are ported from the book `Numerical Simulation of Optical Propagation`, Schmidt, 2010. It is possible to create a number of phase screens using the :py:func:`makePhaseScreens` function  which are saved to file in a format which can be read by the simulation. 
 
 Examples:
     
@@ -30,7 +31,6 @@ Examples:
         from pyAOS import confParse, atmosphere
 
         config = confParse.Configurator("sh_8x8.py")
-        config.readfile()
         config.loadSimParams() 
 
     Initialise the amosphere (creating or loading phase screens)::
@@ -350,124 +350,122 @@ class atmos:
         return scrns
 
 
-class Screen(object):
-    """
-    A very experimental ``PhaseScreen`` object, which would act like a big 
-    array, but if sliced with floats would interpolate. Not used in the
-    simulation
 
-    apr - 19Feb2015
-    """
-
-    def __init__(self, scrn, subscrnSize, order=3):
-
-        self.xCoords = numpy.arange(scrn.shape[0])
-        self.yCoords = numpy.arange(scrn.shape[1])
-
-        self.interpObj = scipy.interpolate.RectBivariateSpline(
-                                    self.xCoords, self.yCoords, scrn, kx=order,
-                                    ky=order
-                                    )
-        self._subScrnCoordsX = numpy.arange(subscrnSize)
-        self._subScrnCoordsY = numpy.arange(subscrnSize)
-           
-        self.shape = (subscrnSize, subscrnSize)
-
-        self.currentPos = (0,0)
-
-    def _getScrnCoords(self):
-        
-        return (self._subScrnCoordsX+self.currentPos[0],
-                self._subScrnCoordsY+self.currentPos[1])
-
-
-    def __getitem__(self, key):
-
-        try:
-            #If too many dims...raise error
-            if len(key)>2:
-                raise IndexError("too many indices for array")
-
-            #If 2 dims
-            if len(key)==2:
-                #parse x-params
-                if not key[0].start:
-                    xstart = 0
-                else:
-                    xstart = key[0].start
-                
-                if not key[0].stop:
-                    xstop = self.shape[0]
-                else:
-                    xstop = key[0].stop
-                
-                if not key[0].step:
-                    xstep = 1
-                else:
-                    xstep = key[0].step
-
-                #parse y-params
-                if not key[1].start:
-                    ystart = 0
-                else:
-                    ystart = key[1].start
-                
-                if not key[1].stop:
-                    ystop = self.shape[1]
-                else:
-                    ystop = key[1].stop
-                
-                if not key[1].step:
-                    ystep = 1
-                else:
-                    ystep = key[1].step
-        #Only x-coords given        
-        except TypeError:
-                
-            #parse x-params
-            if not key.start:
-                xstart = 0
-            else:
-                xstart = key.start
-            
-            if not key.stop:
-                xstop = self.shape[0]
-            else:
-                xstop = key.stop
-            
-            if not key.step:
-                xstep = 1
-            else:
-                xstep = key.step
-
-            #Set y-params
-            ystart = 0 
-            ystop = self.shape[1]
-            ystep = 1
-
-        xN = (xstop-xstart)/xstep
-        yN = (ystop-ystart)/ystep
-
-        return self.getSlice(xstart, xstop, xN, ystart, ystop, yN)
-
-
-    def getSlice(self, xstart, xstop, xsize, ystart, ystop, ysize):
-
-        if ((xstop-xstart)/xsize)!=1:
-            xCoords = numpy.linspace(xstart, xstop, xsize)+self.currentPos[0]
-        else:
-            xCoords = self.subScrnCoords[0]
-
-        if ((ystop-ystart)/ysize)!=1:
-            yCoords = numpy.linspace(ystart, ystop, ysize)+self.currentPos[1]
-        else:
-            yCoords = self.subScrnCoords[1]
-
-        return self.interpObj(xCoords, yCoords)
-    subScrnCoords = property(_getScrnCoords)
+#Commented as not used - apr 14-04-2015
+#class Screen(object):
+#
+#    def __init__(self, scrn, subscrnSize, order=3):
+#
+#        self.xCoords = numpy.arange(scrn.shape[0])
+#        self.yCoords = numpy.arange(scrn.shape[1])
+#
+#        self.interpObj = scipy.interpolate.RectBivariateSpline(
+#                                    self.xCoords, self.yCoords, scrn, kx=order,
+#                                    ky=order
+#                                    )
+#        self._subScrnCoordsX = numpy.arange(subscrnSize)
+#        self._subScrnCoordsY = numpy.arange(subscrnSize)
+#           
+#        self.shape = (subscrnSize, subscrnSize)
+#
+#        self.currentPos = (0,0)
+#
+#    def _getScrnCoords(self):
+#        
+#        return (self._subScrnCoordsX+self.currentPos[0],
+#                self._subScrnCoordsY+self.currentPos[1])
+#
+#
+#    def __getitem__(self, key):
+#
+#        try:
+#            #If too many dims...raise error
+#            if len(key)>2:
+#                raise IndexError("too many indices for array")
+#
+#            #If 2 dims
+#            if len(key)==2:
+#                #parse x-params
+#                if not key[0].start:
+#                    xstart = 0
+#                else:
+#                    xstart = key[0].start
+#                
+#                if not key[0].stop:
+#                    xstop = self.shape[0]
+#                else:
+#                    xstop = key[0].stop
+#                
+#                if not key[0].step:
+#                    xstep = 1
+#                else:
+#                    xstep = key[0].step
+#
+#                #parse y-params
+#                if not key[1].start:
+#                    ystart = 0
+#                else:
+#                    ystart = key[1].start
+#                
+#                if not key[1].stop:
+#                    ystop = self.shape[1]
+#                else:
+#                    ystop = key[1].stop
+#                
+#                if not key[1].step:
+#                    ystep = 1
+#                else:
+#                    ystep = key[1].step
+#        #Only x-coords given        
+#        except TypeError:
+#                
+#            #parse x-params
+#            if not key.start:
+#                xstart = 0
+#            else:
+#                xstart = key.start
+#            
+#            if not key.stop:
+#                xstop = self.shape[0]
+#            else:
+#                xstop = key.stop
+#            
+#            if not key.step:
+#                xstep = 1
+#            else:
+#                xstep = key.step
+#
+#            #Set y-params
+#            ystart = 0 
+#            ystop = self.shape[1]
+#            ystep = 1
+#
+#        xN = (xstop-xstart)/xstep
+#        yN = (ystop-ystart)/ystep
+#
+#        return self.getSlice(xstart, xstop, xN, ystart, ystop, yN)
+#
+#
+#    def getSlice(self, xstart, xstop, xsize, ystart, ystop, ysize):
+#
+#        if ((xstop-xstart)/xsize)!=1:
+#            xCoords = numpy.linspace(xstart, xstop, xsize)+self.currentPos[0]
+#        else:
+#            xCoords = self.subScrnCoords[0]
+#
+#        if ((ystop-ystart)/ysize)!=1:
+#            yCoords = numpy.linspace(ystart, ystop, ysize)+self.currentPos[1]
+#        else:
+#            yCoords = self.subScrnCoords[1]
+#
+#        return self.interpObj(xCoords, yCoords)
+#    subScrnCoords = property(_getScrnCoords)
 
 
 def pool_ft_sh_phase_screen(args):
+    """
+    A helper function for multi-processing of phase screen creation.
+    """
 
     return ft_sh_phase_screen(*args)
 
@@ -599,7 +597,15 @@ def ft_sh_phase_screen(r0, N, delta, L0, l0, FFT=None):
 
 
 def ift2(G, delta_f ,FFT=None):
+    """
+    Wrapper for inverse fourier transform
 
+    Parameters:
+        G: data to transform
+        delta_f: pixel seperation
+        FFT (FFT object, optional): An accelerated FFT object
+    """
+        
     N = G.shape[0]
 
     if FFT:
@@ -614,7 +620,7 @@ def ft_phase_screen(r0, N, delta, L0, l0, FFT=None):
     Creates a random phase screen with Von Karmen statistics.
     (Schmidt 2010)
     
-    Args:
+    Parameters:
         r0 (float): r0 parameter of scrn in metres
         N (int): Size of phase scrn in pxls
         delta (float): size in Metres of each pxl

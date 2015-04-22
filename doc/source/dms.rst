@@ -1,12 +1,29 @@
+******************
 Deformable Mirrors
-==================
-
-Classes simulating different types of deformable mirror. The `DM` class provides a base class for other types of DM.
-
-pyAOS.DM module
----------------
+******************
 
 .. automodule:: pyAOS.DM
-    :members:
-    :undoc-members:
-    :show-inheritance:
+
+Base DM Class
+-------------
+.. autoclass:: pyAOS.DM.DM
+        :members:
+        :show-inheritance:
+
+Real DM Classes
+---------------
+.. autoclass:: pyAOS.DM.TT
+        :members:
+        :show-inheritance:
+  
+.. autoclass:: pyAOS.DM.Zernike
+        :members:
+        :show-inheritance:
+
+.. autoclass:: pyAOS.DM.Piezo
+        :members:
+        :show-inheritance:
+
+.. autoclass:: pyAOS.DM.GaussStack
+        :members:
+        :show-inheritance:

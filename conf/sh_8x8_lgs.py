@@ -13,12 +13,12 @@ simConfiguration = {
     "filePrefix"    :  "sh_8x8",
     "logfile"       :   "sh_8x8.log",
     "pupilSize"     :   128, 
-    "nGS"           :   1,
+    "nGS"           :   2,
     "nDM"           :   2,
     "nSci"          :   1,
     "nIters"        :   5000,
     "loopTime"      :   1/400.0,
-    "reconstructor" :   "MVM", 
+    "reconstructor" :   "MVM_SeparateDMs", 
 
     "verbosity"     :   2,
 
@@ -31,10 +31,10 @@ simConfiguration = {
 
 "Atmosphere":{
     "scrnNo"        :   4,
-    "scrnHeights"   :   numpy.array([0, 5000, 10000, 15000]),
-    "scrnStrengths" :   numpy.array([0.5, 0.3, 0.1, 0.1]),
-    "windDirs"      :   numpy.array([0, 45, 90, 135]),
-    "windSpeeds"    :   numpy.array([10, 10, 15, 20]),
+    "scrnHeights"   :   numpy.array([0,5000,10000,15000]),
+    "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
+    "windDirs"      :   numpy.array([0,45,90,135]),
+    "windSpeeds"    :   numpy.array([10,10,15,20]),
     "newScreens"    :   True, #Bool
     "wholeScrnSize" :   2048,
     "r0"            :   0.16,
@@ -47,17 +47,17 @@ simConfiguration = {
     },
 
 "WFS":{
-    "GSPosition"    :   [(0,0)],
-    "GSHeight"      :   [0],
-    "subaps"        :   [8],
-    "pxlsPerSubap"  :   [10],
-    "subapFOV"      :   [2.5],
-    "subapOversamp" :   [3],
-    "wavelength"    :   [600e-9],
-    "bitDepth"      :   [32],
-    "lgs"           :   [False],
-    "centMethod"    :   ["brightestPxl"],
-    "centThreshold" :   [0.1],
+    "GSPosition"    :   [(10,0),(0,0)],
+    "GSHeight"      :   [0, 90000],
+    "subaps"        :   [1, 8],
+    "pxlsPerSubap"  :   [20, 10],
+    "subapFOV"      :   [3., 2.5],
+    "subapOversamp" :   [3, 3],
+    "wavelength"    :   [600e-9, 589e-9],
+    "bitDepth"      :   [16, 16],
+    "lgs"           :   [False, False],
+    "centMethod"    :   ["brightestPxl", "brightestPxl"],
+    "removeTT"      :   [False, True],
 
     },
 
@@ -72,6 +72,7 @@ simConfiguration = {
     "closed"        :   [True,      True],
     "gain"          :   [0.6,       0.7],
     "iMatValue"     :   [0.2,       0.2 ],
+    "wfs"           :   [ 0,    1],
     },
 
 "Science":{

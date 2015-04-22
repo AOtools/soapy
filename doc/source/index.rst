@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pyAOS's documentation!
+Welcome to PyAOS's documentation!
 =================================
 
 
@@ -14,12 +14,14 @@ Contents:
 
    intro.rst
    install.rst
+   basicUsage.rst
    Configuration.rst
+   dataSources.rst
    sim.rst
    atmos.rst
    wfs.rst
-   lgs.rst
    dms.rst
+   lgs.rst
    recon.rst
    sci.rst
    utils.rst

@@ -638,7 +638,7 @@ def binImgs(data, n):
 
         return binnedImg
 
-def simpleCentroid(img,threshold_frac=0):
+def simpleCentroid(img, threshold_frac=0, **kwargs):
     '''
     Centroids an image, or an array of images.
     Centroids over the last 2 dimensions.
@@ -667,13 +667,17 @@ def simpleCentroid(img,threshold_frac=0):
 
     return numpy.array([y_centroid,x_centroid])
 
-def brtPxlCentroid(img, nPxls):
+def brtPxlCentroid(img, nPxls, **kwargs):
     """
     Centroids using brightest Pixel Algorithm
     (A. G. Basden et al,  MNRAS, 2011)
 
-     Finds the nPxlsth brightest pixel, subtracts that value from frame, 
-    sets anything below 0 to 0, and finally takes centroid
+    Finds the nPxlsth brightest pixel, subtracts that value from frame, 
+    sets anything below 0 to 0, and finally takes centroid.
+
+    Parameters:
+        img (ndarray): 2d or greater rank array of imgs to centroid
+        threshold (float): Percentage of pixels to use for centroid
     """
 
     if len(img.shape)==2:
@@ -711,15 +715,15 @@ def corrConvolve(x, y):
 
     return cc
 
-def correlationCentriod(im, ref, threshold_fac=0.8):
+def correlationCentriod(im, threshold_fac, ref):
     '''
     Correlation Centroider, currently only works for 3d im shape.
     Performs a simple thresholded COM on the correlation.
 
     Args:
         im: subap images (t, y, x)
-        ref: reference image (t, y, x)
         threshold_fac: threshold for COM (0=all pixels, 1=brightest pixel)
+        ref: reference image (t, y, x)
     Returns:
         ndarray: centroids of im, given as x, y
     '''
@@ -758,7 +762,7 @@ def correlationCentriod(im, ref, threshold_fac=0.8):
 
     return cents
 
-def quadCell(img):
+def quadCell(img, **kwargs):
     
     xSum = img.sum(-2)
     ySum = img.sum(-1)
