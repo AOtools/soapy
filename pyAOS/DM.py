@@ -87,7 +87,7 @@ class DM:
         
         #find the total number of WFS subaps, and make imat
         #placeholder
-        print(self.wfss)
+        #print(self.wfss)
         self.totalSubaps = 0
         for nWfs in range(len(self.wfss)):
             self.totalSubaps += self.wfss[nWfs].activeSubaps 
@@ -128,7 +128,6 @@ class DM:
                    order=self.dmConfig.interpOrder, axes=(-2,-1)
                    )
            rotShape = self.iMatShapes.shape
-
            self.iMatShapes = self.iMatShapes[:,
                    rotShape[1]/2. - self.simConfig.simSize/2.:
                    rotShape[1]/2. + self.simConfig.simSize/2.,
@@ -136,21 +135,16 @@ class DM:
                    rotShape[2]/2. + self.simConfig.simSize/2.
                    ]
 
-
         iMat = numpy.zeros( (self.iMatShapes.shape[0], 2*self.totalSubaps) )
-        subap=0
-        
-        for nWfs in range(len(self.wfss)):
-            for i in xrange(self.iMatShapes.shape[0]):
+        for i in xrange(self.iMatShapes.shape[0]):
+            subap=0 
+            for nWfs in range(len(self.wfss)):
                 
                 logger.debug("subap: {}".format(subap))
-                iMat[i,subap:subap+(2*self.wfss[nWfs].activeSubaps)] =(
+                iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        self.wfss[nWfs].frame( 
                                 self.iMatShapes[i], iMatFrame=True
-                                #*self.dmConfig.iMatValue)
-                       #/self.dmConfig.iMatValue
                        ))
-                
                 
                 self.dmShape = self.iMatShapes[i]
 
@@ -160,7 +154,7 @@ class DM:
                 logger.statusMessage(i, self.iMatShapes.shape[0],
                         "Generating {} Actuator DM iMat".format(self.acts))
             
-            subap += 2*self.wfss[nWfs].activeSubaps
+                subap += 2*self.wfss[nWfs].activeSubaps
 
         self.iMat = iMat
         return iMat

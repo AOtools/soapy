@@ -7,11 +7,11 @@ import numpy
 pyAOS.logger.setLoggingLevel(3)
 
 RESULTS = {
-        "8x8": 0.76,
-        "8x8_offAxis": 0.30,
-        "8x8_zernike": 0.65,
-        "8x8_lgs"    : 0.65,
-        "8x8_phys": 0.76,
+        "8x8": 0.47,
+        "8x8_offAxis": 0.22,
+        "8x8_zernike": 0.36,
+        "8x8_lgs"    : 0.27,
+        "8x8_phys": 0.53,
         }
 
 

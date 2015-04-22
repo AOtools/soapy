@@ -44,7 +44,9 @@ if __name__=="__main__":
     parser.add_argument("-i", "--interactive", dest="interactive", 
                         action="store_true", help="Open sim using ipython interactive mode")
     parser.add_argument("-V", "--verbosity", dest="verbosity",
-            action="store", help="How much information to print about the simulation")
+            action="store", default=2,
+            help="How much information to print about the simulation")
+
     parser.add_argument("-v", "--version", action="version", 
             version=pyAOS.__version__)
     
@@ -65,6 +67,7 @@ if __name__=="__main__":
 
     #init sim with conf file
     sim = pyAOS.Sim(configFile)
+    sim.config.sim.verbosity = args.verbosity
 
     #if gui start gui
     if args.gui:

@@ -109,7 +109,7 @@ class GUI(QtGui.QMainWindow):
         self.resultPlot = PlotWidget()
         self.ui.plotLayout.addWidget(self.resultPlot)
 
-        sim.readParams()
+        #sim.readParams()
         sim.config.calcParams()
         self.config = self.sim.config
         self.initPlots()

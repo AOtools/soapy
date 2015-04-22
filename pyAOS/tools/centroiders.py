@@ -1,6 +1,6 @@
 import numpy
 
-def simpleCentroid(img, threshold=0, **kwargs):
+def centreOfGravity(img, threshold=0, **kwargs):
     '''
     Centroids an image, or an array of images.
     Centroids over the last 2 dimensions.
@@ -68,7 +68,7 @@ def brightestPxl(img, threshold, **kwargs):
         img[:]  = (img.T - pxlValues).T
         img.clip(0, img.max(), out=img)
 
-    return simpleCentroid(img)
+    return centreOfGravity(img)
 
 
 def corrConvolve(x, y):
@@ -93,7 +93,7 @@ def corrConvolve(x, y):
     return cc
 
 
-def correlationCentriod(im, threshold_fac, ref):
+def correlation(im, threshold, ref):
     '''
     Correlation Centroider, currently only works for 3d im shape.
     Performs a simple thresholded COM on the correlation.
@@ -120,7 +120,7 @@ def correlationCentriod(im, threshold_fac, ref):
         # Apply threshold
         corr -= corr.min()
         mx = corr.max()
-        bg = threshold_fac*mx
+        bg = threshold*mx
         corr = numpy.clip(corr, bg, mx) - bg
 
         # Centroid

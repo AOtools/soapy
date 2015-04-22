@@ -54,7 +54,7 @@ simConfiguration = {
     "pxlsPerSubap"  :   [20],
     "subapFOV"      :   [6.0],
     "subapOversamp" :   [3],
-    "wavelength"    :   [600e-9],
+    "wavelength"    :   [589e-9],
     "bitDepth"      :   [8],
     "lgs"           :   [True],
     "centMethod"    :   ["brightestPxl"],
@@ -63,12 +63,9 @@ simConfiguration = {
 
 "LGS":{
     "lgsUplink"     :   [False],
-    "lgsPupilDiam"  :   [0.3],
-    "wavelength"    :   [600e-9],
-    "propagationMode":  ["physical"],
     "height"        :   [90e3],
-    "elongationDepth":  [12e3],
-    "elongationLayers": [5],
+    "elongationDepth":  [8e3],
+    "elongationLayers": [8],
     "launchPosition":   [(0,0)],
     },
 

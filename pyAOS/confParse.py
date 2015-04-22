@@ -488,8 +488,9 @@ class WfsConfig(ConfigObj):
                             to be used for wavefront sensing?   ``0.5``
         ``lgs``             bool: is WFS an LGS?                ``False``
         ``centMethod``      string: Method used for 
-                            Centroiding. Can be `simple`,
-                            `brightestPxl`, or `correlation`    ``simple``
+                            Centroiding. Can be 
+                            `centreOfGravity`,
+                            `brightestPxl`, or `correlation`    ``centreOfGravity``
         ``referenceImage``  array: Reference images used in
                             the correlation centroider. Full
                             image plane image, each subap has
@@ -540,7 +541,7 @@ class WfsConfig(ConfigObj):
                                 ("subapThreshold", 0.5),
                                 ("lgs", False),
                                 ("centThreshold", 0.3),
-                                ("centMethod", "simple"),
+                                ("centMethod", "centreOfGravity"),
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
                                 ("referenceImage", None),

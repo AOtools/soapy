@@ -10,15 +10,15 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8_learn&apply",
-    "pupilSize"     :   128, 
+    "filePrefix"    :  "8x8_learn&apply",
+    "pupilSize"     :   64, 
     "nGS"           :   5,
     "nDM"           :   1,
     "nSci"          :   1,
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
     "reconstructor" :   "LearnAndApply", 
-    "learnIters"    :   1000,
+    "learnIters"    :   5000,
     "learnAtmos"    :   "random",
 
     "verbosity"     :   2,
@@ -42,8 +42,8 @@ simConfiguration = {
     },
 
 "Telescope":{
-   "telDiam"        :   4.2,  #Metres
-   "obs"            :   1.2, #Central Obscuration
+   "telDiam"        :   8.,  #Metres
+   "obs"            :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
@@ -69,6 +69,10 @@ simConfiguration = {
     "dmCond"        :   [0.05],
     "closed"        :   [False],
     "gain"          :   [0.6],
+<<<<<<< HEAD
+=======
+    "wfs"           :   [0],
+>>>>>>> master
     },
 
 "Science":{

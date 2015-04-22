@@ -791,7 +791,7 @@ class Sim(object):
                                 clobber=True)
 
             if self.config.sim.saveWFE:
-                fits.writeto(self.path+"/WFS.fits", self.WFS, clobber=True)
+                fits.writeto(self.path+"/WFE.fits", self.WFE, clobber=True)
 
             if self.config.sim.saveStrehl:
                 fits.writeto(self.path+"/instStrehl.fits", self.instStrehl,

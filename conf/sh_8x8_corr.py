@@ -41,8 +41,8 @@ simConfiguration = {
     },
 
 "Telescope":{
-   "telDiam"        :   4.2,  #Metres
-   "obs"            :   1.2, #Central Obscuration
+   "telDiam"        :   8.,  #Metres
+   "obs"            :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
