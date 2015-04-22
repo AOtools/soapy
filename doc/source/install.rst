@@ -14,7 +14,7 @@ If downloading the code as a zip, you can choose which version to use with the d
 
 Once the code is downloaded (and unzipped) or cloned, navigate to the resulting directory using the command line. You can import it into python straight away from this directory. To use the ``pyAOS`` script, run::
 
-python pyAOS <options> <configfile>
+    python pyAOS <options> <configfile>
 
 
 If you wish to have it available elsewhere on your system, either set the relavant ``PATH`` and ``PYTHONPATH`` variables to ``<pyAOS dir>/bin`` and ``<pyAOS dir>/pyAOS`` respectively, or run the install script with::
