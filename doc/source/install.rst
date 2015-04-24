@@ -103,4 +103,4 @@ Once you think everything is installed, tests can be run by navigating to the ``
     
     python testSimulation.py
 
-Currenlty, this only runs system wide tests, but further, more atomic tests will be added in future.
+Currently, this only runs system wide tests, but further, more atomic tests will be added in future. To run the tests, pyAOS must be either "installed", or manually put into the PYTHONPATH.
