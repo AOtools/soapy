@@ -67,7 +67,7 @@ Linux
 =====
 If your starting with python from scratch, there a couple of options. For Ubuntu (14.04+) linux users, all these packages can be installed via apt-get::
     
-    sudo apt-get install python-numpy python-scipy python-fftw python-pyfits python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
+    sudo apt-get install python-numpy python-scipy python-fftw python-astropy python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
     
     
 for Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names. Again, get pyqtgraph from http://www.pyqtgraph.org, but download the source. pyqtgraph, like most python packages is pretty easy to install from source, just download the package, unpack, navigate into the package and run ``sudo python setup.py install``
@@ -78,7 +78,7 @@ Mac OSX
 
 for mac os, all of these packages can be install via macports, with::
     
-    sudo port install python27 py27-numpy py27-scipy py27-pyfits py27-pyfftw py27-pyqt4 py27-ipython py27-pyqtgraph
+    sudo port install python27 py27-numpy py27-scipy py27-astropy py27-pyfftw py27-pyqt4 py27-ipython py27-pyqtgraph
 
 
 ======
