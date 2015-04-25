@@ -43,13 +43,13 @@ pyAOS doesn't have too many requirements in terms of external libraries, though 
 
 If your starting with python from scratch, there a couple of options. For Ubuntu linux (14.04+) users, all these packages can be installed via apt-get:
     
-    sudo apt-get install python-numpy python-scipy python-pyfftw python-pyfits python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
+    sudo apt-get install python-numpy python-scipy python-pyfftw python-astropy python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
     
 For Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names. 
     
 for mac os, all of these packages can be install via macports, with 
     
-    sudo port install python27 py27-numpy py27-scipy py27-pyfits py27-pyfftw py27-pyqt4 py27-ipython py27-pyqtgraph
+    sudo port install python27 py27-numpy py27-scipy py27-astropy py27-pyfftw py27-pyqt4 py27-ipython py27-pyqtgraph
 
     
 For any OS (including Windows), python distributions exist which include lots of python packages useful for science. A couple of good examples are Enthought Canopy (https://www.enthought.com), which is free for academics, and Anaconda (https://store.continuum.io/cshop/anaconda/) which is also free.
