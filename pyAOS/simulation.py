@@ -610,8 +610,10 @@ class Sim(object):
 
         #Init Strehl Saving
         if self.config.sim.nSci>0:
-            self.instStrehl = numpy.zeros( (self.config.sim.nSci, self.config.sim.nIters) )
-            self.longStrehl = numpy.zeros( (self.config.sim.nSci, self.config.sim.nIters) )
+            self.instStrehl = numpy.zeros( 
+                    (self.config.sim.nSci, self.config.sim.nIters) )
+            self.longStrehl = numpy.zeros( 
+                    (self.config.sim.nSci, self.config.sim.nIters) )
 
         #Init science residual phase saving
         self.sciPhase = []
@@ -629,7 +631,8 @@ class Sim(object):
 
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
-            self.allSlopes = numpy.empty( (self.config.sim.nIters, self.config.sim.totalWfsData) )
+            self.allSlopes = numpy.empty( 
+                    (self.config.sim.nIters, self.config.sim.totalWfsData) )
         else:
             self.allSlopes = None
 
