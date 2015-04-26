@@ -14,13 +14,13 @@ The following sources of data are recorded for each simulation run and are saved
 |Data         | Saved filename    |Internal data     |Description              |
 |             |                   |structure         |                         |
 +=============+===================+==================+=========================+
-|Instantaneous|``instStrehl.fits``|``instStrehl``    |The Instantaneous        |
-|Strehl ratio |                   |                  |Strehl ratio for         |
+|Instantaneous|``instStrehl.fits``|``instStrehl``    |The instantaneous        |
+|Strehl ratio |                   |                  |strehl ratio for         |
 |             |                   |                  |each science target      |
 |             |                   |                  |frame                    |
 +-------------+-------------------+------------------+-------------------------+
-|Long exposure|``longStrehl.fits``|``longStrehl``    |The Long exposure        |
-|Strehl ratio |                   |                  |Strehl ratio for         |
+|Long exposure|``longStrehl.fits``|``longStrehl``    |The long exposure        |
+|Strehl ratio |                   |                  |strehl ratio for         |
 |             |                   |                  |each science target      |
 |             |                   |                  |frame                    |
 +-------------+-------------------+------------------+-------------------------+
@@ -33,7 +33,7 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                   |                  |camera number            |
 +-------------+-------------------+------------------+-------------------------+
 |Residual     |``sciResidual_n    |``sciPhase[n]``   |The residual uncorrected |
-|Science phase|  .fits``          |                  |phase across science     |
+|Science phase|.fits``            |                  |phase across science     |
 |             |                   |                  |target ``n``             |
 +-------------+-------------------+------------------+-------------------------+
 |WFS          |``slopes.fits``    | ``allSlopes``    |All WFS measurements     |
@@ -47,7 +47,7 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                   |                  |frame, ``i``, from wfs   |
 |             |                   |                  |``n``                    |
 +-------------+-------------------+------------------+-------------------------+
-|DM Commands  |``dmCommands.fits``|``allDmCommands   |DM commands for all      |
+|DM Commands  |``dmCommands.fits``|``allDmCommands``|`` |DM commands for all      |
 |             |                   |                  |DMs present in numpy     |
 |             |                   |                  |of size                  |
 |             |                   |                  |(nIters, totaldmCommands)|
