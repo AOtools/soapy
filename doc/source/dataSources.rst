@@ -32,14 +32,20 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                   |                  |where ``n`` indicates the|
 |             |                   |                  |camera number            |
 +-------------+-------------------+------------------+-------------------------+
-|Residual     |``sciResidual_n``  |``sciPhase[n]``   |The residual uncorrected |
-|Science phase|``.fits``          |                  |phase across science     |
+|Residual     |``sciResidual_n    |``sciPhase[n]``   |The residual uncorrected |
+|Science phase|  .fits``          |                  |phase across science     |
 |             |                   |                  |target ``n``             |
 +-------------+-------------------+------------------+-------------------------+
 |WFS          |``slopes.fits``    | ``allSlopes``    |All WFS measurements     |
 |measurements |                   |                  |stored in a numpy        |
 |             |                   |                  |array of size            |
 |             |                   |                  |(nIters, totalSlopes)    |
++-------------+-------------------+------------------+-------------------------+
+|WFS Frames   |``wfsFPFrames/     |``sim.wfss[n].    |WFS detector image, only |
+|             |wfs-n_frame-i.fits |wfsDetectorPlane``|last frame stored        |
+|             |``                 |                  |in memory. Can save each |
+|             |                   |                  |frame, ``i``, from wfs   |
+|             |                   |                  |``n``                    |
 +-------------+-------------------+------------------+-------------------------+
 |DM Commands  |``dmCommands.fits``|``allDmCommands   |DM commands for all      |
 |             |                   |                  |DMs present in numpy     |
