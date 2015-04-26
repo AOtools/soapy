@@ -47,7 +47,7 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                   |                  |frame, ``i``, from wfs   |
 |             |                   |                  |``n``                    |
 +-------------+-------------------+------------------+-------------------------+
-|DM Commands  |``dmCommands.fits``|``allDmCommands``|`` |DM commands for all      |
+|DM Commands  |``dmCommands.fits``|``allDmCommands`` |DM commands for all      |
 |             |                   |                  |DMs present in numpy     |
 |             |                   |                  |of size                  |
 |             |                   |                  |(nIters, totaldmCommands)|
