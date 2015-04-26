@@ -42,8 +42,8 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                   |                  |(nIters, totalSlopes)    |
 +-------------+-------------------+------------------+-------------------------+
 |WFS Frames   |``wfsFPFrames/     |``sim.wfss[n].    |WFS detector image, only |
-|             |wfs-n_frame-i.fits |wfsDetectorPlane``|last frame stored        |
-|             |``                 |                  |in memory. Can save each |
+|             |wfs-n_frame-i      |wfsDetectorPlane``|last frame stored        |
+|             |.fits``            |                  |in memory. Can save each |
 |             |                   |                  |frame, ``i``, from wfs   |
 |             |                   |                  |``n``                    |
 +-------------+-------------------+------------------+-------------------------+
