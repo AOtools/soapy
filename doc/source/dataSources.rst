@@ -32,8 +32,8 @@ The following sources of data are recorded for each simulation run and are saved
 |             |                   |                  |where ``n`` indicates the|
 |             |                   |                  |camera number            |
 +-------------+-------------------+------------------+-------------------------+
-|Residual     |``sciPhase_n.fits``|``sciPhase[n]``   |The residual uncorrected |
-|Science phase|                   |                  |phase across science     |
+|Residual     |``sciResidual_n``  |``sciPhase[n]``   |The residual uncorrected |
+|Science phase|``.fits``          |                  |phase across science     |
 |             |                   |                  |target ``n``             |
 +-------------+-------------------+------------------+-------------------------+
 |WFS          |``slopes.fits``    | ``allSlopes``    |All WFS measurements     |
