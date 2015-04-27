@@ -302,7 +302,7 @@ class SimConfig(ConfigObj):
                             class to use. See 
                             ``reconstructor`` module
                             for available reconstructors.       ``"MVM"``
-        ``filePrefix``      str: directory name to store 
+        ``simName``         str: directory name to store 
                             simulation data                     ``None``
         ``wfsMP``           bool: Each WFS uses its own 
                             process                             ``False``
@@ -356,7 +356,7 @@ class SimConfig(ConfigObj):
                                 ("nSci", 0),
                                 ("gain", 0.6),
                                 ("reconstructor", "MVM"),
-                                ("filePrefix", None),
+                                ("simName", None),
                                 ("saveSlopes", False),
                                 ("saveDmCommands", False),
                                 ("saveLgsPsf", False),
@@ -442,7 +442,7 @@ class WfsConfig(ConfigObj):
         ------------------      -------------------
         ``GSPosition``          tuple: position of GS on-sky in arc-secs
         ``wavelength``          float: wavelength of GS light in metres
-        ``subaps``              int: number of SH sub-apertures
+        ``nxSubaps``            int: number of SH sub-apertures
         ``pxlsPerSubap``        int: number of pixels per sub-apertures
         ``subapFOV``            float: Field of View of sub-aperture in
                                 arc-secs
@@ -467,9 +467,9 @@ class WfsConfig(ConfigObj):
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
                             reconstruction.                     ``False``
-        ``subapOversamp``   int: Multiplied by the number of
+        ``fftOversamp``     int: Multiplied by the number of
                             of phase points required for FOV 
-                            to increase fidelity from FFT.      ``2``
+                            to increase fidelity from FFT.      ``3``
         ``GSHeight``        float: Height of GS beacon. ``0``
                             if at infinity.                     ``0``
         ``subapThreshold``  float: How full should subap be 
@@ -510,7 +510,7 @@ class WfsConfig(ConfigObj):
 
         self.requiredParams = [ "GSPosition",
                                 "wavelength",
-                                "subaps",
+                                "nxSubaps",
                                 "pxlsPerSubap",
                                 "subapFOV",
                             ]
@@ -524,7 +524,7 @@ class WfsConfig(ConfigObj):
                                 ("bitDepth", 32),
                                 ("removeTT", "False"),
                                 ("angleEquivNoise", 0),
-                                ("subapOversamp", 2),
+                                ("fftOversamp", 3),
                                 ("GSHeight", 0),
                                 ("subapThreshold", 0.5),
                                 ("lgs", False),
@@ -549,10 +549,10 @@ class TelConfig(ConfigObj):
         =============   ===================
 
     Optional:
-        ==================  =================================   ===========
+        ==================  ==============https://github.com/andrewpaulreeves/soapy.git===================   ===========
         **Parameter**       **Description**                     **Default**
         ------------------  ---------------------------------   -----------
-        ``obs``             float: Diameter of central
+        ``obsDiam``         float: Diameter of central
                             obscuration                         ``0``
         ``mask``            str: Shape of pupil (only 
                             accepts ``circle`` currently)       ``circle``
@@ -566,7 +566,7 @@ class TelConfig(ConfigObj):
         self.requiredParams = [ "telDiam",
                                 ]
 
-        self.optionalParams = [ ("obs", 0),
+        self.optionalParams = [ ("obsDiam", 0),
                                 ("mask", "circle")
                                 ]
 
@@ -582,8 +582,8 @@ class LgsConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
-        ``lgsUplink``        bool: Include LGS uplink effects    ``False``
-        ``lgsPupilDiam``     float: Diameter of LGS launch 
+        ``uplink``           bool: Include LGS uplink effects    ``False``
+        ``pupilDiam``        float: Diameter of LGS launch 
                              aperture in metres.                 ``0.3``
         ``wavelength``       float: Wavelength of laser beam 
                              in metres                           ``600e-9``
@@ -621,8 +621,8 @@ class LgsConfig(ConfigObj):
 
         self.requiredParams = [ ]
 
-        self.optionalParams = [ ("lgsUplink", False),
-                                ("lgsPupilDiam", 0.3),
+        self.optionalParams = [ ("uplink", False),
+                                ("pupilDiam", 0.3),
                                 ("wavelength", 600e-9),
                                 ("propagationMode", "physical"),
                                 ("height", 90000),
@@ -646,14 +646,14 @@ class DmConfig(ConfigObj):
         ==================      ============================================
         **Parameter**           **Description** 
         ------------------      --------------------------------------------
-        ``dmType``              string: Type of DM. This must the name of a 
+        ``type``                string: Type of DM. This must the name of a 
                                 class in the ``DM`` module.
-        ``dmActs``              int: Number independent DM shapes. e.g., for 
+        ``nxActuators``         int: Number independent DM shapes. e.g., for 
                                 stack-array DMs this is number of actuators, 
                                 for Zernike DMs this is number of Zernike 
                                 modes.
         ``gain``                float: The loop gain for the DM      
-        ``dmCond``              float: The conditioning parameter used in the 
+        ``svdConditioning``     float: The conditioning parameter used in the 
                                 pseudo inverse of the interaction matrix. this
                                 is performed by 
                                 `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
@@ -686,9 +686,9 @@ class DmConfig(ConfigObj):
 
         self.N = N
 
-        self.requiredParams = [ "dmType",
-                                "dmActs",
-                                "dmCond",
+        self.requiredParams = [ "type",
+                                "nxActuators",
+                                "svdConditioning",
                                 "gain",
                                 ]
 
@@ -725,7 +725,7 @@ class SciConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
-        ``oversamp``         int: Multiplied by the number of
+        ``fftOversamp``      int: Multiplied by the number of
                              of phase points required for FOV 
                              to increase fidelity from FFT.      ``2``
         ``fftwThreads``      int: number of threads for fftw 
@@ -747,7 +747,7 @@ class SciConfig(ConfigObj):
                                 "wavelength",
                                 "pxls",
                                 ]
-        self.optionalParams = [ ("oversamp", 2),
+        self.optionalParams = [ ("fftOversamp", 2),
                                 ("fftwFlag", "FFTW_MEASURE"),
                                 ("fftwThreads", 1)
                                 ]
