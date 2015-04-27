@@ -1,5 +1,5 @@
 #Simulation 'Optique Adaptative' with Python
-(formely PyAOS)
+(formerly PyAOS)
 
 ## Introduction
 
