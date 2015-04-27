@@ -3,20 +3,20 @@ import versioneer
 
 
 versioneer.VCS = 'git'
-versioneer.versionfile_source = 'pyAOS/_version.py'
-versioneer.versionfile_build = 'pyAOS/_version.py'
+versioneer.versionfile_source = 'soapy/_version.py'
+versioneer.versionfile_build = 'soapy/_version.py'
 versioneer.tag_prefix = '' # tags are like 1.2.0
-versioneer.parentdir_prefix = 'pyAOS-' # dirname like 'myproject-1.2.0'
+versioneer.parentdir_prefix = 'soapy-' # dirname like 'myproject-1.2.0'
   
   
 setup(
-    name='pyAOS',
+    name='soapy',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     author='Andrew Reeves',
     author_email='a.p.reeves@durham.ac.uk',
-    packages=['pyAOS', 'pyAOS.tools'],
-    scripts=['bin/pyAOS'],
+    packages=['soapy', 'soapy.tools'],
+    scripts=['bin/soapy'],
     description='A tomographic astronomical adaptive optics simulation with realistic laser guide star propagation.',
     long_description=open('README.md').read(),
     # install_requires=[
