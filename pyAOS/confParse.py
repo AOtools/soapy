@@ -671,10 +671,10 @@ class DmConfig(ConfigObj):
                              use to correct for.                 ``0``
         ``rotation``         float: A DM rotation with respect
                              to the pupil in degrees             ``0''
-        ``interpOrder''      Order of interpolation for dm,
+        ``interpOrder``      Order of interpolation for dm,
                              including piezo actuators and
                              rotation.                           ``1''
-        ``gaussWidth''       float: Width of Guass DM actuator
+        ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the 
                              inter-actuator spacing.             ``0.5''
         ==================== =================================   ===========  
