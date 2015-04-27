@@ -56,5 +56,6 @@ target/
 # vim stuff
 *.swp
 *.un~
+*.swo
 
 *.DS_Store
