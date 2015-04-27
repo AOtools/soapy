@@ -171,12 +171,12 @@ class GUI(QtGui.QMainWindow):
         for wfs in range(self.config.sim.nGS):
             self.wfsPlots[wfs] = self.makeImageItem(
                     self.ui.wfsLayout, 
-                    self.config.wfs[wfs].subaps*self.config.wfs[wfs].pxlsPerSubap
+                    self.config.wfs[wfs].nxSubaps*self.config.wfs[wfs].pxlsPerSubap
                     )
             self.phasePlots[wfs] = self.makeImageItem(
                     self.ui.phaseLayout,self.config.sim.simSize)
                                                       
-            if self.config.lgs[wfs].lgsUplink == 1:
+            if self.config.lgs[wfs].uplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
  

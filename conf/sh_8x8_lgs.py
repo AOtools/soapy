@@ -10,8 +10,8 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8",
-    "logfile"       :   "sh_8x8.log",
+    "simName"       :  "sh_8x8_lgs",
+    "logfile"       :   "sh_8x8_lgs.log",
     "pupilSize"     :   128, 
     "nGS"           :   2,
     "nDM"           :   2,
@@ -42,19 +42,18 @@ simConfiguration = {
 
 "Telescope":{
    "telDiam"        :   8.,  #Metres
-   "obs"            :   1.1, #Central Obscuration
+   "obsDiam"        :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
     "GSPosition"    :   [(10,0),(0,0)],
     "GSHeight"      :   [0, 90000],
-    "subaps"        :   [1, 8],
+    "nxSubaps"      :   [1, 8],
     "pxlsPerSubap"  :   [20, 10],
     "subapFOV"      :   [3., 2.5],
-    "subapOversamp" :   [3, 3],
+    "fftOversamp"   :   [3, 3],
     "wavelength"    :   [600e-9, 589e-9],
-    "bitDepth"      :   [16, 16],
     "lgs"           :   [False, False],
     "centMethod"    :   ["brightestPxl", "brightestPxl"],
     "removeTT"      :   [False, True],
@@ -66,13 +65,13 @@ simConfiguration = {
     },
 
 "DM":{
-    "dmType"        :   ["TT",     "Piezo"],
-    "dmActs"        :   [2,         9**2],
-    "dmCond"        :   [1e-15,     0.05],
-    "closed"        :   [True,      True],
-    "gain"          :   [0.6,       0.7],
-    "iMatValue"     :   [0.2,       0.2 ],
-    "wfs"           :   [ 0,    1],
+    "type"              :   ["TT",     "Piezo"],
+    "nxActuators"       :   [2,         9],
+    "svdConditioning"   :   [1e-15,     0.05],
+    "closed"            :   [True,      True],
+    "gain"              :   [0.6,       0.7],
+    "iMatValue"         :   [0.2,       0.2 ],
+    "wfs"               :   [ 0,    1],
     },
 
 "Science":{
@@ -80,7 +79,7 @@ simConfiguration = {
     "FOV"           :   [2.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
-    "oversamp"      :   [2],
+    "fftOversamp"   :   [2],
     }
 }
 

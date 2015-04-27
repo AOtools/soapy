@@ -45,7 +45,7 @@ class LGSObj(object):
         self.lgsConfig = lgsConfig
         self.atmosConfig = atmosConfig
 
-        self.LGSPupilSize = int(numpy.round(lgsConfig.lgsPupilDiam
+        self.LGSPupilSize = int(numpy.round(lgsConfig.pupilDiam
                                             * self.simConfig.pxlScale))
 
         #Phase power scaling factor for lgs wavelength
@@ -53,7 +53,7 @@ class LGSObj(object):
         self.r0scale = phsWvl / self.lgsConfig.wavelength
 
         self.mask = aoSimLib.circle(
-                0.5*lgsConfig.lgsPupilDiam*self.simConfig.pxlScale,
+                0.5*lgsConfig.pupilDiam*self.simConfig.pxlScale,
                 self.simConfig.simSize)
         self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
         self.pupilPos = {}
@@ -88,7 +88,7 @@ class LGSObj(object):
 
         #This is the number of pxls used for correct FOV (same as a WFS subap)
         self.LGSFOVPxls = numpy.round(
-                                self.lgsConfig.lgsPupilDiam * 
+                                self.lgsConfig.pupilDiam * 
                                 self.subapFOVRad/self.lgsConfig.wavelength 
                                 )
         #Dont want to interpolate down as throwing away info - make sure we
@@ -204,7 +204,7 @@ class GeometricLGS(LGSObj):
         
         #This is the number of pxls used for correct FOV (same as a WFS subap)
         self.LGSFOVPxls = numpy.round(
-                    self.self.lgsConfig.lgsPupilDiam * 
+                    self.self.lgsConfig.pupilDiam * 
                     self.subapFOVRad/self.lgsConfig.wavelength
                     )
         #Dont want to interpolate down as throwing away info - make sure we

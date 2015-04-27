@@ -1,10 +1,10 @@
 import unittest
 
-import pyAOS
+import soapy
 
 import numpy
 
-pyAOS.logger.setLoggingLevel(3)
+soapy.logger.setLoggingLevel(3)
 
 RESULTS = {
         "8x8": 0.47,
@@ -18,8 +18,8 @@ RESULTS = {
 class TestSimpleSCAO(unittest.TestCase):
 
     def testOnAxis(self):
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfs[0].GSPosition=(0,0)
@@ -34,8 +34,8 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8"], atol=0.2)
 
     def testPhysProp(self):
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfs[0].GSPosition=(0,0)
@@ -51,8 +51,8 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_phys"], atol=0.2)
 
     def testOffAxis(self):
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfs[0].GSPosition = (20,0)
@@ -69,16 +69,16 @@ class TestSimpleSCAO(unittest.TestCase):
 
     
     def testZernikeDM(self):
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfs[0].GSPosition = (0,0)
         
         sim.config.sim.nDM = 1
-        sim.config.dm[0].dmType = "Zernike"
-        sim.config.dm[0].dmActs = 45
-        sim.config.dm[0].dmCond = 0.01
+        sim.config.dm[0].type = "Zernike"
+        sim.config.dm[0].nxActuatorss = 45
+        sim.config.dm[0].svdConditioning = 0.01
         
         sim.aoinit()
 
@@ -94,8 +94,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testCone(self):
 
-        sim = pyAOS.Sim("../conf/sh_8x8_lgs.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8_lgs.py")
+        sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
 

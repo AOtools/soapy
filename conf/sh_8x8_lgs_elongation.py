@@ -10,7 +10,7 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8_lgs",
+    "simName"       :  "sh_8x8_lgs",
     "logfile"       :   "sh_8x8_lgs.log",
     "pupilSize"     :   128, 
     "nGS"           :   1,
@@ -43,40 +43,39 @@ simConfiguration = {
 
 "Telescope":{
    "telDiam"        :   8.,  #Metres
-   "obs"            :   1.2, #Central Obscuration
+   "obsDiam"        :   1.2, #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
     "GSPosition"    :   [(0,0)]*2,
     "GSHeight"      :   [90e3],
-    "subaps"        :   [8],
+    "nxSubaps"      :   [8],
     "pxlsPerSubap"  :   [20],
     "subapFOV"      :   [6.0],
     "subapOversamp" :   [3],
     "wavelength"    :   [589e-9],
-    "bitDepth"      :   [8],
     "lgs"           :   [True],
     "centMethod"    :   ["brightestPxl"],
     "centThreshold" :   [0.2],
     },
 
 "LGS":{
-    "lgsUplink"     :   [False],
-    "height"        :   [90e3],
-    "elongationDepth":  [8e3],
-    "elongationLayers": [8],
-    "launchPosition":   [(0,0)],
+    "uplink"            :   [False],
+    "height"            :   [90e3],
+    "elongationDepth"   :  [8e3],
+    "elongationLayers"  : [8],
+    "launchPosition"    :   [(0,0)],
     },
 
 "DM":{
 
-    "dmType"        :   ["TT",     "Piezo"],
-    "dmActs"        :   [2,         9**2],
-    "dmCond"        :   [1e-15,      0.05],
-    "closed"        :   [False,      False],
-    "gain"          :   [0.6,       0.6],
-    "iMatValue"     :   [50,        10  ],
+    "type"              :   ["TT",     "Piezo"],
+    "nxActuators"       :   [2,         9],
+    "svdConditioning"   :   [1e-15,      0.05],
+    "closed"            :   [False,      False],
+    "gain"              :   [0.6,       0.6],
+    "iMatValue"         :   [50,        10  ],
     },
 
 "Science":{
@@ -84,7 +83,7 @@ simConfiguration = {
     "FOV"           :   [3.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
-    "oversamp"      :   [2],
+    "fftOversamp"      :   [2],
     }
 
 

@@ -196,7 +196,7 @@ class Configurator(object):
 
         #Check if SH WFS with 1 subap. Feild stop must be FOV
         for wfs in self.wfs:
-            if wfs.subaps==1 and wfs.subapFieldStop==False:
+            if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
                 wfs.subapFieldStop = True
 
@@ -649,7 +649,8 @@ class DmConfig(ConfigObj):
         ``type``                string: Type of DM. This must the name of a 
                                 class in the ``DM`` module.
         ``nxActuators``         int: Number independent DM shapes. e.g., for 
-                                stack-array DMs this is number of actuators, 
+                                stack-array DMs this is number of actuators in
+                                one dimension, 
                                 for Zernike DMs this is number of Zernike 
                                 modes.
         ``gain``                float: The loop gain for the DM      

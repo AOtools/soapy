@@ -42,7 +42,7 @@ Examples:
 
         sim.aoinit()
 
-    DM Interation and command matrices are calculated now. If ``sim.config.sim.filePrefix`` is not ``None``, then these matrices will be saved in ``data/filePrefix`` (data will be saved here also in a time-stamped directory)::
+    DM Interation and command matrices are calculated now. If ``sim.config.sim.simName`` is not ``None``, then these matrices will be saved in ``data/simName`` (data will be saved here also in a time-stamped directory)::
 
         sim.makeIMat()
 
@@ -51,7 +51,7 @@ Examples:
 
         sim.aoloop()
 
-    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/filePrefix`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes``, ``sim.longStrehl``
+    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/simName`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes``, ``sim.longStrehl``
 
 
 :Author:
@@ -176,9 +176,9 @@ class Sim(object):
         if self.config.tel.mask == "circle":
             self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
                                         self.config.sim.pupilSize)
-            if self.config.tel.obs!=None:
+            if self.config.tel.obsDiam!=None:
                 self.mask -= aoSimLib.circle(
-                        self.config.tel.obs*self.config.sim.pxlScale/2., 
+                        self.config.tel.obsDiam*self.config.sim.pxlScale/2., 
                         self.config.sim.pupilSize
                         )
         else:
@@ -233,9 +233,9 @@ class Sim(object):
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
-                dmObj = eval( "DM."+self.config.dm[dm].dmType)
+                dmObj = eval( "DM."+self.config.dm[dm].type)
             except AttributeError:
-                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dm[dm].dmType))
+                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dm[dm].type))
 
             self.dms[dm] = dmObj(
                         self.config.sim, self.config.dm[dm],
@@ -309,7 +309,7 @@ class Sim(object):
         can load previous control and interaction matrices.
         
         Args:
-            forceNew (bool): if true, will force making of new iMats and cMats, otherwise will attempt to load previously made matrices from same filePrefix
+            forceNew (bool): if true, will force making of new iMats and cMats, otherwise will attempt to load previously made matrices from same simName
             progressCallback (func): function called to report progress of interaction matrix construction
         """
         t = time.time()
@@ -319,7 +319,7 @@ class Sim(object):
             loadIMat=False
             loadCMat=False
         else:
-            if self.config.sim.filePrefix==None:
+            if self.config.sim.simName==None:
                 loadIMat=False
                 loadCMat=False
             else:
@@ -590,16 +590,16 @@ class Sim(object):
         '''
         Initialise data structures used for data saving.
 
-        Initialise the data structures which will be used to store data which will be saved or analysed once the simulation has ended. If the ``filePrefix = None``, no data is saved, other wise a directory called ``filePrefix`` is created, and data from simulation runs are saved in a time-stamped directory inside this.
+        Initialise the data structures which will be used to store data which will be saved or analysed once the simulation has ended. If the ``simName = None``, no data is saved, other wise a directory called ``simName`` is created, and data from simulation runs are saved in a time-stamped directory inside this.
         '''
 
-        if self.config.sim.filePrefix!=None:
-            self.path = self.config.sim.filePrefix +"/"+self.timeStamp()
+        if self.config.sim.simName!=None:
+            self.path = self.config.sim.simName +"/"+self.timeStamp()
             try:
                 os.mkdir( self.path )
             except OSError:
 
-                os.mkdir(self.config.sim.filePrefix)
+                os.mkdir(self.config.sim.simName)
                 os.mkdir(self.path)
 
             #Init WFS FP Saving
@@ -697,7 +697,7 @@ class Sim(object):
                 for sci in xrange(self.config.sim.nSci):
                     self.sciPhase[sci][i] = self.sciCams[sci].residual
 
-        if self.config.sim.filePrefix!=None:
+        if self.config.sim.simName!=None:
             if self.config.sim.saveWfsFrames:
                 for wfs in xrange(self.config.sim.nGS):
                     fits.writeto(
@@ -712,7 +712,7 @@ class Sim(object):
         Called once simulation has ended to save the data recorded during the simulation to disk in the directories created during initialisation.
         """
 
-        if self.config.sim.filePrefix!=None:
+        if self.config.sim.simName!=None:
 
             if self.config.sim.saveSlopes:
                 fits.writeto(self.path+"/slopes.fits", self.allSlopes,

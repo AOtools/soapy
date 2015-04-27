@@ -52,13 +52,13 @@ class scienceCam:
                 ).astype("float32")
 
         #Init FFT object
-        self.FFTPadding = self.sciConfig.pxls * self.sciConfig.oversamp
+        self.FFTPadding = self.sciConfig.pxls * self.sciConfig.fftOversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding<self.FOVPxlNo:
-                self.sciConfig.oversamp+=1
+                self.sciConfig.fftOversamp+=1
                 self.FFTPadding\
-                        =self.sciConfig.pxls*self.sciConfig.oversamp
-            logger.info("SCI FFT Padding less than FOV size... Setting oversampling to %d"%self.sciConfig.oversamp)
+                        =self.sciConfig.pxls*self.sciConfig.fftOversamp
+            logger.info("SCI FFT Padding less than FOV size... Setting oversampling to %d"%self.sciConfig.fftOversamp)
 
 
         self.FFT = AOFFT.FFT(inputSize=(self.FFTPadding,self.FFTPadding),
@@ -77,7 +77,7 @@ class scienceCam:
         #                                    =(numpy.exp(1j*self.scaledMask)
         #                                            *self.scaledMask)
         #fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        #binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
+        #binFp = aoSimLib.binImgs(fp, self.sciConfig.fftOversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,)*2)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
@@ -207,7 +207,7 @@ class scienceCam:
         focalPlane = numpy.abs(focalPlane)**2
 
         self.focalPlane = aoSimLib.binImgs( 
-                focalPlane , self.sciConfig.oversamp )
+                focalPlane , self.sciConfig.fftOversamp )
 
     def frame(self, scrns, phaseCorrection=None):
 

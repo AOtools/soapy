@@ -100,7 +100,7 @@ class DM:
         Returns:
             int: number of active DM actuators
         """
-        return self.dmConfig.dmActs
+        return self.dmConfig.nxActuators
 
     def makeIMat(self, callback=None):
         '''
@@ -236,7 +236,7 @@ class Piezo(DM):
         reconstructing for redundant actuators.
         """
         activeActs = []
-        xActs = int(numpy.round(numpy.sqrt(self.dmConfig.dmActs)))
+        xActs = self.dmConfig.nxActuators
         self.spcing = self.simConfig.pupilSize/float(xActs)
 
         for x in xrange(xActs):
@@ -320,7 +320,7 @@ class GaussStack(Piezo):
         shapes = numpy.zeros((
                 self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize))
     
-        actSpacing = self.simConfig.pupilSize/(numpy.sqrt(self.dmConfig.dmActs)-1)
+        actSpacing = self.simConfig.pupilSize/(self.dmConfig.nxActuators-1)
         width = actSpacing/2.
 
         for i in xrange(self.acts):

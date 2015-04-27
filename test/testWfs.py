@@ -1,4 +1,4 @@
-from pyAOS import confParse, WFS, aoSimLib
+from soapy import confParse, WFS, aoSimLib
 import unittest
 import numpy
 

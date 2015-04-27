@@ -65,7 +65,7 @@ simConfiguration = {
 
 "DM":{
     "type"              :   ["TT",     "Piezo"],
-    "nxActuators"       :   [2,         9**2],
+    "nxActuators"       :   [2,         9],
     "svdConditioning"   :   [1e-15,     0.05],
     "closed"            :   [True,      True],
     "gain"              :   [0.6,       0.7],

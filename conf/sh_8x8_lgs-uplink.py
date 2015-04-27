@@ -10,8 +10,8 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8_lgs",
-    "logfile"       :   "sh_8x8_lgs.log",
+    "simName"    :  "sh_8x8_lgsUp",
+    "logfile"       :   "sh_8x8_lgsUp.log",
     "pupilSize"     :   128, 
     "nGS"           :   2,
     "nDM"           :   2,
@@ -44,19 +44,18 @@ simConfiguration = {
 
 "Telescope":{
    "telDiam"        :   8.,  #Metres
-   "obs"            :   1.1, #Central Obscuration
+   "obsDiam"        :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
     "GSPosition"    :   [(0,0),    (0,0)],
     "GSHeight"      :   [0,         90e3],
-    "subaps"        :   [1,         8],
+    "nxSubaps"      :   [1,         8],
     "pxlsPerSubap"  :   [20,         14],
     "subapFOV"      :   [2.0,       5.0],
     "subapOversamp" :   [4,         4],
     "wavelength"    :   [600e-9]*2,
-    "bitDepth"      :   [8]*2,
     "lgs"           :   [False,     True],
     "centMethod"    :   ["brightestPxl"]*2,
     "centThreshold" :   [0.2]*2,
@@ -65,23 +64,23 @@ simConfiguration = {
     },
 
 "LGS":{
-    "lgsUplink"     :   [True]*2,
-    "lgsPupilDiam"  :   [0.3]*2,
-    "wavelength"    :   [600e-9]*2,
-    "propagationMode":  ["physical"]*2,
-    "height"        :   [90e3]*2,
-    "elongationDepth":  [0]*2,
-    "elongationLayers": [5]*2,
+    "uplink"            :   [True]*2,
+    "pupilDiam"         :   [0.3]*2,
+    "wavelength"        :   [600e-9]*2,
+    "propagationMode"   :   ["physical"]*2,
+    "height"            :   [90e3]*2,
+    "elongationDepth"   :   [0]*2,
+    "elongationLayers"  :   [5]*2,
     },
 
 "DM":{
-    "dmType"        :   ["TT",     "Piezo"],
-    "dmActs"        :   [2,         9**2],
-    "dmCond"        :   [1e-15,      0.07],
-    "closed"        :   [True,      True],
-    "gain"          :   [0.6,       0.6],
-    "iMatValue"     :   [1.,        0.2  ],
-    "wfs"           :   [0,         1],
+    "type"              :   ["TT",     "Piezo"],
+    "nxActuators"       :   [2,         9],
+    "svdConditioning"   :   [1e-15,      0.07],
+    "closed"            :   [True,      True],
+    "gain"              :   [0.6,       0.6],
+    "iMatValue"         :   [1.,        0.2  ],
+    "wfs"               :   [0,         1],
     },
 
 "Science":{
@@ -89,7 +88,7 @@ simConfiguration = {
     "FOV"           :   [2.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
-    "oversamp"      :   [2],
+    "fftOversamp"   :   [2],
     }
 }
 

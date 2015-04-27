@@ -54,9 +54,9 @@ class Reconstructor(object):
         self.dmConds = []
         self.dmTypes = []
         for dm in xrange(self.simConfig.nDM):
-            self.dmActs.append(self.dms[dm].dmConfig.dmActs)
-            self.dmConds.append(self.dms[dm].dmConfig.dmCond)
-            self.dmTypes.append(self.dms[dm].dmConfig.dmType)
+            self.dmActs.append(self.dms[dm].dmConfig.nxActuators)
+            self.dmConds.append(self.dms[dm].dmConfig.svdConditioning)
+            self.dmTypes.append(self.dms[dm].dmConfig.type)
 
         self.dmConds = numpy.array(self.dmConds)
         self.dmActs = numpy.array(self.dmActs)
@@ -224,9 +224,9 @@ class MVM(Reconstructor):
             acts+=self.dms[dm].acts
         
         logger.info("Invert iMat with cond: {}".format(
-                self.dms[dm].dmConfig.dmCond))
+                self.dms[dm].dmConfig.svdConditioning))
         self.controlMatrix = scipy.linalg.pinv(
-                self.iMat, self.dms[dm].dmConfig.dmCond
+                self.iMat, self.dms[dm].dmConfig.svdConditioning
                 )
             
 
@@ -254,7 +254,7 @@ class MVM_SeparateDMs(Reconstructor):
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
                 dmCMat = scipy.linalg.pinv( dmIMat,
-                                            self.dms[dm].dmConfig.dmCond)
+                                            self.dms[dm].dmConfig.svdConditioning)
 
             self.controlMatrix[
                     self.dms[dm].wfss[0].wfsConfig.dataStart:
@@ -412,7 +412,7 @@ class LearnAndApply(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.svdConditioning)
             
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
@@ -561,7 +561,7 @@ class LearnAndApplyLTAO(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.svdConditioning)
             
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
@@ -711,12 +711,12 @@ class WooferTweeter(Reconstructor):
         for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
            
-            logger.info("Invert DM {} IMat with conditioning:{}".format(dm,self.dms[dm].dmConfig.dmCond))
+            logger.info("Invert DM {} IMat with conditioning:{}".format(dm,self.dms[dm].dmConfig.svdConditioning))
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
                 dmCMat = numpy.linalg.pinv(
-                                    dmIMat, self.dms[dm].dmConfig.dmCond)
+                                    dmIMat, self.dms[dm].dmConfig.svdConditioning)
             
             #if dm != self.simConfig.nDM-1:
             #    self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
