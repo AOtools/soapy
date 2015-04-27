@@ -1,4 +1,4 @@
-#Simulation "Optique Adaptative" in Python
+#Simulation 'Optique Adaptative' with Python
 (formely PyAOS)
 
 ## Introduction
