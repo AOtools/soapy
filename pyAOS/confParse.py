@@ -670,13 +670,13 @@ class DmConfig(ConfigObj):
         ``wfs``              int: which Wfs to take iMat and
                              use to correct for.                 ``0``
         ``rotation``         float: A DM rotation with respect
-                             to the pupil in degrees             ``0''
+                             to the pupil in degrees             ``0``
         ``interpOrder``      Order of interpolation for dm,
                              including piezo actuators and
-                             rotation.                           ``1''
+                             rotation.                           ``1``
         ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the 
-                             inter-actuator spacing.             ``0.5''
+                             inter-actuator spacing.             ``0.5``
         ==================== =================================   ===========  
         """
 
