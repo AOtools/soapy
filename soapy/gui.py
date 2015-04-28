@@ -171,12 +171,12 @@ class GUI(QtGui.QMainWindow):
         for wfs in range(self.config.sim.nGS):
             self.wfsPlots[wfs] = self.makeImageItem(
                     self.ui.wfsLayout, 
-                    self.config.wfs[wfs].nxSubaps*self.config.wfs[wfs].pxlsPerSubap
+                    self.config.wfss[wfs].nxSubaps*self.config.wfss[wfs].pxlsPerSubap
                     )
             self.phasePlots[wfs] = self.makeImageItem(
                     self.ui.phaseLayout,self.config.sim.simSize)
                                                       
-            if self.config.lgs[wfs].uplink == 1:
+            if self.config.lgss[wfs].uplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
  
@@ -190,7 +190,7 @@ class GUI(QtGui.QMainWindow):
         for sci in range(self.config.sim.nSci):
 
             self.sciPlots[sci] = self.makeImageItem(self.ui.sciLayout,
-                                                    self.config.sci[sci].pxls)
+                                                    self.config.scis[sci].pxls)
             self.resPlots[sci] = self.makeImageItem(self.ui.residualLayout,
                                                     self.config.sim.simSize)
         self.sim.guiQueue = self.updateQueue
@@ -207,7 +207,7 @@ class GUI(QtGui.QMainWindow):
             
             self.gainSpins.append(QtGui.QDoubleSpinBox())
             self.ui.gainLayout.addWidget(self.gainSpins[dm])
-            self.gainSpins[dm].setValue(self.config.dm[dm].gain)
+            self.gainSpins[dm].setValue(self.config.dms[dm].gain)
             self.gainSpins[dm].setSingleStep(0.05)
             self.gainSpins[dm].setMaximum(1.)
 
@@ -329,7 +329,7 @@ class GUI(QtGui.QMainWindow):
                                                 self.config.sim.pupilSize*2)),
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
-                if self.sim.config.wfs[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfs[wfs].GSHeight==0:
+                if self.sim.config.wfss[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfss[wfs].GSHeight==0:
                     cent = (self.sim.wfss[wfs].getMetaPupilPos(
                             self.sim.config.atmos.scrnHeights[i])
                             *self.sim.config.sim.pxlScale
@@ -341,7 +341,7 @@ class GUI(QtGui.QMainWindow):
                     else:
                         radius = self.config.sim.pupilSize/2.
                 
-                    if self.sim.config.wfs[wfs].GSHeight!=0:
+                    if self.sim.config.wfss[wfs].GSHeight!=0:
                         colour="r"
                     else:
                         colour="g"
@@ -637,11 +637,11 @@ class IPythonConsole:
                             "atmosConfig" : sim.config.atmos}
         
         for i in range(sim.config.sim.nGS):
-            usefulObjects["wfs{}Config".format(i)] = sim.config.wfs[i]
+            usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
         for i in range(sim.config.sim.nDM):
-            usefulObjects["dm{}Config".format(i)] = sim.config.dm[i]
+            usefulObjects["dm{}Config".format(i)] = sim.config.dms[i]
         for i in range(sim.config.sim.nSci):
-            usefulObjects["sci{}Config".format(i)] = sim.config.sci[i]
+            usefulObjects["sci{}Config".format(i)] = sim.config.scis[i]
 
         self.kernel.shell.push(usefulObjects)
         #kernel.shell.push({'foo': 43, 'print_process_id': print_process_id})
