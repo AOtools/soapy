@@ -1,25 +1,25 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-The PyAOS WFS module. 
+The Soapy WFS module. 
 
-WFS in PyAOS are represented by 
+WFSs in Soapy are represented by 
 
 This module contains a number of classes which simulate different adaptive optics wavefront sensor (WFS) types. All wavefront sensor classes can inherit from the base ``WFS`` class. The class provides the methods required to calculate phase over a WFS pointing in a given WFS direction and accounts for Laser Guide Star (LGS) geometry such as cone effect and elongation. This is  If only pupil images (or complex amplitudes) are required, then this class can be used stand-alone.
 
@@ -27,7 +27,7 @@ Example:
 
     Make configuration objects::
     
-        from pyAOS import WFS, confParse
+        from soapy import WFS, confParse
     
         config = confParse.Configurator("config_file.py")
         config.loadSimParams()
@@ -36,7 +36,7 @@ Example:
     
         wfs = WFS.WFS(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
     
-    Set the WFS scrns (these should be made in advance, perhaps by the :py:mod:`pyAOS.atmosphere` module). Then run the WFS::
+    Set the WFS scrns (these should be made in advance, perhaps by the :py:mod:`soapy.atmosphere` module). Then run the WFS::
     
         wfs.scrns = phaseScrnList
         wfs.makePhase()

@@ -77,7 +77,7 @@ class TestSimpleSCAO(unittest.TestCase):
         
         sim.config.sim.nDM = 1
         sim.config.dm[0].type = "Zernike"
-        sim.config.dm[0].nxActuatorss = 45
+        sim.config.dm[0].nxActuators = 45
         sim.config.dm[0].svdConditioning = 0.01
         
         sim.aoinit()

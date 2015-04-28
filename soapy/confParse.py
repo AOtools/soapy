@@ -1,22 +1,22 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 """
-A module to generate configuration objects for the pyAOS, given a parameter file.
+A module to generate configuration objects for Soapy, given a parameter file.
 
 This module defines a number of classes, which when instantiated, create objects used to configure the entire simulation, or just submodules. All configuration objects are stored in the ``Configurator`` object which deals with loading parameters from file, checking some potential conflicts and using parameters to calculate some other parameters used in parts of the simulation.
 

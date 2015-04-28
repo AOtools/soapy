@@ -4,19 +4,19 @@
 ## Introduction
 
 
-pyAOS is a Monte-Carlo Adaptive Optics Simulation toolkit written in Python. pyAOS can be used as a conventional end-to-end simulation, where a large number of AO configurations can be created simply by editing a configuration file. Its real power lays in modular nature of objects, such as WFSs, DMs and reconstructors which can be taken and used as building blocks to construct new and complex AO ideas and configurations.
+Soapy is a Monte-Carlo Adaptive Optics Simulation toolkit written in Python. soapy can be used as a conventional end-to-end simulation, where a large number of AO configurations can be created simply by editing a configuration file. Its real power lays in modular nature of objects, such as WFSs, DMs and reconstructors which can be taken and used as building blocks to construct new and complex AO ideas and configurations.
 
-Please keep in mind that pyAOS is very much a work-in-progress and under heavy development. I've not yet settled on a completely stable API, but I will try and say when something big has changed. **For these reasons I would strongly reccomend against using pyAOS for critical work and would suggest contacting me to discuss its suitability for any work to be published.**
+Please keep in mind that soapy is very much a work-in-progress and under heavy development. I've not yet settled on a completely stable API, but I will try and say when something big has changed. **For these reasons I would strongly reccomend against using soapy for critical work and would suggest contacting me to discuss its suitability for any work to be published.**
 
 There is documentation at http://pyaos.readthedocs.org/en/latest/index.html, again this is also being developed at this time!
 
 ## Quick-Start
 
 
-Try out some of the code examples in the ``conf`` directory, either run the ``pyAOS`` script in ``bin``, or load a python or IPython terminal: 
+Try out some of the code examples in the ``conf`` directory, either run the ``soapy`` script in ``bin``, or load a python or IPython terminal: 
 
-    import pyAOS
-    sim = pyAOS.Sim("configFilename")
+    import soapy
+    sim = soapy.Sim("configFilename")
     sim.aoinit()
     sim.makeIMat()
     sim.aoloop()
@@ -24,7 +24,7 @@ Try out some of the code examples in the ``conf`` directory, either run the ``py
 All the data from the simulation exists in the ``sim`` object, the data available will depend upon parameters set in the configuration file. e.g. Slopes can be accessed by ``sim.allSlopes``.
 
 ## Required Libraries
-pyAOS doesn't have too many requirements in terms of external libraries, though it does rely on some. There are also some optional libraries which are recommended for plotting or performance.
+Soapy doesn't have too many requirements in terms of external libraries, though it does rely on some. There are also some optional libraries which are recommended for plotting or performance.
 
 ### Required
 

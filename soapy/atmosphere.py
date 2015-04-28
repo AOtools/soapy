@@ -1,24 +1,24 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-The PyAOS module used to simulate the atmosphere.
+The Soapy module used to simulate the atmosphere.
 
 This module contains an ``atmos`` object, which can be used to create or load a specified number of phase screens corresponding to atmospheric turbulence layers. The layers can then be moved with the ``moveScrns`` method, at a specified wind velocity and direction, where the screen is interpolated if it does not fall on an integer number of pixels. Alternatively, random screens with the same statistics as the global phase screens can be generated using the ``randomScrns`` method.
 
@@ -28,7 +28,7 @@ Examples:
     
     To get the configuration objects::
         
-        from pyAOS import confParse, atmosphere
+        from soapy import confParse, atmosphere
 
         config = confParse.Configurator("sh_8x8.py")
         config.loadSimParams() 
@@ -67,7 +67,7 @@ except ImportError:
     try:
         import pyfits as fits
     except ImportError:
-        raise ImportError("pyAOS requires either pyfits or astropy")
+        raise ImportError("soapy requires either pyfits or astropy")
 
 try:
     xrange
@@ -78,7 +78,7 @@ class atmos:
     '''
     Class to simulate atmosphere above an AO system.
 
-    On initialisation of the object, new phase screens can be created, or others loaded from ``.fits`` file. The atmosphere is created with parameters given in ``simConfig`` and ``atmosConfig``. These are pyAOS configuration objects, which can be created by the :ref:``confParse`` module, or could be created manually. If created manually, check the :ref: ``confParse`` section to see which attributes the configuration objects must contain.
+    On initialisation of the object, new phase screens can be created, or others loaded from ``.fits`` file. The atmosphere is created with parameters given in ``simConfig`` and ``atmosConfig``. These are soapy configuration objects, which can be created by the :ref:``confParse`` module, or could be created manually. If created manually, check the :ref: ``confParse`` section to see which attributes the configuration objects must contain.
 
     If loaded from file, the screens should have a header with the parameter ``R0`` specifying the r0 fried parameter of the screen in pixels.
 

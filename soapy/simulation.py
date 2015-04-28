@@ -3,24 +3,24 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 
 '''
-The main pyAOS Simulation module
+The main Soapy Simulation module
 
 This module contains the ``Sim`` class, which can be used to run an end-to-end simulation. Initally, a configuration file is read, the system is initialised, interaction and command matrices calculated and finally a loop run. The simulation outputs some information to the console during the simulation.
 
@@ -30,8 +30,8 @@ Examples:
     
     To initialise the class::
 
-        import pyAOS
-        sim = pyAOS.Sim("sh_8x8_4.2m.py")
+        import soapy
+        sim = soapy.Sim("sh_8x8_4.2m.py")
 
     Configuration information has now been loaded, and can be accessed through the ``config`` attribute of the ``sim`` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
 
@@ -85,7 +85,7 @@ except ImportError:
     try:
         import pyfits as fits
     except ImportError:
-        raise ImportError("pyAOS requires either pyfits or astropy")
+        raise ImportError("soapy requires either pyfits or astropy")
 
 
 #xrange now just "range" in python3.
@@ -98,7 +98,7 @@ except NameError:
 
 class Sim(object):
     """
-    The pyAOS Simulation class.
+    The soapy Simulation class.
 
     This class holds all configuration information, data and control
     methods of the simulation. It contains high level methods dealing with
@@ -780,9 +780,9 @@ class Sim(object):
 
     def addToGuiQueue(self):
         """
-        Adds data to a Queue object provided by the pyAOS GUI.
+        Adds data to a Queue object provided by the soapy GUI.
 
-        The pyAOS GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
+        The soapy GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
         """
 
         if self.guiQueue!=None:
