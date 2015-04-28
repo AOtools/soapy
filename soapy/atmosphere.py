@@ -86,7 +86,7 @@ class atmos:
 
     The method ``randomScrns`` returns a set of random phase screens with the smame statistics as the ``atmos`` object.
     '''
-    def __init__(self, simConfig, atmosConfig):
+    def __init__(self, simConfig, atmosConfig, mpPool=None):
 
         self.scrnSize = simConfig.scrnSize
         self.windDirs = atmosConfig.windDirs
@@ -96,6 +96,10 @@ class atmos:
         self.scrnNo = atmosConfig.scrnNo
         self.r0 = atmosConfig.r0
         self.looptime = simConfig.loopTime
+
+        self.mpPool = mpPool
+
+        self.atmosConfig = atmosConfig
 
         atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths, 
                 dtype="float32")
@@ -295,31 +299,56 @@ class atmos:
 
         return scrns
 
-    def randomScrns(self, subharmonics=True, L0=30., l0=0.01):
+    def randomScrns(self, subharmonics=True):
         """
-        Generated random phase screens defined by the atmosphere object parameters.
+        Generated random phase screens defined by the atmosphere 
+        object parameters.
 
         Returns:
             dict : a dictionary containing the new set of phase screens
         """
 
         scrns = {}
-        for i in xrange(self.scrnNo):
-            if subharmonics:
-                scrns[i] = ft_sh_phase_screen(
-                        self.scrnStrengths[i], self.scrnSize, 
-                        (self.pxlScale**(-1.)), L0, l0)
+        args = []
+    
+        #If no MP pool, just make screen sequentialy. 
+        if self.mpPool == None:
+            for i in xrange(self.scrnNo):
+                if subharmonics:
+                    scrns[i] = ft_sh_phase_screen(
+                            self.scrnStrengths[i], self.scrnSize, 
+                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
+                            0.01)
+                else:
+                    scrns[i] = ft_phase_screen(
+                            self.scrnStrengths[i], self.scrnSize, 
+                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i], 
+                            0.01)
 
-        # pool = Pool(2)
-        # args = []
-        # for i in xrange(self.scrnNo):
-        #     args.append((self.scrnStrengths[i], self.scrnSize, 
-        #                 self.pxlScale**(-1.), L0, l0))
+        #If there is a pool, use it
+        else:
+            if subharmonics: 
+                for i in range(self.scrnNo):
+                    args.append( 
+                            (ft_sh_phase_screen,  self.scrnStrengths[i], 
+                            self.scrnSize, (self.pxlScale**(-1.)), 
+                            self.atmosConfig.L0[i], 0.01))
+            
+            else:
+                for i in range(self.scrnNo):
 
-
-        # scrns = pool.map(pool_ft_sh_phase_screen, args)
+                    args.append( 
+                            (ft_phase_screen,  self.scrnStrengths[i], 
+                            self.scrnSize, (self.pxlScale**(-1.)), 
+                            self.atmosConfig.L0[i], 0.01))
+            
+            #Do the calculation using the multi-process pool, put into dict
+            s = self.mpPool.map(mpWrap, args)
+            for i in range(self.scrnNo):
+                scrns[i] = s[i]
 
         return scrns
+
 
 
 #Commented as not used - apr 14-04-2015
@@ -631,3 +660,24 @@ def ft_phase_screen(r0, N, delta, L0, l0, FFT=None):
     phs = ift2(cn,1, FFT).real
 
     return phs
+
+
+def mpWrap(args):
+    """
+    A helper to run python MP pool functions
+
+    Using the native python MP pool.map, it is not possible to pass multiple 
+    args. If all args are passed to this helper function as a tuple, with the 
+    function itself as the first item, it will run it with the unpacked args
+    and return the result.
+
+    Parameters:
+        args (tuple): A tuple, with the first item the desired function and the rest the function args
+
+    Returns:
+        Whatever the function would have returned
+    """
+
+    func = args[0]
+    args = args[1:]
+    return func(*args)

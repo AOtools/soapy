@@ -772,11 +772,17 @@ class ShackHartmann(WFS):
             self.wfsConfig.referenceImage = numpy.zeros((self.activeSubaps,
                     self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap))
             for i in range(self.activeSubaps):
+<<<<<<< HEAD
+                self.wfsConfig.referenceImage[i] = rawRef[self.detectorSubapCoords[i, 0]:self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
+                        self.detectorSubapCoords[i, 1]:self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+            
+=======
                 self.wfsConfig.referenceImage[i] = rawRef[
                         self.detectorSubapCoords[i, 0]:
                         self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
                         self.detectorSubapCoords[i, 1]:
                         self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+>>>>>>> master
 
     def findActiveSubaps(self):
         '''
@@ -995,8 +1001,13 @@ class ShackHartmann(WFS):
         self.scaledEField*=self.scaledMask
         #Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.) 
+<<<<<<< HEAD:soapy/WFS.py
                 - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
         self.scaledEField = self.scaledEField[coord:-coord, coord:-coord]
+=======
+                - (self.wfsConfig.subaps*self.subapFOVSpacing)/2.)))
+        self.pupilEField = self.scaledEField[coord:-coord, coord:-coord]
+>>>>>>> ExtendedSource:pyAOS/WFS.py
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
