@@ -1,0 +1,22 @@
+#0.8.1
+-Some bugs fixed with WFSs
+
+-Made it easier to change shack-hartmann WFS centroider. Add new centroider to pyaos/tool/centroiders.py, then use the function name in the config file -- the simulation will now use the new centroider
+
+-continued adding to docs and tests
+
+#0.8.0
+-`simSize` is now defined, which is the size of phase arrays to be passed around. This is currently sized at 1.2 x pupilSize, though this can be altered, and eliminates any edge effects which used to appear when interpolating near edges. This broke lots of things, which I think have all been fixed. If any exceptions which feature simSize or pupilSize occur, they could be caused by his change and if reported should be quickly fixed. Now, phase from DMs and the expected correction given to WFSs should be of shape `config.sim.simSize`, rather than `config.sim.pupilSize` as previously.
+
+-A major bug in scaling phase for r0 has been fixed, which caused a big degradation in AO performance. AO Performance now matched YAO well for single NGS cases.
+
+-A correlation centroiding method has been added by new contributor @mathewtownson
+
+-Unit testing has begun to be integrated into the simulation, with the eventual aim of test driven development. Currently, the tests are system tests which run the entire simulation in a variety of configurations. More atomic testing will continue to be added.
+
+-Documentation has been updated and is getting to the point where all existing code structures are explained. The target of the Docs will now turn to more explanatory stuff, such as a tutorial, and how to extract Data from a simulation run.
+
+-Various arrays in the WFS module now use circular NumPy buffers to avoid excessive data array creation.
+
+###Numba Branch
+Due to all the code using either pure python or NumPy or SciPy routines, the code is currently not competitive performance wise with other AO codes. To address this shortcoming, we've begun to develop a version of the code with performance critical sections accelerated using Numba, a free library which uses LLVM to compile pure python to machine code. This branch can be accessed through git and is kept up to date with the master branch, Numba is included with the Anaconda python distribution, or can be installed seperately, though it requires LLVM 3.5 to also be installed. Early results are very promising, showing over twice speed-ups for lots of applications.
