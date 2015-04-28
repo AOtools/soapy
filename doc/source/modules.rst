@@ -1,4 +1,4 @@
-pyAOS
+Soapy
 =====
 
 .. toctree::
