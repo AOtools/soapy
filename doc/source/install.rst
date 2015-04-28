@@ -6,28 +6,28 @@ Firstly, you'll need Python. This comes with pretty much every linux distributio
 ============
 Installation
 ============
-Once all the requirements outlined below are met, you are ready to install PyAOS. Download the source from `github <https://github.com/andrewpaulreeves/pyAOS>`_, either as a zip file, or clone the git repository with::
+Once all the requirements outlined below are met, you are ready to install Soapy. Download the source from `github <https://github.com/andrewpaulreeves/soapy>`_, either as a zip file, or clone the git repository with::
 
-    git clone https://github.com/andrewpaulreeves/pyAOS.git
+    git clone https://github.com/andrewpaulreeves/soapy.git
 
 If downloading the code as a zip, you can choose which version to use with the drop down box on the left of the page, entitled ``branch:master``. Whilst I try not to, the master branch will occasionally be broken so you might want to get the latest stable version by clicking "tags" in the dropdown list, and selecting the most recent version number.
 
-Once the code is downloaded (and unzipped) or cloned, navigate to the resulting directory using the command line. You can import it into python straight away from this directory. To use the ``pyAOS`` script, run::
+Once the code is downloaded (and unzipped) or cloned, navigate to the resulting directory using the command line. You can import it into python straight away from this directory. To use the ``soapy`` script, run::
 
-    python pyAOS <options> <configfile>
+    python soapy <options> <configfile>
 
 
-If you wish to have it available elsewhere on your system, either set the relavant ``PATH`` and ``PYTHONPATH`` variables to ``<pyAOS dir>/bin`` and ``<pyAOS dir>/pyAOS`` respectively, or run the install script with::
+If you wish to have it available elsewhere on your system, either set the relavant ``PATH`` and ``PYTHONPATH`` variables to ``<soapy dir>/bin`` and ``<soapy dir>/soapy`` respectively, or run the install script with::
 
     python setup.py install
 
-This latter method may require superuser permissions for your system and should setup the paths for you. You should now be able to run ``pyAOS`` and import pyAOS into python from any directory on your system.
+This latter method may require superuser permissions for your system and should setup the paths for you. You should now be able to run ``soapy`` and import soapy into python from any directory on your system.
 
 ==================
 Required Libraries
 ==================
 
-pyAOS doesn't have too many requirements in terms of external libraries, though it does rely on some. There are also some optional libraries which are recommended for plotting or performance.
+soapy doesn't have too many requirements in terms of external libraries, though it does rely on some. There are also some optional libraries which are recommended for plotting or performance.
 
 --------
 Required
@@ -90,7 +90,7 @@ For any OS, including Windows, python distributions exist which include lots of 
 
 A lot of python packages are also listed on `pypi <https://pypi.python.org/pypi>`_. Usually when python is installed, a script called ``easy_install`` is installed also, which can be used to get any package on pypi with ``easy_install <package>``. Confusingly, ``pip`` is now the recommended Python package manager instead of ``easy_install``. If you've only got ``easy_install`` you can install ``pip`` using ``easy_install pip``, or it can be installed using the script linked `here <https://pip.readthedocs.org/en/latest/installing.html>`_.
 
-Once you have ``pip``, the required libraries can be installed by using the ``requirements.txt`` file. From the pyAOS directory, just run (may need to be as ``sudo``)::
+Once you have ``pip``, the required libraries can be installed by using the ``requirements.txt`` file. From the soapy directory, just run (may need to be as ``sudo``)::
 
     pip -r requirements.txt
     
@@ -103,4 +103,4 @@ Once you think everything is installed, tests can be run by navigating to the ``
     
     python testSimulation.py
 
-Currently, this only runs system wide tests, but further, more atomic tests will be added in future. To run the tests, pyAOS must be either "installed", or manually put into the PYTHONPATH.
+Currently, this only runs system wide tests, but further, more atomic tests will be added in future. To run the tests, soapy must be either "installed", or manually put into the PYTHONPATH.

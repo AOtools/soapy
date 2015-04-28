@@ -5,16 +5,16 @@ Wave-front Sensors
 ==========
 WFS Module
 ==========
-.. automodule:: pyAOS.WFS
+.. automodule:: soapy.WFS
 
 Base WFS Class
 ==============
 
-.. autoclass:: pyAOS.WFS.WFS
+.. autoclass:: soapy.WFS.WFS
     :members:
 
-.. autoclass:: pyAOS.WFS.ShackHartmann
+.. autoclass:: soapy.WFS.ShackHartmann
     :members:
 
-.. autoclass:: pyAOS.WFS.Pyramid
+.. autoclass:: soapy.WFS.Pyramid
     :members:

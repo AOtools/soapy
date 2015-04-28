@@ -1,19 +1,19 @@
 **********
 Atmosphere
 **********
-.. automodule:: pyAOS.atmosphere
+.. automodule:: soapy.atmosphere
 
 Atmosphere Class
 ================
-.. autoclass:: pyAOS.atmosphere.atmos
+.. autoclass:: soapy.atmosphere.atmos
     :members:
 
 Phase Screen Creation and Saving
 ================================
-.. autofunction:: pyAOS.atmosphere.makePhaseScreens
+.. autofunction:: soapy.atmosphere.makePhaseScreens
 
-.. autofunction:: pyAOS.atmosphere.ft_phase_screen
+.. autofunction:: soapy.atmosphere.ft_phase_screen
 
-.. autofunction:: pyAOS.atmosphere.ft_sh_phase_screen
+.. autofunction:: soapy.atmosphere.ft_sh_phase_screen
 
 

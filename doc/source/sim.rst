@@ -5,7 +5,7 @@ Simulation
 
 High level interface to run and examine a simulation
 
-.. automodule:: pyAOS.simulation
+.. automodule:: soapy.simulation
     :members:
     :undoc-members:
     :show-inheritance:
