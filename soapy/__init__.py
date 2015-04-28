@@ -23,3 +23,9 @@ __version__ = get_versions()['version']
 del get_versions
 
 from simulation import Sim
+
+#Try to import GUI, if not then its ok
+try: 
+    from . import gui
+except ImportError:
+    pass
