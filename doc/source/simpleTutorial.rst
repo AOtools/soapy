@@ -8,3 +8,22 @@ Running an Example Configuration
 --------------------------------
 
 Before making new configuration files though, its a pretty good idea to make sure everything is working as expected by running one of the examples. First, lets create a directory where we do this tutorial, call it something like ``soapy_tutorial``, make a further directory called ``conf`` inside and copy the example configuration file ``sh_8x8.py`` form the downloaded or cloned Soapy directory into it.
+
+To open the Graphical User Interface (GUI), type in the command line::
+    
+    soapy --gui conf/sh_8x8.py
+
+This relies on ``soapy`` being in you're ``PATH``. If thats not the case, run::
+
+    python <path/to/soapy>/bin/soapy --gui conf/sh8x8.py
+    
+If you don't want to run the GUI, then open a python terminal and run::
+
+    import soapy
+    sim = soapy.Sim("conf/sh8x8.py")
+
+Before the simulation can be started, some initialisation routines must be run. If running the GUI, then this will automatically when you start it up. In the command line, to initialise run::
+
+    sim.aoinit()
+
+Next, the interaction matrixes between the DMs and the WFSs
