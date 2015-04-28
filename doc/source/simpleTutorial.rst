@@ -7,3 +7,4 @@ This tutorial will go through some example AO systems using Soapy. We'll see how
 Running an Example Configuration
 --------------------------------
 
+Before making new configuration files though, its a pretty good idea to make sure everything is working as expected by running one of the examples. First, lets create a directory where we do this tutorial, call it something like ``soapy_tutorial``, make a further directory called ``conf`` inside and copy the example configuration file ``sh_8x8.py`` form the downloaded or cloned Soapy directory into it.
