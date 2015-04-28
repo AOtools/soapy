@@ -643,9 +643,9 @@ class DmConfig(ConfigObj):
     Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a DM. Any entries above ``sim.nDM`` will be ignored.
 
     Required:
-        ==================      ============================================
+        ===================     ===============================================
         **Parameter**           **Description** 
-        ------------------      --------------------------------------------
+        -------------------     -----------------------------------------------
         ``type``                string: Type of DM. This must the name of a 
                                 class in the ``DM`` module.
         ``nxActuators``         int: Number independent DM shapes. e.g., for 
@@ -655,11 +655,9 @@ class DmConfig(ConfigObj):
                                 modes.
         ``gain``                float: The loop gain for the DM      
         ``svdConditioning``     float: The conditioning parameter used in the 
-                                pseudo inverse of the interaction matrix. this
-                                is performed by 
-                                `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
-
-        ==================      ============================================
+                                pseudo inverse of the interaction matrix. This
+                                is performed by `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
+        ===================     ===============================================
 
     Optional:
         ==================== =================================   ===========
