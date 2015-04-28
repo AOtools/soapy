@@ -58,4 +58,7 @@ target/
 *.un~
 *.swo
 
+# Any backups
+*_bkup
+
 *.DS_Store
