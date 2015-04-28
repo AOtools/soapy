@@ -1,7 +1,7 @@
-pyAOS
+Soapy
 =====
 
 .. toctree::
    :maxdepth: 4
 
-   pyAOS
+   soapy

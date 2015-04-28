@@ -1,20 +1,20 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
 import scipy
@@ -31,7 +31,7 @@ except ImportError:
     try:
         import pyfits as fits
     except ImportError:
-        raise ImportError("pyAOS requires either pyfits or astropy")
+        raise ImportError("soapy requires either pyfits or astropy")
 
 #xrange now just "range" in python3. 
 #Following code means fastest implementation used in 2 and 3
@@ -54,9 +54,9 @@ class Reconstructor(object):
         self.dmConds = []
         self.dmTypes = []
         for dm in xrange(self.simConfig.nDM):
-            self.dmActs.append(self.dms[dm].dmConfig.dmActs)
-            self.dmConds.append(self.dms[dm].dmConfig.dmCond)
-            self.dmTypes.append(self.dms[dm].dmConfig.dmType)
+            self.dmActs.append(self.dms[dm].dmConfig.nxActuators)
+            self.dmConds.append(self.dms[dm].dmConfig.svdConditioning)
+            self.dmTypes.append(self.dms[dm].dmConfig.type)
 
         self.dmConds = numpy.array(self.dmConds)
         self.dmActs = numpy.array(self.dmActs)
@@ -80,7 +80,7 @@ class Reconstructor(object):
         self.controlShape = (self.simConfig.totalWfsData, self.simConfig.totalActs)
 
     def saveCMat(self):
-        filename = self.simConfig.filePrefix+"/cMat.fits"
+        filename = self.simConfig.simName+"/cMat.fits"
         
         cMatHDU = fits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
@@ -92,7 +92,7 @@ class Reconstructor(object):
 
     def loadCMat(self):
         
-        filename=self.simConfig.filePrefix+"/cMat.fits"
+        filename=self.simConfig.simName+"/cMat.fits"
         
         cMatHDU = fits.open(filename)[0]
         cMatHDU.verify("fix")
@@ -129,8 +129,8 @@ class Reconstructor(object):
     def saveIMat(self):
 
         for dm in xrange(self.simConfig.nDM):
-            filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
-            filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
+            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits"%dm
+            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits"%dm
             
             fits.PrimaryHDU(self.dms[dm].iMat).writeto(filenameIMat,
                                                         clobber=True)
@@ -141,8 +141,8 @@ class Reconstructor(object):
     def loadIMat(self):
         
         for dm in xrange(self.simConfig.nDM):
-            filenameIMat = self.simConfig.filePrefix+"/iMat_dm%d.fits"%dm
-            filenameShapes = self.simConfig.filePrefix+"/dmShapes_dm%d.fits"%dm
+            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits"%dm
+            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits"%dm
             
             iMat = fits.open(filenameIMat)[0].data
             iMatShapes = fits.open(filenameShapes)[0].data
@@ -224,9 +224,9 @@ class MVM(Reconstructor):
             acts+=self.dms[dm].acts
         
         logger.info("Invert iMat with cond: {}".format(
-                self.dms[dm].dmConfig.dmCond))
+                self.dms[dm].dmConfig.svdConditioning))
         self.controlMatrix = scipy.linalg.pinv(
-                self.iMat, self.dms[dm].dmConfig.dmCond
+                self.iMat, self.dms[dm].dmConfig.svdConditioning
                 )
             
 
@@ -254,7 +254,7 @@ class MVM_SeparateDMs(Reconstructor):
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
                 dmCMat = scipy.linalg.pinv( dmIMat,
-                                            self.dms[dm].dmConfig.dmCond)
+                                            self.dms[dm].dmConfig.svdConditioning)
 
             self.controlMatrix[
                     self.dms[dm].wfss[0].wfsConfig.dataStart:
@@ -273,7 +273,7 @@ class MVM_SeparateDMs(Reconstructor):
         the responsibility of other WFSs depending on the config file.
         """
         
-        if self.dms[0].dmConfig.dmType=="TT":
+        if self.dms[0].dmConfig.type=="TT":
             ttMean = slopes[self.dms[0].wfs.wfsConfig.dataStart:
                             (self.dms[0].wfs.activeSubaps*2
                                 +self.dms[0].wfs.wfsConfig.dataStart)
@@ -314,8 +314,8 @@ class LearnAndApply(Reconstructor):
     '''
 
     def saveCMat(self):
-        cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
-        tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        cMatFilename = self.simConfig.simName+"/cMat.fits"
+        tomoMatFilename = self.simConfig.simName+"/tomoMat.fits"
 
         cMatHDU = fits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
@@ -333,7 +333,7 @@ class LearnAndApply(Reconstructor):
         super(LearnAndApply, self).loadCMat()
 
         #Load tomo reconstructor
-        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        tomoFilename = self.simConfig.simName+"/tomoMat.fits"
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
@@ -374,9 +374,9 @@ class LearnAndApply(Reconstructor):
                progressCallback("Performing Learn", i, self.learnIters ) 
             
         if self.simConfig.saveLearn:
-            #FITS.Write(self.learnSlopes,self.simConfig.filePrefix+"/learn.fits")
+            #FITS.Write(self.learnSlopes,self.simConfig.simName+"/learn.fits")
             fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.filePrefix+"/learn.fits",clobber=True )
+                            self.simConfig.simName+"/learn.fits",clobber=True )
 
 
     def calcCMat(self,callback=None, progressCallback=None):
@@ -412,7 +412,7 @@ class LearnAndApply(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.svdConditioning)
             
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
@@ -436,7 +436,7 @@ class LearnAndApply(Reconstructor):
         #Retreive pseudo on-axis slopes from tomo reconstructor
         slopes = self.tomoRecon.dot(slopes[2*self.wfss[0].activeSubaps:])
 
-        if self.dms[0].dmConfig.dmType=="TT":
+        if self.dms[0].dmConfig.type=="TT":
             ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
             slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
@@ -463,8 +463,8 @@ class LearnAndApplyLTAO(Reconstructor):
     '''
 
     def saveCMat(self):
-        cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
-        tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        cMatFilename = self.simConfig.simName+"/cMat.fits"
+        tomoMatFilename = self.simConfig.simName+"/tomoMat.fits"
 
         cMatHDU = fits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
@@ -482,7 +482,7 @@ class LearnAndApplyLTAO(Reconstructor):
         super(LearnAndApply, self).loadCMat()
 
         #Load tomo reconstructor
-        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        tomoFilename = self.simConfig.simName+"/tomoMat.fits"
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
@@ -523,9 +523,9 @@ class LearnAndApplyLTAO(Reconstructor):
                progressCallback("Performing Learn", i, self.learnIters ) 
             
         if self.simConfig.saveLearn:
-            #FITS.Write(self.learnSlopes,self.simConfig.filePrefix+"/learn.fits")
+            #FITS.Write(self.learnSlopes,self.simConfig.simName+"/learn.fits")
             fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.filePrefix+"/learn.fits",clobber=True )
+                            self.simConfig.simName+"/learn.fits",clobber=True )
 
 
     def calcCMat(self,callback=None, progressCallback=None):
@@ -561,7 +561,7 @@ class LearnAndApplyLTAO(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.dmCond)
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.svdConditioning)
             
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
@@ -600,7 +600,7 @@ class LearnAndApplyLTAO(Reconstructor):
         hoCommands = self.controlMatrix[
                 self.wfss[1].wfsConfig.dataStart:,2:].T.dot(slopes_HO)
 
-        #if self.dms[0].dmConfig.dmType=="TT":
+        #if self.dms[0].dmConfig.type=="TT":
         #    ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
         #    ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
         #    slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
@@ -711,12 +711,12 @@ class WooferTweeter(Reconstructor):
         for dm in xrange(self.simConfig.nDM):
             dmIMat = self.dms[dm].iMat
            
-            logger.info("Invert DM {} IMat with conditioning:{}".format(dm,self.dms[dm].dmConfig.dmCond))
+            logger.info("Invert DM {} IMat with conditioning:{}".format(dm,self.dms[dm].dmConfig.svdConditioning))
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.linalg.pinv(dmIMat)
             else:
                 dmCMat = numpy.linalg.pinv(
-                                    dmIMat, self.dms[dm].dmConfig.dmCond)
+                                    dmIMat, self.dms[dm].dmConfig.svdConditioning)
             
             #if dm != self.simConfig.nDM-1:
             #    self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
@@ -752,8 +752,8 @@ class LgsTT(MVM):
     """
     
     def saveCMat(self):
-        cMatFilename = self.simConfig.filePrefix+"/cMat.fits"
-        tomoMatFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        cMatFilename = self.simConfig.simName+"/cMat.fits"
+        tomoMatFilename = self.simConfig.simName+"/tomoMat.fits"
 
         cMatHDU = fits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
@@ -771,7 +771,7 @@ class LgsTT(MVM):
         super(LgsTT, self).loadCMat()
 
         #Load tomo reconstructor
-        tomoFilename = self.simConfig.filePrefix+"/tomoMat.fits"
+        tomoFilename = self.simConfig.simName+"/tomoMat.fits"
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
@@ -817,7 +817,7 @@ class LgsTT(MVM):
 
         if self.simConfig.saveLearn:
             fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.filePrefix+"/learn.fits",
+                            self.simConfig.simName+"/learn.fits",
                             clobber=True )
 
 

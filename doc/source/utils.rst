@@ -3,43 +3,43 @@ Utilities
 
 Modules containing some functions and classes commonly used throughout the simulation.
 
-pyAOS.logger module
+soapy.logger module
 -------------------
 
-.. automodule:: pyAOS.logger
+.. automodule:: soapy.logger
     :members:
     :undoc-members:
     :show-inheritance:
 
-pyAOS.AOFFT module
+soapy.AOFFT module
 ------------------
 
-.. automodule:: pyAOS.AOFFT
+.. automodule:: soapy.AOFFT
     :members:
     :undoc-members:
     :show-inheritance:
 
-pyAOS.aoSimLib module
+soapy.aoSimLib module
 ---------------------
 
-.. automodule:: pyAOS.aoSimLib
+.. automodule:: soapy.aoSimLib
     :members:
     :undoc-members:
     :show-inheritance:
 
 
-pyAOS.opticalPropagationLib module
+soapy.opticalPropagationLib module
 ----------------------------------
 
-.. automodule:: pyAOS.opticalPropagationLib
+.. automodule:: soapy.opticalPropagationLib
     :members:
     :undoc-members:
     :show-inheritance:
 
-pyAOS.confParse module
+soapy.confParse module
 ----------------------
 
-.. automodule:: pyAOS.confParse
+.. automodule:: soapy.confParse
     :noindex:
     :members:
     :undoc-members:

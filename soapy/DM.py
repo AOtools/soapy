@@ -1,26 +1,26 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 """
-The module simulating Deformable Mirrors in PyAOS
+The module simulating Deformable Mirrors in Soapy
 
-DMs in PyAOS
+DMs in Soapy
 ============
-DMs are represented in PyAOS by python objects which are initialised at startup
+DMs are represented in Soapy by python objects which are initialised at startup
 with some configuration parameters given, as well as a list of one or more
 WFS objects which can be used to measure an interaction matrix.
 
@@ -87,7 +87,7 @@ class DM:
         
         #find the total number of WFS subaps, and make imat
         #placeholder
-        print(self.wfss)
+        #print(self.wfss)
         self.totalSubaps = 0
         for nWfs in range(len(self.wfss)):
             self.totalSubaps += self.wfss[nWfs].activeSubaps 
@@ -100,7 +100,7 @@ class DM:
         Returns:
             int: number of active DM actuators
         """
-        return self.dmConfig.dmActs
+        return self.dmConfig.nxActuators
 
     def makeIMat(self, callback=None):
         '''
@@ -128,7 +128,6 @@ class DM:
                    order=self.dmConfig.interpOrder, axes=(-2,-1)
                    )
            rotShape = self.iMatShapes.shape
-
            self.iMatShapes = self.iMatShapes[:,
                    rotShape[1]/2. - self.simConfig.simSize/2.:
                    rotShape[1]/2. + self.simConfig.simSize/2.,
@@ -136,21 +135,16 @@ class DM:
                    rotShape[2]/2. + self.simConfig.simSize/2.
                    ]
 
-
         iMat = numpy.zeros( (self.iMatShapes.shape[0], 2*self.totalSubaps) )
-        subap=0
-        
-        for nWfs in range(len(self.wfss)):
-            for i in xrange(self.iMatShapes.shape[0]):
+        for i in xrange(self.iMatShapes.shape[0]):
+            subap=0 
+            for nWfs in range(len(self.wfss)):
                 
                 logger.debug("subap: {}".format(subap))
-                iMat[i,subap:subap+(2*self.wfss[nWfs].activeSubaps)] =(
+                iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        self.wfss[nWfs].frame( 
                                 self.iMatShapes[i], iMatFrame=True
-                                #*self.dmConfig.iMatValue)
-                       #/self.dmConfig.iMatValue
                        ))
-                
                 
                 self.dmShape = self.iMatShapes[i]
 
@@ -160,7 +154,7 @@ class DM:
                 logger.statusMessage(i, self.iMatShapes.shape[0],
                         "Generating {} Actuator DM iMat".format(self.acts))
             
-            subap += 2*self.wfss[nWfs].activeSubaps
+                subap += 2*self.wfss[nWfs].activeSubaps
 
         self.iMat = iMat
         return iMat
@@ -242,7 +236,7 @@ class Piezo(DM):
         reconstructing for redundant actuators.
         """
         activeActs = []
-        xActs = int(numpy.round(numpy.sqrt(self.dmConfig.dmActs)))
+        xActs = self.dmConfig.nxActuators
         self.spcing = self.simConfig.pupilSize/float(xActs)
 
         for x in xrange(xActs):
@@ -326,7 +320,7 @@ class GaussStack(Piezo):
         shapes = numpy.zeros((
                 self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize))
     
-        actSpacing = self.simConfig.pupilSize/(numpy.sqrt(self.dmConfig.dmActs)-1)
+        actSpacing = self.simConfig.pupilSize/(self.dmConfig.nxActuators-1)
         width = actSpacing/2.
 
         for i in xrange(self.acts):

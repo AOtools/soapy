@@ -1,20 +1,20 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
 
@@ -52,13 +52,13 @@ class scienceCam:
                 ).astype("float32")
 
         #Init FFT object
-        self.FFTPadding = self.sciConfig.pxls * self.sciConfig.oversamp
+        self.FFTPadding = self.sciConfig.pxls * self.sciConfig.fftOversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding<self.FOVPxlNo:
-                self.sciConfig.oversamp+=1
+                self.sciConfig.fftOversamp+=1
                 self.FFTPadding\
-                        =self.sciConfig.pxls*self.sciConfig.oversamp
-            logger.info("SCI FFT Padding less than FOV size... Setting oversampling to %d"%self.sciConfig.oversamp)
+                        =self.sciConfig.pxls*self.sciConfig.fftOversamp
+            logger.info("SCI FFT Padding less than FOV size... Setting oversampling to %d"%self.sciConfig.fftOversamp)
 
 
         self.FFT = AOFFT.FFT(inputSize=(self.FFTPadding,self.FFTPadding),
@@ -77,7 +77,7 @@ class scienceCam:
         #                                    =(numpy.exp(1j*self.scaledMask)
         #                                            *self.scaledMask)
         #fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        #binFp = aoSimLib.binImgs(fp, self.sciConfig.oversamp)
+        #binFp = aoSimLib.binImgs(fp, self.sciConfig.fftOversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,)*2)
         self.phsBuffer = numpy.zeros((self.padFOVPxlNo,)*2)
         self.calcFocalPlane()
@@ -219,7 +219,7 @@ class scienceCam:
         focalPlane = aoSimLib.absSquare(focalPlane)
 
         self.focalPlane = aoSimLib.binImgs( 
-                focalPlane , self.sciConfig.oversamp )
+                focalPlane , self.sciConfig.fftOversamp )
 
     def frame(self, scrns, phaseCorrection=None):
 

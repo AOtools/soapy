@@ -1,4 +1,4 @@
-from pyAOS import confParse, WFS, aoSimLib
+from soapy import confParse, WFS, aoSimLib
 import unittest
 import numpy
 
@@ -12,7 +12,7 @@ class TestWfs(unittest.TestCase):
         
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.WFS(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+        wfs = WFS.WFS(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
             
 
     def testb_wfsFrame(self):
@@ -20,7 +20,7 @@ class TestWfs(unittest.TestCase):
         config.loadSimParams()
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.WFS(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+        wfs = WFS.WFS(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
 
         wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
@@ -32,14 +32,14 @@ class TestWfs(unittest.TestCase):
         
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
 
     def testd_SHWfsFrame(self):
         config = confParse.Configurator("../conf/sh_8x8.py")
         config.loadSimParams()
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
 
         wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
@@ -49,14 +49,14 @@ class TestWfs(unittest.TestCase):
         
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.Pyramid(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+        wfs = WFS.Pyramid(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
 
     def testf_PyrWfsFrame(self):
         config = confParse.Configurator("../conf/sh_8x8.py")
         config.loadSimParams()
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.Pyramid(config.sim, config.wfs[0], config.atmos, config.lgs[0], mask)
+        wfs = WFS.Pyramid(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
 
         wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
 

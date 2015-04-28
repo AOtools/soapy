@@ -14,8 +14,8 @@ git_full = "$Format:%H$"
 
 # these strings are filled in when 'setup.py versioneer' creates _version.py
 tag_prefix = ""
-parentdir_prefix = "pyAOS-"
-versionfile_source = "pyAOS/_version.py"
+parentdir_prefix = "soapy-"
+versionfile_source = "soapy/_version.py"
 
 import os, sys, re, subprocess, errno
 

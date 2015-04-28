@@ -3,24 +3,24 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 
 '''
-The main pyAOS Simulation module
+The main Soapy Simulation module
 
 This module contains the ``Sim`` class, which can be used to run an end-to-end simulation. Initally, a configuration file is read, the system is initialised, interaction and command matrices calculated and finally a loop run. The simulation outputs some information to the console during the simulation.
 
@@ -30,19 +30,19 @@ Examples:
     
     To initialise the class::
 
-        import pyAOS
-        sim = pyAOS.Sim("sh_8x8_4.2m.py")
+        import soapy
+        sim = soapy.Sim("sh_8x8_4.2m.py")
 
     Configuration information has now been loaded, and can be accessed through the ``config`` attribute of the ``sim`` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
 
         print(sim.config.sim.pupilSize)
-        sim.config.wfs[0].pxlsPerSubap = 10
+        sim.config.wfss[0].pxlsPerSubap = 10
 
     Next, the system is initialised, this entails calculating various parameters in the system sub-modules, so must be done after changing some simulation parameters::
 
         sim.aoinit()
 
-    DM Interation and command matrices are calculated now. If ``sim.config.sim.filePrefix`` is not ``None``, then these matrices will be saved in ``data/filePrefix`` (data will be saved here also in a time-stamped directory)::
+    DM Interation and command matrices are calculated now. If ``sim.config.sim.simName`` is not ``None``, then these matrices will be saved in ``data/simName`` (data will be saved here also in a time-stamped directory)::
 
         sim.makeIMat()
 
@@ -51,7 +51,7 @@ Examples:
 
         sim.aoloop()
 
-    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/filePrefix`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes``, ``sim.longStrehl``
+    Some output will be printed to the console. After the loop has finished, data specified to be saved in the config file will be saved to ``data/simName`` (if it is not set to ``None``). Data can also be accessed from the simulation class, e.g. ``sim.allSlopes``, ``sim.longStrehl``
 
 
 :Author:
@@ -85,7 +85,7 @@ except ImportError:
     try:
         import pyfits as fits
     except ImportError:
-        raise ImportError("pyAOS requires either pyfits or astropy")
+        raise ImportError("soapy requires either pyfits or astropy")
 
 
 #xrange now just "range" in python3.
@@ -98,7 +98,7 @@ except NameError:
 
 class Sim(object):
     """
-    The pyAOS Simulation class.
+    The soapy Simulation class.
 
     This class holds all configuration information, data and control
     methods of the simulation. It contains high level methods dealing with
@@ -181,9 +181,9 @@ class Sim(object):
         if self.config.tel.mask == "circle":
             self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
                                         self.config.sim.pupilSize)
-            if self.config.tel.obs!=None:
+            if self.config.tel.obsDiam!=None:
                 self.mask -= aoSimLib.circle(
-                        self.config.tel.obs*self.config.sim.pxlScale/2., 
+                        self.config.tel.obsDiam*self.config.sim.pxlScale/2., 
                         self.config.sim.pupilSize
                         )
         else:
@@ -200,7 +200,7 @@ class Sim(object):
 
             logger.info("Setting fftwThreads to 1 as WFS MP")
             for wfs in xrange(self.config.sim.nGS):
-                self.config.wfs[wfs].fftwThreads = 1
+                self.config.wfss[wfs].fftwThreads = 1
             self.runWfs = self.runWfs_MP
         else:
             self.runWfs = self.runWfs_noMP
@@ -212,16 +212,16 @@ class Sim(object):
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for wfs in xrange(self.config.sim.nGS):
             try:
-                wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
+                wfsClass = eval("WFS.{}".format(self.config.wfss[wfs].type))
             except AttributeError:
-                raise confParse.ConfigurationError("No WFS of type {} found.".format(self.config.wfs[wfs].type))
+                raise confParse.ConfigurationError("No WFS of type {} found.".format(self.config.wfss[wfs].type))
 
 
             self.wfss[wfs]=wfsClass(    
-                    self.config.sim, self.config.wfs[wfs], 
-                    self.config.atmos, self.config.lgs[wfs], self.mask)
+                    self.config.sim, self.config.wfss[wfs], 
+                    self.config.atmos, self.config.lgss[wfs], self.mask)
             
-            self.config.wfs[wfs].dataStart = self.config.sim.totalWfsData
+            self.config.wfss[wfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[wfs].activeSubaps*2
             
             logger.info("WFS {0}: {1} measurements".format(wfs,
@@ -239,12 +239,12 @@ class Sim(object):
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
-                dmObj = eval( "DM."+self.config.dm[dm].dmType)
+                dmObj = eval( "DM."+self.config.dms[dm].type)
             except AttributeError:
-                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dm[dm].dmType))
+                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
             self.dms[dm] = dmObj(
-                        self.config.sim, self.config.dm[dm],
+                        self.config.sim, self.config.dms[dm],
                         self.wfss, self.mask
                         )
 
@@ -275,10 +275,10 @@ class Sim(object):
         for sci in xrange(self.config.sim.nSci):
             self.sciCams[sci] = SCI.scienceCam( 
                         self.config.sim, self.config.tel, self.config.atmos,
-                        self.config.sci[sci], self.mask
+                        self.config.scis[sci], self.mask
                         )
 
-            self.sciImgs[sci] = numpy.zeros( [self.config.sci[sci].pxls]*2 )
+            self.sciImgs[sci] = numpy.zeros( [self.config.scis[sci].pxls]*2 )
 
 
         #Init data storage
@@ -315,7 +315,7 @@ class Sim(object):
         can load previous control and interaction matrices.
         
         Args:
-            forceNew (bool): if true, will force making of new iMats and cMats, otherwise will attempt to load previously made matrices from same filePrefix
+            forceNew (bool): if true, will force making of new iMats and cMats, otherwise will attempt to load previously made matrices from same simName
             progressCallback (func): function called to report progress of interaction matrix construction
         """
         t = time.time()
@@ -325,7 +325,7 @@ class Sim(object):
             loadIMat=False
             loadCMat=False
         else:
-            if self.config.sim.filePrefix==None:
+            if self.config.sim.simName==None:
                 loadIMat=False
                 loadCMat=False
             else:
@@ -370,7 +370,7 @@ class Sim(object):
             if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
-                        /self.config.wfs[wfs].exposureTime) 
+                        /self.config.wfss[wfs].exposureTime) 
                                         != self.wfsFrameNo[wfs]):
                     self.wfsFrameNo[wfs]+=1
                     read=True
@@ -424,7 +424,7 @@ class Sim(object):
             if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
-                        /self.config.wfs[wfs].exposureTime) 
+                        /self.config.wfss[wfs].exposureTime) 
                                         != self.wfsFrameNo[wfs]):
                     self.wfsFrameNo[wfs]+=1
                     read = True
@@ -473,7 +473,7 @@ class Sim(object):
         self.dmShape[:] = 0
 
         for dm in xrange(self.config.sim.nDM):
-            if self.config.dm[dm].closed==closed:
+            if self.config.dms[dm].closed==closed:
                 self.dmShape += self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
                                     self.dmAct1[dm]+self.dms[dm].acts], 
@@ -596,16 +596,16 @@ class Sim(object):
         '''
         Initialise data structures used for data saving.
 
-        Initialise the data structures which will be used to store data which will be saved or analysed once the simulation has ended. If the ``filePrefix = None``, no data is saved, other wise a directory called ``filePrefix`` is created, and data from simulation runs are saved in a time-stamped directory inside this.
+        Initialise the data structures which will be used to store data which will be saved or analysed once the simulation has ended. If the ``simName = None``, no data is saved, other wise a directory called ``simName`` is created, and data from simulation runs are saved in a time-stamped directory inside this.
         '''
 
-        if self.config.sim.filePrefix!=None:
-            self.path = self.config.sim.filePrefix +"/"+self.timeStamp()
+        if self.config.sim.simName!=None:
+            self.path = self.config.sim.simName +"/"+self.timeStamp()
             try:
                 os.mkdir( self.path )
             except OSError:
 
-                os.mkdir(self.config.sim.filePrefix)
+                os.mkdir(self.config.sim.simName)
                 os.mkdir(self.path)
 
             #Init WFS FP Saving
@@ -616,8 +616,10 @@ class Sim(object):
 
         #Init Strehl Saving
         if self.config.sim.nSci>0:
-            self.instStrehl = numpy.zeros( (self.config.sim.nSci, self.config.sim.nIters) )
-            self.longStrehl = numpy.zeros( (self.config.sim.nSci, self.config.sim.nIters) )
+            self.instStrehl = numpy.zeros( 
+                    (self.config.sim.nSci, self.config.sim.nIters) )
+            self.longStrehl = numpy.zeros( 
+                    (self.config.sim.nSci, self.config.sim.nIters) )
 
         #Init science residual phase saving
         self.sciPhase = []
@@ -635,7 +637,8 @@ class Sim(object):
 
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
-            self.allSlopes = numpy.empty( (self.config.sim.nIters, self.config.sim.totalWfsData) )
+            self.allSlopes = numpy.empty( 
+                    (self.config.sim.nIters, self.config.sim.totalWfsData) )
         else:
             self.allSlopes = None
 
@@ -652,7 +655,7 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             self.lgsPsfs = []
             for lgs in xrange(self.config.sim.nGS):
-                if self.config.wfs[lgs].lgsUplink:
+                if self.config.wfss[lgs].lgsUplink:
                     self.lgsPsfs.append(
                             numpy.empty(self.config.sim.nIters, 
                             self.config.sim.pupilSize, 
@@ -684,7 +687,7 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             lgs=0
             for wfs in xrange(self.config.sim.nGS):
-                if self.config.lgs[wfs].lgsUplink:
+                if self.config.lgss[wfs].lgsUplink:
                     self.lgsPsfs[lgs, i] = self.wfss[wfs].LGS.PSF
                     lgs+=1
 
@@ -700,7 +703,7 @@ class Sim(object):
                 for sci in xrange(self.config.sim.nSci):
                     self.sciPhase[sci][i] = self.sciCams[sci].residual
 
-        if self.config.sim.filePrefix!=None:
+        if self.config.sim.simName!=None:
             if self.config.sim.saveWfsFrames:
                 for wfs in xrange(self.config.sim.nGS):
                     fits.writeto(
@@ -715,7 +718,7 @@ class Sim(object):
         Called once simulation has ended to save the data recorded during the simulation to disk in the directories created during initialisation.
         """
 
-        if self.config.sim.filePrefix!=None:
+        if self.config.sim.simName!=None:
 
             if self.config.sim.saveSlopes:
                 fits.writeto(self.path+"/slopes.fits", self.allSlopes,
@@ -730,7 +733,7 @@ class Sim(object):
                                 clobber=True)
 
             if self.config.sim.saveWFE:
-                fits.writeto(self.path+"/WFS.fits", self.WFS, clobber=True)
+                fits.writeto(self.path+"/WFE.fits", self.WFE, clobber=True)
 
             if self.config.sim.saveStrehl:
                 fits.writeto(self.path+"/instStrehl.fits", self.instStrehl,
@@ -783,9 +786,9 @@ class Sim(object):
 
     def addToGuiQueue(self):
         """
-        Adds data to a Queue object provided by the pyAOS GUI.
+        Adds data to a Queue object provided by the soapy GUI.
 
-        The pyAOS GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
+        The soapy GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
         """
 
         if self.guiQueue!=None:

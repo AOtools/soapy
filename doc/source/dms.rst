@@ -2,28 +2,28 @@
 Deformable Mirrors
 ******************
 
-.. automodule:: pyAOS.DM
+.. automodule:: soapy.DM
 
 Base DM Class
 -------------
-.. autoclass:: pyAOS.DM.DM
+.. autoclass:: soapy.DM.DM
         :members:
         :show-inheritance:
 
 Real DM Classes
 ---------------
-.. autoclass:: pyAOS.DM.TT
+.. autoclass:: soapy.DM.TT
         :members:
         :show-inheritance:
   
-.. autoclass:: pyAOS.DM.Zernike
+.. autoclass:: soapy.DM.Zernike
         :members:
         :show-inheritance:
 
-.. autoclass:: pyAOS.DM.Piezo
+.. autoclass:: soapy.DM.Piezo
         :members:
         :show-inheritance:
 
-.. autoclass:: pyAOS.DM.GaussStack
+.. autoclass:: soapy.DM.GaussStack
         :members:
         :show-inheritance:

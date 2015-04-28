@@ -1,4 +1,24 @@
-#! /usr/bin/env python
+#Copyright Durham University and Andrew Reeves
+#2014
+
+# This file is part of soapy.
+
+#     soapy is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+
+#     soapy is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+
+#     You should have received a copy of the GNU General Public License
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+The GUI for the Soapy adaptive optics simulation
+"""
 
 import os
 os.environ["QT_API"]="pyqt"
@@ -109,7 +129,7 @@ class GUI(QtGui.QMainWindow):
         self.resultPlot = PlotWidget()
         self.ui.plotLayout.addWidget(self.resultPlot)
 
-        sim.readParams()
+        #sim.readParams()
         sim.config.calcParams()
         self.config = self.sim.config
         self.initPlots()
@@ -151,12 +171,12 @@ class GUI(QtGui.QMainWindow):
         for wfs in range(self.config.sim.nGS):
             self.wfsPlots[wfs] = self.makeImageItem(
                     self.ui.wfsLayout, 
-                    self.config.wfs[wfs].subaps*self.config.wfs[wfs].pxlsPerSubap
+                    self.config.wfs[wfs].nxSubaps*self.config.wfs[wfs].pxlsPerSubap
                     )
             self.phasePlots[wfs] = self.makeImageItem(
                     self.ui.phaseLayout,self.config.sim.simSize)
                                                       
-            if self.config.lgs[wfs].lgsUplink == 1:
+            if self.config.lgs[wfs].uplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
  

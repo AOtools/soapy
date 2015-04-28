@@ -1,31 +1,29 @@
 import unittest
 
-import pyAOS
+import soapy
 
 import numpy
 
-pyAOS.logger.setLoggingLevel(3)
+soapy.logger.setLoggingLevel(3)
 
 RESULTS = {
-        "8x8": 0.76,
-        "8x8_offAxis": 0.30,
-        "8x8_zernike": 0.65,
-        "8x8_lgs"    : 0.65,
-        "8x8_phys": 0.76,
+        "8x8": 0.47,
+        "8x8_offAxis": 0.22,
+        "8x8_zernike": 0.36,
+        "8x8_lgs"    : 0.27,
+        "8x8_phys": 0.53,
         }
 
 
 class TestSimpleSCAO(unittest.TestCase):
 
     def testOnAxis(self):
-        
-        print("\n\nTest On Axis NGS\n")
 
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition=(0,0)
+        sim.config.wfss[0].GSPosition=(0,0)
         
         sim.aoinit()
 
@@ -38,14 +36,12 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testPhysProp(self):
 
-        print("\n\nTest Physica propagation...\n")
-
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition=(0,0)
-        sim.config.wfs[0].propagationMode="physical"
+        sim.config.wfss[0].GSPosition=(0,0)
+        sim.config.wfss[0].propagationMode="physical"
         
         sim.aoinit()
 
@@ -58,13 +54,11 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testOffAxis(self):
 
-        print("\n\nTest Off Axis NGS...\n")
-
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition = (20,0)
+        sim.config.wfss[0].GSPosition = (20,0)
         
         sim.aoinit()
 
@@ -79,17 +73,16 @@ class TestSimpleSCAO(unittest.TestCase):
     
     def testZernikeDM(self):
 
-        print("\n\nTest Zernike DM...\n")
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8.py")
+        sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition = (0,0)
+        sim.config.wfss[0].GSPosition = (0,0)
         
         sim.config.sim.nDM = 1
-        sim.config.dm[0].dmType = "Zernike"
-        sim.config.dm[0].dmActs = 45
-        sim.config.dm[0].dmCond = 0.01
+        sim.config.dms[0].type = "Zernike"
+        sim.config.dms[0].nxActuators = 45
+        sim.config.dms[0].svdConditioning = 0.01
         
         sim.aoinit()
 
@@ -105,9 +98,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testCone(self):
 
-        print("\n\nTest Cone Effect...\n")
-        sim = pyAOS.Sim("../conf/sh_8x8.py")
-        sim.config.sim.filePrefix = None
+        sim = soapy.Sim("../conf/sh_8x8_lgs.py")
+        sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.sim.GSHeight=25000

@@ -1,20 +1,20 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
 from .import aoSimLib, AOFFT
 from . import logger
@@ -45,7 +45,7 @@ class LGSObj(object):
         self.lgsConfig = lgsConfig
         self.atmosConfig = atmosConfig
 
-        self.LGSPupilSize = int(numpy.round(lgsConfig.lgsPupilDiam
+        self.LGSPupilSize = int(numpy.round(lgsConfig.pupilDiam
                                             * self.simConfig.pxlScale))
 
         #Phase power scaling factor for lgs wavelength
@@ -53,7 +53,7 @@ class LGSObj(object):
         self.r0scale = phsWvl / self.lgsConfig.wavelength
 
         self.mask = aoSimLib.circle(
-                0.5*lgsConfig.lgsPupilDiam*self.simConfig.pxlScale,
+                0.5*lgsConfig.pupilDiam*self.simConfig.pxlScale,
                 self.simConfig.simSize)
         self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
         self.pupilPos = {}
@@ -88,7 +88,7 @@ class LGSObj(object):
 
         #This is the number of pxls used for correct FOV (same as a WFS subap)
         self.LGSFOVPxls = numpy.round(
-                                self.lgsConfig.lgsPupilDiam * 
+                                self.lgsConfig.pupilDiam * 
                                 self.subapFOVRad/self.lgsConfig.wavelength 
                                 )
         #Dont want to interpolate down as throwing away info - make sure we
@@ -204,7 +204,7 @@ class GeometricLGS(LGSObj):
         
         #This is the number of pxls used for correct FOV (same as a WFS subap)
         self.LGSFOVPxls = numpy.round(
-                    self.self.lgsConfig.lgsPupilDiam * 
+                    self.self.lgsConfig.pupilDiam * 
                     self.subapFOVRad/self.lgsConfig.wavelength
                     )
         #Dont want to interpolate down as throwing away info - make sure we
