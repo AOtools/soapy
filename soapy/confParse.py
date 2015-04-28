@@ -549,7 +549,7 @@ class TelConfig(ConfigObj):
         =============   ===================
 
     Optional:
-        ==================  ==============https://github.com/andrewpaulreeves/soapy.git===================   ===========
+        ==================  =================================   ===========
         **Parameter**       **Description**                     **Default**
         ------------------  ---------------------------------   -----------
         ``obsDiam``         float: Diameter of central
