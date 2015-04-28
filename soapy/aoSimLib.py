@@ -27,8 +27,6 @@ import numpy
 from scipy.interpolate import interp2d,RectBivariateSpline
 #a lookup dict for interp2d order (expressed as 'kind')
 INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
-import numba
-from threading import Thread
 
 from . import AOFFT
 
@@ -38,7 +36,6 @@ try:
     xrange
 except NameError:
     xrange = range
-
 
 def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
                  threads=0):
@@ -271,234 +268,6 @@ def interp1d_numpy(array, coords):
     return interpArray
 
 
-   
-def zoom_numba(data, zoomArray, threads=None):
-    """
-    A function which deals with threaded numba interpolation.
-
-    Parameters:
-        array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
-        yCoords (ndarray): A 2-D array of y-coordinates
-        interpArray (ndarray): The array to place the calculation
-        threads (int): Number of threads to use for calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``interpArray''
-    """
-    
-    if threads!=1 and threads!=None:
-    
-        nx = zoomArray.shape[0]
-
-        Ts = []
-        for t in range(threads):
-            Ts.append(Thread(target=zoom_numbaThread, 
-                args = (
-                    data, 
-                    numpy.array([int(t*nx/threads), int((t+1)*nx/threads)]),
-                    zoomArray)
-                ))
-            Ts[t].start()
-
-        for T in Ts:
-            T.join()
-    
-    else:
-        zoom_numba1(data, zoomArray)
-
-    return zoomArray
-
-@numba.jit(nopython=True, nogil=True)
-def zoom_numbaThread(data,  chunkIndices, zoomArray):
-    """
-    2-D zoom interpolation using purely python - fast if compiled with numba.
-    Both the array to zoom and the output array are required as arguments, the
-    zoom level is calculated from the size of the new array.
-
-    Parameters:
-        array (ndarray): The 2-D array to zoom
-        zoomArray (ndarray): The array to place the calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``zoomArray''
-    """
-
-    for i in xrange(chunkIndices[0], chunkIndices[1]):
-        x = i*numba.float32(data.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
-        x1 = numba.int32(x)
-        for j in xrange(zoomArray.shape[1]):
-            y = j*numba.float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
-            y1 = numba.int32(y)
-            
-            xGrad1 = data[x1+1, y1] - data[x1, y1]
-            a1 = data[x1, y1] + xGrad1*(x-x1)
-
-            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
-            a2 = data[x1, y1+1] + xGrad2*(x-x1)
-
-            yGrad = a2 - a1
-            zoomArray[i,j] = a1 + yGrad*(y-y1)
-
-
-    return zoomArray
-@numba.jit(nopython=True)
-def zoom_numba1(data, zoomArray):
-    """
-    2-D zoom interpolation using purely python - fast if compiled with numba.
-    Both the array to zoom and the output array are required as arguments, the
-    zoom level is calculated from the size of the new array.
-
-    Parameters:
-        array (ndarray): The 2-D array to zoom
-        zoomArray (ndarray): The array to place the calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``zoomArray''
-    """
-
-    for i in xrange(numba.int32(zoomArray.shape[0])):
-        x = i*numba.float32(data.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
-        x1 = numba.int32(x)
-        for j in xrange(zoomArray.shape[1]):
-            y = j*numba.float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
-            y1 = numba.int32(y)
-            
-            xGrad1 = data[x1+1, y1] - data[x1, y1]
-            a1 = data[x1, y1] + xGrad1*(x-x1)
-
-            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
-            a2 = data[x1, y1+1] + xGrad2*(x-x1)
-
-            yGrad = a2 - a1
-            zoomArray[i,j] = a1 + yGrad*(y-y1)
-
-
-    return zoomArray
-
-def linterp2d_numba(data, xCoords, yCoords, interpArray, threads=None):
-    """
-    A function which deals with threaded numba interpolation.
-
-    Parameters:
-        array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
-        yCoords (ndarray): A 2-D array of y-coordinates
-        interpArray (ndarray): The array to place the calculation
-        threads (int): Number of threads to use for calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``interpArray''
-    """
-    
-    if threads!=1 and threads!=None:
-    
-        nx = xCoords.shape[0]
-
-        Ts = []
-        for t in range(threads):
-            Ts.append(Thread(target=linterp2d_thread, 
-                args = (
-                    data, xCoords, yCoords, 
-                    numpy.array([int(t*nx/threads), int((t+1)*nx/threads)]),
-                    interpArray)
-                ))
-            Ts[t].start()
-
-        for T in Ts:
-            T.join()
-    
-    else:
-        linterp2d(data, xCoords, yCoords, interpArray)
-
-    return interpArray
-
-@numba.jit(nopython=True, nogil=True)
-def linterp2d_thread(data, xCoords, yCoords, chunkIndices, interpArray):
-    """
-    2-D interpolation using purely python - fast if compiled with numba
-    This version also accepts a parameter specifying how much of the array
-    to operate on. This is useful for multi-threading applications.
-
-    Parameters:
-        array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
-        yCoords (ndarray): A 2-D array of y-coordinates
-        chunkIndices (ndarray): A 2 element array, with (start Index, stop Index) to work on for the x-dimension.
-        interpArray (ndarray): The array to place the calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``interpArray''
-    """
-
-
-    if xCoords[-1] == data.shape[0]-1:
-        xCoords[-1] -= 1e-6
-    if yCoords[-1] == data.shape[1]-1:
-        yCoords[-1] -= 1e-6
-
-    jRange = xrange(yCoords.shape[0])
-    for i in xrange(chunkIndices[0],chunkIndices[1]):
-        x = xCoords[i]
-        x1 = numba.int32(x)
-        for j in jRange: 
-            y = yCoords[j] 
-            y1 = numba.int32(y)
-
-            xGrad1 = data[x1+1, y1] - data[x1, y1]
-            a1 = data[x1, y1] + xGrad1*(x-x1)
-
-            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
-            a2 = data[x1, y1+1] + xGrad2*(x-x1)
-
-            yGrad = a2 - a1
-            interpArray[i,j] = a1 + yGrad*(y-y1)
-
-    return interpArray
-
-
-@numba.jit(nopython=True)
-def linterp2d(data, xCoords, yCoords, interpArray):
-    """
-    2-D interpolation using purely python - fast if compiled with numba
-
-    Parameters:
-        array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
-        yCoords (ndarray): A 2-D array of y-coordinates
-        interpArray (ndarray): The array to place the calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``interpArray''
-    """
-
-
-    if xCoords[-1] == data.shape[0]-1:
-        xCoords[-1] -= 1e-6
-    if yCoords[-1] == data.shape[1]-1:
-        yCoords[-1] -= 1e-6
-
-    jRange = xrange(yCoords.shape[0])
-    for i in xrange(xCoords.shape[0]):
-        x = xCoords[i]
-        x1 = numba.int32(x)
-        for j in jRange: 
-
-            y = yCoords[j] 
-            y1 = numba.int32(y)
-
-            xGrad1 = data[x1+1, y1] - data[x1, y1]
-            a1 = data[x1, y1] + xGrad1*(x-x1)
-
-            xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
-            a2 = data[x1, y1+1] + xGrad2*(x-x1)
-
-            yGrad = a2 - a1
-            interpArray[i,j] = a1 + yGrad*(y-y1)
-    return interpArray
-
-
-
 def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
     """
     A Numpy only inplementation array of 2d linear interpolation
@@ -536,42 +305,10 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 
     return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
 
-@numba.vectorize([numba.float32(numba.complex64),
-            numba.float64(numba.complex128)])
-def absSquare(data):
-        return (data.real**2 + data.imag**2)
-
-@numba.jit(nopython=True)
-def binImg_numba(img, binSize, newImg):
-   
-    for i in xrange(newImg.shape[0]):
-        x1 = i*binSize
-        for j in xrange(newImg.shape[1]):
-            y1 = j*binSize
-            newImg[i,j] = 0
-            for x in xrange(binSize):
-                for y in xrange(binSize):
-                    newImg[i,j] += img[x+x1, y+y1]
-
-    return newImg
-
 
 #######################
 #WFS Functions
 ######################
-@numba.jit(nopython=True)
-def chopImage(image, imageStack,  subImgCoords, subImgSize):
-    
-    for i in xrange(subImgCoords.shape[0]):
-        x = numba.int32(round(subImgCoords[i, 0]))
-        y = numba.int32(round(subImgCoords[i, 1]))
-
-        imageStack[i] = image[x:x+subImgSize, y:y+subImgSize]
-
-    return imageStack
-
-
-
 
 def findActiveSubaps(subaps, mask, threshold):
     '''
@@ -772,34 +509,6 @@ def quadCell(img, **kwargs):
     
     return numpy.array([xCent, yCent])
 
-def threshOpt(subapImages, noReferences=10):
-    pcts = numpy.arange(0.05, 0.95, 0.1)
-
-    i_t, i_n, i_y, i_x = subapImages.shape
-    references = subapImages[:noReferences]
-    fCents = numpy.zeros((len(pcts), noReferences, i_t, 2, i_n))
-    radialErrorEstimate = numpy.zeros((len(pcts)))
-
-    for ref in range(noReferences):
-        print ref
-        for i, threshold in enumerate(pcts):
-            for frame in range(i_t):
-                fCents[i, ref, frame] = correlationCentriod(subapImages[frame], references[ref], threshold)
-            for subap in range(i_n):
-                fCents[i, ref, :, 0, subap] -= numpy.average(fCents[i, ref, :, 0, subap])
-                fCents[i, ref, :, 1, subap] -= numpy.average(fCents[i, ref, :, 1, subap])
-
-    for i in range(len(pcts)):
-        delta = numpy.std(fCents[i], axis=0)
-        errorEstimate = numpy.average(delta)
-        radialErrorEstimate[i] = errorEstimate
-
-    print radialErrorEstimate
-
-    threshValue = pcts[numpy.where(radialErrorEstimate == numpy.min(radialErrorEstimate))[0][0]]
-
-    return threshValue
-
 def zernike(j, N):
     """
      Creates the Zernike polynomial with mode index j, 
@@ -902,8 +611,6 @@ def zernikeArray(J, N):
     return Zs
 
 
-###########################################
-
 def aziAvg(data):
     """
     Measures the azimuthal average of a 2d array
@@ -923,40 +630,3 @@ def aziAvg(data):
         avg[i] = (ring*data).sum()/(ring.sum())
 
     return avg
-
-def remapSubaps(wfsData, mask, xyOrder=1):
-    """
-    Remaps a 1-d vector of SH WFS back into a 2-d plane
-
-    Parameters:
-        wfsData (ndarray): The data to remap, must be multiple frames of data
-        mask (ndarray): A 2d mask, of size (nSubaps,nSubaps). Equals 1 where a subap is active, 0 otherwise
-        xyOrder (int, optional): Are slopes ordered mode 1, xxx..., yyy..., or mode 2, xyxyxy....?
-
-    Returns:
-        ndarray: 2, 2-d arrays for each frame of wfs data.    
-    """
-    
-
-    nSubaps = mask.shape[0]
-    totalSubaps = mask.sum()
-    nIters = wfsData.shape[0]
-    subaps2d = numpy.zeros((nIters, 2, nSubaps, nSubaps))
-
-    
-    for i in range(nIters):
-        n=0 
-        for x in range(nSubaps):
-            for y in range(nSubaps):
-
-                if mask[x,y] == 1:
-                    if xyOrder==1:
-                        subaps2d[i, 0, x, y] = wfsData[i, n]
-                        subaps2d[i, 1, x, y] = wfsData[i,n+totalSubaps/2]
-                    else:
-                        subaps2d[i, 0, x, y] = wfsData[i, 2*n]
-                        subaps2d[i, 1, x, y] = wfsData[i, 2*n+1]
-                    n+=1
-
-    return subaps2d
-

@@ -74,7 +74,7 @@ import datetime
 import os
 import time
 import traceback
-from multiprocessing import Process, Queue, Pool
+from multiprocessing import Process, Queue
 from argparse import ArgumentParser
 import shutil
 
@@ -167,11 +167,6 @@ class Sim(object):
         logger.setLoggingFile(self.config.sim.logfile)
         logger.info("Starting Sim: {}".format(self.timeStamp()))
 
-        #Make a pool of mp workers to do some work
-        #This will always exist in this class, but in other sim modules may 
-        #not be there (so musn't be relied upon!)
-        self.mpPool = Pool(self.config.sim.procs)
-
         #calculate some params from read ones
         #calculated
         self.config.calcParams()
@@ -192,8 +187,7 @@ class Sim(object):
         self.mask = numpy.pad(
                 self.mask, self.config.sim.simPad, mode="constant")
 
-        self.atmos = atmosphere.atmos(
-                self.config.sim, self.config.atmos, self.mpPool)
+        self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
         #Find if WFSs should each have own process
         if self.config.sim.wfsMP:
@@ -576,67 +570,6 @@ class Sim(object):
         #Finally save data after loop is over.
         self.saveData()
         self.finishUp()
-
-    def threshOpt(self):
-
-        self.iters = 1
-        self.correct = 1
-
-        iterations = 100
-        wfsSize = self.wfss[0].wfsConfig.pxlsPerSubap*self.wfss[0].wfsConfig.subaps
-        imPlanes = numpy.zeros((iterations, wfsSize, wfsSize))
-        ims = numpy.zeros((iterations, self.wfss[0].activeSubaps, self.wfss[0].wfsConfig.pxlsPerSubap, self.wfss[0].wfsConfig.pxlsPerSubap))
-
-        # Circular buffers to hold loop iteration correction data
-        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
-        self.closedCorrection = numpy.zeros(self.dmShape.shape)
-        self.openCorrection = self.closedCorrection.copy()
-        self.dmCommands = numpy.zeros( self.config.sim.totalActs )
-
-        for i in xrange(iterations):
-            #get next phase screens
-            t = time.time()
-            self.scrns = self.atmos.moveScrns()
-            self.Tatmos = time.time()-t
-
-            #Reset correction
-            self.closedCorrection[:] = 0
-            self.openCorrection[:] = 0
-
-            #Run Loop...
-            ########################################
-
-            t_wfs = time.time()
-            
-            wfsList=range(self.config.sim.nGS)
-                       
-            s = 0
-            for wfs in wfsList:
-                #check if due to read out WFS
-                if i:
-                    read=False
-                    if (int(float(self.config.sim.loopTime*i)
-                            /self.config.wfs[wfs].exposureTime) 
-                                            != self.wfsFrameNo[wfs]):
-                        self.wfsFrameNo[wfs]+=1
-                        read=True
-                else:
-                    read = True
-
-                self.wfss[wfs].frame(self.scrns, self.closedCorrection, read=read)
-                s += self.wfss[wfs].activeSubaps*2
-
-                imPlanes[i] = self.wfss[wfs].wfsDetectorPlane
-
-            self.Twfs+=time.time()-t_wfs
-            self.iters = i
-
-        for i in range(self.wfss[0].activeSubaps):
-            ims[:, i] = imPlanes[:, self.wfss[0].detectorSubapCoords[i, 0]:self.wfss[0].detectorSubapCoords[i, 0]+self.wfss[0].wfsConfig.pxlsPerSubap,
-                    self.wfss[0].detectorSubapCoords[i, 1]:self.wfss[0].detectorSubapCoords[i, 1]+self.wfss[0].wfsConfig.pxlsPerSubap]
-
-        self.wfss[0].wfsConfig.centThreshold = aoSimLib.threshOpt(ims)
-
 
     def finishUp(self):
         """

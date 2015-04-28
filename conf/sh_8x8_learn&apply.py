@@ -64,18 +64,13 @@ simConfiguration = {
     },
 
 "DM":{
+
     "type"              :   [ "Piezo"],
     "nxActuators"       :   [9],
     "svdConditioning"   :   [0.05],
     "closed"            :   [False],
     "gain"              :   [0.6],
     "wfs"               :   [0],
-    "dmType"        :   [ "Piezo"],
-    "dmActs"        :   [9**2],
-    "dmCond"        :   [0.05],
-    "closed"        :   [False],
-    "gain"          :   [0.6],
-    "wfs"           :   [0],
     },
 
 "Science":{
