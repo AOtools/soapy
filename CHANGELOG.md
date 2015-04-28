@@ -1,3 +1,33 @@
+#0.9-dev
+- Name change to Soapy!
+
+- Some parameters changed name 
+    ```python
+
+    sim
+        filePrefix  -->  dataDir
+
+    tel
+        obs      -->  obsDiam
+
+    wfs
+        subapOversamp -->  fftOversamp
+
+    lgs
+        lgsUplink -->  uplink
+        lgsPupilDiam -->  pupilDiam
+    
+    dm
+        dmType   -->  type
+        dmActs    -->  nActuators
+        dmCond  -->  svdConditioning
+
+    sci
+        oversamp   -->   fftOversamp
+
+    ```
+- Configuration parameters in lists are now accessed as plurals, e.g. `sim.config.wfs[0].nxSubaps` --> `sim.config.wfss[0].nxSubaps`.
+
 #0.8.1
 - Some bugs fixed with WFSs
 

@@ -22,7 +22,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition=(0,0)
+        sim.config.wfss[0].GSPosition=(0,0)
         
         sim.aoinit()
 
@@ -38,8 +38,8 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition=(0,0)
-        sim.config.wfs[0].propagationMode="physical"
+        sim.config.wfss[0].GSPosition=(0,0)
+        sim.config.wfss[0].propagationMode="physical"
         
         sim.aoinit()
 
@@ -55,7 +55,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition = (20,0)
+        sim.config.wfss[0].GSPosition = (20,0)
         
         sim.aoinit()
 
@@ -73,12 +73,12 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.wfs[0].GSPosition = (0,0)
+        sim.config.wfss[0].GSPosition = (0,0)
         
         sim.config.sim.nDM = 1
-        sim.config.dm[0].type = "Zernike"
-        sim.config.dm[0].nxActuators = 45
-        sim.config.dm[0].svdConditioning = 0.01
+        sim.config.dms[0].type = "Zernike"
+        sim.config.dms[0].nxActuators = 45
+        sim.config.dms[0].svdConditioning = 0.01
         
         sim.aoinit()
 

@@ -58,10 +58,10 @@ class Configurator(object):
         self.filename = filename
 
         #placeholder for WFS param objs
-        self.wfs = []
-        self.lgs = []
-        self.sci = []
-        self.dm = []
+        self.wfss = []
+        self.lgss = []
+        self.scis = []
+        self.dms = []
 
         self.sim = SimConfig()
         self.atmos = AtmosConfig()
@@ -94,23 +94,23 @@ class Configurator(object):
 
         for wfs in range(self.sim.nGS):
             logger.debug("Load WFS {} Params...".format(wfs))
-            self.wfs.append(WfsConfig(wfs))
-            self.wfs[wfs].loadParams(self.configDict["WFS"])
+            self.wfss.append(WfsConfig(wfs))
+            self.wfss[wfs].loadParams(self.configDict["WFS"])
 
         for lgs in range(self.sim.nGS):
             logger.debug("Load LGS {} Params".format(lgs))
-            self.lgs.append(LgsConfig(lgs))
-            self.lgs[lgs].loadParams(self.configDict["LGS"])
+            self.lgss.append(LgsConfig(lgs))
+            self.lgss[lgs].loadParams(self.configDict["LGS"])
 
         for dm in range(self.sim.nDM):
             logger.debug("Load DM {} Params".format(dm))
-            self.dm.append(DmConfig(dm))
-            self.dm[dm].loadParams(self.configDict["DM"])
+            self.dms.append(DmConfig(dm))
+            self.dms[dm].loadParams(self.configDict["DM"])
 
         for sci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(sci))
-            self.sci.append(SciConfig(sci))
-            self.sci[sci].loadParams(self.configDict["Science"])
+            self.scis.append(SciConfig(sci))
+            self.scis[sci].loadParams(self.configDict["Science"])
         self.calcParams()
         
     def calcParams(self):
@@ -129,23 +129,23 @@ class Configurator(object):
         #furthest out GS or SCI target defines the sub-scrn size
         gsPos = []
         for gs in range(self.sim.nGS):
-            pos = self.wfs[gs].GSPosition
+            pos = self.wfss[gs].GSPosition
             #Need to add bit if the GS is an elongation off-axis LGS
-            if self.lgs[gs].elongationDepth:
+            if self.lgss[gs].elongationDepth:
                 #This calculation is done more explicitely in teh WFS module
                 #in the ``calcElongPos`` method
                 maxLaunch = abs(numpy.array(
-                        self.lgs[gs].launchPosition)).max()*self.tel.telDiam/2.
-                dh = numpy.array([  -1*self.lgs[gs].elongationDepth/2.,
-                                    self.lgs[gs].elongationDepth/2.])
-                H = self.wfs[gs].GSHeight
+                        self.lgss[gs].launchPosition)).max()*self.tel.telDiam/2.
+                dh = numpy.array([  -1*self.lgss[gs].elongationDepth/2.,
+                                    self.lgss[gs].elongationDepth/2.])
+                H = self.wfss[gs].GSHeight
                 theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         (3600*180/numpy.pi)).max()
                 pos+=theta_n         
             gsPos.append(pos)
                
         for sci in range(self.sim.nSci):
-            gsPos.append(self.sci[sci].position)
+            gsPos.append(self.scis[sci].position)
 
         if len(gsPos)!=0:
             maxGSPos = numpy.array(gsPos).max()
@@ -167,14 +167,14 @@ class Configurator(object):
         #If so, make oversize phase scrns
         wfsPhys = False
         for wfs in range(self.sim.nGS):
-            if self.wfs[wfs].propagationMode=="physical":
+            if self.wfss[wfs].propagationMode=="physical":
                 wfsPhys = True
                 break
         if wfsPhys:
             self.sim.scrnSize*=2
             
         #If any wfs exposure times set to None, set to the sim loopTime
-        for wfs in self.wfs:
+        for wfs in self.wfss:
             if not wfs.exposureTime:
                 wfs.exposureTime = self.sim.loopTime
 
@@ -182,7 +182,7 @@ class Configurator(object):
         logger.info("subScreenSize: {:d} simulation pixels".format(int(self.sim.scrnSize)))
 
         #If lgs sodium layer profile is none, set it to 1s for each layer
-        for lgs in self.lgs:
+        for lgs in self.lgss:
             if not numpy.any(lgs.naProfile):
                 lgs.naProfile = numpy.ones(lgs.elongationLayers)
             if len(lgs.naProfile)<lgs.elongationLayers:
@@ -195,7 +195,7 @@ class Configurator(object):
                 self.atmos.L0.append(100.)
 
         #Check if SH WFS with 1 subap. Feild stop must be FOV
-        for wfs in self.wfs:
+        for wfs in self.wfss:
             if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
                 wfs.subapFieldStop = True
