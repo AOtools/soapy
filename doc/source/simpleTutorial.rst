@@ -1,7 +1,7 @@
 Simple Tutorial
 ===============
 
-This tutorial will go through some example AO systems using Soapy. We'll see how to make configuration files to run the AO system that you'd like to then extract data which can be subsequently analysed. CANARY is an AO sysmem on the 4.2m William Herschel Telescope on La Palma. It is designed to be very flexible to run various "modes" of AO, so make a nice test bed for us to simulate. We'll simulate it in SCAO mode, in GLAO with multiple guide-stars, and in SCAO with a LGS.
+This tutorial will go through some example AO systems using Soapy. We'll see how to make configuration files to run the AO system that you'd like to, then extract data which can be subsequently analysed. CANARY is an AO system on the 4.2m William Herschel Telescope on La Palma. It is designed to be very flexible to run various "modes" of AO, so makes a nice test bed for us to simulate. We'll simulate it in SCAO mode, in GLAO with multiple guide-stars and in SCAO with a LGS.
 
 
 Running an Example Configuration
@@ -16,7 +16,12 @@ To open the Graphical User Interface (GUI), type in the command line::
 This relies on ``soapy`` being in you're ``PATH``. If thats not the case, run::
 
     python <path/to/soapy>/bin/soapy --gui conf/sh8x8.py
-    
+
+You should see a window which looks a bit like this pop up:
+
+.. image:: imgs/annotatedGUI.png
+    :align: center
+
 If you don't want to run the GUI, then open a python terminal and run::
 
     import soapy
@@ -26,4 +31,8 @@ Before the simulation can be started, some initialisation routines must be run. 
 
     sim.aoinit()
 
-Next, the interaction matrixes between the DMs and the WFSs
+Next, the interaction matrixes between the DMs and the WFSs. In the GUI this is acheived by clicking "makIMat", and in the command line with::
+
+    sim.makeIMat()
+
+This simulation will save command matrices, interaction matrices and DM influence functions for a simulation, so that it doesn't alway have to remake them. If you'd like to override the loading them from file and make them from sctratch, tick the "force new" button in the GUI, or pass the argument ``forceNew=True`` to the ``makeIMat`` command.
