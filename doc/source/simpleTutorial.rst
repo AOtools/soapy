@@ -31,8 +31,21 @@ Before the simulation can be started, some initialisation routines must be run. 
 
     sim.aoinit()
 
-Next, the interaction matrixes between the DMs and the WFSs. In the GUI this is acheived by clicking "makIMat", and in the command line with::
+Next, the interaction matrixes between the DMs and the WFSs. In the GUI this is achieved by clicking "makIMat", and in the command line with::
 
     sim.makeIMat()
 
-This simulation will save command matrices, interaction matrices and DM influence functions for a simulation, so that it doesn't alway have to remake them. If you'd like to override the loading them from file and make them from sctratch, tick the "force new" button in the GUI, or pass the argument ``forceNew=True`` to the ``makeIMat`` command.
+This simulation will save command matrices, interaction matrices and DM influence functions for a simulation, so that it doesn't alway have to remake them. If you'd like to override the loading them from file and make them from scratch, tick the "force new" button in the GUI, or pass the argument ``forceNew=True`` to the ``makeIMat`` command.
+
+To actually run the simulation, click "aoloop" in the GUI, or type::
+    
+    sim.aoloop()
+
+at the command line. This will run the simulation for the configured number of iterations, and estimate the performance of the specified AO system.
+
+Creating a new configuration file
+---------------------------------
+
+Now the simulation is working, lets start to simulate CANARY. We'll use the ``sh_8x8.py`` configuration file as a template, copy it to another file called ``CANARY_SCAO.py``,  and open this file in your favourite text editor. The configuration file contains all the parameters which determine the configuration of the simulated AO system. All the parameters are help in a Python dictionary, called ``simConfiguration``. Further to this, parameters are grouped into sub-dictionaries depending on which components they control. Descriptions of all possible parameters are given in the :ref:`configuration` section.
+
+The first of these groups are parameters which have a system wide effect, so-called ``Sim`` parameters.
