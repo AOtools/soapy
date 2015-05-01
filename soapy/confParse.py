@@ -446,6 +446,7 @@ class WfsConfig(ConfigObj):
         ``pxlsPerSubap``        int: number of pixels per sub-apertures
         ``subapFOV``            float: Field of View of sub-aperture in
                                 arc-secs
+        ``GSMag``               float: Apparent magnitude of the guide star
         ==================      ===================
 
     Optional:
@@ -454,6 +455,14 @@ class WfsConfig(ConfigObj):
         ------------------- ---------------------------------- -----------
         ``type``            string: Which WFS object to load
                             from WFS.py?                        ``ShackHartmann``
+        ``photonNoise``     bool: Include photon (shot) noise. ``False``
+        ``eReadNoise``      float: Electrons of read noise     ``0``
+        ``throughput``      float: Throughput of the entire
+                            optical and electronic system
+                            from guide star photons to
+                            recorded WFS detector counts.
+                            Includes atmospheric effects, the
+                            optical train and detector gain.   ``1.``
         ``propagationMode`` string: Mode of light propogation 
                             from GS. Can be "physical" or 
                             "geometric".                       ``"geometric"``
@@ -513,6 +522,7 @@ class WfsConfig(ConfigObj):
                                 "nxSubaps",
                                 "pxlsPerSubap",
                                 "subapFOV",
+                                "GSMag",
                             ]
 
         self.optionalParams = [ ("propagationMode", "geometric"),
@@ -533,6 +543,9 @@ class WfsConfig(ConfigObj):
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
                                 ("referenceImage", None),
+                                ("throughput", 1.),
+                                ("eReadNoise", 0),
+                                ("photonNoise", False),
                             ]
         self.initParams()
 
