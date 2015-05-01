@@ -912,7 +912,7 @@ class ShackHartmann(WFS):
         super(ShackHartmann, self).initLGS()
         #Tell the LGS a bit about the WFS 
         #(TODO-get rid of this and put into LGS object init)
-        print("Run INITLGS")
+
         if self.LGS:       
             self.LGS.setWFSParams(
                     self.SUBAP_OVERSIZE*self.subapFOVrad,
@@ -1111,10 +1111,8 @@ class ShackHartmann(WFS):
                     self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp] )
 
         #Scale data for correct number of photons
-        print(self.wfsDetectorPlane.sum())
         self.wfsDetectorPlane /= self.wfsDetectorPlane.sum()
         self.wfsDetectorPlane *= self.nPhotons
-        print(self.wfsDetectorPlane.sum())
         
         if self.wfsConfig.photonNoise:
             self.addPhotonNoise()
