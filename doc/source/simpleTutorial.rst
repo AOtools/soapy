@@ -52,6 +52,10 @@ Now the simulation is working, lets start to simulate CANARY. We'll use the ``sh
 ``Sim`` Parameters
 ^^^^^^^^^^^^^^^^^^
 
-The first of these groups are parameters are those which have a system wide effect, so-called ``Sim`` parameters. The first parameter to change is the ``simName``, this is the directory where data will be saved during and after an AO run. Set it to ``CANARY_SCAO``. The ``logFile`` is the filename of a log which records all text output from the simulation, set it to ``CANARY_SCAO.log``. The value of ``loopTime`` specifies the frame rate of the simulation, which is usually, though not always, also the frame rate of the WFSs and DMs. More accurately though, it is the time between movements of the atmosphere. For CANARY, make the system run at 200Hz, so set this to ``0.005``, or ``1./200`` to be more explicit about the system frame rate.
+The first of these groups are parameters are those which have a system wide effect, so-called ``Sim`` parameters. The first parameter to change is the ``simName``, this is the directory where data will be saved during and after an AO run. Set it to ``CANARY_SCAO``. The ``logFile`` is the filename of a log which records all text output from the simulation, set it to ``CANARY_SCAO.log``. The value of ``loopTime`` specifies the frame rate of the simulation, which is usually, though not always, also the frame rate of the WFSs and DMs. More accurately though, it is the time between movements of the atmosphere. For CANARY, make the system run at 200Hz, so set this to ``0.005``, or ``1./200`` to be more explicit about the system frame rate. For the purposes of this tutorial, lets also set the number of iterations which will be run, ``nIters`` to around 500 so that it will run quickly. 
 
-For the purposes of this tutorial, lets also set the number of iterations which will be run, ``nIters`` to around 500 so that it will run quickly.
+The ``Sim`` group also contains parameters which determine the data which will be stored and saved from the simulation. Set values to ``True`` if you'd like them to be continually saved in a memory buffer before being written to disk in a AO run specific, time-stamped directory within the ``simName`` directory.
+
+
+``Atmosphere`` Parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^
