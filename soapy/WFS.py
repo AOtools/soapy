@@ -703,13 +703,17 @@ class WFS(object):
         return self.slopes
 
     def addPhotonNoise(self):
-        print("before PNoise: {}".format(self.wfsDetectorPlane.sum()))
+        """
+        Add photon noise to ``wfsDetectorPlane`` using numpy.random.poisson
+        """
         self.wfsDetectorPlane = numpy.random.poisson(
                 self.wfsDetectorPlane).astype(DTYPE)
-        print("After PNoise: {}".format(self.wfsDetectorPlane.sum()))
 
 
     def addReadNoise(self):
+        """
+        Adds read noise to ``wfsDetectorPlane using ``numpy.random.random`` multiplied by the specifed electrons read noise
+        """
         self.wfsDetectorPlane +=self.wfsConfig.eReadNoise*numpy.random.random(
                         self.wfsDetectorPlane.shape
                         )
