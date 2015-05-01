@@ -48,4 +48,10 @@ Creating a new configuration file
 
 Now the simulation is working, lets start to simulate CANARY. We'll use the ``sh_8x8.py`` configuration file as a template, copy it to another file called ``CANARY_SCAO.py``,  and open this file in your favourite text editor. The configuration file contains all the parameters which determine the configuration of the simulated AO system. All the parameters are help in a Python dictionary, called ``simConfiguration``. Further to this, parameters are grouped into sub-dictionaries depending on which components they control. Descriptions of all possible parameters are given in the :ref:`configuration` section.
 
-The first of these groups are parameters which have a system wide effect, so-called ``Sim`` parameters.
+
+``Sim`` Parameters
+^^^^^^^^^^^^^^^^^^
+
+The first of these groups are parameters are those which have a system wide effect, so-called ``Sim`` parameters. The first parameter to change is the ``simName``, this is the directory where data will be saved during and after an AO run. Set it to ``CANARY_SCAO``. The ``logFile`` is the filename of a log which records all text output from the simulation, set it to ``CANARY_SCAO.log``. The value of ``loopTime`` specifies the frame rate of the simulation, which is usually, though not always, also the frame rate of the WFSs and DMs. More accurately though, it is the time between movements of the atmosphere. For CANARY, make the system run at 200Hz, so set this to ``0.005``, or ``1./200`` to be more explicit about the system frame rate.
+
+For the purposes of this tutorial, lets also set the number of iterations which will be run, ``nIters`` to around 500 so that it will run quickly.
