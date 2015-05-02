@@ -84,7 +84,27 @@ As with ``WFS`` parameters, each value describing the DM is formatted as a list 
 ``Science`` Parameters
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The final group of parameters which define the simulation are the ``Science`` parameters which define the science targets and detectors to be used to measure AO performance. Again, these are formatted as list or array at least as long as ``sim.nSci``
+The final group of parameters which define the simulation are the ``Science`` parameters which define the science targets and detectors to be used to measure AO performance. Again, these are formatted as list or array at least as long as ``sim.nSci``. Change the Field of View of the science detector by setting ``FOV`` to ``3.0``.
+
+
+Run it!
+^^^^^^^
+Run the simulation as before, either in the GUI or in the command line with either::
+
+    soapy --gui conf/CANARY_SCAO.py
+    
+click makeIMat
+click aoloop
+
+or::
+    
+    import soapy
+    sim = soapy.Sim("conf/CANARY_SCAO.py")
+    sim.makeIMat()
+    sim.aoloop()
+    
+Examining data and changing parameters
+-------------------------------------
 
 
 
