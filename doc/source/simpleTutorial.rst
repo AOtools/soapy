@@ -4,8 +4,8 @@ Simple Tutorial
 This tutorial will go through some example AO systems using Soapy. We'll see how to make configuration files to run the AO system that you'd like to, then extract data which can be subsequently analysed. CANARY is an AO system on the 4.2m William Herschel Telescope on La Palma. It is designed to be very flexible to run various "modes" of AO, so makes a nice test bed for us to simulate. We'll simulate it in SCAO mode, in GLAO with multiple guide-stars and in SCAO with a LGS.
 
 
-Running an Example Configuration
---------------------------------
+Running an Example SCAO Configuration
+-------------------------------------
 
 Before making new configuration files though, its a pretty good idea to make sure everything is working as expected by running one of the examples. First, lets create a directory where we do this tutorial, call it something like ``soapy_tutorial``, make a further directory called ``conf`` inside and copy the example configuration file ``sh_8x8.py`` form the downloaded or cloned Soapy directory into it.
 
@@ -141,9 +141,15 @@ or to set the number of DM actuators on the high order DM::
 
     print(sim.config.dms[1].nxActuators)
     sim.config.dms[1].nxActuators[1] = 16
-    
-Some parameters can be changed while the simulation is running. This is useful when using the GUI and optimising parameters for an AO system. Parameters which are safe to change during AO operation are denoted in the :ref:`configuration` section with \** at the end of the parameter description.
+
+After changing these values, click aoinit or type ``sim.aoinit``, then makeImat or ``sim.makeIMat()`` and finally aoloop or ``sim.aoloop`` to run the simulation and observe the effect of the change parameters. Some parameters can be changed while the simulation is running. This is useful when using the GUI and optimising parameters for an AO system. Parameters which are safe to change during AO operation are denoted in the :ref:`configuration` section with \** at the end of the parameter description.
 
 
+GLAO Example
+------------
 
+CANARY is an experimental AO system which has been designed to explore tomographic AO. As such it would be thoroughly rude not to simulate it in a tomographic configuration. As tomographic AO often involves complex reconstructors out of the scope of this tutorial, it shall be run in the simplest tomographic case, Ground Layer AO (GLAO). This is where the measurements of several WFSs observing off-axis are effectively averaged, which corrects well when the WFS field of views overlap, such as at low-layers, but not so well when they have diverged, such as at high layers. This mode of AO can be performed using the ``MVM`` reconstructor used previously without modification.
 
+Copy the ``CANARY_SCAO`` configuration file to another file name ``CANARY_GLAO``. The only parameters which require changing are the number and position of WFSs. In the ``Simulation`` group set ``nGS`` to ``3``. Then increase each list in the ``WFS`` group to 3 elements. The ``GSPosition`` values may be set to an asterism such as ``[(0, 30), (-24.5, -25), (24.5, -15)]`` which forms a triangle around the science target. All other WFS params must also be increased to 3 parameters. Do this by either retyping each parameter, or using Python's clever list syntax by multiplying each list by 3.
+
+Run this new configuration file. The performance should have decreased significantly as only the lowest turbulence layer will be corrected effectively.
