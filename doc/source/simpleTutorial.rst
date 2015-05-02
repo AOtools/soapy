@@ -103,8 +103,46 @@ or::
     sim.makeIMat()
     sim.aoloop()
     
+The resulting Strehl ratio should be around 0.65, though there will be some variation due to the random generation of the phase screens.
+    
+
 Examining data and changing parameters
--------------------------------------
+--------------------------------------
+
+Once a simulation has been completed, the task then turns to extracting an analysing the resulting data. Many data sources can be saved from Soapy, they are listed in :ref:`dataSources`. Whether they are saved or not is a result of the parameters set in the ``Sim`` section. If so, they will be saved to a directory of ``<simName>/<timestamp>/`` in the FITS standard format. They can also be accessed from the simulation object using ``sim.<dataSource>``. For example, to plot the long exposure Strehl ratio recorded on the first science detector over the course of the simulation, type either in a command line or in the GUI terminal::
+    
+    from matplotlib import pyplot
+    pyplot.plot(sim.longStrehl[0])
+    pyplot.show()
+
+The first science detector image can be retrieved with::
+
+    imshow(sim.sciImgs[0])
+    
+and the measurements recored on all WFSs with::
+    
+    imshow(sim.allSlopes)
+    
+The parameters which were originally defined in the configuration file can also be accessed and altered. The variables holding the parameters have the same name as the configuration file parameters, though the names of the groups may be shortened. Assuming that the simulation object is called ``sim`` (as in this tutorial), any configuration parameter can be access with::
+
+    sim.config.<configGroup>.<param>
+    
+So to check or change the ``pupilSize`` parameter, one could do the following::
+
+    print(sim.config.sim.pupilSize)
+    sim.config.sim.pupilSize = 256
+    
+For the parameter groups ``WFS``, ``LGS``, ``DM`` and ``Science``, which are set as lists, access of the parameter for item ``n`` is through ``sim.config.wfss[n].<param>``, ``sim.config.lgss[n].<param>``, ``sim.config.dms[n].<param>`` and ``sim.config.scis[n].<param>``. For example, to check, then change the 1st WFS centroiding method::
+
+    print(sim.config.wfss[0].centMethod)
+    sim.config.wfss[0].centMethod = "simple"
+    
+or to set the number of DM actuators on the high order DM::
+
+    print(sim.config.dms[1].nxActuators)
+    sim.config.dms[1].nxActuators[1] = 16
+    
+Some parameters can be changed while the simulation is running. This is useful when using the GUI and optimising parameters for an AO system. Parameters which are safe to change during AO operation are denoted in the :ref:`configuration` section with \** at the end of the parameter description.
 
 
 
