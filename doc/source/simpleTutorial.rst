@@ -59,3 +59,11 @@ The ``Sim`` group also contains parameters which determine the data which will b
 
 ``Atmosphere`` Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As would be expected, this group of parameters describe the nature of the atmospheric turbulence. Currently, this configuration file features an atmosphere with 4 discrete turbulence layers, increase that to 5 by setting ``scrnNo`` to ``5``.  The ``r0`` parameter is the Fried parameter in metres and controls the integrated seeing strength, set this to ``0.14``. ``screenHeights``, ``scrnStrengths``, ``windDirs`` and ``windSpeed`` control the layer heights, relative C\ :sub:`N`\ :sup:`2` strengths, wind directions and wind velocities. These must be formatted as a list or array at least as long as ``scrnNo``, so add another value to each. 
+
+Phase screens can be either created on each simulation run, or can be loaded from file. To load screens from file, a parameter, ``scrnNames`` must be set with the filename of each phase screen.
+
+``Telescope`` Parameters
+^^^^^^^^^^^^^^^^^^^^^^^^
+
