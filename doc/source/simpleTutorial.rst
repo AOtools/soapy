@@ -43,8 +43,8 @@ To actually run the simulation, click "aoloop" in the GUI, or type::
 
 at the command line. This will run the simulation for the configured number of iterations, and estimate the performance of the specified AO system.
 
-Creating a new configuration file
----------------------------------
+Creating a new SCAO configuration file
+--------------------------------------
 
 Now the simulation is working, lets start to simulate CANARY. We'll use the ``sh_8x8.py`` configuration file as a template, copy it to another file called ``CANARY_SCAO.py``,  and open this file in your favourite text editor. The configuration file contains all the parameters which determine the configuration of the simulated AO system. All the parameters are help in a Python dictionary, called ``simConfiguration``. Further to this, parameters are grouped into sub-dictionaries depending on which components they control. Descriptions of all possible parameters are given in the :ref:`configuration` section.
 
@@ -62,8 +62,20 @@ The ``Sim`` group also contains parameters which determine the data which will b
 
 As would be expected, this group of parameters describe the nature of the atmospheric turbulence. Currently, this configuration file features an atmosphere with 4 discrete turbulence layers, increase that to 5 by setting ``scrnNo`` to ``5``.  The ``r0`` parameter is the Fried parameter in metres and controls the integrated seeing strength, set this to ``0.14``. ``screenHeights``, ``scrnStrengths``, ``windDirs`` and ``windSpeed`` control the layer heights, relative C\ :sub:`N`\ :sup:`2` strengths, wind directions and wind velocities. These must be formatted as a list or array at least as long as ``scrnNo``, so add another value to each. 
 
-Phase screens can be either created on each simulation run, or can be loaded from file. To load screens from file, a parameter, ``scrnNames`` must be set with the filename of each phase screen.
+Phase screens can be either created on each simulation run, or can be loaded from file. To load screens from file a parameter, ``scrnNames``, must be set with the filename of each phase screen in a list.
 
 ``Telescope`` Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
+The diameter of the simulated telescope and its central obscuration are determined by the ``telDiam`` and ``obsDiam`` parameters in the ``Telescope`` parameters. The ``mask`` value determines the shape if the pupil mask. If set to ``circle``, this will simple be a circular telescope pupil, with a circular obscuration cut out the centre. If something more complex is desired, this value should be set to a 2-dimensional numpy array of size ``(pupilSize, pupilSize)``, set to ``0`` or ``False`` at opaque parts of the pupil and ``1`` or ``True`` at transparent parts.
+
+CANARY is hosted by the WHT, which is a 4.2 metre diameter telescope with a central obscuration of approximately 1.2 metres. Set these values, and keep ``mask`` set to ``circle``.
+
+``WFS`` Parameters
+^^^^^^^^^^^^^^^^^^
+Each value in the ``WFS`` group of parameters must be a list or numpy array which is at least as long as ``sim.nGS``, which configures each of the wavefront sensors. For this configuration file, each parameter will be lists with only a single entry. Set ``nxSubaps``, the number of Shack-Hartmann sub-apertures in a single dimension to ``7`` and  ``pxlsPerSubap`` to ``14``. The pixel scale is defined by the parameter ``subapFOV``, which is actually the FOV of the entire sub-aperture, set this to ``2.5``.
+
+As we are not initially going to use a LGS, leave the ``LGS`` parameters empty.
+
+
+
 
