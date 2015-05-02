@@ -36,7 +36,6 @@ simConfiguration = {
     "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
     "windDirs"      :   numpy.array([0,45,90,135]),
     "windSpeeds"    :   numpy.array([10,10,15,20]),
-    "newScreens"    :   True, #Bool
     "wholeScrnSize" :   1024,
     "r0"            :   0.16,
     },
