@@ -590,7 +590,7 @@ class LgsConfig(ConfigObj):
                              in metres                           ``600e-9``
         ``propagationMode``  str: Mode of light propogation 
                              from GS. Can be "physical" or 
-                             "geometric".\**                     ``"phsyical"``
+                             "geometric".                        ``"phsyical"``
         ``height``           float: Height to use physical 
                              propogation of LGS (does not 
                              effect cone-effect) in metres       ``90000``
