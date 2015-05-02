@@ -68,7 +68,7 @@ simConfiguration = {
     "svdConditioning":   [1e-15,     0.05],
     "closed"         :   [True,      True],
     "gain"           :   [0.6,       0.7],
-    "iMatValue"      :   [0.2,       0.2 ],
+    "iMatValue"      :   [2.,       0.2 ],
     },
 
 "Science":{
