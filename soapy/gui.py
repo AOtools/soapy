@@ -481,7 +481,7 @@ class GUI(QtGui.QMainWindow):
         self.LUT = self.gradient.getLookupTable(256)
 
     def gainChanged(self, dm):
-        self.config.dm[dm].gain = self.gainSpins[dm].value()
+        self.config.dms[dm].gain = self.gainSpins[dm].value()
 
     def updateTimeChanged(self):
         

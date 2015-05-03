@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Fri Mar 20 20:04:37 2015
+# Created: Sat May  2 15:09:53 2015
 #      by: PyQt4 UI code generator 4.11.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -311,7 +311,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "AO Tomography Simulation", None))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Simulation Optique Adaptative in Python", None))
         self.label_7.setText(_translate("MainWindow", "Plot Update Rate (Hz)", None))
         self.label_2.setText(_translate("MainWindow", "Gain -", None))
         self.LgsPsfLabel.setText(_translate("MainWindow", "Laser Guide Star PSFs", None))

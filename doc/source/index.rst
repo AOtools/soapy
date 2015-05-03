@@ -15,6 +15,7 @@ Contents:
    intro.rst
    install.rst
    basicUsage.rst
+   simpleTutorial.rst
    Configuration.rst
    dataSources.rst
    sim.rst
