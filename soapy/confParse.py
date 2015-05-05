@@ -446,7 +446,6 @@ class WfsConfig(ConfigObj):
         ``pxlsPerSubap``        int: number of pixels per sub-apertures
         ``subapFOV``            float: Field of View of sub-aperture in
                                 arc-secs
-        ``GSMag``               float: Apparent magnitude of the guide star
         ==================      ===================
 
     Optional:
@@ -455,6 +454,8 @@ class WfsConfig(ConfigObj):
         ------------------- ---------------------------------- -----------
         ``type``            string: Which WFS object to load
                             from WFS.py?                        ``ShackHartmann``
+        ``GSMag``           float: Apparent magnitude of the 
+                            guide star                         ``0``
         ``photonNoise``     bool: Include photon (shot) noise. ``False``
         ``eReadNoise``      float: Electrons of read noise     ``0``
         ``throughput``      float: Throughput of the entire
@@ -523,7 +524,6 @@ class WfsConfig(ConfigObj):
                                 "nxSubaps",
                                 "pxlsPerSubap",
                                 "subapFOV",
-                                "GSMag",
                             ]
 
         self.optionalParams = [ ("propagationMode", "geometric"),
@@ -547,6 +547,7 @@ class WfsConfig(ConfigObj):
                                 ("throughput", 1.),
                                 ("eReadNoise", 0),
                                 ("photonNoise", False),
+                                ("GSMag", 0.0),
                             ]
         self.initParams()
 
