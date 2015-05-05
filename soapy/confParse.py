@@ -465,7 +465,7 @@ class WfsConfig(ConfigObj):
                             optical train and detector gain.   ``1.``
         ``propagationMode`` string: Mode of light propogation 
                             from GS. Can be "physical" or 
-                            "geometric".                       ``"geometric"``
+                            "geometric"\**.                     ``"geometric"``
         ``subapFieldStop``  bool: if True, add a field stop to
                             the wfs to prevent spots wandering
                             into adjacent sub-apertures. if
@@ -475,7 +475,7 @@ class WfsConfig(ConfigObj):
         ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
-                            reconstruction.                     ``False``
+                            reconstruction.\**                  ``False``
         ``fftOversamp``     int: Multiplied by the number of
                             of phase points required for FOV 
                             to increase fidelity from FFT.      ``3``
@@ -486,8 +486,9 @@ class WfsConfig(ConfigObj):
         ``lgs``             bool: is WFS an LGS?                ``False``
         ``centMethod``      string: Method used for 
                             Centroiding. Can be 
-                            `centreOfGravity`,
-                            `brightestPxl`, or `correlation`    ``centreOfGravity``
+                            ``centreOfGravity``,
+                            ``brightestPxl``, or 
+                            ``correlation``.\**                 ``centreOfGravity``
         ``referenceImage``  array: Reference images used in
                             the correlation centroider. Full
                             image plane image, each subap has
@@ -497,7 +498,7 @@ class WfsConfig(ConfigObj):
                             in arc-secs                         ``0``
         ``centThreshold``   float: Centroiding threshold as
                             a fraction of the max subap
-                            value.                              ``0.1``
+                            value.\**                           ``0.1``
         ``exposureTime``    float: Exposure time of the WFS 
                             camera - must be higher than 
                             loopTime. If None, will be 
@@ -602,7 +603,7 @@ class LgsConfig(ConfigObj):
                              in metres                           ``600e-9``
         ``propagationMode``  str: Mode of light propogation 
                              from GS. Can be "physical" or 
-                             "geometric"                         ``"phsyical"``
+                             "geometric".                        ``"phsyical"``
         ``height``           float: Height to use physical 
                              propogation of LGS (does not 
                              effect cone-effect) in metres       ``90000``
@@ -666,7 +667,7 @@ class DmConfig(ConfigObj):
                                 one dimension, 
                                 for Zernike DMs this is number of Zernike 
                                 modes.
-        ``gain``                float: The loop gain for the DM      
+        ``gain``                float: The loop gain for the DM.\**    
         ``svdConditioning``     float: The conditioning parameter used in the 
                                 pseudo inverse of the interaction matrix. This
                                 is performed by `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
@@ -676,7 +677,7 @@ class DmConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
-        ``closed``           bool:Is DM closed loop of WFS?       ``True``
+        ``closed``           bool:Is DM closed loop of WFS?\**    ``True``
         ``iMatValue``        float: Value to push actuators
                              when making iMat                    ``10``
         ``wfs``              int: which Wfs to take iMat and
