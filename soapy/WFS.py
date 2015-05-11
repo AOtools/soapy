@@ -573,10 +573,8 @@ class WFS(object):
         dPlaneArray += numpy.random.normal((self.maxFlux/self.wfsConfig.SNR),
         0.1*self.maxFlux/self.wfsConfig.SNR, dPlaneArray.shape).clip(0,self.maxFlux).astype(self.dPlaneType)
 
-
     def photonNoise(self):
         pass
-
 
     def iMatFrame(self, phs):
         '''
@@ -599,7 +597,7 @@ class WFS(object):
         self.calcFocalPlane()
         self.makeDetectorPlane()
         self.calculateSlopes()
-        
+
         self.wfsConfig.removeTT = removeTT
         self.iMat=False
 
