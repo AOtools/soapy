@@ -1084,10 +1084,7 @@ class ShackHartmann(WFS):
         if self.wfsConfig.SNR:
             self.photonNoise()
             self.readNoise(self.wfsDetectorPlane)
-
-
-        if self.wfsConfig.eReadNoise != 0:
-            self.addReadNoise()
+            
 
     def LGSUplink(self):
         '''
