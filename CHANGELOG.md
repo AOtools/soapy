@@ -1,4 +1,4 @@
-#0.9-dev
+#0.9
 - Name change to Soapy!
 
 - Some parameters changed name 
