@@ -775,7 +775,7 @@ class Sim(object):
                         sci, self.sciCams[sci].instStrehl, 
                         self.sciCams[sci].longExpStrehl)
             
-        logger.statusMessage(iter, self.config.sim.nIters, string )
+        logger.statusMessage(iter+1, self.config.sim.nIters, string )
         
 
     def addToGuiQueue(self):
@@ -784,8 +784,7 @@ class Sim(object):
 
         The soapy GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
         """
-
-        if self.guiQueue!=None:
+        if self.guiQueue != None:
             if self.waitingPlot:
                 guiPut = []
                 wfsFocalPlane = {}
@@ -855,7 +854,7 @@ class Sim(object):
                 self.waitingPlot = False
 
 
-#Functions used by MP stuff
+# Functions used by MP stuff
 def multiWfs(scrns, wfsObj, dmShape, read, queue):
     """
     Function to run the WFS in multiprocessing mode.
