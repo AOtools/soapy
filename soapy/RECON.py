@@ -69,49 +69,55 @@ class Reconstructor(object):
         else:
             self.moveScrns = atmos.moveScrns
         self.wfss = wfss
-                
+
         self.initControlMatrix()
 
         self.Trecon = 0
 
     def initControlMatrix(self):
 
-        self.controlMatrix = numpy.zeros((self.simConfig.totalWfsData, self.simConfig.totalActs))
-        self.controlShape = (self.simConfig.totalWfsData, self.simConfig.totalActs)
+        self.controlMatrix = numpy.zeros(
+            (self.simConfig.totalWfsData, self.simConfig.totalActs))
+        self.controlShape = (
+            self.simConfig.totalWfsData, self.simConfig.totalActs)
 
     def saveCMat(self):
         filename = self.simConfig.simName+"/cMat.fits"
-        
+
         cMatHDU = fits.PrimaryHDU(self.controlMatrix)
         cMatHDU.header["DMNO"] = self.simConfig.nDM
-        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
-        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
-        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
-        
+        cMatHDU.header["DMACTS"] = "%s" % list(self.dmActs)
+        cMatHDU.header["DMTYPE"] = "%s" % list(self.dmTypes)
+        cMatHDU.header["DMCOND"] = "%s" % list(self.dmConds)
+
         cMatHDU.writeto(filename, clobber=True)
 
     def loadCMat(self):
-        
-        filename=self.simConfig.simName+"/cMat.fits"
-        
+
+        filename = self.simConfig.simName+"/cMat.fits"
+
+        logger.statusMessage(
+                    1,  1, "Load Command Matrix")
+
         cMatHDU = fits.open(filename)[0]
         cMatHDU.verify("fix")
         header = cMatHDU.header
-        
-        
+
         try:
-            #dmActs = dmTypes = dmConds = None 
+            # dmActs = dmTypes = dmConds = None
             dmNo = int(header["DMNO"])
-            exec("dmActs = numpy.array({})".format(cMatHDU.header["DMACTS"]), globals())
-            exec("dmTypes = %s"%header["DMTYPE"],globals())
-            exec("dmConds = numpy.array({})".format(cMatHDU.header["DMCOND"]),globals())
-             
+            exec("dmActs = numpy.array({})".format(
+                    cMatHDU.header["DMACTS"]), globals())
+            exec("dmTypes = %s" % header["DMTYPE"], globals())
+            exec("dmConds = numpy.array({})".format(
+                    cMatHDU.header["DMCOND"]), globals())
+
             if not numpy.allclose(dmConds,self.dmConds):
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:
                 logger.warning("loaded control matrix may not be compatibile with \
                                 the current simulation. Will try anyway....")
-                                
+
             #cMat = cMatFile[1]
             cMat = cMatHDU.data
             
@@ -125,48 +131,52 @@ class Reconstructor(object):
             raise Exception
         else:
             self.controlMatrix = cMat
-    
+
     def saveIMat(self):
 
         for dm in xrange(self.simConfig.nDM):
-            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits"%dm
-            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits"%dm
-            
-            fits.PrimaryHDU(self.dms[dm].iMat).writeto(filenameIMat,
-                                                        clobber=True)
-            fits.PrimaryHDU(self.dms[dm].iMatShapes).writeto(filenameShapes,
-                                                        clobber=True)
-            
-                            
+            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits" % dm
+            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
+
+            fits.PrimaryHDU(self.dms[dm].iMat).writeto(
+                    filenameIMat, clobber=True)
+            fits.PrimaryHDU(self.dms[dm].iMatShapes).writeto(
+                    filenameShapes, clobber=True)
+
     def loadIMat(self):
-        
+
         for dm in xrange(self.simConfig.nDM):
-            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits"%dm
-            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits"%dm
-            
+            logger.statusMessage(
+                    dm,  self.simConfig.nDM-1, "Load DM Interaction Matrix")
+            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits" % dm
+            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
+
             iMat = fits.open(filenameIMat)[0].data
             iMatShapes = fits.open(filenameShapes)[0].data
-            
-            if iMat.shape!=(self.dms[dm].acts,2*self.dms[dm].totalSubaps):
-                logger.warning("interaction matrix does not match required required size.")
+
+            if iMat.shape != (self.dms[dm].acts, 2*self.dms[dm].totalSubaps):
+                logger.warning(
+                    "interaction matrix does not match required required size."
+                    )
                 raise Exception
-            if iMatShapes.shape[-1]!=self.dms[dm].simConfig.simSize:
-                logger.warning("loaded DM shapes are not same size as current sim.")
+            if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
+                logger.warning(
+                        "loaded DM shapes are not same size as current sim.")
                 raise Exception
             else:
                 self.dms[dm].iMat = iMat
                 self.dms[dm].iMatShapes = iMatShapes
-    
-        
-    def makeIMat(self,callback, progressCallback):
- 
+
+    def makeIMat(self, callback, progressCallback):
+
         for dm in xrange(self.simConfig.nDM):
-            logger.info("Creating Interaction Matrix on DM %d..."%dm)
-            self.dms[dm].makeIMat(callback=callback) 
-        
-    def makeCMat(self,loadIMat=True, loadCMat=True, callback=None, 
-                        progressCallback=None):
-        
+            logger.info("Creating Interaction Matrix on DM %d..." % dm)
+            self.dms[dm].makeIMat(callback=callback)
+
+    def makeCMat(
+            self, loadIMat=True, loadCMat=True, callback=None,
+            progressCallback=None):
+
         if loadIMat:
             try:
                 self.loadIMat()
@@ -198,7 +208,7 @@ class Reconstructor(object):
             logger.info("Creating Command Matrix")
             self.calcCMat(callback, progressCallback)
             logger.info("Command Matrix Generated!")
-       
+
 
     def reconstruct(self,slopes):
         t=time.time()
