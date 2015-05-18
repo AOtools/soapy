@@ -97,6 +97,8 @@ class atmos:
         self.r0 = atmosConfig.r0
         self.looptime = simConfig.loopTime
 
+        self.atmosConfig = atmosConfig
+
         atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths, 
                 dtype="float32")
 

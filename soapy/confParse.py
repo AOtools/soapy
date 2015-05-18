@@ -409,6 +409,9 @@ class AtmosConfig(ConfigObj):
         ``L0``              list, float: Outer scale of each
                             layer. Kolmogorov turbulence if
                             ``None``.                           ``None``
+        ``randomScrns``     bool: Use a random set of phase 
+                            phase screens for each loop
+                            iteration?                          ``False``
         ==================  =================================   ===========    
     """
 
@@ -426,7 +429,8 @@ class AtmosConfig(ConfigObj):
 
         self.optionalParams = [ ("scrnNames",None),
                                 ("subHarmonics",False),
-                                ("L0", None)
+                                ("L0", None),
+                                ("randomScrns", False)
                                 ]
 
         self.initParams()
