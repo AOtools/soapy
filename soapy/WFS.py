@@ -750,12 +750,12 @@ class ShackHartmann(WFS):
         self.subapFOVSpacing *= self.SUBAP_OVERSIZE
         self.wfsConfig.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
                                             *self.wfsConfig.pxlsPerSubap)
-       
 
         self.scaledEFieldSize =int(round(
                 self.wfsConfig.nxSubaps*self.subapFOVSpacing*
                 (float(self.simConfig.simSize)/self.simConfig.pupilSize)
                 ))
+
         #Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
 
@@ -770,6 +770,7 @@ class ShackHartmann(WFS):
                         self.detectorSubapCoords[i, 0]+self.wfsConfig.pxlsPerSubap,
                         self.detectorSubapCoords[i, 1]:
                         self.detectorSubapCoords[i, 1]+self.wfsConfig.pxlsPerSubap]
+
 
     def findActiveSubaps(self):
         '''

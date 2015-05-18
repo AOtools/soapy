@@ -875,7 +875,7 @@ def multiWfs(scrns, wfsObj, dmShape, read, queue):
     else:
         lgsPsf = None
 
-    res = [ slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
+    res = [slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
 
     queue.put(res)
 
