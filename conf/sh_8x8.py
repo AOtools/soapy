@@ -35,7 +35,6 @@ simConfiguration = {
     "scrnStrengths" :   numpy.array([0.5, 0.3, 0.1, 0.1]),
     "windDirs"      :   numpy.array([0, 45, 90, 135]),
     "windSpeeds"    :   numpy.array([10, 10, 15, 20]),
-    "newScreens"    :   True, #Bool
     "wholeScrnSize" :   2048,
     "r0"            :   0.16,
     },
@@ -69,7 +68,7 @@ simConfiguration = {
     "svdConditioning":   [1e-15,     0.05],
     "closed"         :   [True,      True],
     "gain"           :   [0.6,       0.7],
-    "iMatValue"      :   [0.2,       0.2 ],
+    "iMatValue"      :   [2.,       0.2 ],
     },
 
 "Science":{

@@ -36,7 +36,7 @@ Examples:
     Configuration information has now been loaded, and can be accessed through the ``config`` attribute of the ``sim`` class. In fact, each sub-module of the system has a configuration object accessed through this config attribute::
 
         print(sim.config.sim.pupilSize)
-        sim.config.wfs[0].pxlsPerSubap = 10
+        sim.config.wfss[0].pxlsPerSubap = 10
 
     Next, the system is initialised, this entails calculating various parameters in the system sub-modules, so must be done after changing some simulation parameters::
 
@@ -194,7 +194,7 @@ class Sim(object):
 
             logger.info("Setting fftwThreads to 1 as WFS MP")
             for wfs in xrange(self.config.sim.nGS):
-                self.config.wfs[wfs].fftwThreads = 1
+                self.config.wfss[wfs].fftwThreads = 1
             self.runWfs = self.runWfs_MP
         else:
             self.runWfs = self.runWfs_noMP
@@ -206,16 +206,16 @@ class Sim(object):
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for wfs in xrange(self.config.sim.nGS):
             try:
-                wfsClass = eval("WFS.{}".format(self.config.wfs[wfs].type))
+                wfsClass = eval("WFS.{}".format(self.config.wfss[wfs].type))
             except AttributeError:
-                raise confParse.ConfigurationError("No WFS of type {} found.".format(self.config.wfs[wfs].type))
+                raise confParse.ConfigurationError("No WFS of type {} found.".format(self.config.wfss[wfs].type))
 
 
             self.wfss[wfs]=wfsClass(    
-                    self.config.sim, self.config.wfs[wfs], 
-                    self.config.atmos, self.config.lgs[wfs], self.mask)
+                    self.config.sim, self.config.wfss[wfs], 
+                    self.config.atmos, self.config.lgss[wfs], self.mask)
             
-            self.config.wfs[wfs].dataStart = self.config.sim.totalWfsData
+            self.config.wfss[wfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[wfs].activeSubaps*2
             
             logger.info("WFS {0}: {1} measurements".format(wfs,
@@ -233,12 +233,12 @@ class Sim(object):
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
-                dmObj = eval( "DM."+self.config.dm[dm].type)
+                dmObj = eval( "DM."+self.config.dms[dm].type)
             except AttributeError:
-                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dm[dm].type))
+                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
             self.dms[dm] = dmObj(
-                        self.config.sim, self.config.dm[dm],
+                        self.config.sim, self.config.dms[dm],
                         self.wfss, self.mask
                         )
 
@@ -269,10 +269,10 @@ class Sim(object):
         for sci in xrange(self.config.sim.nSci):
             self.sciCams[sci] = SCI.scienceCam( 
                         self.config.sim, self.config.tel, self.config.atmos,
-                        self.config.sci[sci], self.mask
+                        self.config.scis[sci], self.mask
                         )
 
-            self.sciImgs[sci] = numpy.zeros( [self.config.sci[sci].pxls]*2 )
+            self.sciImgs[sci] = numpy.zeros( [self.config.scis[sci].pxls]*2 )
 
 
         #Init data storage
@@ -364,7 +364,7 @@ class Sim(object):
             if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
-                        /self.config.wfs[wfs].exposureTime) 
+                        /self.config.wfss[wfs].exposureTime) 
                                         != self.wfsFrameNo[wfs]):
                     self.wfsFrameNo[wfs]+=1
                     read=True
@@ -418,7 +418,7 @@ class Sim(object):
             if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
-                        /self.config.wfs[wfs].exposureTime) 
+                        /self.config.wfss[wfs].exposureTime) 
                                         != self.wfsFrameNo[wfs]):
                     self.wfsFrameNo[wfs]+=1
                     read = True
@@ -467,7 +467,7 @@ class Sim(object):
         self.dmShape[:] = 0
 
         for dm in xrange(self.config.sim.nDM):
-            if self.config.dm[dm].closed==closed:
+            if self.config.dms[dm].closed==closed:
                 self.dmShape += self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
                                     self.dmAct1[dm]+self.dms[dm].acts], 
@@ -709,7 +709,7 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             self.lgsPsfs = []
             for lgs in xrange(self.config.sim.nGS):
-                if self.config.wfs[lgs].lgsUplink:
+                if self.config.wfss[lgs].lgsUplink:
                     self.lgsPsfs.append(
                             numpy.empty(self.config.sim.nIters, 
                             self.config.sim.pupilSize, 
@@ -741,7 +741,7 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             lgs=0
             for wfs in xrange(self.config.sim.nGS):
-                if self.config.lgs[wfs].lgsUplink:
+                if self.config.lgss[wfs].lgsUplink:
                     self.lgsPsfs[lgs, i] = self.wfss[wfs].LGS.PSF
                     lgs+=1
 
@@ -835,7 +835,7 @@ class Sim(object):
                         sci, self.sciCams[sci].instStrehl, 
                         self.sciCams[sci].longExpStrehl)
             
-        logger.statusMessage(iter, self.config.sim.nIters, string )
+        logger.statusMessage(iter+1, self.config.sim.nIters, string )
         
 
     def addToGuiQueue(self):
@@ -844,8 +844,7 @@ class Sim(object):
 
         The soapy GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
         """
-
-        if self.guiQueue!=None:
+        if self.guiQueue != None:
             if self.waitingPlot:
                 guiPut = []
                 wfsFocalPlane = {}
@@ -915,7 +914,7 @@ class Sim(object):
                 self.waitingPlot = False
 
 
-#Functions used by MP stuff
+# Functions used by MP stuff
 def multiWfs(scrns, wfsObj, dmShape, read, queue):
     """
     Function to run the WFS in multiprocessing mode.
@@ -936,7 +935,7 @@ def multiWfs(scrns, wfsObj, dmShape, read, queue):
     else:
         lgsPsf = None
 
-    res = [ slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
+    res = [slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
 
     queue.put(res)
 
