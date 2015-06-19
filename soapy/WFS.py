@@ -77,7 +77,6 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 :Author:
     Andrew Reeves
 """
-
 import numpy
 import numpy.random
 from scipy.interpolate import interp2d
@@ -985,19 +984,19 @@ class ShackHartmann(WFS):
         Parameters:
             intensity (float): The relative intensity to multiply the focal plane by.
         '''
-
-        #Scale phase (EField) to correct size for FOV (plus a bit with padding)
-        #self.scaledEField = aoSimLib.zoom( 
+        # Scale phase (EField) to correct size for FOV (plus a bit with padding)
+        # self.scaledEField = aoSimLib.zoom( 
         #       self.EField, self.scaledEFieldSize)*self.scaledMask
         aoSimLib.zoom_numba(
                 self.EField, self.scaledEField, threads = self.simConfig.procs)
         self.scaledEField*=self.scaledMask
-        #Now cut out only the eField across the pupilSize
+
+        # Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.) 
                 - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
         self.pupilEField = self.scaledEField[coord:-coord, coord:-coord]
 
-        #create an array of individual subap EFields
+        # create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
             x,y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
@@ -1007,21 +1006,20 @@ class ShackHartmann(WFS):
                                     int(y):
                                     int(y+self.subapFOVSpacing)]
 
-        #do the fft to all subaps at the same time
+        # do the fft to all subaps at the same time
         # and convert into intensity
         self.FFT.inputData[:] = 0
-        self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
-                        ,:int(round(self.subapFOVSpacing))] \
+        self.FFT.inputData[:,:int(round(self.subapFOVSpacing)),
+                             :int(round(self.subapFOVSpacing))] \
                 = self.subapArrays*numpy.exp(1j*(self.tiltFix))
-
-
+     
         if intensity==1:
             self.FPSubapArrays += aoSimLib.absSquare(
                     AOFFT.ftShift2d(self.FFT()))
         else:
             self.FPSubapArrays += intensity*aoSimLib.absSquare(
                     AOFFT.ftShift2d(self.FFT()))
-    
+
 
     def makeDetectorPlane(self):
         '''
