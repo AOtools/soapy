@@ -456,8 +456,7 @@ class Sim(object):
         self.Twfs+=time.time()-t_wfs
         return slopes 
 
-
-    def runDM(self,dmCommands,closed=True):
+    def runDM(self, dmCommands, closed=True):
         """
         Runs a single frame of the deformable mirrors
 
@@ -483,7 +482,7 @@ class Sim(object):
         self.Tdm += time.time()-t
         return self.dmShape
 
-    def runSciCams(self,dmShape=None):
+    def runSciCams(self, dmShape=None):
         """
         Runs a single frame of the science Cameras
 
@@ -524,44 +523,44 @@ class Sim(object):
             for i in xrange(self.config.sim.nIters):
                 if self.go:
 
-                    #get next phase screens
+                    # Get next phase screens
                     t = time.time()
                     self.scrns = self.atmos.moveScrns()
                     self.Tatmos = time.time()-t
 
-                    #Reset correction
+                    # Reset correction
                     self.closedCorrection[:] = 0
                     self.openCorrection[:] = 0
 
-                    #Run Loop...
+                    # Run Loop...
                     ########################################
 
-                    #Get dmCommands from reconstructor
+                    # Get dmCommands from reconstructor
                     if self.config.sim.nDM:
                         self.dmCommands[:] = self.recon.reconstruct(self.slopes)
 
-                    #Get dmShape from closed loop DMs
+                    # Get dmShape from closed loop DMs
                     self.closedCorrection += self.runDM(
                             self.dmCommands, closed=True)
 
-                    #Run WFS, with closed loop DM shape applied
+                    # Run WFS, with closed loop DM shape applied
                     self.slopes = self.runWfs(  dmShape=self.closedCorrection,
                                                 loopIter=i)
 
-                    #Get DM shape for open loop DMs, add to closed loop DM shape
+                    # Get DM shape for open loop DMs, add to closed loop DM shape
                     self.openCorrection += self.runDM(  self.dmCommands, 
                                                         closed=False)
 
-                    #Pass whole combined DM shapes to science target
+                    # Pass whole combined DM shapes to science target
                     self.runSciCams(
                                 self.openCorrection+self.closedCorrection)
                     
-                    #Save Data
+                    # Save Data
                     self.storeData(i)
 
                     self.iters = i
 
-                    #logger.statusMessage(i, self.config.sim.nIters, 
+                    # logger.statusMessage(i, self.config.sim.nIters, 
                     #                    "AO Loop")
                     
                     self.printOutput(self.config.filename, i, strehl=True)
@@ -781,7 +780,7 @@ class Sim(object):
                         sci, self.sciCams[sci].instStrehl, 
                         self.sciCams[sci].longExpStrehl)
             
-        logger.statusMessage(iter, self.config.sim.nIters, string )
+        logger.statusMessage(iter+1, self.config.sim.nIters, string )
         
 
     def addToGuiQueue(self):
@@ -790,8 +789,7 @@ class Sim(object):
 
         The soapy GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
         """
-
-        if self.guiQueue!=None:
+        if self.guiQueue != None:
             if self.waitingPlot:
                 guiPut = []
                 wfsFocalPlane = {}
@@ -861,7 +859,7 @@ class Sim(object):
                 self.waitingPlot = False
 
 
-#Functions used by MP stuff
+# Functions used by MP stuff
 def multiWfs(scrns, wfsObj, dmShape, read, queue):
     """
     Function to run the WFS in multiprocessing mode.
@@ -882,7 +880,7 @@ def multiWfs(scrns, wfsObj, dmShape, read, queue):
     else:
         lgsPsf = None
 
-    res = [ slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
+    res = [slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
 
     queue.put(res)
 

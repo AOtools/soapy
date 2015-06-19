@@ -98,7 +98,6 @@ class atmos:
         self.looptime = simConfig.loopTime
 
         self.mpPool = mpPool
-
         self.atmosConfig = atmosConfig
 
         atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths, 
@@ -233,7 +232,13 @@ class atmos:
             dict : a dictionary containing the new set of phase screens
         """
 
+        # If random screens are required:
+        if self.atmosConfig.randomScrns:
+            return self.randomScrns(subHarmonics=self.atmosConfig.subHarmonics)
+
+        # Other wise proceed with translating large phase screens
         scrns={}
+
         for i in self.wholeScrns:
 
             #Deals with what happens when the window on the screen
@@ -299,7 +304,11 @@ class atmos:
 
         return scrns
 
+<<<<<<< HEAD
     def randomScrns(self, subharmonics=True):
+=======
+    def randomScrns(self, subHarmonics=True, L0=30., l0=0.01):
+>>>>>>> master
         """
         Generated random phase screens defined by the atmosphere 
         object parameters.
@@ -309,6 +318,7 @@ class atmos:
         """
 
         scrns = {}
+<<<<<<< HEAD
         args = []
     
         #If no MP pool, just make screen sequentialy. 
@@ -324,6 +334,23 @@ class atmos:
                             self.scrnStrengths[i], self.scrnSize, 
                             (self.pxlScale**(-1.)), self.atmosConfig.L0[i], 
                             0.01)
+=======
+        for i in xrange(self.scrnNo):
+            if subHarmonics:
+                scrns[i] = ft_sh_phase_screen(
+                        self.scrnStrengths[i], self.scrnSize, 
+                        (self.pxlScale**(-1.)), L0, l0)
+            else:
+                scrns[i] = ft_phase_screen(
+                        self.scrnStrengths[i], self.scrnSize, 
+                        (self.pxlScale**(-1.)), L0, l0)
+
+        # pool = Pool(2)
+        # args = []
+        # for i in xrange(self.scrnNo):
+        #     args.append((self.scrnStrengths[i], self.scrnSize, 
+        #                 self.pxlScale**(-1.), L0, l0))
+>>>>>>> master
 
         #If there is a pool, use it
         else:
@@ -481,18 +508,18 @@ def makePhaseScreens(
 
     Parameters:
         nScrns (int): The number of screens to make.
-        r0 (float): r0 value of the phase screens.
+        r0 (float): r0 value of the phase screens in metres.
         N (int): Number of elements across each screen.
         pxlScale (float): Size of each element in metres.
         L0 (float): Outer scale of each screen.
         l0 (float): Inner scale of each screen.
-        returnScrns (bool): Whether to return a list of screens. True by default, but if screens are very large, it might be preferred that they aren't kept in memory after being saved.
+        returnScrns (bool, optional): Whether to return a list of screens. True by default, but if screens are very large, False might be preferred so they aren't kept in memory if saving to disk.
         DIR (str, optional): The directory to save the screens.
         SH (bool, optional): If True, add sub-harmonics to screens for more 
                 accurate power spectra, though screens no-longer periodic.
    
     Returns:
-        list: A list conaining all the screens.
+        list: A list containing all the screens.
     """
    
     #Make directory if it doesnt exist already
