@@ -678,8 +678,6 @@ class WFS(object):
             if numpy.any(correction):
                 self.EField *= numpy.exp(-1j*correction*self.r0Scale)
             self.calcFocalPlane()
-
-
     
         if read:
             self.makeDetectorPlane()
@@ -778,7 +776,7 @@ class ShackHartmann(WFS):
         determined if mean of subap coords of the mask is above threshold.
         
         '''
-
+        # Cut only pupil from extended field
         mask = self.mask[
                 self.simConfig.simPad : -self.simConfig.simPad,
                 self.simConfig.simPad : -self.simConfig.simPad
@@ -786,6 +784,8 @@ class ShackHartmann(WFS):
         self.subapCoords = aoSimLib.findActiveSubaps(
                 self.wfsConfig.nxSubaps, mask,
                 self.wfsConfig.subapThreshold)
+
+
         self.activeSubaps = self.subapCoords.shape[0]
         self.detectorSubapCoords = numpy.round(
                 self.subapCoords*(
@@ -973,29 +973,54 @@ class ShackHartmann(WFS):
 
     def calcFocalPlane(self, intensity=1):
         '''
-        Calculates the wfs focal plane, given the phase across the WFS
+        Calculates the wfs focal plane, given the phase across the WFS.
+
+        First scales the calculated phase complex amplitude to the correct size
+        to give the required Field of View, then chops into sub-apertures.
+        Finally, an FFT is performed to give the focal plane with some padding.
+        The padding will be a factor of the number of pixels in the detector 
+        so it can be later binned down.
+
+        Parameters: 
+            intensity (float, optional): Relative intensity of this image. Used for LGS elongation.
         '''
 
         #Scale phase (EField) to correct size for FOV (plus a bit with padding)
         self.scaledEField = aoSimLib.zoom( 
                 self.EField, self.scaledEFieldSize)*self.scaledMask
 
-        #Now cut out only the eField across the pupilSize
-        coord = round(int(((self.scaledEFieldSize/2.) 
-                - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
-        self.scaledEField = self.scaledEField[coord:-coord, coord:-coord]
+        # #Now cut out only the eField across the pupilSize
+        # COMMENTED 19TH JUNE FOR PUPIL MISALIGNMENTS
+        # coord = round(int(((self.scaledEFieldSize/2.) 
+        #         - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
+        # self.scaledEField = self.scaledEField[coord:-coord, coord:-coord]
+
+        # Check no shifting pupil too far...
+        pupilShift = numpy.round(numpy.array(self.wfsConfig.pupilShift)
+                    * self.simConfig.pxlScale
+                    ).astype("int64")
+
+        if numpy.max(pupilShift)>self.simConfig.simPad:
+                raise ValueError("PupilShift may not be larger than padding")
+        if numpy.max(pupilShift)>=self.PPSpacing:
+                raise ValueError("PupilShift must be less than sub-aperture size")
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
-            x,y = numpy.round(self.subapCoords[i] *
-                                     self.subapFOVSpacing/self.PPSpacing)
+            # Get the subap coordinates, with padding and pupilShift accounted for
+            coord = self.subapCoords[i] + self.simConfig.simPad + pupilShift
+
+            # Scale coords to FOV size
+            x, y = coord * self.subapFOVSpacing/self.PPSpacing
+            
+            # And put into the subapArrays arrays to be FFTed
             self.subapArrays[i] = self.scaledEField[
                                     int(x):
                                     int(x+self.subapFOVSpacing) ,
                                     int(y):
                                     int(y+self.subapFOVSpacing)]
 
-        #do the fft to all subaps at the same time
+        # do the FFT to all subaps at the same time
         # and convert into intensity
         self.FFT.inputData[:] = 0
         self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
@@ -1008,11 +1033,12 @@ class ShackHartmann(WFS):
         else:
             self.FPSubapArrays += intensity*numpy.abs(
                     AOFFT.ftShift2d(self.FFT()))**2
-    
 
     def makeDetectorPlane(self):
         '''
-        if required, will convolve final psf with LGS psf, then bins
+        Forms the final image recorded by the WFS camera
+
+        If required, will convolve final psf with LGS psf, then bins each 
         psf down to detector size. Finally puts back into wfsFocalPlane Array
         in correct order.
         '''
@@ -1110,10 +1136,14 @@ class ShackHartmann(WFS):
 
     def calculateSlopes(self):
         '''
-        Calculates WFS slopes from wfsFocalPlane
-
-        Returns:
-            ndarray: array of all WFS measurements
+        Calculates are returns the measured WFS slopes
+        
+        Chopes the ``wfsDetectorPlane`` into a vector of sub-apertures, 
+        which are then fed into the chosen centroider. Any static offsets
+        are subtracted, if requested the average tip-tilt can be removed,
+        and finally, some noise can be added.
+        Returns 
+            ndarray: 1-D vector of WFS centroids
         '''
 
         # Sort out FP into subaps
@@ -1123,26 +1153,6 @@ class ShackHartmann(WFS):
             y = int(y)
             self.centSubapArrays[i] = self.wfsDetectorPlane[x:x+self.wfsConfig.pxlsPerSubap,
                                                     y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
-
-        #if self.wfsConfig.pxlsPerSubap==2:
-        #    slopes = aoSimLib.quadCell(self.centSubapArrays)
-
-        #elif self.wfsConfig.centMethod=="brightestPxl":
-        #    slopes = aoSimLib.brtPxlCentroid(
-        #            self.centSubapArrays, (self.wfsConfig.centThreshold*
-        #                        (self.wfsConfig.pxlsPerSubap**2))
-        #                                    )
-
-        #elif self.wfsConfig.centMethod=="correlation":
-        #    slopes = aoSimLib.correlationCentriod(
-        #            self.centSubapArrays, self.wfsConfig.centThreshold,
-        #            self.wfsConfig.referenceImage)
-        #    
-        #else:
-        #    slopes = aoSimLib.simpleCentroid(
-        #            self.centSubapArrays, self.wfsConfig.centThreshold
-        #             ) 
-        #apr: 19-04-15
 
         #Eval the specified centroider, have to give all possible args
         #in case they're required. 
