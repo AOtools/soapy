@@ -210,10 +210,6 @@ class scienceCam:
         coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
         phs = self.phsBuffer[coord:-coord, coord:-coord] 
 
-        # Chop out the phase across the pupil before the fft
-        coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
-        phs = phs[coord:-coord, coord:-coord]
-
         eField = numpy.exp(1j * (phs + self.tiltFix)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField

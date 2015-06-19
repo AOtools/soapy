@@ -1143,27 +1143,6 @@ class ShackHartmann(WFS):
                     x:x+self.wfsConfig.pxlsPerSubap,
                     y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
-
-        #if self.wfsConfig.pxlsPerSubap==2:
-        #    slopes = aoSimLib.quadCell(self.centSubapArrays)
-
-        #elif self.wfsConfig.centMethod=="brightestPxl":
-        #    slopes = aoSimLib.brtPxlCentroid(
-        #            self.centSubapArrays, (self.wfsConfig.centThreshold*
-        #                        (self.wfsConfig.pxlsPerSubap**2))
-        #                                    )
-
-        #elif self.wfsConfig.centMethod=="correlation":
-        #    slopes = aoSimLib.correlationCentriod(
-        #            self.centSubapArrays, self.wfsConfig.centThreshold,
-        #            self.wfsConfig.referenceImage)
-        #    
-        #else:
-        #    slopes = aoSimLib.simpleCentroid(
-        #            self.centSubapArrays, self.wfsConfig.centThreshold
-        #             ) 
-        #apr: 19-04-15
-
         #Eval the specified centroider, have to give all possible args
         #in case they're required. 
         slopes = eval("centroiders."+self.wfsConfig.centMethod)(
