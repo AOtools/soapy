@@ -139,13 +139,17 @@ class DM:
             subap=0 
             for nWfs in range(len(self.wfss)):
                 
+                self.dmShape = self.iMatShapes[i]
+                        
+                # If a pupil shift is requested, do it.
+                if self.dmConfig.pupilShift!=(0,0):
+                    self.shiftPupil()
+
                 logger.debug("subap: {}".format(subap))
                 iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        self.wfss[nWfs].frame( 
-                                self.iMatShapes[i], iMatFrame=True
+                                self.dmShape, iMatFrame=True
                        ))
-                
-                self.dmShape = self.iMatShapes[i]
 
                 if callback!=None:
                     callback() 
@@ -191,7 +195,35 @@ class DM:
         #Remove any piston term from DM
         self.dmShape -= self.dmShape.mean()
 
+        # If a pupil shift is requested, do it.
+        if self.dmConfig.pupilShift!=(0,0):
+            self.shiftPupil()
+
         return self.dmShape
+
+    def shiftPupil(self):
+
+        # Create a new array to put the shifted DM shape in
+        self.shiftDmShape = numpy.zeros_like(self.dmShape)
+        # Convert pupil shift in metres to pixels. Change sign to match 
+        # WFS pupil shift
+        pupilShift = numpy.round(
+                numpy.array(self.dmConfig.pupilShift) * self.simConfig.pxlScale
+                ) * -1
+
+        # Put relevant section of dmShape into shifted array
+        if pupilShift[1] == 0:
+            self.shiftDmShape[pupilShift[0]:] = self.dmShape[:-pupilShift[0]]
+
+        elif pupilShift[0] == 0:
+            self.shiftDmShape[:,pupilShift[1]:]\
+                    = self.dmShape[:,:-pupilShift[1]]
+
+        else:
+            self.shiftDmShape[pupilShift[0]:, pupilShift[1]:]\
+                    = self.dmShape[:-pupilShift[0], :-pupilShift[1]]
+
+        self.dmShape = self.shiftDmShape
 
 
 class Zernike(DM):
