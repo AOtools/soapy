@@ -32,7 +32,6 @@ from . import logger
 #of how much to pad on each side
 SIM_OVERSIZE = 0.1
 
-
 class ConfigurationError(Exception):
     pass
 
@@ -541,8 +540,8 @@ class WfsConfig(ConfigObj):
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
                                 ("referenceImage", None),
-                                ("pupilShift", (0,0)) ]
-                            ]
+                                ("pupilShift", (0,0)) 
+                                ]
         self.initParams()
 
 
@@ -685,6 +684,8 @@ class DmConfig(ConfigObj):
         ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the 
                              inter-actuator spacing.             ``0.5``
+        ``pupilShift``       tuple: Shift of DM from pupil 
+                             centre.                             ``(0,0)``
         ==================== =================================   ===========  
         """
 
@@ -708,6 +709,7 @@ class DmConfig(ConfigObj):
                                 ("rotation", 0),
                                 ("interpOrder", 2),
                                 ("gaussWidth", 0.5),
+                                ("pupilShift", (0,0)),
                                 ]
         self.initParams()
 
