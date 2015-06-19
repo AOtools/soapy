@@ -503,6 +503,9 @@ class WfsConfig(ConfigObj):
                             system processor number.           ``1``
         ``fftwFlag``        str: Flag to pass to FFTW 
                             when preparing plan.               ``FFTW_PATIENT``
+        ``pupilShift``      tuple: X and Y values of the SH
+                            lens array from the pupil in 
+                            metres                              ``(0,0)``
         =================== ================================== =========== 
 
 
@@ -538,6 +541,7 @@ class WfsConfig(ConfigObj):
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
                                 ("referenceImage", None),
+                                ("pupilShift", (0,0)) ]
                             ]
         self.initParams()
 
