@@ -304,11 +304,7 @@ class atmos:
 
         return scrns
 
-<<<<<<< HEAD
     def randomScrns(self, subharmonics=True):
-=======
-    def randomScrns(self, subHarmonics=True, L0=30., l0=0.01):
->>>>>>> master
         """
         Generated random phase screens defined by the atmosphere 
         object parameters.
@@ -316,9 +312,7 @@ class atmos:
         Returns:
             dict : a dictionary containing the new set of phase screens
         """
-
         scrns = {}
-<<<<<<< HEAD
         args = []
     
         #If no MP pool, just make screen sequentialy. 
@@ -334,23 +328,6 @@ class atmos:
                             self.scrnStrengths[i], self.scrnSize, 
                             (self.pxlScale**(-1.)), self.atmosConfig.L0[i], 
                             0.01)
-=======
-        for i in xrange(self.scrnNo):
-            if subHarmonics:
-                scrns[i] = ft_sh_phase_screen(
-                        self.scrnStrengths[i], self.scrnSize, 
-                        (self.pxlScale**(-1.)), L0, l0)
-            else:
-                scrns[i] = ft_phase_screen(
-                        self.scrnStrengths[i], self.scrnSize, 
-                        (self.pxlScale**(-1.)), L0, l0)
-
-        # pool = Pool(2)
-        # args = []
-        # for i in xrange(self.scrnNo):
-        #     args.append((self.scrnStrengths[i], self.scrnSize, 
-        #                 self.pxlScale**(-1.), L0, l0))
->>>>>>> master
 
         #If there is a pool, use it
         else:
