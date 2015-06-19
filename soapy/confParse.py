@@ -316,6 +316,9 @@ class SimConfig(ConfigObj):
         ``learnAtmos``      str: if ``random``, then 
                             random phase screens used for 
                             `learn`                             ``random``
+        ``pupilShift``      tuple: Shift of the system pupil,
+                            applying to all components, in 
+                            metres                              ``(0,0)``
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -369,7 +372,8 @@ class SimConfig(ConfigObj):
                                 ("verbosity", 2),
                                 ("logfile", None),
                                 ("learnIters", 0),
-                                ("learnAtmos", "random"), 
+                                ("learnAtmos", "random"),
+                                ("pupilShift", (0,0)),
                         ]
 
         self.initParams()
