@@ -143,7 +143,11 @@ class DM:
                         
                 # If a pupil shift is requested, do it.
                 if self.dmConfig.pupilShift!=(0,0):
-                    self.shiftPupil()
+                    pShift = numpy.round(
+                            numpy.array(
+                                    self.dmConfig.pupilShift)\
+                                    * self.simConfig.pxlScale)
+                    self.dmShape = aoSimLib.shiftArray(self.dmShape, pShift)
 
                 logger.debug("subap: {}".format(subap))
                 iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
@@ -200,30 +204,6 @@ class DM:
             self.shiftPupil()
 
         return self.dmShape
-
-    def shiftPupil(self):
-
-        # Create a new array to put the shifted DM shape in
-        self.shiftDmShape = numpy.zeros_like(self.dmShape)
-        # Convert pupil shift in metres to pixels. Change sign to match 
-        # WFS pupil shift
-        pupilShift = numpy.round(
-                numpy.array(self.dmConfig.pupilShift) * self.simConfig.pxlScale
-                ) * -1
-
-        # Put relevant section of dmShape into shifted array
-        if pupilShift[1] == 0:
-            self.shiftDmShape[pupilShift[0]:] = self.dmShape[:-pupilShift[0]]
-
-        elif pupilShift[0] == 0:
-            self.shiftDmShape[:,pupilShift[1]:]\
-                    = self.dmShape[:,:-pupilShift[1]]
-
-        else:
-            self.shiftDmShape[pupilShift[0]:, pupilShift[1]:]\
-                    = self.dmShape[:-pupilShift[0], :-pupilShift[1]]
-
-        self.dmShape = self.shiftDmShape
 
 
 class Zernike(DM):
