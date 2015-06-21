@@ -44,12 +44,9 @@ class scienceCam:
         if self.padFOVPxlNo % 2 != self.FOVPxlNo % 2:
             self.padFOVPxlNo += 1
 
-        mask = self.mask[
-            self.simConfig.simPad:-self.simConfig.simPad,
-            self.simConfig.simPad:-self.simConfig.simPad
-        ]
-        self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
-                                      ).astype("float32")
+
+        # Mask the scaled mask to apply to the FOV size of phase
+        self.updateMask(self.mask)
 
         # Init FFT object
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.fftOversamp
@@ -85,6 +82,16 @@ class scienceCam:
         self.psfMax = self.bestPSF.max()
         self.longExpStrehl = 0
         self.instStrehl = 0
+
+
+    def updateMask(self, mask):
+        self.mask = self.mask[
+            self.simConfig.simPad:-self.simConfig.simPad,
+            self.simConfig.simPad:-self.simConfig.simPad
+        ]
+
+        self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
+                                      ).astype("float32")
 
     def calcTiltCorrect(self):
         """
@@ -225,3 +232,4 @@ class scienceCam:
         self.instStrehl = self.focalPlane.max() / self.psfMax
 
         return self.focalPlane
+
