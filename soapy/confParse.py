@@ -200,6 +200,7 @@ class Configurator(object):
                 wfs.subapFieldStop = True
 
 
+
 class ConfigObj(object):
     def __init__(self):
 
@@ -377,6 +378,7 @@ class SimConfig(ConfigObj):
                         ]
 
         self.initParams()
+
 
 
 class AtmosConfig(ConfigObj):
