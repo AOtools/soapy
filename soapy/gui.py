@@ -22,15 +22,19 @@ The GUI for the Soapy adaptive optics simulation
 
 import os
 os.environ["QT_API"]="pyqt5"
-from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
-from IPython.qt.inprocess import QtInProcessKernelManager
-from IPython.lib import guisupport
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
- 
 
 from PyQt5 import QtGui, QtCore, QtWidgets
+
+import matplotlib
+matplotlib.use('Qt5Agg')
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
+from IPython.qt.inprocess import QtInProcessKernelManager
+from IPython.lib import guisupport 
+
 import pyqtgraph
 from .AOGUIui import Ui_MainWindow
 from . import logger
@@ -66,10 +70,13 @@ CMAP={'mode': 'rgb',
             (0.5, (255, 255, 255, 255)),
             (1., (255, 26, 26, 255))]}
         
-class GUI(QtGui.QMainWindow):
+class GUI(QtWidgets.QMainWindow):
     def __init__(self, sim, useOpenGL=False):
-        self.app = QtGui.QApplication([])
-        QtGui.QMainWindow.__init__(self)
+
+        print("starting GUI..")
+        self.app = QtWidgets.QApplication([])
+        print("Got App")
+        QtWidgets.QMainWindow.__init__(self)
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -125,13 +132,16 @@ class GUI(QtGui.QMainWindow):
         #Required for plotting colors
         self.colorList = ["b","g","r","c","m","y","k"]
         self.colorNo = 0
-    
+   
+        print("init the result plot...")
         self.resultPlot = PlotWidget()
         self.ui.plotLayout.addWidget(self.resultPlot)
 
         #sim.readParams()
         sim.config.calcParams()
         self.config = self.sim.config
+
+        print("init pyqtgraph plots...")
         self.initPlots()
         self.show()
         self.init()
@@ -144,7 +154,7 @@ class GUI(QtGui.QMainWindow):
 #Load Param file methods
     def readParamFile(self):
 
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
+        fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', 
                 '/home')
     
         self.sim.readParams(fname)
@@ -201,11 +211,11 @@ class GUI(QtGui.QMainWindow):
         #Set initial gains
         self.gainSpins = []
         for dm in range(self.config.sim.nDM):
-            gainLabel = QtGui.QLabel()
+            gainLabel = QtWidgets.QLabel()
             gainLabel.setText("DM {}:".format(dm))
             self.ui.gainLayout.addWidget(gainLabel)
             
-            self.gainSpins.append(QtGui.QDoubleSpinBox())
+            self.gainSpins.append(QtWidgets.QDoubleSpinBox())
             self.ui.gainLayout.addWidget(self.gainSpins[dm])
             self.gainSpins[dm].setValue(self.config.dms[dm].gain)
             self.gainSpins[dm].setSingleStep(0.05)
@@ -676,7 +686,7 @@ class OverlapCanvas(FigureCanvas):
             self.axes.append(self.fig.add_subplot(2, numpy.ceil(nAxes/2.),i+1))
 
         FigureCanvas.__init__(self, self.fig)
-        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
 class OverlapWidget(QtGui.QWidget):
@@ -696,7 +706,7 @@ class PlotCanvas(FigureCanvas):
         self.ax = self.fig.add_subplot(111)
  
         FigureCanvas.__init__(self, self.fig)
-        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
  
  
@@ -705,7 +715,7 @@ class PlotWidget(QtGui.QWidget):
     def __init__(self, parent = None):
         QtGui.QWidget.__init__(self, parent)
         self.canvas = PlotCanvas()
-        self.vbl = QtGui.QVBoxLayout()
+        self.vbl = QtWidgets.QVBoxLayout()
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)
 
