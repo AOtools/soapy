@@ -1,12 +1,19 @@
+**********
 Atmosphere
-==========
+**********
+.. automodule:: soapy.atmosphere
 
-Class to simulate atmosphere above an AO system
-
-pyAOS.atmosphere module
------------------------
-
-.. automodule:: pyAOS.atmosphere
+Atmosphere Class
+================
+.. autoclass:: soapy.atmosphere.atmos
     :members:
-    :undoc-members:
-    :show-inheritance:
+
+Phase Screen Creation and Saving
+================================
+.. autofunction:: soapy.atmosphere.makePhaseScreens
+
+.. autofunction:: soapy.atmosphere.ft_phase_screen
+
+.. autofunction:: soapy.atmosphere.ft_sh_phase_screen
+
+

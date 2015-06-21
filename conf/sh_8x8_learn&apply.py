@@ -10,7 +10,7 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "filePrefix"    :  "sh_8x8_learn&apply",
+    "simName"    :  "8x8_learn&apply",
     "pupilSize"     :   64, 
     "nGS"           :   5,
     "nDM"           :   1,
@@ -18,7 +18,7 @@ simConfiguration = {
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
     "reconstructor" :   "LearnAndApply", 
-    "learnIters"    :   1000,
+    "learnIters"    :   5000,
     "learnAtmos"    :   "random",
 
     "verbosity"     :   2,
@@ -36,21 +36,20 @@ simConfiguration = {
     "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
     "windDirs"      :   numpy.array([0,45,90,135]),
     "windSpeeds"    :   numpy.array([10,10,15,20]),
-    "newScreens"    :   True, #Bool
     "wholeScrnSize" :   1024,
     "r0"            :   0.16,
     },
 
 "Telescope":{
-   "telDiam"        :   4.2,  #Metres
-   "obs"            :   1.2, #Central Obscuration
+   "telDiam"        :   8.,  #Metres
+   "obsDiam"        :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
     "GSPosition"    :   [(0,0), (-10,-10), (-10, 10), (10,-10), (10,10)   ],
     "GSHeight"      :   [0,     0,          0,       0,      0      ],
-    "subaps"        :   [8,     8,          8,       8,      8      ],
+    "nxSubaps"      :   [8,     8,          8,       8,      8      ],
     "pxlsPerSubap"  :   [10,    10,         10,      10,    10,     ],
     "subapFOV"      :   [4.0,   4.,         4.,     4.,     4.,     ],
     "subapOversamp" :   [3,     3,          3,      3,       3,     ],
@@ -65,11 +64,12 @@ simConfiguration = {
 
 "DM":{
 
-    "dmType"        :   [ "Piezo"],
-    "dmActs"        :   [9**2],
-    "dmCond"        :   [0.05],
-    "closed"        :   [False],
-    "gain"          :   0.6,
+    "type"              :   [ "Piezo"],
+    "nxActuators"       :   [9],
+    "svdConditioning"   :   [0.05],
+    "closed"            :   [False],
+    "gain"              :   [0.6],
+    "wfs"               :   [0],
     },
 
 "Science":{
@@ -77,7 +77,7 @@ simConfiguration = {
     "FOV"           :   [3.0],
     "wavelength"    :   [1.65e-6],
     "pxls"          :   [128],
-    "oversamp"      :   [2],
+    "fftOversamp"   :   [2],
     }
 
 

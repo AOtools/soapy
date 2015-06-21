@@ -1,22 +1,22 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 """
-A module to generate configuration objects for the pyAOS, given a parameter file.
+A module to generate configuration objects for Soapy, given a parameter file.
 
 This module defines a number of classes, which when instantiated, create objects used to configure the entire simulation, or just submodules. All configuration objects are stored in the ``Configurator`` object which deals with loading parameters from file, checking some potential conflicts and using parameters to calculate some other parameters used in parts of the simulation.
 
@@ -58,10 +58,10 @@ class Configurator(object):
         self.filename = filename
 
         #placeholder for WFS param objs
-        self.wfs = []
-        self.lgs = []
-        self.sci = []
-        self.dm = []
+        self.wfss = []
+        self.lgss = []
+        self.scis = []
+        self.dms = []
 
         self.sim = SimConfig()
         self.atmos = AtmosConfig()
@@ -94,23 +94,23 @@ class Configurator(object):
 
         for wfs in range(self.sim.nGS):
             logger.debug("Load WFS {} Params...".format(wfs))
-            self.wfs.append(WfsConfig(wfs))
-            self.wfs[wfs].loadParams(self.configDict["WFS"])
+            self.wfss.append(WfsConfig(wfs))
+            self.wfss[wfs].loadParams(self.configDict["WFS"])
 
         for lgs in range(self.sim.nGS):
             logger.debug("Load LGS {} Params".format(lgs))
-            self.lgs.append(LgsConfig(lgs))
-            self.lgs[lgs].loadParams(self.configDict["LGS"])
+            self.lgss.append(LgsConfig(lgs))
+            self.lgss[lgs].loadParams(self.configDict["LGS"])
 
         for dm in range(self.sim.nDM):
             logger.debug("Load DM {} Params".format(dm))
-            self.dm.append(DmConfig(dm))
-            self.dm[dm].loadParams(self.configDict["DM"])
+            self.dms.append(DmConfig(dm))
+            self.dms[dm].loadParams(self.configDict["DM"])
 
         for sci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(sci))
-            self.sci.append(SciConfig(sci))
-            self.sci[sci].loadParams(self.configDict["Science"])
+            self.scis.append(SciConfig(sci))
+            self.scis[sci].loadParams(self.configDict["Science"])
         self.calcParams()
         
     def calcParams(self):
@@ -129,23 +129,23 @@ class Configurator(object):
         #furthest out GS or SCI target defines the sub-scrn size
         gsPos = []
         for gs in range(self.sim.nGS):
-            pos = self.wfs[gs].GSPosition
+            pos = self.wfss[gs].GSPosition
             #Need to add bit if the GS is an elongation off-axis LGS
-            if self.lgs[gs].elongationDepth:
+            if self.lgss[gs].elongationDepth:
                 #This calculation is done more explicitely in teh WFS module
                 #in the ``calcElongPos`` method
                 maxLaunch = abs(numpy.array(
-                        self.lgs[gs].launchPosition)).max()*self.tel.telDiam/2.
-                dh = numpy.array([  -1*self.lgs[gs].elongationDepth/2.,
-                                    self.lgs[gs].elongationDepth/2.])
-                H = self.wfs[gs].GSHeight
+                        self.lgss[gs].launchPosition)).max()*self.tel.telDiam/2.
+                dh = numpy.array([  -1*self.lgss[gs].elongationDepth/2.,
+                                    self.lgss[gs].elongationDepth/2.])
+                H = self.wfss[gs].GSHeight
                 theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         (3600*180/numpy.pi)).max()
                 pos+=theta_n         
             gsPos.append(pos)
                
         for sci in range(self.sim.nSci):
-            gsPos.append(self.sci[sci].position)
+            gsPos.append(self.scis[sci].position)
 
         if len(gsPos)!=0:
             maxGSPos = numpy.array(gsPos).max()
@@ -167,14 +167,14 @@ class Configurator(object):
         #If so, make oversize phase scrns
         wfsPhys = False
         for wfs in range(self.sim.nGS):
-            if self.wfs[wfs].propagationMode=="physical":
+            if self.wfss[wfs].propagationMode=="physical":
                 wfsPhys = True
                 break
         if wfsPhys:
             self.sim.scrnSize*=2
             
         #If any wfs exposure times set to None, set to the sim loopTime
-        for wfs in self.wfs:
+        for wfs in self.wfss:
             if not wfs.exposureTime:
                 wfs.exposureTime = self.sim.loopTime
 
@@ -182,7 +182,7 @@ class Configurator(object):
         logger.info("subScreenSize: {:d} simulation pixels".format(int(self.sim.scrnSize)))
 
         #If lgs sodium layer profile is none, set it to 1s for each layer
-        for lgs in self.lgs:
+        for lgs in self.lgss:
             if not numpy.any(lgs.naProfile):
                 lgs.naProfile = numpy.ones(lgs.elongationLayers)
             if len(lgs.naProfile)<lgs.elongationLayers:
@@ -195,8 +195,8 @@ class Configurator(object):
                 self.atmos.L0.append(100.)
 
         #Check if SH WFS with 1 subap. Feild stop must be FOV
-        for wfs in self.wfs:
-            if wfs.subaps==1 and wfs.subapFieldStop==False:
+        for wfs in self.wfss:
+            if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
                 wfs.subapFieldStop = True
 
@@ -302,7 +302,7 @@ class SimConfig(ConfigObj):
                             class to use. See 
                             ``reconstructor`` module
                             for available reconstructors.       ``"MVM"``
-        ``filePrefix``      str: directory name to store 
+        ``simName``         str: directory name to store 
                             simulation data                     ``None``
         ``wfsMP``           bool: Each WFS uses its own 
                             process                             ``False``
@@ -356,7 +356,7 @@ class SimConfig(ConfigObj):
                                 ("nSci", 0),
                                 ("gain", 0.6),
                                 ("reconstructor", "MVM"),
-                                ("filePrefix", None),
+                                ("simName", None),
                                 ("saveSlopes", False),
                                 ("saveDmCommands", False),
                                 ("saveLgsPsf", False),
@@ -409,6 +409,9 @@ class AtmosConfig(ConfigObj):
         ``L0``              list, float: Outer scale of each
                             layer. Kolmogorov turbulence if
                             ``None``.                           ``None``
+        ``randomScrns``     bool: Use a random set of phase 
+                            phase screens for each loop
+                            iteration?                          ``False``
         ==================  =================================   ===========    
     """
 
@@ -426,7 +429,8 @@ class AtmosConfig(ConfigObj):
 
         self.optionalParams = [ ("scrnNames",None),
                                 ("subHarmonics",False),
-                                ("L0", None)
+                                ("L0", None),
+                                ("randomScrns", False)
                                 ]
 
         self.initParams()
@@ -442,7 +446,7 @@ class WfsConfig(ConfigObj):
         ------------------      -------------------
         ``GSPosition``          tuple: position of GS on-sky in arc-secs
         ``wavelength``          float: wavelength of GS light in metres
-        ``subaps``              int: number of SH sub-apertures
+        ``nxSubaps``            int: number of SH sub-apertures
         ``pxlsPerSubap``        int: number of pixels per sub-apertures
         ``subapFOV``            float: Field of View of sub-aperture in
                                 arc-secs
@@ -456,7 +460,7 @@ class WfsConfig(ConfigObj):
                             from WFS.py?                        ``ShackHartmann``
         ``propagationMode`` string: Mode of light propogation 
                             from GS. Can be "physical" or 
-                            "geometric".                       ``"geometric"``
+                            "geometric"\**.                     ``"geometric"``
         ``subapFieldStop``  bool: if True, add a field stop to
                             the wfs to prevent spots wandering
                             into adjacent sub-apertures. if
@@ -466,18 +470,20 @@ class WfsConfig(ConfigObj):
         ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
-                            reconstruction.                     ``False``
-        ``subapOversamp``   int: Multiplied by the number of
+                            reconstruction.\**                  ``False``
+        ``fftOversamp``     int: Multiplied by the number of
                             of phase points required for FOV 
-                            to increase fidelity from FFT.      ``2``
+                            to increase fidelity from FFT.      ``3``
         ``GSHeight``        float: Height of GS beacon. ``0``
                             if at infinity.                     ``0``
         ``subapThreshold``  float: How full should subap be 
                             to be used for wavefront sensing?   ``0.5``
         ``lgs``             bool: is WFS an LGS?                ``False``
         ``centMethod``      string: Method used for 
-                            Centroiding. Can be `simple`,
-                            `brightestPxl`, or `correlation`    ``simple``
+                            Centroiding. Can be 
+                            ``centreOfGravity``,
+                            ``brightestPxl``, or 
+                            ``correlation``.\**                 ``centreOfGravity``
         ``referenceImage``  array: Reference images used in
                             the correlation centroider. Full
                             image plane image, each subap has
@@ -487,7 +493,7 @@ class WfsConfig(ConfigObj):
                             in arc-secs                         ``0``
         ``centThreshold``   float: Centroiding threshold as
                             a fraction of the max subap
-                            value.                              ``0.1``
+                            value.\**                           ``0.1``
         ``exposureTime``    float: Exposure time of the WFS 
                             camera - must be higher than 
                             loopTime. If None, will be 
@@ -509,7 +515,7 @@ class WfsConfig(ConfigObj):
 
         self.requiredParams = [ "GSPosition",
                                 "wavelength",
-                                "subaps",
+                                "nxSubaps",
                                 "pxlsPerSubap",
                                 "subapFOV",
                             ]
@@ -523,12 +529,12 @@ class WfsConfig(ConfigObj):
                                 ("bitDepth", 32),
                                 ("removeTT", "False"),
                                 ("angleEquivNoise", 0),
-                                ("subapOversamp", 2),
+                                ("fftOversamp", 3),
                                 ("GSHeight", 0),
                                 ("subapThreshold", 0.5),
                                 ("lgs", False),
                                 ("centThreshold", 0.3),
-                                ("centMethod", "simple"),
+                                ("centMethod", "centreOfGravity"),
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
                                 ("referenceImage", None),
@@ -551,7 +557,7 @@ class TelConfig(ConfigObj):
         ==================  =================================   ===========
         **Parameter**       **Description**                     **Default**
         ------------------  ---------------------------------   -----------
-        ``obs``             float: Diameter of central
+        ``obsDiam``         float: Diameter of central
                             obscuration                         ``0``
         ``mask``            str: Shape of pupil (only 
                             accepts ``circle`` currently)       ``circle``
@@ -565,7 +571,7 @@ class TelConfig(ConfigObj):
         self.requiredParams = [ "telDiam",
                                 ]
 
-        self.optionalParams = [ ("obs", 0),
+        self.optionalParams = [ ("obsDiam", 0),
                                 ("mask", "circle")
                                 ]
 
@@ -581,14 +587,14 @@ class LgsConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
-        ``lgsUplink``        bool: Include LGS uplink effects    ``False``
-        ``lgsPupilDiam``     float: Diameter of LGS launch 
+        ``uplink``           bool: Include LGS uplink effects    ``False``
+        ``pupilDiam``        float: Diameter of LGS launch 
                              aperture in metres.                 ``0.3``
         ``wavelength``       float: Wavelength of laser beam 
                              in metres                           ``600e-9``
         ``propagationMode``  str: Mode of light propogation 
                              from GS. Can be "physical" or 
-                             "geometric"                         ``"phsyical"``
+                             "geometric".                        ``"phsyical"``
         ``height``           float: Height to use physical 
                              propogation of LGS (does not 
                              effect cone-effect) in metres       ``90000``
@@ -620,8 +626,8 @@ class LgsConfig(ConfigObj):
 
         self.requiredParams = [ ]
 
-        self.optionalParams = [ ("lgsUplink", False),
-                                ("lgsPupilDiam", 0.3),
+        self.optionalParams = [ ("uplink", False),
+                                ("pupilDiam", 0.3),
                                 ("wavelength", 600e-9),
                                 ("propagationMode", "physical"),
                                 ("height", 90000),
@@ -642,40 +648,39 @@ class DmConfig(ConfigObj):
     Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a DM. Any entries above ``sim.nDM`` will be ignored.
 
     Required:
-        ==================      ============================================
+        ===================     ===============================================
         **Parameter**           **Description** 
-        ------------------      --------------------------------------------
-        ``dmType``              string: Type of DM. This must the name of a 
+        -------------------     -----------------------------------------------
+        ``type``                string: Type of DM. This must the name of a 
                                 class in the ``DM`` module.
-        ``dmActs``              int: Number independent DM shapes. e.g., for 
-                                stack-array DMs this is number of actuators, 
+        ``nxActuators``         int: Number independent DM shapes. e.g., for 
+                                stack-array DMs this is number of actuators in
+                                one dimension, 
                                 for Zernike DMs this is number of Zernike 
                                 modes.
-        ``gain``                float: The loop gain for the DM      
-        ``dmCond``              float: The conditioning parameter used in the 
-                                pseudo inverse of the interaction matrix. this
-                                is performed by 
-                                `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
-
-        ==================      ============================================
+        ``gain``                float: The loop gain for the DM.\**    
+        ``svdConditioning``     float: The conditioning parameter used in the 
+                                pseudo inverse of the interaction matrix. This
+                                is performed by `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
+        ===================     ===============================================
 
     Optional:
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
-        ``closed``           bool:Is DM closed loop of WFS?       ``True``
+        ``closed``           bool:Is DM closed loop of WFS?\**    ``True``
         ``iMatValue``        float: Value to push actuators
                              when making iMat                    ``10``
         ``wfs``              int: which Wfs to take iMat and
                              use to correct for.                 ``0``
         ``rotation``         float: A DM rotation with respect
-                             to the pupil in degrees             ``0''
-        ``interpOrder''      Order of interpolation for dm,
+                             to the pupil in degrees             ``0``
+        ``interpOrder``      Order of interpolation for dm,
                              including piezo actuators and
-                             rotation.                           ``1''
-        ``gaussWidth''       float: Width of Guass DM actuator
+                             rotation.                           ``1``
+        ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the 
-                             inter-actuator spacing.             ``0.5''
+                             inter-actuator spacing.             ``0.5``
         ==================== =================================   ===========  
         """
 
@@ -685,9 +690,9 @@ class DmConfig(ConfigObj):
 
         self.N = N
 
-        self.requiredParams = [ "dmType",
-                                "dmActs",
-                                "dmCond",
+        self.requiredParams = [ "type",
+                                "nxActuators",
+                                "svdConditioning",
                                 "gain",
                                 ]
 
@@ -724,7 +729,7 @@ class SciConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
-        ``oversamp``         int: Multiplied by the number of
+        ``fftOversamp``      int: Multiplied by the number of
                              of phase points required for FOV 
                              to increase fidelity from FFT.      ``2``
         ``fftwThreads``      int: number of threads for fftw 
@@ -746,7 +751,7 @@ class SciConfig(ConfigObj):
                                 "wavelength",
                                 "pxls",
                                 ]
-        self.optionalParams = [ ("oversamp", 2),
+        self.optionalParams = [ ("fftOversamp", 2),
                                 ("fftwFlag", "FFTW_MEASURE"),
                                 ("fftwThreads", 1)
                                 ]

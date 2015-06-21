@@ -56,5 +56,9 @@ target/
 # vim stuff
 *.swp
 *.un~
+*.swo
 
-.DS_Store
+# Any backups
+*_bkup
+
+*.DS_Store

@@ -8,13 +8,13 @@ either starts a command line or gui version of the simulation.
 from argparse import ArgumentParser
 import IPython
 import os.path
-import pyAOS
-from pyAOS import pyAOS_gui
+import soapy
+from soapy import gui
 
 
 def runCmdSim(sim, newIMat=False, interactive = False):
     '''
-    Runs the simulation 
+    Runs the simulation in the command line. 
     '''
     
     if interactive:
@@ -43,12 +43,16 @@ if __name__=="__main__":
             action="store_true", help="Use opengl for gui plotting")
     parser.add_argument("-i", "--interactive", dest="interactive", 
                         action="store_true", help="Open sim using ipython interactive mode")
-    parser.add_argument("-v", "--verbosity", dest="verbosity",
-            action="store", help="How much information to print about the simulation")
+    parser.add_argument("-V", "--verbosity", dest="verbosity",
+            action="store", default=2,
+            help="How much information to print about the simulation")
+
+    parser.add_argument("-v", "--version", action="version", 
+            version=soapy.__version__)
     
     
     bin_path = os.path.abspath(os.path.realpath(__file__)+"/..")
-    print(bin_path)
+
     #Finally, parse args
     args = parser.parse_args()
     
@@ -59,14 +63,15 @@ if __name__=="__main__":
         configFile = bin_path+"/../conf/sh_8x8.py"
 
     #Run sim with given args
-    pyAOS.logger.setLoggingLevel(args.verbosity)
+    soapy.logger.setLoggingLevel(args.verbosity)
 
     #init sim with conf file
-    sim = pyAOS.Sim(configFile)
+    sim = soapy.Sim(configFile)
+    sim.config.sim.verbosity = args.verbosity
 
     #if gui start gui
     if args.gui:
-        simGUI = pyAOS_gui.GUI(sim, useOpenGL=args.gl)
+        simGUI = gui.GUI(sim, useOpenGL=args.gl)
         
     else:
         runCmdSim(sim, interactive=args.interactive)

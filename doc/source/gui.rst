@@ -1,32 +1,32 @@
 GUI Modules
 ===========
 
-Modules used to make the pyAOS GUI
+Modules used to make the soapy GUI
 
 
-pyAOS.AOGUIui module
+soapy.AOGUIui module
 --------------------
 
-.. automodule:: pyAOS.AOGUIui
+.. automodule:: soapy.AOGUIui
     :members:
     :undoc-members:
     :show-inheritance:
 
 
-pyAOS.matplotlibWidget module
+soapy.matplotlibWidget module
 -----------------------------
 
-.. automodule:: pyAOS.matplotlibWidget
+.. automodule:: soapy.matplotlibWidget
     :members:
     :undoc-members:
     :show-inheritance:
 
 
 
-pyAOS.pyAOS_gui module
+soapy.soapy_gui module
 ----------------------
 
-.. automodule:: pyAOS.pyAOS_gui
+.. automodule:: soapy.soapy_gui
     :members:
     :undoc-members:
     :show-inheritance:

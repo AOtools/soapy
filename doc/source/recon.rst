@@ -3,10 +3,10 @@ Reconstructors
 
 Classes simulating AO reconstructors.
 
-pyAOS.RECON module
+soapy.RECON module
 ------------------
 
-.. automodule:: pyAOS.RECON
+.. automodule:: soapy.RECON
     :members:
     :undoc-members:
     :show-inheritance:

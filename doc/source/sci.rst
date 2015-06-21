@@ -3,10 +3,10 @@ Science Camera
 
 A science camera class to measure system performance
 
-pyAOS.SCI module
+soapy.SCI module
 ----------------
 
-.. automodule:: pyAOS.SCI
+.. automodule:: soapy.SCI
     :members:
     :undoc-members:
     :show-inheritance:

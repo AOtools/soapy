@@ -1,22 +1,46 @@
 #Copyright Durham University and Andrew Reeves
 #2014
 
-# This file is part of pyAOS.
+# This file is part of soapy.
 
-#     pyAOS is free software: you can redistribute it and/or modify
+#     soapy is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 
-#     pyAOS is distributed in the hope that it will be useful,
+#     soapy is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 
 #     You should have received a copy of the GNU General Public License
-#     along with pyAOS.  If not, see <http://www.gnu.org/licenses/>.
+#     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 """
-The module simulating Deformable Mirrors in pyAOS
+The module simulating Deformable Mirrors in Soapy
+
+DMs in Soapy
+============
+DMs are represented in Soapy by python objects which are initialised at startup
+with some configuration parameters given, as well as a list of one or more
+WFS objects which can be used to measure an interaction matrix.
+
+Upon creation of an interaction matrix, the object first generations all the
+possible independant shapes which the DM may form, known as "influence functions".
+Then each influence function is passed to the specified WFS(s) and the response
+noted to form an interaction matrix. The interaction matrix may then be used 
+to forma reconstructor.
+
+During the AO loop, commands corresponding to the required amplitude of each 
+DM influence function are sent to the :py:meth:`DM.dmFrame` method, which 
+returns an array representing the DMs shape.
+
+Adding New DMs
+==============
+
+New DMs are easy to add into the simulation. At its simplest, the :py:class:`DM`
+class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided, which creates the independent influence function the DM can make. The 
+base class deals with the rest, including making interaction matrices and loop
+operation.
 """
 import numpy
 from scipy.ndimage.interpolation import rotate
@@ -30,6 +54,14 @@ except NameError:
     xrange = range
 
 class DM:
+    """
+    The base DM class
+    
+    This class is intended to be inherited by other DM classes which describe
+    real DMs. It provides methods to create
+
+    """
+
     def __init__ (self, simConfig, dmConfig, wfss, mask):
 
         self.simConfig = simConfig
@@ -54,7 +86,7 @@ class DM:
         
         #find the total number of WFS subaps, and make imat
         #placeholder
-        print(self.wfss)
+        #print(self.wfss)
         self.totalSubaps = 0
         for nWfs in range(len(self.wfss)):
             self.totalSubaps += self.wfss[nWfs].activeSubaps 
@@ -67,7 +99,7 @@ class DM:
         Returns:
             int: number of active DM actuators
         """
-        return self.dmConfig.dmActs
+        return self.dmConfig.nxActuators
 
     def makeIMat(self, callback=None):
         '''
@@ -95,7 +127,6 @@ class DM:
                    order=self.dmConfig.interpOrder, axes=(-2,-1)
                    )
            rotShape = self.iMatShapes.shape
-
            self.iMatShapes = self.iMatShapes[:,
                    rotShape[1]/2. - self.simConfig.simSize/2.:
                    rotShape[1]/2. + self.simConfig.simSize/2.,
@@ -103,21 +134,16 @@ class DM:
                    rotShape[2]/2. + self.simConfig.simSize/2.
                    ]
 
-
         iMat = numpy.zeros( (self.iMatShapes.shape[0], 2*self.totalSubaps) )
-        subap=0
-        
-        for nWfs in range(len(self.wfss)):
-            for i in xrange(self.iMatShapes.shape[0]):
+        for i in xrange(self.iMatShapes.shape[0]):
+            subap=0 
+            for nWfs in range(len(self.wfss)):
                 
                 logger.debug("subap: {}".format(subap))
-                iMat[i,subap:subap+(2*self.wfss[nWfs].activeSubaps)] =(
+                iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        self.wfss[nWfs].frame( 
                                 self.iMatShapes[i], iMatFrame=True
-                                #*self.dmConfig.iMatValue)
-                       #/self.dmConfig.iMatValue
                        ))
-                
                 
                 self.dmShape = self.iMatShapes[i]
 
@@ -127,7 +153,7 @@ class DM:
                 logger.statusMessage(i, self.iMatShapes.shape[0],
                         "Generating {} Actuator DM iMat".format(self.acts))
             
-            subap += 2*self.wfss[nWfs].activeSubaps
+                subap += 2*self.wfss[nWfs].activeSubaps
 
         self.iMat = iMat
         return iMat
@@ -169,11 +195,14 @@ class DM:
 
 
 class Zernike(DM):
+    """
+    A DM which corrects using a provided number of Zernike Polynomials
+    """
 
     def makeIMatShapes(self):
         '''
         Creates all the DM shapes which are required for creating the
-        interaction Matrix
+        interaction Matrix. In this case, this is a number of Zernike Polynomials
         '''
 
         shapes = aoSimLib.zernikeArray(
@@ -186,10 +215,27 @@ class Zernike(DM):
                 ).astype("float32") 
 
 class Piezo(DM):
+    """
+    A DM emulating a Piezo actuator style stack-array DM.
+
+    This class represents a standard stack-array style DM with push-pull actuators
+    behind a continuous phase sheet. The number of actuators is given in the 
+    configuration file.
+    
+    Each influence function is created by started with an N x N grid of zeros,
+    where N is the number of actuators in one direction, and setting a single
+    value to ``1``, which corresponds with a "pushed" actuator. This grid is then
+    interpolated up to the ``pupilSize``, to form the shape of the DM when that
+    actuator is activated. This is repeated for all actuators.
+    """
 
     def getActiveActs(self):
+        """
+        Finds the actuators which will affect phase whithin the pupil to avoid
+        reconstructing for redundant actuators.
+        """
         activeActs = []
-        xActs = int(numpy.round(numpy.sqrt(self.dmConfig.dmActs)))
+        xActs = self.dmConfig.nxActuators
         self.spcing = self.simConfig.pupilSize/float(xActs)
 
         for x in xrange(xActs):
@@ -214,7 +260,7 @@ class Piezo(DM):
         on the size of the number of actuators, with only the 'poked' 
         actuator set to 1 and all others set to zero, up to the required 
         simulation size. This grid is actually padded with 1 extra actuator 
-        spacing to avoid strange edge effects
+        spacing to avoid strange edge effects.
         """
         
         #Create a "dmSize" - the pupilSize but with 1 extr a actuator on each 
@@ -252,12 +298,28 @@ class Piezo(DM):
 
 
 class GaussStack(Piezo):
+    """
+    A Stack Array DM where each influence function is a 2-D Gaussian shape.
+
+    This class represents a Stack-Array DM, similar to the :py:class:`Piezo` DM,
+    where each influence function is a 2-dimensional Gaussian function. Though
+    not realistic, it provides a known influence function which can be useful
+    for some analysis.
+    """
+
 
     def makeIMatShapes(self):
+        """
+        Generates the influence functions for the GaussStack DM.
+
+        Creates a number of Guassian distributions which are centred at points
+        across the pupil to act as DM influence functions. The width of the
+        guassian is determined from the configuration file.
+        """
         shapes = numpy.zeros((
                 self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize))
     
-        actSpacing = self.simConfig.pupilSize/(numpy.sqrt(self.dmConfig.dmActs)-1)
+        actSpacing = self.simConfig.pupilSize/(self.dmConfig.nxActuators-1)
         width = actSpacing/2.
 
         for i in xrange(self.acts):
@@ -273,13 +335,25 @@ class GaussStack(Piezo):
 
         
 class TT(DM):
+    """
+    A class representing a tip-tilt mirror.
+
+    This can be used as a tip-tilt mirror, it features two actuators, where each
+    influence function is simply a tip and a tilt.
+
+    """
 
     def getActiveActs(self):
+        """
+        Returns the number of active actuators on the DM. Always 2 for a TT.
+        """
         return 2
 
 
     def makeIMatShapes(self):
-    
+        """
+        Forms the DM influence functions, in this case just a tip and a tilt.
+        """
         #Make the TT across the entire sim shape, but want it 1 to -1 across 
         #pupil
         padMax = float(self.simConfig.simSize)/self.simConfig.pupilSize

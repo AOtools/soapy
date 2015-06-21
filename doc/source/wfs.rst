@@ -1,15 +1,20 @@
+******************
 Wave-front Sensors
-==================
+******************
 
-Classes simulating AO WFSs
+==========
+WFS Module
+==========
+.. automodule:: soapy.WFS
 
-.. automodule:: pyAOS.WFS
+Base WFS Class
+==============
 
-.. autoclass:: pyAOS.WFS.WFS
+.. autoclass:: soapy.WFS.WFS
     :members:
 
-.. autoclass:: pyAOS.WFS.ShackHartmann
+.. autoclass:: soapy.WFS.ShackHartmann
     :members:
 
-.. autoclass:: pyAOS.WFS.Pyramid
+.. autoclass:: soapy.WFS.Pyramid
     :members:

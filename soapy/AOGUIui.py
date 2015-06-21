@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Tue Apr 14 16:21:34 2015
-#      by: PyQt5 UI code generator 5.3.2
+# Created: Sun Jun 21 18:25:22 2015
+#      by: PyQt5 UI code generator 5.3.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -298,7 +298,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "AO Tomography Simulation"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Simulation Optique Adaptative in Python"))
         self.label_7.setText(_translate("MainWindow", "Plot Update Rate (Hz)"))
         self.label_2.setText(_translate("MainWindow", "Gain -"))
         self.LgsPsfLabel.setText(_translate("MainWindow", "Laser Guide Star PSFs"))
