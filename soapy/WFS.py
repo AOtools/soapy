@@ -129,6 +129,11 @@ class WFS(object):
         self.atmosConfig = atmosConfig
         self.lgsConfig = lgsConfig
 
+        self.iMat = False
+
+        # Set from knowledge of atmosphere module
+        self.phsWvl = 500e-9
+
         # If supplied use the mask
         if numpy.any(mask):
             self.mask = mask
@@ -136,12 +141,8 @@ class WFS(object):
             self.mask = aoSimLib.circle(
                     self.simConfig.pupilSize/2., self.simConfig.simSize,
                     )
-
-        self.iMat = False
-
-        # Set from knowledge of atmosphere module
-        self.phsWvl = 500e-9
-
+        # Calculate parameters required for the WFS. Often over-ridden by 
+        # Inheriting WFSers
         self.calcInitParams()
 
         # If GS not at infinity, find meta-pupil radii for each layer
@@ -166,7 +167,10 @@ class WFS(object):
             self.initLGS()
         self.allocDataArrays()
 
+        # Calculate the required tilt to correct for FFT flux in one pixel
         self.calcTiltCorrect()
+
+        # Get the static measurement from the WFS
         self.getStatic()
 
 ############################################################
@@ -693,6 +697,11 @@ class WFS(object):
 
         return self.slopes
 
+    # Virtual Methods, to be overridden in inheriting methods
+
+    def updateMask(self, mask):
+        self.mask = mask
+
     def photoNoise(self):
         pass
 
@@ -757,6 +766,9 @@ class ShackHartmann(WFS):
         #Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
 
+        # Mask the scaled mask to apply to the FOV size of phase
+        self.updateMask(self.mask)
+
         # For correlation centroider, open reference image.
         if self.wfsConfig.centMethod=="correlation":
             rawRef = fits.open("./conf/correlationRef/"+self.wfsConfig.referenceImage)[0].data
@@ -774,13 +786,13 @@ class ShackHartmann(WFS):
         '''
         Finds the subapertures which are not empty space
         determined if mean of subap coords of the mask is above threshold.
-        
         '''
         # Cut only pupil from extended field
         mask = self.mask[
                 self.simConfig.simPad : -self.simConfig.simPad,
                 self.simConfig.simPad : -self.simConfig.simPad
                 ]
+
         self.subapCoords = aoSimLib.findActiveSubaps(
                 self.wfsConfig.nxSubaps, mask,
                 self.wfsConfig.subapThreshold)
@@ -791,11 +803,6 @@ class ShackHartmann(WFS):
                 self.subapCoords*(
                         self.detectorPxls/float(self.simConfig.pupilSize) ) )
         
-        #Find the mask to apply to the scaled EField
-        self.scaledMask = numpy.round(aoSimLib.zoom(
-                    self.mask, self.scaledEFieldSize))
-        
-    
     def initFFTs(self):
         """
         Initialise the FFT Objects required for running the WFS
@@ -1186,6 +1193,13 @@ class ShackHartmann(WFS):
         return self.slopes
 
 
+
+    def updateMask(self, mask):
+        self.mask = mask
+        self.scaledMask = numpy.round(
+                aoSimLib.zoom(mask, self.scaledEFieldSize))
+
+
 #  ______                          _     _ 
 #  | ___ \                        (_)   | |
 #  | |_/ /   _ _ __ __ _ _ __ ___  _  __| |
@@ -1214,7 +1228,9 @@ class Pyramid(WFS):
                                     self.FOVrad/self.wfsConfig.wavelength)
 
         self.detectorPxls = 2*self.wfsConfig.pxlsPerSubap
-        self.scaledMask = aoSimLib.zoom(self.mask, self.FOVPxlNo)
+        
+        # Mask the scaled mask to apply to the FOV size of phase
+        self.updateMask(self.mask)
 
         self.activeSubaps = self.wfsConfig.pxlsPerSubap**2
 
@@ -1374,4 +1390,9 @@ class Pyramid(WFS):
             
         else:
             self.tiltFix = numpy.zeros((self.simConfig.pupilSize,)*2)
+
+
+    def updateMask(self, mask):
+        self.mask = mask
+        self.scaledMask = aoSimLib.zoom(self.mask, self.FOVPxlNo)
 
