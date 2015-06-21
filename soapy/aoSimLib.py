@@ -630,3 +630,53 @@ def aziAvg(data):
         avg[i] = (ring*data).sum()/(ring.sum())
 
     return avg
+
+
+def shiftArray(data, shift):
+    """
+    Shifts a 2-d numpy array by the amount specified
+
+    Parameters:
+        data (ndarray): The data to shift
+        shift (tuple): The amount to shift in x and y
+
+    Returns:
+        ndarray: An array of same parameters as data, but with elements shifted
+    """
+
+    shiftData = numpy.zeros_like(data)
+    xSize, ySize = data.shape
+
+    # Work out the coordinates to take from the data array
+    if shift[0] < 0:
+        n1 = abs(shift[0])
+        n2 = xSize
+    else:
+        n1 = 0
+        n2 = xSize - shift[0]
+
+    if shift[1] < 0:
+        m1 = abs(shift[1])
+        m2 = ySize
+    else:
+        m1 = 0
+        m2 = ySize - shift[1]
+
+    #Work out the coordinates to put into the shifted array
+    x1 = shift[0]
+    x2 = x1 + xSize
+
+    y1 = shift[1]
+    y2 = y1 + ySize
+
+    if x1<0:
+        x1 = 0
+    if y1<0:
+        y1 = 0        
+
+    # Now do the shift
+    shiftData[x1:x2, y1:y2] = data[n1:n2, m1:m2]
+
+    return shiftData
+
+
