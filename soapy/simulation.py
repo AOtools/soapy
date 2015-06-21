@@ -173,19 +173,7 @@ class Sim(object):
 
         #Init Pupil Mask
         logger.info("Creating mask...")
-        if self.config.tel.mask == "circle":
-            self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
-                                        self.config.sim.pupilSize)
-            if self.config.tel.obsDiam!=None:
-                self.mask -= aoSimLib.circle(
-                        self.config.tel.obsDiam*self.config.sim.pxlScale/2., 
-                        self.config.sim.pupilSize
-                        )
-        else:
-            self.mask = self.config.tel.mask.copy()
-    
-        self.mask = numpy.pad(
-                self.mask, self.config.sim.simPad, mode="constant")
+        self.initMask()
 
         self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
@@ -279,8 +267,6 @@ class Sim(object):
         logger.info("Initialise Data Storage...")
         self.initSaveData()
 
-        
-
         self.iters=0
 
         #Init performance tracking
@@ -294,6 +280,40 @@ class Sim(object):
 
 
         logger.info("Initialisation Complete!")
+
+
+    def initMask(self):
+        """
+        Initialises the system pupil mask.
+
+        The system `mask` defines the position and shape of the pupil 
+        for all componants. The variable `mask` is actually a python `property`
+        which is defined at the end of the class. This that when it is set, 
+        other stuff is done too. To avoid these other routines running before
+        the system is initialised, this function deals only with the hidden 
+        variable `_mask`.
+        """
+        if self.config.tel.mask == "circle":
+            self._mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
+                                        self.config.sim.pupilSize)
+            if self.config.tel.obsDiam!=None:
+                self._mask -= aoSimLib.circle(
+                        self.config.tel.obsDiam*self.config.sim.pxlScale/2., 
+                        self.config.sim.pupilSize
+                        )
+        else:
+            self._mask = self.config.tel.mask.copy()
+
+        if self._mask.shape!=(
+                self.config.sim.simSize, self.config.sim.simSize):
+            self._mask = numpy.pad(
+                    self._mask, self.config.sim.simPad, mode="constant")
+
+        # Scale pupilShift to pxls and make array
+        pShift = numpy.round(numpy.array(self.config.sim.pupilShift)\
+                * self.config.sim.pxlScale)
+
+        self._mask = aoSimLib.shiftArray(self._mask, pShift)
 
 
     def makeIMat(self,forceNew=False, progressCallback=None):
@@ -852,6 +872,19 @@ class Sim(object):
 
                 self.waitingPlot = False
 
+    # Property declarations here!
+    @property
+    def mask(self):
+        return self._mask
+
+    @mask.setter
+    def mask(self, mask):
+        self._mask[:] = mask
+        for wfs in self.wfss:
+            self.wfss[wfs].updateMask(mask)
+
+        for sci in self.sciCams:
+            self.sciCams[sci].updateMask(mask)
 
 # Functions used by MP stuff
 def multiWfs(scrns, wfsObj, dmShape, read, queue):
