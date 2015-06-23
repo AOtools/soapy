@@ -1,3 +1,10 @@
+#0.9.1
+- Tutorial added to docs
+
+- Fix bug in off-axis science cameras, where Interp2d wasnt imported
+
+- Can use a random phase screen for each loop iteration
+
 #0.9
 - Name change to Soapy!
 
