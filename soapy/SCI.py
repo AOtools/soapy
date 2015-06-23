@@ -17,8 +17,8 @@
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-
 from . import aoSimLib, AOFFT, logger
+from scipy import interp2d
 
 
 class scienceCam:
@@ -166,7 +166,11 @@ class scienceCam:
             yCoords = numpy.linspace(y1, y2 - 1, self.simConfig.simSize)
             scrnCoords = numpy.arange(scrnX)
             interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
-            metaPupil = flipud(rot90(interpObj(yCoords, xCoords)))
+            metaPupil = interpObj(yCoords, xCoords)
+
+            interpObj = interp2d(
+            self.scrnCoords, self.scrnCoords, scrn, copy=False)
+            metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil
 
