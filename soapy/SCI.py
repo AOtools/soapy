@@ -18,7 +18,7 @@
 
 import numpy
 from . import aoSimLib, AOFFT, logger
-from scipy import interp2d
+from scipy.interpolate import interp2d
 
 
 class scienceCam:
@@ -167,10 +167,6 @@ class scienceCam:
             scrnCoords = numpy.arange(scrnX)
             interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
             metaPupil = interpObj(yCoords, xCoords)
-
-            interpObj = interp2d(
-            self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil
 
