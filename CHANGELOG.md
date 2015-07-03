@@ -12,7 +12,7 @@
     ```python
 
     sim
-        filePrefix  -->  dataDir
+        filePrefix  -->  simName
 
     tel
         obs      -->  obsDiam
