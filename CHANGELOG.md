@@ -26,7 +26,7 @@
     
     dm
         dmType   -->  type
-        dmActs    -->  nActuators
+        dmActs    -->  nxActuators
         dmCond  -->  svdConditioning
 
     sci
