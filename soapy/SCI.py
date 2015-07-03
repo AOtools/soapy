@@ -175,6 +175,7 @@ class scienceCam:
             aoSimLib.linterp2d_numba(
                     scrn, xCoords, yCoords, self.metaPupil,
                     threads = self.simConfig.procs)
+        return self.metaPupil
 
 
     def calcPupilPhase(self):
