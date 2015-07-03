@@ -17,8 +17,8 @@
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-
 from . import aoSimLib, AOFFT, logger
+from scipy.interpolate import interp2d
 
 
 class scienceCam:
@@ -176,7 +176,6 @@ class scienceCam:
                     scrn, xCoords, yCoords, self.metaPupil,
                     threads = self.simConfig.procs)
 
-        return self.metaPupil
 
     def calcPupilPhase(self):
         '''
