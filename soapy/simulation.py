@@ -592,6 +592,9 @@ class Sim(object):
         Initialise the data structures which will be used to store data which will be saved or analysed once the simulation has ended. If the ``simName = None``, no data is saved, other wise a directory called ``simName`` is created, and data from simulation runs are saved in a time-stamped directory inside this.
         '''
 
+        # Initialise the FITS header to use. Store in `config.sim`
+        self.config.sim.saveHeader = self.makeSaveHeader()
+
         if self.config.sim.simName!=None:
             self.path = self.config.sim.simName +"/"+self.timeStamp()
             try:
@@ -701,7 +704,8 @@ class Sim(object):
                 for wfs in xrange(self.config.sim.nGS):
                     fits.writeto(
                         self.path+"/wfsFPFrames/wfs-%d_frame-%d.fits"%(wfs,i),
-                        self.wfss[wfs].wfsDetectorPlane     )
+                        self.wfss[wfs].wfsDetectorPlane,
+                        header=self.config.sim.saveHeader)
 
 
     def saveData(self):
@@ -714,36 +718,114 @@ class Sim(object):
         if self.config.sim.simName!=None:
 
             if self.config.sim.saveSlopes:
-                fits.writeto(self.path+"/slopes.fits", self.allSlopes,
-                                clobber=True)
+                fits.writeto(
+                        self.path+"/slopes.fits", self.allSlopes,
+                        header=self.config.sim.saveHeader, clobber=True)
 
             if self.config.sim.saveDmCommands:
-                fits.writeto(self.path+"/dmCommands.fits", 
-                            self.allDmCommands, clobber=True)
+                fits.writeto(
+                        self.path+"/dmCommands.fits", 
+                        self.allDmCommands, header=self.config.sim.saveHeader,
+                        clobber=True)
 
             if self.config.sim.saveLgsPsf:
-                fits.writeto(self.path+"/lgsPsf.fits", self.lgsPsfs, 
-                                clobber=True)
+                fits.writeto(
+                        self.path+"/lgsPsf.fits", self.lgsPsfs,
+                        header=self.config.sim.saveHeader, clobber=True)
 
             if self.config.sim.saveWFE:
-                fits.writeto(self.path+"/WFE.fits", self.WFE, clobber=True)
+                fits.writeto(
+                        self.path+"/WFE.fits", self.WFE, 
+                        header=self.config.sim.saveHeader, clobber=True)
 
             if self.config.sim.saveStrehl:
-                fits.writeto(self.path+"/instStrehl.fits", self.instStrehl,
-                                clobber=True)
-                fits.writeto(self.path+"/longStrehl.fits", self.longStrehl, 
-                                clobber=True)  
+                fits.writeto(
+                        self.path+"/instStrehl.fits", self.instStrehl,
+                        header=self.config.sim.saveHeader, clobber=True)
+                fits.writeto(
+                        self.path+"/longStrehl.fits", self.longStrehl,
+                        header=self.config.sim.saveHeader, clobber=True)  
 
             if self.config.sim.saveSciRes:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciResidual_%02d.fits"%i,
-                                self.sciPhase[i], clobber=True)
+                                self.sciPhase[i],
+                                header=self.config.sim.saveHeader,
+                                clobber=True)
 
             if self.config.sim.saveSciPsf:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciPsf_%02d.fits"%i,
-                                        self.sciImgs[i], clobber=True )
-                    
+                                        self.sciImgs[i],
+                                        header=self.config.sim.saveHeader,
+                                        clobber=True )
+    
+    def makeSaveHeader(self):
+        """
+        Forms a header which can be used to give a header to FITS files saved by the simulation.
+        """
+
+        header = fits.Header()
+
+        # Sim Params
+        header["INSTRUME"] = "SOAPY"
+        header["SVER"] = __version__
+        header["RTCNAME"] = "SOAPY"
+        header["RTCVER"] = __version__
+        header["TELESCOP"] = self.config.sim.simName
+        header["LOOP"] = True
+
+        # Tel Params
+        header["TELDIAM"] = self.config.tel.telDiam
+        header["TELOBS"] = self.config.tel.obsDiam
+        header["FR"] = 1./self.config.sim.loopTime
+
+        # DM Params
+        header["NBDM"] = self.config.sim.nDM
+        header["DMNACTU"] = self.config.sim.totalActs
+
+        dmActs = []
+        dmConds = []
+        dmTypes = []
+        dmGain = []
+        for dm in xrange(self.config.sim.nDM):
+            dmActs.append(self.dms[dm].dmConfig.nxActuators)
+            dmConds.append(self.dms[dm].dmConfig.svdConditioning)
+            dmTypes.append(self.dms[dm].dmConfig.type)
+            dmGain.append(self.dms[dm].dmConfig.gain)
+        header["DMACTS"] = "{}".format(list(dmActs))
+        header["DMCOND"] = "{}".format(list(dmConds))
+        header["DMTYPE"] = "{}".format(list(dmTypes))
+        header["DMGAIN"] = "{}".format(list(dmGain))        
+
+        # Atmos Params
+        header["NBSCRNS"] = self.config.atmos.scrnNo
+        header["SCRNALT"] = str(list(self.config.atmos.scrnHeights))
+        header["WINDSPD"] = str(list(self.config.atmos.windSpeeds))
+        
+        # WFS Params
+        header["NBWFS"] = self.config.sim.nGS
+        header["NSUB"] = int(self.config.sim.totalWfsData/2.)
+        header["NSLOP"] = self.config.sim.totalWfsData
+        wfsPosX = []
+        wfsPosY = []
+        wfsSubX = []
+        wfsSubY = []
+        for w in range(self.config.sim.nGS):
+            wfsPosX.append(self.config.wfss[w].GSPosition[0])
+            wfsPosY.append(self.config.wfss[w].GSPosition[1])
+            wfsSubX.append(self.config.wfss[w].nxSubaps)
+            wfsSubY.append(self.config.wfss[w].nxSubaps)
+
+            header["PIXARC{:d}".format(w)] = self.config.wfss[w].subapFOV/self.config.wfss[w].pxlsPerSubap
+
+        header["WFSPOSX"] = str(wfsPosX)
+        header["WFSPOSY"] = str(wfsPosY)
+        header["WFSSUBX"] = str(wfsSubX)
+        header["WFSSUBY"] = str(wfsSubY)
+        header["NFRAMES"] = self.config.sim.nIters
+
+        return header
 
     def timeStamp(self):
         """
