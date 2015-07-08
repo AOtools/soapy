@@ -326,7 +326,7 @@ class MVM_SeparateDMs(Reconstructor):
 
            
 
-class LearnAndApply(Reconstructor):
+class LearnAndApply(MVM):
     '''
     Class to perform a simply learn and apply algorithm, where
     "learn" slopes are recorded, and an interaction matrix between off-axis 
@@ -427,17 +427,20 @@ class LearnAndApply(Reconstructor):
         logger.info("Done. \nCreating full reconstructor....")
         
         #Same code as in "MVM" class to create dm-slopes reconstructor.
-        acts = 0
-        for dm in xrange(self.simConfig.nDM):
-            dmIMat = self.dms[dm].iMat
+
+        super(LearnAndApply, self).calcCMat(callback, progressCallback)
+
+        # acts = 0
+        # for dm in xrange(self.simConfig.nDM):
+        #     dmIMat = self.dms[dm].iMat
             
-            if dmIMat.shape[0]==dmIMat.shape[1]:
-                dmCMat = numpy.inv(dmIMat)
-            else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.svdConditioning)
+        #     if dmIMat.shape[0]==dmIMat.shape[1]:
+        #         dmCMat = numpy.inv(dmIMat)
+        #     else:
+        #         dmCMat = numpy.linalg.pinv(dmIMat, self.dms[dm].dmConfig.svdConditioning)
             
-            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-            acts += self.dms[dm].acts
+        #     self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
+        #     acts += self.dms[dm].acts
         
         #Dont make global reconstructor. Will reconstruct on-axis slopes, then
         #dmcommands explicitly
@@ -452,7 +455,7 @@ class LearnAndApply(Reconstructor):
         Args:
             slopes (ndarray): array of slopes to reconstruct from
         Returns:
-            ndarray: array to comands to be sent to DM 
+            ndarray: array of commands to be sent to DM 
         """
 
         #Retreive pseudo on-axis slopes from tomo reconstructor
@@ -470,7 +473,8 @@ class LearnAndApply(Reconstructor):
             return numpy.append(ttCommands, dmCommands)
 
         #get dm commands for the calculated on axis slopes
-        dmCommands = self.controlMatrix.T.dot(slopes)
+        dmCommands = super(LearnAndApply, self).reconstruct(slopes)
+        #dmCommands = self.controlMatrix.T.dot(slopes)
         return dmCommands           
 
 
