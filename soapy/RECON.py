@@ -339,16 +339,27 @@ class LearnAndApply(MVM):
         cMatFilename = self.simConfig.simName+"/cMat.fits"
         tomoMatFilename = self.simConfig.simName+"/tomoMat.fits"
 
-        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        cMatHDU.header["DMNO"] = self.simConfig.nDM
-        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
-        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
-        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
+        # cMatHDU = fits.PrimaryHDU(self.controlMatrix)
+        # cMatHDU.header["DMNO"] = self.simConfig.nDM
+        # cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
+        # cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
+        # cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
         
-        tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
+        # tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
 
-        tomoMatHDU.writeto(tomoMatFilename, clobber=True)
-        cMatHDU.writeto(cMatFilename, clobber=True)
+        # tomoMatHDU.writeto(tomoMatFilename, clobber=True)
+        # cMatHDU.writeto(cMatFilename, clobber=True)
+        # Commented 8/7/15 to add sim wide header. - apr
+
+        fits.writeto(
+                cMatFilename, self.controlMatrix, 
+                header=self.simConfig.saveHeader, clobber=True
+                )
+
+        fits.writeto(
+                tomoMatFilename, self.tomoRecon,
+                header=self.simConfig.saveHeader, clobber=True
+                )
 
     def loadCMat(self):
             
@@ -397,8 +408,10 @@ class LearnAndApply(MVM):
             
         if self.simConfig.saveLearn:
             #FITS.Write(self.learnSlopes,self.simConfig.simName+"/learn.fits")
-            fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.simName+"/learn.fits",clobber=True )
+            fits.writeto(
+                    self.simConfig.simName+"/learn.fits",
+                    self.learnSlopes, header=self.simConfig.saveHeader,
+                    clobber=True )
 
 
     def calcCMat(self,callback=None, progressCallback=None):
@@ -478,7 +491,7 @@ class LearnAndApply(MVM):
         return dmCommands           
 
 
-class LearnAndApplyLTAO(Reconstructor):
+class LearnAndApplyLTAO(LearnAndApply):
     '''
     Class to perform a simply learn and apply algorithm, where
     "learn" slopes are recorded, and an interaction matrix between off-axis 
@@ -488,74 +501,11 @@ class LearnAndApplyLTAO(Reconstructor):
     Assumes that on-axis sensor is WFS 1
     '''
 
-    def saveCMat(self):
-        cMatFilename = self.simConfig.simName+"/cMat.fits"
-        tomoMatFilename = self.simConfig.simName+"/tomoMat.fits"
-
-        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        cMatHDU.header["DMNO"] = self.simConfig.nDM
-        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
-        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
-        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
-        
-        tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
-
-        tomoMatHDU.writeto(tomoMatFilename, clobber=True)
-        cMatHDU.writeto(cMatFilename, clobber=True)
-
-    def loadCMat(self):
-            
-        super(LearnAndApply, self).loadCMat()
-
-        #Load tomo reconstructor
-        tomoFilename = self.simConfig.simName+"/tomoMat.fits"
-        tomoMat = fits.getdata(tomoFilename)
-
-        #And check its the right size
-        if tomoMat.shape != (
-                2*self.wfss[0].activeSubaps, 
-                self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
-            logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
-            raise Exception
-        else:
-            self.tomoRecon = tomoMat
-
-
     def initControlMatrix(self):
 
         self.controlShape = (2*(self.wfss[0].activeSubaps+self.wfss[1].activeSubaps), self.simConfig.totalActs)
         self.controlMatrix = numpy.zeros( self.controlShape )
     
-
-    def learn(self, callback=None, progressCallback=None):
-        '''
-        Takes "self.learnFrames" WFS frames, and computes the tomographic
-        reconstructor for the system. This method uses the "truth" sensor, and
-        assumes that this is WFS0
-        '''
-
-        if self.learnIters==0:
-            raise ValueError("Sim Paramameter `learnIters` must be above 1")
-
-        self.learnSlopes = numpy.zeros( (self.learnIters,self.simConfig.totalWfsData) )
-        for i in xrange(self.learnIters):
-            self.learnIter=i            
-
-            scrns = self.moveScrns()
-            self.learnSlopes[i] = self.runWfs(scrns)
-            
-
-            logger.statusMessage(i, self.learnIters, "Performing Learn")
-            if callback!=None:
-                callback()
-            if progressCallback!=None:
-               progressCallback("Performing Learn", i, self.learnIters ) 
-            
-        if self.simConfig.saveLearn:
-            #FITS.Write(self.learnSlopes,self.simConfig.simName+"/learn.fits")
-            fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.simName+"/learn.fits",clobber=True )
-
 
     def calcCMat(self,callback=None, progressCallback=None):
         '''
@@ -771,7 +721,7 @@ class WooferTweeter(Reconstructor):
             acts += self.dms[dm].acts
             
 
-class LgsTT(MVM):
+class LgsTT(LearnAndApply):
     """
     Reconstructor of LGS TT prediction algorithm.
     
@@ -779,76 +729,13 @@ class LgsTT(MVM):
     the second WFS controls the high order DM. The TT WFS and DM are
     assumed to be the first in the system.
     """
-    
-    def saveCMat(self):
-        cMatFilename = self.simConfig.simName+"/cMat.fits"
-        tomoMatFilename = self.simConfig.simName+"/tomoMat.fits"
-
-        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        cMatHDU.header["DMNO"] = self.simConfig.nDM
-        cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
-        cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
-        cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
-
-        tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
-
-        tomoMatHDU.writeto(tomoMatFilename, clobber=True)
-        cMatHDU.writeto(cMatFilename, clobber=True)
-
-    def loadCMat(self):
-
-        super(LgsTT, self).loadCMat()
-
-        #Load tomo reconstructor
-        tomoFilename = self.simConfig.simName+"/tomoMat.fits"
-        tomoMat = fits.getdata(tomoFilename)
-
-        #And check its the right size
-        if tomoMat.shape != (2*self.wfss[1].activeSubaps, self.simConfig.totalWfsData - self.wfss[2].wfsConfig.dataStart):
-            logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
-            raise Exception
-        else:
-            self.tomoRecon = tomoMat
-
-
+ 
     def initControlMatrix(self):
 
         self.controlShape = (2*self.wfss[0].activeSubaps+2*self.wfss[1].activeSubaps,
                              self.simConfig.totalActs)
         self.controlMatrix = numpy.zeros( self.controlShape )
     
-
-    def learn(self,callback=None, progressCallback=None):
-        '''
-        Takes "self.learnFrames" WFS frames, and computes the tomographic
-        reconstructor for the system. This method uses the "truth" sensor, and
-        assumes that this is WFS0
-        '''
-
-        self.learnSlopes = numpy.zeros(
-                (self.learnIters,
-                self.simConfig.totalWfsData-self.wfss[0].activeSubaps*2)
-                )
-        for f in xrange(self.learnIters):
-            self.learnIter=f
-
-            scrns = self.moveScrns()
-            self.learnSlopes[f] = self.runWfs(
-                    scrns, wfsList=range(1, self.simConfig.nGS)
-                    )
-
-            logger.statusMessage(f, self.learnIters, "Performing Learn")
-            if callback!=None:
-                callback()
-            if progressCallback!=None:
-               progressCallback("Performing Learn", f, self.learnIters )
-
-
-        if self.simConfig.saveLearn:
-            fits.PrimaryHDU(self.learnSlopes).writeto(
-                            self.simConfig.simName+"/learn.fits",
-                            clobber=True )
-
 
     def calcCMat(self,callback=None, progressCallback=None):
         '''
