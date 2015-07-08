@@ -84,13 +84,18 @@ class Reconstructor(object):
     def saveCMat(self):
         filename = self.simConfig.simName+"/cMat.fits"
 
-        cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        cMatHDU.header["DMNO"] = self.simConfig.nDM
-        cMatHDU.header["DMACTS"] = "%s" % list(self.dmActs)
-        cMatHDU.header["DMTYPE"] = "%s" % list(self.dmTypes)
-        cMatHDU.header["DMCOND"] = "%s" % list(self.dmConds)
+        fits.writeto(
+                filename, self.controlMatrix,
+                header=self.simConfig.saveHeader, clobber=True)
 
-        cMatHDU.writeto(filename, clobber=True)
+        # cMatHDU = fits.PrimaryHDU(self.controlMatrix)
+        # cMatHDU.header["DMNO"] = self.simConfig.nDM
+        # cMatHDU.header["DMACTS"] = "%s" % list(self.dmActs)
+        # cMatHDU.header["DMTYPE"] = "%s" % list(self.dmTypes)
+        # cMatHDU.header["DMCOND"] = "%s" % list(self.dmConds)
+
+        # cMatHDU.writeto(filename, clobber=True)
+        # commented as will be included in new global sim header. apr 6/7/15
 
     def loadCMat(self):
 
@@ -105,14 +110,14 @@ class Reconstructor(object):
 
         try:
             # dmActs = dmTypes = dmConds = None
-            dmNo = int(header["DMNO"])
+            dmNo = int(header["NBDM"])
             exec("dmActs = numpy.array({})".format(
                     cMatHDU.header["DMACTS"]), globals())
             exec("dmTypes = %s" % header["DMTYPE"], globals())
             exec("dmConds = numpy.array({})".format(
                     cMatHDU.header["DMCOND"]), globals())
 
-            if not numpy.allclose(dmConds,self.dmConds):
+            if not numpy.allclose(dmConds, self.dmConds):
                 raise Exception("DM conditioning Parameter changed - will make new control matrix")
             if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:
                 logger.warning("loaded control matrix may not be compatibile with \
@@ -138,10 +143,14 @@ class Reconstructor(object):
             filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits" % dm
             filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
 
-            fits.PrimaryHDU(self.dms[dm].iMat).writeto(
-                    filenameIMat, clobber=True)
-            fits.PrimaryHDU(self.dms[dm].iMatShapes).writeto(
-                    filenameShapes, clobber=True)
+            fits.writeto(
+                    filenameIMat, self.dms[dm].iMat,
+                    header=self.simConfig.saveHeader,
+                    clobber=True)
+
+            fits.writeto(
+                    filenameShapes, self.dms[dm].iMatShapes,
+                    header=self.simConfig.saveHeader, clobber=True)
 
     def loadIMat(self):
 
@@ -220,7 +229,10 @@ class Reconstructor(object):
 
 
 class MVM(Reconstructor):
-
+    """
+    Re-constructor which combines all DM interaction matrices from all DMs and 
+    WFSs and inverts the resulting matrix to form a global interaction matrix.
+    """
 
     def calcCMat(self,callback=None, progressCallback=None):
         '''
@@ -242,9 +254,9 @@ class MVM(Reconstructor):
 
 class MVM_SeparateDMs(Reconstructor):
     """
-    Reconstructor which treats a each DM Separately.
+    Re-constructor which treats a each DM Separately.
 
-    Similar to ``MVM`` reconstructor, except each DM has its own control matrix.
+    Similar to ``MVM`` re-constructor, except each DM has its own control matrix.
     Its is assumed that each DM is associated with a different WFS.
     """
 
@@ -517,6 +529,9 @@ class LearnAndApplyLTAO(Reconstructor):
         reconstructor for the system. This method uses the "truth" sensor, and
         assumes that this is WFS0
         '''
+
+        if self.learnIters==0:
+            raise ValueError("Sim Paramameter `learnIters` must be above 1")
 
         self.learnSlopes = numpy.zeros( (self.learnIters,self.simConfig.totalWfsData) )
         for i in xrange(self.learnIters):
