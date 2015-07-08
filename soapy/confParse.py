@@ -26,6 +26,7 @@ The ``ConfigObj`` provides a base class used by other module configuration objec
 """
 
 import numpy
+import traceback
 from . import logger
 
 #How much bigger to make the simulation than asked for. The value is a ratio
@@ -74,6 +75,7 @@ class Configurator(object):
             with open(self.filename) as file_:
                 exec(file_.read(), globals())
         except:
+            traceback.print_exc()
             raise ConfigurationError(
                     "Error loading config file: {}".format(self.filename))
 
