@@ -229,7 +229,10 @@ class Reconstructor(object):
 
 
 class MVM(Reconstructor):
-
+    """
+    Re-constructor which combines all DM interaction matrices from all DMs and 
+    WFSs and inverts the resulting matrix to form a global interaction matrix.
+    """
 
     def calcCMat(self,callback=None, progressCallback=None):
         '''
@@ -251,9 +254,9 @@ class MVM(Reconstructor):
 
 class MVM_SeparateDMs(Reconstructor):
     """
-    Reconstructor which treats a each DM Separately.
+    Re-constructor which treats a each DM Separately.
 
-    Similar to ``MVM`` reconstructor, except each DM has its own control matrix.
+    Similar to ``MVM`` re-constructor, except each DM has its own control matrix.
     Its is assumed that each DM is associated with a different WFS.
     """
 
@@ -526,6 +529,9 @@ class LearnAndApplyLTAO(Reconstructor):
         reconstructor for the system. This method uses the "truth" sensor, and
         assumes that this is WFS0
         '''
+
+        if self.learnIters==0:
+            raise ValueError("Sim Paramameter `learnIters` must be above 1")
 
         self.learnSlopes = numpy.zeros( (self.learnIters,self.simConfig.totalWfsData) )
         for i in xrange(self.learnIters):
