@@ -167,14 +167,6 @@ class Sim(object):
         logger.setLoggingFile(self.config.sim.logfile)
         logger.info("Starting Sim: {}".format(self.timeStamp()))
 
-<<<<<<< HEAD
-=======
-        #Make a pool of mp workers to do some work
-        #This will always exist in this class, but in other sim modules may
-        #not be there (so musn't be relied upon!)
-        self.mpPool = Pool(self.config.sim.procs)
-
->>>>>>> 3c957a1... status output now prints `simName`
         #calculate some params from read ones
         #calculated
         self.config.calcParams()
