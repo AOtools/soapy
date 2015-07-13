@@ -18,6 +18,7 @@
         obs      -->  obsDiam
 
     wfs
+        subaps  --> nxSubaps
         subapOversamp -->  fftOversamp
 
     lgs
