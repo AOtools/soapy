@@ -93,7 +93,6 @@ from . import AOFFT, aoSimLib, LGS, logger
 from .tools import centroiders
 from .opticalPropagationLib import angularSpectrum
 
-
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
 try:
@@ -679,8 +678,6 @@ class WFS(object):
                 self.EField *= numpy.exp(-1j*correction*self.r0Scale)
             self.calcFocalPlane()
 
-
-
         if read:
             self.makeDetectorPlane()
             self.calculateSlopes()
@@ -694,6 +691,10 @@ class WFS(object):
                 self.elong = elong
             self.wfsConfig.photonNoise = photonNoise
             self.wfsConfig.eReadNoise = eReadNoise
+
+        # Check that slopes aint `nan`s. Set to 0 if so
+        if numpy.any(numpy.isnan(self.slopes)):
+            self.slopes[:] = 0
 
         return self.slopes
 
