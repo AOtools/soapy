@@ -19,12 +19,13 @@
 '''
 A Module to perform FFTs, wrapping a variety of FFT Backends in a common
 interface.
-Currently supports either pyfftw (requires FFTW3), the scipy fftpack or some GPU algorithms
+Currently supports either pyfftw (requires FFTW3),
+the scipy fftpack or some GPU algorithms
 '''
 
 import numpy
 from . import logger
-from multiprocessing import cpu_count,Process,Queue
+from multiprocessing import cpu_count, Process, Queue
 
 
 try:

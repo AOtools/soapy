@@ -298,14 +298,14 @@ class GUI(QtGui.QMainWindow):
             
             self.app.processEvents()
 
-    def makeImageItem(self,layout,size):
+    def makeImageItem(self, layout, size):
         gv = pyqtgraph.GraphicsView()
         if self.useOpenGL and GL:
             gv.useOpenGL()
         layout.addWidget(gv)
         vb = pyqtgraph.ViewBox()
         vb.setAspectLocked(True)
-        vb.enableAutoRange(axis = pyqtgraph.ViewBox.XYAxes,enable=True)
+        vb.enableAutoRange(axis=pyqtgraph.ViewBox.XYAxes, enable=True)
 
         gv.setCentralItem(vb)
         img = pyqtgraph.ImageItem(border="w")

@@ -41,7 +41,6 @@ New DMs are easy to add into the simulation. At its simplest, the :py:class:`DM`
 class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided, which creates the independent influence function the DM can make. The 
 base class deals with the rest, including making interaction matrices and loop
 operation.
-
 """
 import numpy
 from scipy.ndimage.interpolation import rotate

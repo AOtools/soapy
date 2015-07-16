@@ -28,8 +28,8 @@ Soapy doesn't have too many requirements in terms of external libraries, though 
 
 ### Required
 
-    numpy 
-    scipy
+    numpy => 1.7.0
+    scipy => 0.10
     pyfits *or* astropy
     
 ### Recommended
@@ -47,7 +47,7 @@ Soapy doesn't have too many requirements in terms of external libraries, though 
 If your starting with python from scratch, there a couple of options. For Ubuntu linux (14.04+) users, all these packages can be installed via apt-get:
     
     sudo apt-get install python-numpy python-scipy python-pyfftw python-astropy python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
-    
+
 For Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names. 
     
 for mac os, all of these packages can be install via macports, with 
