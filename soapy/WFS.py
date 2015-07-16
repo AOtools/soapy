@@ -699,7 +699,7 @@ class WFS(object):
 
     def addPhotonNoise(self):
         """
-        Add photon noise to ``wfsDetectorPlane`` using numpy.random.poisson
+        Add photon noise to ``wfsDetectorPlane`` using ``numpy.random.poisson``
         """
         self.wfsDetectorPlane = numpy.random.poisson(
                 self.wfsDetectorPlane).astype(DTYPE)
@@ -717,10 +717,8 @@ class WFS(object):
     def calcFocalPlane(self):
         pass
 
-
     def makeDetectorPlane(self):
         pass
-
 
     def LGSUplink(self):
         pass
@@ -986,10 +984,6 @@ class ShackHartmann(WFS):
         if detector:
             self.wfsDetectorPlane[:] = 0
 
-    def photonNoise(self):
-
-        '''Photon Noise'''
-        raise NotImplementedError
 
     def calcFocalPlane(self, intensity=1):
         '''
@@ -1108,7 +1102,6 @@ class ShackHartmann(WFS):
 
         # Scale data for correct number of photons
         self.wfsDetectorPlane /= self.wfsDetectorPlane.sum()
-
         self.wfsDetectorPlane *= aoSimLib.photonsPerMag(
                 self.wfsConfig.GSMag, self.mask, self.simConfig.pxlScale**(-1),
                 self.wfsConfig.wvlBand, self.wfsConfig.exposureTime
