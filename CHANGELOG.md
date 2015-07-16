@@ -18,6 +18,7 @@
         obs      -->  obsDiam
 
     wfs
+        subaps  --> nxSubaps
         subapOversamp -->  fftOversamp
 
     lgs
@@ -26,7 +27,7 @@
     
     dm
         dmType   -->  type
-        dmActs    -->  nxActuators
+        dmActs    -->  nxActuators (Now only specify the 1-d size)
         dmCond  -->  svdConditioning
 
     sci

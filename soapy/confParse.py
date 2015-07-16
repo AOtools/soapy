@@ -197,7 +197,7 @@ class Configurator(object):
         #Check if SH WFS with 1 subap. Feild stop must be FOV
         for wfs in self.wfss:
             if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
-                logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
+                logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture".format(wfs))
                 wfs.subapFieldStop = True
     
         #Use the simulation ``procs`` value to determine how many threads in 

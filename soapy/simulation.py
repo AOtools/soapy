@@ -563,7 +563,7 @@ class Sim(object):
                     # logger.statusMessage(i, self.config.sim.nIters,
                     #                    "AO Loop")
 
-                    self.printOutput(self.config.sim.simName, i, strehl=True)
+                    self.printOutput(i, strehl=True)
 
                     self.addToGuiQueue()
                 else:
@@ -844,7 +844,7 @@ class Sim(object):
         return datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 
-    def printOutput(self, label, iter, strehl=False):
+    def printOutput(self, iter, strehl=False):
         """
         Prints simulation information  to the console
 
@@ -854,7 +854,11 @@ class Sim(object):
             iter(int): simulation frame number
             strehl(float, optional): current strehl ration if science cameras are present to record it.
         """
-        string = label
+        if self.config.sim.simName:
+            string = self.config.sim.simName.split("/")[-1]
+        else:
+            string = self.config.filename.split("/")[-1].split(".")[0]
+
         if strehl:
             string += "  Strehl -- "
             for sci in xrange(self.config.sim.nSci):
