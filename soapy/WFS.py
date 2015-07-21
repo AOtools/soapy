@@ -894,6 +894,16 @@ class ShackHartmann(WFS):
 
         self.scaledEField = numpy.zeros((self.scaledEFieldSize,)*2, dtype=CDTYPE)
 
+    def initLGS(self):
+        super(ShackHartmann, self).initLGS()
+        #Tell the LGS a bit about the WFS
+        #(TODO-get rid of this and put into LGS object init)
+        print("Run INITLGS")
+        if self.LGS:
+            self.LGS.setWFSParams(
+                    self.SUBAP_OVERSIZE*self.subapFOVrad,
+                    self.wfsConfig.fftOversamp, self.subapFFTPadding)
+
     def calcTiltCorrect(self):
         """
         Calculates the required tilt to add to avoid the PSF being centred on
