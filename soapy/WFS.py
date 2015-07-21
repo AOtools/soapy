@@ -708,11 +708,15 @@ class WFS(object):
 
     def addReadNoise(self):
         """
-        Adds read noise to ``wfsDetectorPlane using ``numpy.random.random`` multiplied by the specifed electrons read noise
+        Adds read noise to ``wfsDetectorPlane using ``numpy.random.normal``.
+        This generates a normal (guassian) distribution of random numbers to
+        add to the detector. Any CCD bias is assumed to have been removed, so
+        the distribution is centred around 0. The width of the distribution
+        is determined by the value `eReadNoise` set in the WFS configuration.
         """
-        self.wfsDetectorPlane +=self.wfsConfig.eReadNoise*numpy.random.random(
-                        self.wfsDetectorPlane.shape
-                        )
+        self.wfsDetectorPlane += numpy.random.normal(
+                0, self.wfsConfig.eReadNoise, self.wfsDetectorPlane.shape
+                )
 
 
     def calcFocalPlane(self):
@@ -800,9 +804,10 @@ class ShackHartmann(WFS):
                 self.simConfig.simPad : -self.simConfig.simPad,
                 self.simConfig.simPad : -self.simConfig.simPad
                 ]
-        self.subapCoords = aoSimLib.findActiveSubaps(
+        self.subapCoords, self.subapFillFactor = aoSimLib.findActiveSubaps(
                 self.wfsConfig.nxSubaps, mask,
-                self.wfsConfig.subapThreshold)
+                self.wfsConfig.subapThreshold, returnFill=True)
+
         self.activeSubaps = self.subapCoords.shape[0]
         self.detectorSubapCoords = numpy.round(
                 self.subapCoords*(
@@ -1045,12 +1050,15 @@ class ShackHartmann(WFS):
         self.binnedFPSubapArrays[:] = aoSimLib.binImgs(self.FPSubapArrays,
                                             self.wfsConfig.fftOversamp)
 
-        self.binnedFPSubapArrays[:] = self.maxFlux* (self.binnedFPSubapArrays.T/
-                                            self.binnedFPSubapArrays.max((1,2))
-                                                                         ).T
+        self.binnedFPSubapArrays[:] \
+                = self.maxFlux\
+                        * (self.binnedFPSubapArrays.T
+                            /self.binnedFPSubapArrays.max((1,2))).T
+        # Scale each sub-ap flux by sub-aperture fill-factor
+        self.binnedFPSubapArrays\
+                = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
 
         for i in xrange(self.activeSubaps):
-
             x,y=self.detectorSubapCoords[i]
 
             #Set default position to put arrays into (SUBAP_OVERSIZE FOV)
