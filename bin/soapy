@@ -14,48 +14,56 @@ from soapy import gui
 
 def runCmdSim(sim, newIMat=False, interactive = False):
     '''
-    Runs the simulation in the command line. 
+    Runs the simulation in the command line.
     '''
-    
+
+    simConfig = sim.config.sim
+    for w in range(simConfig.nGS):
+        exec("wfs{0}Config = sim.config.wfss[{0}]".format(w))
+    for d in range(simConfig.nDM):
+        exec("dm{0}Config = sim.config.dms[{0}]".format(d))
+    telConf = sim.config.tel
+
     if interactive:
-        sim.aoinit()
+        #sim.aoinit()
         IPython.embed()
         raise SystemExit
-    
-    
-    
+
+
+
     else:
         sim.aoinit()
-        sim.makeIMat(forceNew = newIMat)
+        sim.makeIMat()
         sim.aoloop()
-    
+
+
 
 if __name__=="__main__":
-        
+
     #Define parser and add arguments
     parser = ArgumentParser()
     parser.add_argument("configFile", nargs="?", action="store",
             help="The AO config file you wish to simulate. Defaults to conf/sh_8x8.py if none specified.")
     parser.add_argument("--gui","-g", action="store_true", dest="gui",
             help="Starts the AO gui to visualise your simulation")
-    
+
     parser.add_argument("-gl", "--with-opengl", dest="gl",
             action="store_true", help="Use opengl for gui plotting")
-    parser.add_argument("-i", "--interactive", dest="interactive", 
+    parser.add_argument("-i", "--interactive", dest="interactive",
                         action="store_true", help="Open sim using ipython interactive mode")
     parser.add_argument("-V", "--verbosity", dest="verbosity",
             action="store", default=2,
             help="How much information to print about the simulation")
 
-    parser.add_argument("-v", "--version", action="version", 
+    parser.add_argument("-v", "--version", action="version",
             version=soapy.__version__)
-    
-    
+
+
     bin_path = os.path.abspath(os.path.realpath(__file__)+"/..")
 
     #Finally, parse args
     args = parser.parse_args()
-    
+
     #default confFile
     if args.configFile!=None:
         configFile = args.configFile
@@ -72,7 +80,6 @@ if __name__=="__main__":
     #if gui start gui
     if args.gui:
         simGUI = gui.GUI(sim, useOpenGL=args.gl)
-        
+
     else:
         runCmdSim(sim, interactive=args.interactive)
-        
