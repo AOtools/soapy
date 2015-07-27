@@ -419,14 +419,16 @@ class FastPiezo(Piezo):
         dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
         # Make a single actuator
-        act = numpy.array([ [0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0],
-                            [0, 1, 1, 1, 0],
-                            [0, 0, 1, 0, 0],
-                            [0, 0, 0, 0, 0]])
-
+        act = numpy.zeros((self.dmConfig.nxActuators+2,)*2)
+        n = int((self.dmConfig.nxActuators+2)/2)
+        act[n,n] = 1
         actSize = int(round(3*self.spcing))
-        self.act = aoSimLib.zoom_rbs(act, (actSize, actSize), order=1)
+
+        self.act = aoSimLib.zoom_rbs(act, (self.dmSize, self.dmSize), order=3)
+
+        actmid = n*self.spcing
+        self.act = self.act[actmid-actSize/2:actmid+actSize/2,
+                            actmid-actSize/2:actmid+actSize/2]
         self.iMatShapes = self.act
 
     def makeIMat(self, callback=None):
