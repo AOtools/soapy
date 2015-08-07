@@ -26,6 +26,7 @@ The ``ConfigObj`` provides a base class used by other module configuration objec
 """
 
 import numpy
+import traceback
 from . import logger
 
 #How much bigger to make the simulation than asked for. The value is a ratio
@@ -74,6 +75,7 @@ class Configurator(object):
             with open(self.filename) as file_:
                 exec(file_.read(), globals())
         except:
+            traceback.print_exc()
             raise ConfigurationError(
                     "Error loading config file: {}".format(self.filename))
 
@@ -197,7 +199,7 @@ class Configurator(object):
         #Check if SH WFS with 1 subap. Feild stop must be FOV
         for wfs in self.wfss:
             if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
-                logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture")
+                logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture".format(wfs))
                 wfs.subapFieldStop = True
 
 

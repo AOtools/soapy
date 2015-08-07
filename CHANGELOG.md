@@ -1,3 +1,10 @@
+#0.9.1
+- Tutorial added to docs
+
+- Fix bug in off-axis science cameras, where Interp2d wasnt imported
+
+- Can use a random phase screen for each loop iteration
+
 #0.9
 - Name change to Soapy!
 
@@ -5,12 +12,13 @@
     ```python
 
     sim
-        filePrefix  -->  dataDir
+        filePrefix  -->  simName
 
     tel
         obs      -->  obsDiam
 
     wfs
+        subaps  --> nxSubaps
         subapOversamp -->  fftOversamp
 
     lgs
@@ -19,7 +27,7 @@
     
     dm
         dmType   -->  type
-        dmActs    -->  nActuators
+        dmActs    -->  nxActuators (Now only specify the 1-d size)
         dmCond  -->  svdConditioning
 
     sci
