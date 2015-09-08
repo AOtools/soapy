@@ -48,8 +48,6 @@ class Reconstructor(object):
         self.simConfig = simConfig
         self.atmos = atmos
 
-        self.learnIters = self.simConfig.learnIters
-
         self.dmActs = []
         self.dmConds = []
         self.dmTypes = []
@@ -388,19 +386,20 @@ class LearnAndApply(MVM):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.zeros( (self.learnIters,self.simConfig.totalWfsData) )
-        for i in xrange(self.learnIters):
+        self.learnSlopes = numpy.zeros(
+                (self.simConfig.learnIters, self.simConfig.totalWfsData) )
+        for i in xrange(self.simConfig.learnIters):
             self.learnIter=i
 
             scrns = self.moveScrns()
             self.learnSlopes[i] = self.runWfs(scrns)
 
 
-            logger.statusMessage(i, self.learnIters, "Performing Learn")
+            logger.statusMessage(i, self.simConfig.learnIters, "Performing Learn")
             if callback!=None:
                 callback()
             if progressCallback!=None:
-               progressCallback("Performing Learn", i, self.learnIters )
+               progressCallback("Performing Learn", i, self.simConfig.learnIters )
 
         if self.simConfig.saveLearn:
             #FITS.Write(self.learnSlopes,self.simConfig.simName+"/learn.fits")
