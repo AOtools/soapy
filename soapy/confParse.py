@@ -29,11 +29,6 @@ import numpy
 import traceback
 from . import logger
 
-#How much bigger to make the simulation than asked for. The value is a ratio
-#of how much to pad on each side
-SIM_OVERSIZE = 0.1
-
-
 class ConfigurationError(Exception):
     pass
 
@@ -124,8 +119,8 @@ class Configurator(object):
 
         #We oversize the pupil to what we'll call the "simulation size"
         self.sim.simSize = int(self.sim.pupilSize 
-                + 2*numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
-        self.sim.simPad = int(numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
+                + 2*numpy.round(self.sim.simOversize*self.sim.pupilSize))
+        self.sim.simPad = int(numpy.round(self.sim.simOversize*self.sim.pupilSize))
 
 
         #furthest out GS or SCI target defines the sub-scrn size
@@ -225,7 +220,6 @@ class ConfigObj(object):
         for param in self.requiredParams:
             self.__setattr__(param, None)
 
-
     def loadParams(self, configDict):
 
         if self.N!=None:
@@ -319,6 +313,9 @@ class SimConfig(ConfigObj):
         ``learnAtmos``      str: if ``random``, then 
                             random phase screens used for 
                             `learn`                             ``random``
+        ``simOversize``     float: The fraction to pad the 
+                            pupil size with to reduce edge 
+                            effects                             ``0.1``
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -373,6 +370,7 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"), 
+                                ("simOversize", 0.1),
                         ]
 
         self.initParams()
