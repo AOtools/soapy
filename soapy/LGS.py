@@ -204,7 +204,7 @@ class GeometricLGS(LGSObj):
         
         #This is the number of pxls used for correct FOV (same as a WFS subap)
         self.LGSFOVPxls = numpy.round(
-                    self.self.lgsConfig.pupilDiam * 
+                    self.lgsConfig.pupilDiam * 
                     self.subapFOVRad/self.lgsConfig.wavelength
                     )
         #Dont want to interpolate down as throwing away info - make sure we
@@ -251,8 +251,7 @@ class GeometricLGS(LGSObj):
         '''
         X,Y = numpy.meshgrid(numpy.linspace(-1,1,self.LGSFOVOversize),
                              numpy.linspace(-1,1,self.LGSFOVOversize) )
-
-        
+ 
         O = numpy.ones((self.LGSFOVOversize, self.LGSFOVOversize))
         res = scipy.optimize.minimize(self.optFunc,0,args=(X,Y,O),tol=0.0001,
                                 options={"maxiter":100})

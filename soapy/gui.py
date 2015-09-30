@@ -33,7 +33,7 @@ from matplotlib.figure import Figure
 
 from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
 from IPython.qt.inprocess import QtInProcessKernelManager
-from IPython.lib import guisupport 
+from IPython.lib import guisupport
 
 import pyqtgraph
 from .AOGUIui import Ui_MainWindow
@@ -50,7 +50,7 @@ try:
     import queue
 except ImportError:
     import Queue as queue
-    
+
 from argparse import ArgumentParser
 import pylab
 import os
@@ -69,7 +69,7 @@ CMAP={'mode': 'rgb',
  'ticks': [ (0., (14, 66, 255, 255)),
             (0.5, (255, 255, 255, 255)),
             (1., (255, 26, 26, 255))]}
-        
+
 class GUI(QtWidgets.QMainWindow):
     def __init__(self, sim, useOpenGL=False):
 
@@ -90,11 +90,11 @@ class GUI(QtWidgets.QMainWindow):
 
         self.ui.reloadParamsAction.triggered.connect(self.read)
         self.ui.loadParamsAction.triggered.connect(self.readParamFile)
-        
+
         #Ensure update is called if sci button pressed
         self.ui.instExpRadio.clicked.connect(self.update)
         self.ui.longExpRadio.clicked.connect(self.update)
-        
+
         #Initialise Colour chooser
         self.gradient = pyqtgraph.GradientWidget(orientation="bottom")
         self.gradient.sigGradientChanged.connect(self.changeLUT)
@@ -110,10 +110,10 @@ class GUI(QtWidgets.QMainWindow):
         self.resPlots = {}
 
         self.console = IPythonConsole(self.ui.consoleLayout,self.sim,self)
-        
+
         self.loopRunning=False
         self.makingIMat=False
-        
+
         #Init Timer to update plots
         self.updateTimer = QtCore.QTimer()
         self.updateTimer.setInterval(100)
@@ -132,8 +132,7 @@ class GUI(QtWidgets.QMainWindow):
         #Required for plotting colors
         self.colorList = ["b","g","r","c","m","y","k"]
         self.colorNo = 0
-   
-        print("init the result plot...")
+
         self.resultPlot = PlotWidget()
         self.ui.plotLayout.addWidget(self.resultPlot)
 
@@ -145,7 +144,7 @@ class GUI(QtWidgets.QMainWindow):
         self.initPlots()
         self.show()
         self.init()
-    
+
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
 
@@ -154,9 +153,9 @@ class GUI(QtWidgets.QMainWindow):
 #Load Param file methods
     def readParamFile(self):
 
-        fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', 
-                '/home')
-    
+        fname = QtWidgets.QFileDialog.getOpenFileName(
+                self, 'Open file', '/home')
+
         self.sim.readParams(fname)
         self.config = self.sim.config
         self.initPlots()
@@ -168,8 +167,8 @@ class GUI(QtWidgets.QMainWindow):
 
         self.ui.progressBar.setValue(80)
         for layout in [ self.ui.wfsLayout, self.ui.dmLayout,
-                        self.ui.residualLayout, self.ui.sciLayout, 
-                        self.ui.phaseLayout, self.ui.lgsLayout, 
+                        self.ui.residualLayout, self.ui.sciLayout,
+                        self.ui.phaseLayout, self.ui.lgsLayout,
                         self.ui.gainLayout]:
             for i in reversed(range(layout.count())):
                 layout.itemAt(i).widget().setParent(None)
@@ -180,16 +179,16 @@ class GUI(QtWidgets.QMainWindow):
         self.phasePlots = {}
         for wfs in range(self.config.sim.nGS):
             self.wfsPlots[wfs] = self.makeImageItem(
-                    self.ui.wfsLayout, 
+                    self.ui.wfsLayout,
                     self.config.wfss[wfs].nxSubaps*self.config.wfss[wfs].pxlsPerSubap
                     )
             self.phasePlots[wfs] = self.makeImageItem(
                     self.ui.phaseLayout,self.config.sim.simSize)
-                                                      
+
             if self.config.lgss[wfs].uplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
- 
+
         self.dmPlots = {}
         for dm in range(self.config.sim.nDM):
             self.dmPlots[dm] = self.makeImageItem(self.ui.dmLayout,
@@ -207,15 +206,16 @@ class GUI(QtWidgets.QMainWindow):
         self.sim.guiLock = self.updateLock
         self.sim.gui = True
         self.sim.waitingPlot = False
-        
+
         #Set initial gains
         self.gainSpins = []
         for dm in range(self.config.sim.nDM):
             gainLabel = QtWidgets.QLabel()
             gainLabel.setText("DM {}:".format(dm))
             self.ui.gainLayout.addWidget(gainLabel)
-            
+
             self.gainSpins.append(QtWidgets.QDoubleSpinBox())
+
             self.ui.gainLayout.addWidget(self.gainSpins[dm])
             self.gainSpins[dm].setValue(self.config.dms[dm].gain)
             self.gainSpins[dm].setSingleStep(0.05)
@@ -226,9 +226,9 @@ class GUI(QtWidgets.QMainWindow):
 
         self.ui.progressBar.setValue( 100)
         self.statsThread = StatsThread(self.sim)
-        
+
     def update(self):
-        
+
         #tell sim that gui wants a plot
         self.sim.waitingPlot = True
         #empty queue so only latest update is present
@@ -241,13 +241,13 @@ class GUI(QtWidgets.QMainWindow):
             self.updateLock.unlock()
             traceback.print_exc()
         self.updateLock.unlock()
-        
+
         if plotDict:
             for wfs in range(self.config.sim.nGS):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
                     self.wfsPlots[wfs].setImage(
                         plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-                try: 
+                try:
                     scaleValues = [min(self.minValues), max(self.maxValues)]
                 except (AttributeError, ValueError):
                     scaleValues = None
@@ -263,17 +263,17 @@ class GUI(QtWidgets.QMainWindow):
 
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
-                        
+
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
                         plotDict["lgsPsf"][wfs], lut=self.LUT)
-                    
-        
+
+
             if numpy.any(plotDict["ttShape"])!=None:
                 self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
-            
+
             for dm in range(self.config.sim.nDM):
-                
+
                 if numpy.any(plotDict["dmShape"][dm]) !=None:
                     dmShape = plotDict["dmShape"][dm]
                     if not scaleValues:
@@ -283,7 +283,7 @@ class GUI(QtWidgets.QMainWindow):
 
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
                                             lut=self.LUT, levels=scaleValues)
-           
+
             for sci in range(self.config.sim.nSci):
                 if numpy.any(plotDict["sciImg"][sci])!=None:
                     if self.ui.instExpRadio.isChecked():
@@ -292,7 +292,7 @@ class GUI(QtWidgets.QMainWindow):
                     elif self.ui.longExpRadio.isChecked():
                         self.sciPlots[sci].setImage(
                                 plotDict["sciImg"][sci], lut=self.LUT)
-                    
+
                 if numpy.any(plotDict["residual"][sci])!=None:
                     residual = plotDict["residual"][sci]
                     if not scaleValues:
@@ -302,20 +302,20 @@ class GUI(QtWidgets.QMainWindow):
 
                     self.resPlots[sci].setImage(
                             residual, lut=self.LUT, levels=scaleValues)
-            
+
             if self.loopRunning:
                 self.updateStrehls()
-            
+
             self.app.processEvents()
 
-    def makeImageItem(self,layout,size):
+    def makeImageItem(self, layout, size):
         gv = pyqtgraph.GraphicsView()
         if self.useOpenGL and GL:
             gv.useOpenGL()
         layout.addWidget(gv)
         vb = pyqtgraph.ViewBox()
         vb.setAspectLocked(True)
-        vb.enableAutoRange(axis = pyqtgraph.ViewBox.XYAxes,enable=True)
+        vb.enableAutoRange(axis=pyqtgraph.ViewBox.XYAxes, enable=True)
 
         gv.setCentralItem(vb)
         img = pyqtgraph.ImageItem(border="w")
@@ -323,7 +323,7 @@ class GUI(QtWidgets.QMainWindow):
         vb.setRange(QtCore.QRectF(0, 0, size, size))
         return img
 
-        
+
 
     def plotPupilOverlap(self):
 
@@ -332,11 +332,12 @@ class GUI(QtWidgets.QMainWindow):
         scrnNo = self.sim.config.atmos.scrnNo
         self.resultPlot = OverlapWidget(scrnNo)
         self.ui.plotLayout.addWidget(self.resultPlot)
-        
+
         for i in range(scrnNo):
 
-            self.resultPlot.canvas.axes[i].imshow(numpy.zeros((   self.config.sim.pupilSize*2,
-                                                self.config.sim.pupilSize*2)),
+            self.resultPlot.canvas.axes[i].imshow(
+                    numpy.zeros((   self.config.sim.pupilSize*2,
+                                    self.config.sim.pupilSize*2)),
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
                 if self.sim.config.wfss[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfss[wfs].GSHeight==0:
@@ -347,19 +348,32 @@ class GUI(QtWidgets.QMainWindow):
 
                     if self.sim.wfss[wfs].radii!=None:
                         radius = self.sim.wfss[wfs].radii[i]
-                    
+
                     else:
                         radius = self.config.sim.pupilSize/2.
-                
+
                     if self.sim.config.wfss[wfs].GSHeight!=0:
                         colour="r"
                     else:
                         colour="g"
-                    
-                    circ = pylab.Circle(cent,radius=radius,alpha=0.4,fc=colour)
+
+                    circ = pylab.Circle(cent,radius=radius,alpha=0.2, fc=colour)
                     self.resultPlot.canvas.axes[i].add_patch(circ)
                     self.resultPlot.canvas.axes[i].set_yticks([])
                     self.resultPlot.canvas.axes[i].set_xticks([])
+
+            for sci in range(self.config.sim.nSci):
+                cent = self.sim.sciCams[sci].getMetaPupilPos(
+                        self.sim.config.atmos.scrnHeights[i])
+                cent*=self.sim.config.sim.pxlScale
+                cent+=self.config.sim.pupilSize
+
+                radius = self.config.sim.pupilSize/2.
+
+                circ = pylab.Circle(cent, radius=radius, alpha=0.2, fc="y")
+                self.resultPlot.canvas.axes[i].add_patch(circ)
+                self.resultPlot.canvas.axes[i].set_yticks([])
+                self.resultPlot.canvas.axes[i].set_xticks([])
 
 
     def initStrehlPlot(self):
@@ -368,7 +382,7 @@ class GUI(QtWidgets.QMainWindow):
             self.resultPlot.setParent(None)
         self.resultPlot = PlotWidget()
         self.ui.plotLayout.addWidget(self.resultPlot)
-        
+
         self.strehlAxes = self.resultPlot.canvas.ax
         self.strehlAxes.set_xlabel("Iterations",fontsize="xx-small")
         self.strehlAxes.set_ylabel("Strehl Ratio",fontsize="xx-small")
@@ -376,20 +390,20 @@ class GUI(QtWidgets.QMainWindow):
         self.strehlAxes.tick_params(axis='both', which='major', labelsize="xx-small")
         self.strehlAxes.tick_params(axis='both', which='minor', labelsize="xx-small")
         self.strehlPlts=[]
-        
+
         self.colorNo+=1
         if self.colorNo==len(self.colorList):
             self.colorNo=0
-        
+
     def updateStrehls(self):
-    
+
         instStrehls = []
         longStrehls = []
-        
+
         for i in range(self.config.sim.nSci):
             instStrehls.append(100*self.sim.sciCams[i].instStrehl)
             longStrehls.append(100*self.sim.sciCams[i].longExpStrehl)
-            
+
         self.ui.instStrehl.setText( "Instantaneous Strehl: "
            +self.config.sim.nSci*"%.1f%%  "%tuple(instStrehls))
         self.ui.longStrehl.setText("Long Exposure Strehl: "
@@ -399,7 +413,7 @@ class GUI(QtWidgets.QMainWindow):
             for line in plt:
                 line.remove()
             del plt
-            
+
         self.strehlPlts=[]
         if self.config.sim.nSci>0:
             self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[0],
@@ -410,8 +424,8 @@ class GUI(QtWidgets.QMainWindow):
 
     def updateStats(self, itersPerSec, timeRemaining):
 
-        self.ui.itersPerSecLabel.setText( 
-                                "Iterations Per Second: %.2f"%(itersPerSec)) 
+        self.ui.itersPerSecLabel.setText(
+                                "Iterations Per Second: %.2f"%(itersPerSec))
         self.ui.timeRemaining.setText( "Time Remaining: %.2fs"%(timeRemaining) )
 
 ########################################################
@@ -428,9 +442,9 @@ class GUI(QtWidgets.QMainWindow):
         self.iThread.finished.connect(self.initPlots)
         self.iThread.start()
         self.config = self.sim.config
-        
+
     def iMat(self):
-        
+
         if self.iMatThread!=None:
             running = self.iMatThread.isRunning()
         else:
@@ -449,7 +463,7 @@ class GUI(QtWidgets.QMainWindow):
 
 
     def run(self):
-        
+
         self.initStrehlPlot()
 
         self.startTime = time.time()
@@ -494,7 +508,7 @@ class GUI(QtWidgets.QMainWindow):
         self.config.dms[dm].gain = self.gainSpins[dm].value()
 
     def updateTimeChanged(self):
-        
+
         try:
             self.updateTime = int(numpy.round(1000./float(self.ui.updateTimeSpin.value())))
             self.updateTimer.setInterval(self.updateTime)
@@ -518,7 +532,7 @@ class GUI(QtWidgets.QMainWindow):
 ###############################################
 
 #Tidy up before closing the gui
-    
+
     # def closeEvent(self, event):
     #     del(self.app)
 
@@ -535,7 +549,7 @@ class StatsThread(QtCore.QThread):
 
     def run(self):
         self.startTime = time.time()
-        
+
         while self.sim.iters+1 < self.sim.config.sim.nIters and self.sim.go:
             time.sleep(0.4)
             iTime = time.time()
@@ -554,7 +568,7 @@ class InitThread(QtCore.QThread):
         QtCore.QThread.__init__(self)
         self.guiObj = guiObj
         self.sim = guiObj.sim
-        
+
     def run(self):
         logger.setStatusFunc(self.progressUpdate)
         if self.sim.go:
@@ -568,7 +582,7 @@ class InitThread(QtCore.QThread):
 
 class IMatThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
-    
+
     def __init__(self,guiObj):
         self.sim = guiObj.sim
         self.guiObj = guiObj
@@ -597,7 +611,7 @@ class IMatThread(QtCore.QThread):
 
 class LoopThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
-    
+
     def __init__(self, guiObj):
 
         QtCore.QThread.__init__(self)
@@ -618,8 +632,8 @@ class LoopThread(QtCore.QThread):
             self.guiObj.loopRunning = False
             self.guiObj.stop()
             traceback.print_exc()
-            
-    
+
+
     def progressUpdate(self, message, i="", maxIter=""):
 
         self.updateProgressSignal.emit(str(message), str(i), str(maxIter))
@@ -645,7 +659,7 @@ class IPythonConsole:
                             "simConfig" : sim.config.sim,
                             "telConfig" : sim.config.tel,
                             "atmosConfig" : sim.config.atmos}
-        
+
         for i in range(sim.config.sim.nGS):
             usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
         for i in range(sim.config.sim.nDM):
@@ -665,10 +679,10 @@ class IPythonConsole:
         control.kernel_client = self.kernel_client
         control.exit_requested.connect(self.stop)
         layout.addWidget(control)
-        
+
         self.kernel.shell.ex("")
         #control.show()
-        
+
         #self.kernel.show
     def stop(self):
         self.kernel_client.stop_channels()
@@ -677,7 +691,7 @@ class IPythonConsole:
     def write(self,message):
         self.kernel.shell.write(message)
         self.kernel.shell.ex("")
-        
+
 class OverlapCanvas(FigureCanvas):
     def __init__(self, nAxes):
         self.fig = Figure(facecolor="white", frameon=False)
@@ -690,7 +704,7 @@ class OverlapCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
 
 class OverlapWidget(QtGui.QWidget):
- 
+
     def __init__(self, nAxes, parent = None):
         QtGui.QWidget.__init__(self, parent)
         self.canvas = OverlapCanvas(nAxes)
@@ -700,18 +714,18 @@ class OverlapWidget(QtGui.QWidget):
 
 
 class PlotCanvas(FigureCanvas):
- 
+
     def __init__(self):
         self.fig = Figure(facecolor="white", frameon=False)
         self.ax = self.fig.add_subplot(111)
- 
+
         FigureCanvas.__init__(self, self.fig)
         FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
- 
- 
+
+
 class PlotWidget(QtGui.QWidget):
- 
+
     def __init__(self, parent = None):
         QtGui.QWidget.__init__(self, parent)
         self.canvas = PlotCanvas()
@@ -720,7 +734,7 @@ class PlotWidget(QtGui.QWidget):
         self.setLayout(self.vbl)
 
 if __name__ == "__main__":
-    
+
     parser = ArgumentParser()
     parser.add_argument("configFile",nargs="?",action="store")
     parser.add_argument("-gl",action="store_true")
@@ -730,11 +744,6 @@ if __name__ == "__main__":
         confFile = args.configFile
     else:
         confFile = "conf/testConf.py"
-    
+
 
     G = GUI(confFile,useOpenGL=args.gl)
-
-
-
-
-

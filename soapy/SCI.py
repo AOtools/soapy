@@ -18,8 +18,8 @@
 
 import numpy
 from . import aoSimLib, AOFFT, logger
-from scipy import interp2d
 
+from scipy.interpolate import interp2d
 
 class scienceCam:
 
@@ -168,10 +168,6 @@ class scienceCam:
             interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
             metaPupil = interpObj(yCoords, xCoords)
 
-            interpObj = interp2d(
-            self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)
-
         return metaPupil
 
     def calcPupilPhase(self):
@@ -190,7 +186,7 @@ class scienceCam:
 
     def calcFocalPlane(self):
         '''
-        Takes the calculated pupil phase, scales for the correct FOV, 
+        Takes the calculated pupil phase, scales for the correct FOV,
         and uses an FFT to transform to the focal plane.
         '''
 
