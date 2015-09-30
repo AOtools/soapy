@@ -119,7 +119,8 @@ class DM:
         logger.info("Making DM Influence Functions...")
         self.makeIMatShapes()
 
-        self.iMatShapes *= self.dmConfig.iMatValue
+        # Imat value is in microns
+        self.iMatShapes *= (self.dmConfig.iMatValue*1e-6)
 
         if self.dmConfig.rotation:
            self.iMatShapes = rotate(

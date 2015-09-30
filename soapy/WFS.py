@@ -140,7 +140,7 @@ class WFS(object):
         self.iMat = False
 
         # Set from knowledge of atmosphere module
-        self.phsWvl = 500e-9
+        # self.phsWvl = 500e-9 #Notrequired as phase in nanometers now
 
         self.calcInitParams()
 
@@ -175,8 +175,8 @@ class WFS(object):
 
         self.telDiam = self.simConfig.pupilSize/self.simConfig.pxlScale
 
-        # Phase power scaling factor for wfs wavelength
-        self.r0Scale = self.phsWvl/self.wfsConfig.wavelength
+        # Convert phase deviation to radians at wfs wavelength
+        self.phs2Rad = 2*numpy.pi/self.wfsConfig.wavelength
 
         # These are the coordinates of the sub-scrn to cut from the phase scrns
         # For each scrn height they will be edited per
@@ -648,8 +648,11 @@ class WFS(object):
         self.scrns = {}
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
-            self.scrns[i] = scrns[i].copy()*self.r0Scale
 
+            print("\nscrns: min:{}, max:{}".format(scrns[i].min(), scrns[i].max()))
+            self.scrns[i] = scrns[i].copy()*self.phs2Rad
+        
+            print("scrns: min:{}, max:{}".format(self.scrns[i].min(), self.scrns[i].max()))
 
         #If LGS elongation simulated
         if self.wfsConfig.lgs and self.elong!=0:
@@ -660,15 +663,15 @@ class WFS(object):
                 self.uncorrectedPhase = self.wfsPhase.copy()
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
-                    self.EField *= numpy.exp(-1j*correction*self.r0Scale)
+                    self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
                 self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
 
         #If no elongation
         else:
-            #If imate frame, dont want to make it off-axis
+            #If imat frame, dont want to make it off-axis
             if iMatFrame:
                 try:
-                    self.EField[:] = numpy.exp(1j*scrns[0])
+                    self.EField[:] = numpy.exp(1j*scrns[0]*self.phs2Rad)
                 except ValueError:
                     raise ValueError("If iMat Frame, scrn must be ``simSize``")
             else:
@@ -676,7 +679,7 @@ class WFS(object):
 
             self.uncorrectedPhase = self.wfsPhase.copy()
             if numpy.any(correction):
-                self.EField *= numpy.exp(-1j*correction*self.r0Scale)
+                self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
             self.calcFocalPlane()
 
         if read:

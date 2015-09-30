@@ -68,8 +68,10 @@ class scienceCam:
                              THREADS=sciConfig.fftwThreads)
 
         # Get phase scaling factor to get r0 in other wavelength
-        phsWvl = 500e-9
-        self.r0Scale = phsWvl / self.sciConfig.wavelength
+        # phsWvl = 500e-9
+        # self.r0Scale = phsWvl / self.sciConfig.wavelength
+        # Convert phase to radians at science wavelength 
+        self.phs2Rad = 2*numpy.pi/self.sciConfig.wavelength
 
         self.calcTiltCorrect()
 
@@ -191,7 +193,10 @@ class scienceCam:
         '''
 
         # Scaled the padded phase to the right size for the requried FOV
-        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
+        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo)
+
+        # Convert phase deviation to radians
+        phs*=self.phs2Rad
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
