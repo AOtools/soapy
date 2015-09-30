@@ -24,7 +24,7 @@ import os
 os.environ["QT_API"]="pyqt5"
 
 
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5 import QtGui, QtCore, QtWidgets, uic
 
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -36,7 +36,7 @@ from IPython.qt.inprocess import QtInProcessKernelManager
 from IPython.lib import guisupport
 
 import pyqtgraph
-from .AOGUIui import Ui_MainWindow
+
 from . import logger
 
 import sys
@@ -59,9 +59,9 @@ try:
 except ImportError:
     pass
 
-
 guiFile_path = os.path.abspath(os.path.realpath(__file__)+"/..")
-
+# from .AOGUIui import Ui_MainWindow
+Ui_MainWindow = uic.loadUiType(os.path.join(guiFile_path, "../gui/AoGui.ui"))[0]
 #This is the colormap to be used in all pyqtgraph plots
 #It can be changed in the GUI using the gradient slider in the top left
 #to get the LUT dictionary, use ``gui.gradient.saveState()''

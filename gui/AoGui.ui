@@ -455,7 +455,7 @@
  <connections>
   <connection>
    <sender>actionClose_2</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>close()</slot>
    <hints>
