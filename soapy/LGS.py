@@ -16,7 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
-from .import aoSimLib, AOFFT
+from .import aoSimLib, AOFFT, lineofsight
 from . import logger
 
 import scipy.optimize
