@@ -630,3 +630,24 @@ def aziAvg(data):
         avg[i] = (ring*data).sum()/(ring.sum())
 
     return avg
+
+def calcTiltCorrect(pxlScale, nPxls, wvl, fovPxlNo, telDiam, fftPaddingNo):
+    """
+    Calculates the required tilt to add to avoid  the PSF being centred
+    on one pixel only
+    """
+
+    # Only required if pxl number is even
+    if not self.sciConfig.pxls % 2:
+        # Need to correct for half a pixel angle
+        theta = float(self.FOVrad) / (2 * self.FFTPadding)
+
+        # Find magnitude of tilt from this angle
+        A = theta * self.telConfig.telDiam / \
+            (2 * self.sciConfig.wavelength) * 2 * numpy.pi
+
+        coords = numpy.linspace(-1, 1, self.FOVPxlNo)
+        X, Y = numpy.meshgrid(coords, coords)
+        self.tiltFix = -1 * A * (X + Y)
+    else:
+        self.tiltFix = numpy.zeros((self.FOVPxlNo,) * 2)
