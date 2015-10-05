@@ -127,9 +127,7 @@ class LGSObj(object):
 
  
 class GeometricLGS(LGSObj, lineofsight.LineOfSight_Geometric):
-    
- 
-       
+     
     def setWFSParams(self, subapFOVRad, subapOversamp, subapFFTPadding):
         
         self.subapFOVRad = subapFOVRad
@@ -153,7 +151,7 @@ class GeometricLGS(LGSObj, lineofsight.LineOfSight_Geometric):
             self.LGSFOVOversize = self.LGSFOVPxls * self.fovOversize
         
         
-        print("fovOversamp: %d"%self.fovOversize)
+        logger.info("fovOversamp: %d"%self.fovOversize))
             
         #This is the size padding size applied to the LGSFFT
         #It is deliberatiely an integer number of wfs subap padding sizes
@@ -270,6 +268,7 @@ class GeometricLGS(LGSObj, lineofsight.LineOfSight_Geometric):
                         
         #now bin to size of wfs
         self.PSF = aoSimLib.binImgs(fPlane, self.padFactor)
+
 
 class PhysicalLGS(LGSObj, lineofsight.LineOfSight_Physical ):
     
