@@ -21,7 +21,7 @@ from . import aoSimLib, AOFFT, logger
 from scipy.interpolate import interp2d
 
 
-class scienceCam:
+class scienceCam(object):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 
