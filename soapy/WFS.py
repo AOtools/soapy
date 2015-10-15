@@ -1082,7 +1082,7 @@ class ShackHartmann(WFS):
                         +self.wfsConfig.pxlsPerSubap/2.))
 
             self.wfsDetectorPlane[x1:x2, y1:y2] += (
-                    self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp] )
+                    self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp].astype(self.dPlaneType) )
 
         if self.wfsConfig.SNR:
             self.photonNoise()
