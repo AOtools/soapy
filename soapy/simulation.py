@@ -165,7 +165,7 @@ class Sim(object):
 
         logger.setLoggingLevel(self.config.sim.verbosity)
         logger.setLoggingFile(self.config.sim.logfile)
-        logger.info("Starting Sim: {}".format(self.timeStamp()))
+        logger.info("Starting Sim: {}".format(self.getTimeStamp()))
 
         #Make a pool of mp workers to do some work
         #This will always exist in this class, but in other sim modules may
@@ -602,7 +602,7 @@ class Sim(object):
         self.config.sim.saveHeader = self.makeSaveHeader()
 
         if self.config.sim.simName!=None:
-            self.path = self.config.sim.simName +"/"+self.timeStamp()
+            self.path = self.config.sim.simName +"/"+self.timeStamp
             try:
                 os.mkdir( self.path )
             except OSError:
@@ -772,14 +772,17 @@ class Sim(object):
         """
 
         header = fits.Header()
+        self.timeStamp = self.getTimeStamp()
 
         # Sim Params
         header["INSTRUME"] = "SOAPY"
         header["SVER"] = __version__
         header["RTCNAME"] = "SOAPY"
         header["RTCVER"] = __version__
-        header["TELESCOP"] = self.config.sim.simName
+        header["TELESCOP"] = "SOAPY"
+        header["RUNID"] = self.config.sim.simName
         header["LOOP"] = True
+        header["TIME"] = self.timeStamp
 
         # Tel Params
         header["TELDIAM"] = self.config.tel.telDiam
@@ -833,7 +836,7 @@ class Sim(object):
 
         return header
 
-    def timeStamp(self):
+    def getTimeStamp(self):
         """
         Returns a formatted timestamp
 
