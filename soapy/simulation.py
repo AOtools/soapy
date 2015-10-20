@@ -603,10 +603,11 @@ class Sim(object):
 
         if self.config.sim.simName!=None:
             self.path = self.config.sim.simName +"/"+self.timeStamp
+            # make sure a different directory used by sleeping
+            time.sleep(1)
             try:
-                os.mkdir( self.path )
+                os.mkdir(self.path)
             except OSError:
-
                 os.mkdir(self.config.sim.simName)
                 os.mkdir(self.path)
 
@@ -614,7 +615,7 @@ class Sim(object):
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
 
-            shutil.copyfile( self.configFile, self.path+"/conf.py" )
+            shutil.copyfile(self.configFile, self.path+"/conf.py" )
 
         #Init Strehl Saving
         if self.config.sim.nSci>0:
