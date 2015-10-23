@@ -9,34 +9,20 @@ import numpy
 from . import aoSimLib, logger
 
 class LineOfSight(object):
-        def __init__(
-                self, simConfig, wfsConfig, atmosConfig,
-                mask=None):
+        def __init__(self, losConfig):
 
-            self.simConfig = simConfig
-            self.wfsConfig = wfsConfig
-            self.atmosConfig = atmosConfig
-            self.lgsConfig = lgsConfig
-
-            # If supplied use the mask
-            if numpy.any(mask):
-                self.mask = mask
-            else:
-                self.mask = aoSimLib.circle(
-                        self.simConfig.pupilSize/2., self.simConfig.simSize,
-                        )
+            self.losConfig = losConfig
 
             self.calcInitParams()
 
             # If GS not at infinity, find meta-pupil radii for each layer
-            if self.wfsConfig.GSHeight != 0:
-
-                self.radii = self.findMetaPupilSize(self.wfsConfig.GSHeight)
+            if self.losConfig.height!=0:
+                self.radii = self.findMetaPupilSize(self.losConfig.GSHeight)
             else:
                 self.radii = None
 
             # Choose propagation method
-            if wfsConfig.propagationMode == "physical":
+            if losConfig.propagationMode == "physical":
 
                 self.makePhase = self.makePhasePhysical
                 self.physEField = numpy.zeros(
@@ -117,8 +103,8 @@ class LineOfSight(object):
             '''
             #if no pos given, use system pos and convert into radians
             if not numpy.any(pos):
-                pos = (   numpy.array(self.wfsConfig.GSPosition)
-                            *numpy.pi/(3600.0*180.0) )
+                pos = (numpy.array(self.losConfig.GSPosition)
+                        *numpy.pi/(3600.0*180.0) )
 
             #Position of centre of GS metapupil off axis at required height
             GSCent = (numpy.tan(pos) * height)
@@ -313,7 +299,7 @@ class LineOfSight_Physical(LineOfSight):
                 ht -= z
                 #Do ASP for last layer to next
                 self.EField[:] = angularSpectrum(
-                            self.EField, self.wfsConfig.wavelength,
+                            self.EField, self.losConfig.wavelength,
                             delta, delta, z )
 
                 # Get phase for this layer
@@ -334,7 +320,7 @@ class LineOfSight_Physical(LineOfSight):
             #If not already at ground, propagate the rest of the way.
             if self.atmosConfig.scrnHeights[0]!=0:
                 self.EField[:] = angularSpectrum(
-                        self.EField, self.wfsConfig.wavelength,
+                        self.EField, self.losConfig.wavelength,
                         delta, delta, ht
                         )
 

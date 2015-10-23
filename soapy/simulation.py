@@ -267,7 +267,7 @@ class Sim(object):
         self.sciImgs = {}
         self.sciImgNo=0
         for sci in xrange(self.config.sim.nSci):
-            self.sciCams[sci] = SCI.scienceCam(
+            self.sciCams[sci] = SCI.ScienceCam(
                         self.config.sim, self.config.tel, self.config.atmos,
                         self.config.scis[sci], self.mask
                         )

@@ -151,7 +151,7 @@ class GeometricLGS(LGSObj, lineofsight.LineOfSight_Geometric):
             self.LGSFOVOversize = self.LGSFOVPxls * self.fovOversize
         
         
-        logger.info("fovOversamp: %d"%self.fovOversize))
+        logger.info("fovOversamp: {}".format(self.fovOversize))
             
         #This is the size padding size applied to the LGSFFT
         #It is deliberatiely an integer number of wfs subap padding sizes
