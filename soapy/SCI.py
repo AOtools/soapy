@@ -49,7 +49,7 @@ class scienceCam:
             self.simConfig.simPad:-self.simConfig.simPad
         ]
         self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
-                                      ).astype("float32")
+                                      ).astype("int32")
 
         # Init FFT object
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.fftOversamp
@@ -153,8 +153,7 @@ class scienceCam:
             x1, x2, y1, y2))
 
         if x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY:
-            raise ValueError(  "Sci Position seperation\
-                                requires larger scrn size")
+            raise ValueError(  "Sci Position seperation requires larger scrn size")
 
         if (x1.is_integer() and x2.is_integer()
                 and y1.is_integer() and y2.is_integer()):
@@ -176,7 +175,7 @@ class scienceCam:
         by a given angle
         '''
         totalPhase = numpy.zeros([self.simConfig.simSize] * 2)
-        for i in self.scrns:
+        for i in range(len(self.scrns)):
             phase = self.getMetaPupilPhase(
                 self.scrns[i], self.atmosConfig.scrnHeights[i])
 
