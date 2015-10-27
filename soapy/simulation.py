@@ -487,9 +487,9 @@ class Sim(object):
         """
         t = time.time()
 
+        self.sciImgNo +=1
         for sci in xrange( self.config.sim.nSci ):
             self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
-            self.sciImgNo +=1
 
             self.sciCams[sci].longExpStrehl = self.sciImgs[sci].max()/(
                                     self.sciImgNo*self.sciCams[sci].psfMax)
