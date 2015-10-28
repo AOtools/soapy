@@ -503,7 +503,7 @@ class Sim(object):
 
     def aoloop(self):
         """
-        Main AO Loop - loop open
+        Main AO Loop
 
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters.
         """
