@@ -491,8 +491,14 @@ class Sim(object):
         for sci in xrange( self.config.sim.nSci ):
             self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
 
-            self.sciCams[sci].longExpStrehl = self.sciImgs[sci].max()/(
-                                    self.sciImgNo*self.sciCams[sci].psfMax)
+            self.sciImgNo +=1
+            
+            # Normalise long exposure psf
+            self.sciImgs[sci] /= self.sciImgs[sci].sum()
+            self.sciCams[sci].longExpStrehl = (
+                    self.sciImgs[sci].max()/
+                    self.sciImgs[sci].sum()/
+                    self.sciCams[sci].psfMax)
 
         self.Tsci +=time.time()-t
 
