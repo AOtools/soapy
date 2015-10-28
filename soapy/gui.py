@@ -22,6 +22,8 @@ The GUI for the Soapy adaptive optics simulation
 
 import os
 os.environ["QT_API"]="pyqt"
+
+# Do this so uses new Jupyter console if available
 try:
     from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
     from qtconsole.inprocess import QtInProcessKernelManager
