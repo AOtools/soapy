@@ -71,14 +71,7 @@ class scienceCam:
         phsWvl = 500e-9
         self.r0Scale = phsWvl / self.sciConfig.wavelength
 
-        self.calcTiltCorrect()
-
         # Calculate ideal PSF for purposes of strehl calculation
-        # self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
-        #                                    =(numpy.exp(1j*self.scaledMask)
-        #                                            *self.scaledMask)
-        # fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        # binFp = aoSimLib.binImgs(fp, self.sciConfig.fftOversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,) * 2)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
@@ -196,7 +189,7 @@ class scienceCam:
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
         phs = phs[coord:-coord, coord:-coord]
 
-        eField = numpy.exp(1j * (phs + self.tiltFix)) * self.scaledMask
+        eField = numpy.exp(1j * (phs)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d(self.FFT())
