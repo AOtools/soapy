@@ -206,7 +206,6 @@ class scienceCam:
         self.focalPlane = aoSimLib.binImgs(
             focalPlane, self.sciConfig.fftOversamp)
 
-
         # Normalise the psf
         self.focalPlane /= self.focalPlane.sum()
 
@@ -224,7 +223,6 @@ class scienceCam:
 
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
-
         
         self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 

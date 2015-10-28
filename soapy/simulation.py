@@ -490,7 +490,6 @@ class Sim(object):
         self.sciImgNo +=1
         for sci in xrange( self.config.sim.nSci ):
             self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
-
             self.sciImgNo +=1
             
             # Normalise long exposure psf
