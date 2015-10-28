@@ -49,7 +49,7 @@ class scienceCam:
             self.simConfig.simPad:-self.simConfig.simPad
         ]
         self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
-                                      ).astype("float32")
+                                      ).astype("int32")
 
         # Init FFT object
         self.FFTPadding = self.sciConfig.pxls * self.sciConfig.fftOversamp
@@ -73,14 +73,7 @@ class scienceCam:
         # Convert phase to radians at science wavelength 
         self.phs2Rad = 2*numpy.pi/self.sciConfig.wavelength
 
-        self.calcTiltCorrect()
-
         # Calculate ideal PSF for purposes of strehl calculation
-        # self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
-        #                                    =(numpy.exp(1j*self.scaledMask)
-        #                                            *self.scaledMask)
-        # fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        # binFp = aoSimLib.binImgs(fp, self.sciConfig.fftOversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,) * 2)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
@@ -90,10 +83,9 @@ class scienceCam:
 
     def calcTiltCorrect(self):
         """
-        Calculates the required tilt to add to avoid  the PSF being centred
+        Calculates the required tilt to add to avoid the PSF being centred
         on one pixel only
         """
-
         # Only required if pxl number is even
         if not self.sciConfig.pxls % 2:
             # Need to correct for half a pixel angle
@@ -155,8 +147,7 @@ class scienceCam:
             x1, x2, y1, y2))
 
         if x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY:
-            raise ValueError(  "Sci Position seperation\
-                                requires larger scrn size")
+            raise ValueError(  "Sci Position seperation requires larger scrn size")
 
         if (x1.is_integer() and x2.is_integer()
                 and y1.is_integer() and y2.is_integer()):
@@ -178,7 +169,7 @@ class scienceCam:
         by a given angle
         '''
         totalPhase = numpy.zeros([self.simConfig.simSize] * 2)
-        for i in self.scrns:
+        for i in range(len(self.scrns)):
             phase = self.getMetaPupilPhase(
                 self.scrns[i], self.atmosConfig.scrnHeights[i])
 
@@ -202,7 +193,7 @@ class scienceCam:
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
         phs = phs[coord:-coord, coord:-coord]
 
-        eField = numpy.exp(1j * (phs + self.tiltFix)) * self.scaledMask
+        eField = numpy.exp(1j * (phs)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d(self.FFT())
@@ -211,6 +202,9 @@ class scienceCam:
 
         self.focalPlane = aoSimLib.binImgs(
             focalPlane, self.sciConfig.fftOversamp)
+
+        # Normalise the psf
+        self.focalPlane /= self.focalPlane.sum()
 
     def frame(self, scrns, phaseCorrection=None):
 
@@ -226,7 +220,7 @@ class scienceCam:
 
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
-
-        self.instStrehl = self.focalPlane.max() / self.psfMax
+        
+        self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane

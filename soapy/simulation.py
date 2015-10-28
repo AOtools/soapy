@@ -487,18 +487,23 @@ class Sim(object):
         """
         t = time.time()
 
+        self.sciImgNo +=1
         for sci in xrange( self.config.sim.nSci ):
             self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
             self.sciImgNo +=1
-
-            self.sciCams[sci].longExpStrehl = self.sciImgs[sci].max()/(
-                                    self.sciImgNo*self.sciCams[sci].psfMax)
+            
+            # Normalise long exposure psf
+            self.sciImgs[sci] /= self.sciImgs[sci].sum()
+            self.sciCams[sci].longExpStrehl = (
+                    self.sciImgs[sci].max()/
+                    self.sciImgs[sci].sum()/
+                    self.sciCams[sci].psfMax)
 
         self.Tsci +=time.time()-t
 
     def aoloop(self):
         """
-        Main AO Loop - loop open
+        Main AO Loop
 
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters.
         """
@@ -597,10 +602,11 @@ class Sim(object):
 
         if self.config.sim.simName!=None:
             self.path = self.config.sim.simName +"/"+self.timeStamp
+            # make sure a different directory used by sleeping
+            time.sleep(1)
             try:
-                os.mkdir( self.path )
+                os.mkdir(self.path)
             except OSError:
-
                 os.mkdir(self.config.sim.simName)
                 os.mkdir(self.path)
 
@@ -608,7 +614,7 @@ class Sim(object):
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
 
-            shutil.copyfile( self.configFile, self.path+"/conf.py" )
+            shutil.copyfile(self.configFile, self.path+"/conf.py" )
 
         #Init Strehl Saving
         if self.config.sim.nSci>0:

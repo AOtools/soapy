@@ -78,7 +78,7 @@ Mac OSX
 
 for mac os, all of these packages can be install via macports, with::
     
-    sudo port install python27 py27-numpy py27-scipy py27-astropy py27-pyfftw py27-pyqt4 py27-ipython py27-pyqtgraph
+    sudo port install python27 py27-numpy py27-scipy py27-astropy py27-pyfftw py27-pyqt4 py27-ipython py27-pyqtgraph py27-jupyter
 
 
 ======
