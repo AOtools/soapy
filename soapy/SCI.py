@@ -71,7 +71,7 @@ class scienceCam:
         # phsWvl = 500e-9
         # self.r0Scale = phsWvl / self.sciConfig.wavelength
         # Convert phase to radians at science wavelength 
-        self.phs2Rad = 2*numpy.pi/self.sciConfig.wavelength
+        self.phs2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.residual = numpy.zeros((self.simConfig.simSize,) * 2)

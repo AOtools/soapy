@@ -120,7 +120,7 @@ class DM:
         self.makeIMatShapes()
 
         # Imat value is in microns
-        self.iMatShapes *= (self.dmConfig.iMatValue*1e-6)
+        # self.iMatShapes *= (self.dmConfig.iMatValue*1e-6)
 
         if self.dmConfig.rotation:
            self.iMatShapes = rotate(

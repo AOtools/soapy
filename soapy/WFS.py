@@ -175,8 +175,9 @@ class WFS(object):
 
         self.telDiam = self.simConfig.pupilSize/self.simConfig.pxlScale
 
-        # Convert phase deviation to radians at wfs wavelength
-        self.phs2Rad = 2*numpy.pi/self.wfsConfig.wavelength
+        # Convert phase deviation to radians at wfs wavelength.
+        # (in nm remember...)
+        self.phs2Rad = 2*numpy.pi/(self.wfsConfig.wavelength * 10**9)
 
         # These are the coordinates of the sub-scrn to cut from the phase scrns
         # For each scrn height they will be edited per
@@ -648,12 +649,8 @@ class WFS(object):
         self.scrns = {}
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
-
-            print("\nscrns: min:{}, max:{}".format(scrns[i].min(), scrns[i].max()))
             self.scrns[i] = scrns[i].copy()*self.phs2Rad
         
-            print("scrns: min:{}, max:{}".format(self.scrns[i].min(), self.scrns[i].max()))
-
         #If LGS elongation simulated
         if self.wfsConfig.lgs and self.elong!=0:
             for i in xrange(self.elongLayers):
@@ -737,15 +734,15 @@ class ShackHartmann(WFS):
         self.subapFOVrad = self.wfsConfig.subapFOV * numpy.pi / (180. * 3600)
         self.subapDiam = self.telDiam/self.wfsConfig.nxSubaps
 
-        #spacing between subaps in pupil Plane (size "pupilSize")
+        # spacing between subaps in pupil Plane (size "pupilSize")
         self.PPSpacing = float(self.simConfig.pupilSize)/self.wfsConfig.nxSubaps
 
-        #Spacing on the "FOV Plane" - the number of elements required
-        #for the correct subap FOV (from way FFT "phase" to "image" works)
+        # Spacing on the "FOV Plane" - the number of elements required
+        # for the correct subap FOV (from way FFT "phase" to "image" works)
         self.subapFOVSpacing = numpy.round(self.subapDiam
                                 * self.subapFOVrad/ self.wfsConfig.wavelength)
 
-        #make twice as big to double subap FOV
+        # make twice as big to double subap FOV
         if self.wfsConfig.subapFieldStop==True:
             self.SUBAP_OVERSIZE = 1
         else:
@@ -761,7 +758,7 @@ class ShackHartmann(WFS):
                 (float(self.simConfig.simSize)/self.simConfig.pupilSize)
                 ))
 
-        #Calculate the subaps which are actually seen behind the pupil mask
+        # Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
 
         # For correlation centroider, open reference image.
@@ -893,7 +890,6 @@ class ShackHartmann(WFS):
         super(ShackHartmann, self).initLGS()
         #Tell the LGS a bit about the WFS
         #(TODO-get rid of this and put into LGS object init)
-        print("Run INITLGS")
         if self.LGS:
             self.LGS.setWFSParams(
                     self.SUBAP_OVERSIZE*self.subapFOVrad,

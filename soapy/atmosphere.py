@@ -117,6 +117,10 @@ class atmos:
 
         scrnSize = int(round(self.scrnSize))
 
+        # The whole screens will be kept at this value, and then scaled to the 
+        # correct r0 before being sent to the simulation
+        self.wholeScrnR0 = 1.
+
         #If required, generate some new Kolmogorov phase screens
         if not atmosConfig.scrnNames:
             logger.info("Generating Phase Screens")
@@ -125,12 +129,12 @@ class atmos:
                 logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
                 if atmosConfig.subHarmonics:
                     self.wholeScrns[i] = ft_sh_phase_screen(
-                            self.scrnStrengths[i],
+                            self.wholeScrnR0,
                             self.wholeScrnSize, 1./self.pxlScale,
                             atmosConfig.L0[i], 0.01)
                 else:
                     self.wholeScrns[i] = ft_phase_screen(
-                            self.scrnStrengths[i],
+                            self.wholeScrnR0,
                             self.wholeScrnSize, 1./self.pxlScale,
                             atmosConfig.L0[i], 0.01)
 
@@ -146,14 +150,14 @@ class atmos:
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
-                #Do the loaded scrns tell us how strong they are?
-                #Theyre r0 must be in pixels! label: "R0"
-                #If so, we can scale them to the desired r0
+                # Do the loaded scrns tell us how strong they are?
+                # Theyre r0 must be in pixels! label: "R0"
+                # If so, we can scale them to the desired r0
                 try:
                     r0 = float(fitsHDU.header["R0"])
                     r0_metres = r0/self.pxlScale
                     self.wholeScrns[i] *=(
-                                 (self.scrnStrengths[i]/r0_metres)**(-5./6.)
+                                 (self.wholeScrnR0/r0_metres)**(-5./6.)
                                          )
 
                 except KeyError:
@@ -168,9 +172,9 @@ class atmos:
 
         # However we made the phase screen, turn it into meters for ease of
         # use
-        for s in range(self.scrnNo):
-            self.wholeScrns[s] *= (500e-9/(2*numpy.pi))
-
+#        for s in range(self.scrnNo):
+#            self.wholeScrns[s] *= (500e-9/(2*numpy.pi))
+#
         #Set the initial starting point of the screen,
         #If windspeed is negative, starts from the
         #far-end of the screen to avoid rolling straight away
@@ -303,6 +307,10 @@ class atmos:
 
             #remove piston from phase screens
             scrns[i] -= scrns[i].mean()
+
+            # Finally, scale for r0 and turn to nm 
+            scrns[i] *= (self.scrnStrengths[i]/self.wholeScrnR0)**(-5./6.)
+            scrns[i] *= (500/(2*numpy.pi))
 
         return scrns
 

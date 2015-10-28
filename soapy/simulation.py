@@ -493,7 +493,7 @@ class Sim(object):
             self.sciImgNo +=1
             
             # Normalise long exposure psf
-            self.sciImgs[sci] /= self.sciImgs[sci].sum()
+            #self.sciImgs[sci] /= self.sciImgs[sci].sum()
             self.sciCams[sci].longExpStrehl = (
                     self.sciImgs[sci].max()/
                     self.sciImgs[sci].sum()/
@@ -697,9 +697,13 @@ class Sim(object):
             for sci in xrange(self.config.sim.nSci):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
-                res = self.sciCams[sci].residual*self.sciCams[sci].phs2Rad
-                self.WFE[sci,i] =  numpy.sqrt(
-                        ((res-res.mean())**2).sum()/self.mask.sum())
+
+                # Record WFE residual
+                res = self.sciCams[sci].residual
+                # Remove piston first
+                res -= res.sum()/self.mask.sum()
+                res *= self.mask
+                self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
 
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
