@@ -146,6 +146,12 @@ class GUI(QtGui.QMainWindow):
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
 
+    def moveEvent(self, event):
+        """
+        Overwrite PyQt Move event to force a repaint. (Might) fix a bug on some (my) macs
+        """
+        self.repaint()
+        super(GUI, self).moveEvent(event)
 
 ####################################
 #Load Param file methods
