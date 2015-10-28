@@ -81,10 +81,9 @@ class scienceCam:
 
     def calcTiltCorrect(self):
         """
-        Calculates the required tilt to add to avoid  the PSF being centred
+        Calculates the required tilt to add to avoid the PSF being centred
         on one pixel only
         """
-
         # Only required if pxl number is even
         if not self.sciConfig.pxls % 2:
             # Need to correct for half a pixel angle
