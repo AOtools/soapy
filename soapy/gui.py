@@ -22,8 +22,13 @@ The GUI for the Soapy adaptive optics simulation
 
 import os
 os.environ["QT_API"]="pyqt"
-from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
-from IPython.qt.inprocess import QtInProcessKernelManager
+try:
+    from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
+    from qtconsole.inprocess import QtInProcessKernelManager
+except ImportError:
+    from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
+    from IPython.qt.inprocess import QtInProcessKernelManager
+    
 from IPython.lib import guisupport
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
