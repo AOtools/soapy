@@ -430,7 +430,7 @@ class LearnAndApply(MVM):
                                 2*self.wfss[0].activeSubaps:    ]
 
         logger.info("Inverting offoff Covariance Matrix")
-        iCoffoff = numpy.linalg.pinv(Coffoff)
+        iCoffoff = numpy.linalg.pinv(Coffoff, rcond=1e-8)
 
         self.tomoRecon = Conoff.dot(iCoffoff)
         logger.info("Done. \nCreating full reconstructor....")
