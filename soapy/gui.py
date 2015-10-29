@@ -22,8 +22,15 @@ The GUI for the Soapy adaptive optics simulation
 
 import os
 os.environ["QT_API"]="pyqt"
-from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
-from IPython.qt.inprocess import QtInProcessKernelManager
+
+# Do this so uses new Jupyter console if available
+try:
+    from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
+    from qtconsole.inprocess import QtInProcessKernelManager
+except ImportError:
+    from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
+    from IPython.qt.inprocess import QtInProcessKernelManager
+    
 from IPython.lib import guisupport
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -139,6 +146,12 @@ class GUI(QtGui.QMainWindow):
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
 
+    def moveEvent(self, event):
+        """
+        Overwrite PyQt Move event to force a repaint. (Might) fix a bug on some (my) macs
+        """
+        self.repaint()
+        super(GUI, self).moveEvent(event)
 
 ####################################
 #Load Param file methods

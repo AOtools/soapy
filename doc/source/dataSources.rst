@@ -26,7 +26,7 @@ The following sources of data are recorded for each simulation run and are saved
 +-------------+-------------------+------------------+-------------------------+
 |Wavefront    |``WFE.fits``       |``WFE``           |The corrected wave-      |
 |Error        |                   |                  |front error for each     |
-|             |                   |                  |science target           |
+|             |                   |                  |science target in nm     |
 +-------------+-------------------+------------------+-------------------------+
 |Science PSF  |``sciPsf_n.fits``  |``sciImgs[n]``    |The science camera PSFs  |
 |             |                   |                  |where ``n`` indicates the|

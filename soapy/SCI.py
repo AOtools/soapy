@@ -21,7 +21,7 @@ from . import aoSimLib, AOFFT, logger
 from scipy.interpolate import interp2d
 
 
-class scienceCam:
+class scienceCam(object):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 
@@ -68,10 +68,10 @@ class scienceCam:
                              THREADS=sciConfig.fftwThreads)
 
         # Get phase scaling factor to get r0 in other wavelength
-        phsWvl = 500e-9
-        self.r0Scale = phsWvl / self.sciConfig.wavelength
-
-        self.calcTiltCorrect()
+        # phsWvl = 500e-9
+        # self.r0Scale = phsWvl / self.sciConfig.wavelength
+        # Convert phase to radians at science wavelength 
+        self.phs2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
         # self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
@@ -81,7 +81,6 @@ class scienceCam:
         #binFp = aoSimLib.binImgs(fp, self.sciConfig.fftOversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,)*2)
         self.phsBuffer = numpy.zeros((self.padFOVPxlNo,)*2)
-
 
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
@@ -94,10 +93,9 @@ class scienceCam:
 
     def calcTiltCorrect(self):
         """
-        Calculates the required tilt to add to avoid  the PSF being centred
+        Calculates the required tilt to add to avoid the PSF being centred
         on one pixel only
         """
-
         # Only required if pxl number is even
         if not self.sciConfig.pxls % 2:
             # Need to correct for half a pixel angle
@@ -197,11 +195,10 @@ class scienceCam:
         and uses an FFT to transform to the focal plane.
         '''
 
-        #Scaled the padded phase to the right size for the requried FOV
+        # Scaled the padded phase to the right size for the requried FOV
         aoSimLib.zoom_numba(
                 self.residual, self.phsBuffer, self.simConfig.procs
                 )
-        self.phsBuffer*=self.r0Scale
     
         #phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
          
@@ -209,7 +206,10 @@ class scienceCam:
         coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
         phs = self.phsBuffer[coord:-coord, coord:-coord] 
 
-        eField = numpy.exp(1j * (phs + self.tiltFix)) * self.scaledMask
+        # Convert phase deviation to radians
+        phs*=self.phs2Rad
+
+        eField = numpy.exp(1j * (phs)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField
         focalPlane = AOFFT.ftShift2d(self.FFT())
@@ -218,6 +218,9 @@ class scienceCam:
 
         self.focalPlane = aoSimLib.binImgs(
             focalPlane, self.sciConfig.fftOversamp)
+
+        # Normalise the psf
+        self.focalPlane /= self.focalPlane.sum()
 
     def frame(self, scrns, phaseCorrection=None):
 
@@ -233,7 +236,7 @@ class scienceCam:
 
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
-
-        self.instStrehl = self.focalPlane.max() / self.psfMax
+        
+        self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane
