@@ -363,6 +363,8 @@ class SimConfig(ConfigObj):
                                 ("saveStrehl", False),
                                 ("saveWfsFrames", False),
                                 ("saveSciPsf", False),
+                                ("saveInstPsf", False),
+                                ("saveInstScieField", False),
                                 ("saveWFE", False),
                                 ("saveSciRes", False),
                                 ("wfsMP", False),
