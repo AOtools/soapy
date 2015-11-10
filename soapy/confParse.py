@@ -149,7 +149,7 @@ class Configurator(object):
         else:
             maxGSPos = 0
 
-        self.sim.scrnSize = numpy.ceil(
+        self.sim.scrnSize = 2*numpy.ceil(
                 2*self.sim.pxlScale*self.atmos.scrnHeights.max()
                 *maxGSPos*numpy.pi/(3600.*180) 
                 )+self.sim.simSize
