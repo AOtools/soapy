@@ -10,6 +10,6 @@ ________________
 
 Broadly, it's good if new code follows the [pep8](https://www.python.org/dev/peps/pep-0008/), with a few other additions. In summary:
   - All modules, classes and methods should have decent doc strings, which say what inputs and outputs are
-  - Doc-strings should be in the ["google style"](http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_google.html), so indented ``Parameters``, and then ``Return`` values. There are any examples in the code already.
+  - Doc-strings should be in the ["google style"](http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_google.html), so indented ``Parameters``, and then ``Return`` values. There are many examples in the code already.
   - Try to use "new-style" printing, so use ``print`` as a function rather than a statement
   - And "new-style" string formatting, so ``"number is: {}".format(number)``
