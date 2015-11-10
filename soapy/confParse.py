@@ -138,8 +138,7 @@ class Configurator(object):
                 H = self.wfss[gs].GSHeight
                 theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         (3600*180/numpy.pi)).max()
-                pos+=theta_n         
-            gsPos.append(pos)
+            gsPos.append(abs(numpy.array(pos)))
                
         for sci in range(self.sim.nSci):
             gsPos.append(self.scis[sci].position)
@@ -148,10 +147,10 @@ class Configurator(object):
             maxGSPos = numpy.array(gsPos).max()
         else:
             maxGSPos = 0
-
+    
         self.sim.scrnSize = 2*numpy.ceil(
-                2*self.sim.pxlScale*self.atmos.scrnHeights.max()
-                *maxGSPos*numpy.pi/(3600.*180) 
+                self.sim.pxlScale*self.atmos.scrnHeights.max()
+                *abs(maxGSPos)*numpy.pi/(3600.*180) 
                 )+self.sim.simSize
         
         #Make scrnSize even
