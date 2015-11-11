@@ -212,12 +212,12 @@ class scienceCam(object):
         eField = numpy.exp(1j * (phs)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField
-        focalPlane = AOFFT.ftShift2d(self.FFT())
+        focalPlane_efield = AOFFT.ftShift2d(self.FFT())
+        
+        self.focalPlane_efield = aoSimLib.binImgs(
+            focalPlane_efield, self.sciConfig.fftOversamp)
 
-        focalPlane = aoSimLib.absSquare(focalPlane)
-
-        self.focalPlane = aoSimLib.binImgs(
-            focalPlane, self.sciConfig.fftOversamp)
+        self.focalPlane = numpy.abs(self.focalPlane_efield.copy())**2
 
         # Normalise the psf
         self.focalPlane /= self.focalPlane.sum()
