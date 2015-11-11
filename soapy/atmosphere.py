@@ -339,6 +339,8 @@ class atmos:
                             self.scrnStrengths[i], self.scrnSize, 
                             (self.pxlScale**(-1.)), self.atmosConfig.L0[i], 
                             0.01)
+            # convert to nm
+            scrns[i] *= (500./(2*numpy.pi)) 
 
         #If there is a pool, use it
         else:
@@ -361,6 +363,9 @@ class atmos:
             s = self.mpPool.map(mpWrap, args)
             for i in range(self.scrnNo):
                 scrns[i] = s[i]
+
+            # convert to mn
+            scrns[i] *= (500./(2*numpy.pi)) 
 
         return scrns
 
