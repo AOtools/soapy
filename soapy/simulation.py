@@ -489,7 +489,7 @@ class Sim(object):
 
         self.sciImgNo +=1
         for sci in xrange( self.config.sim.nSci ):
-            self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
+            self.sciImgs[sci] += self.sciCams[sci].frame(self.scrns,dmShape)
             
             # Normalise long exposure psf
             #self.sciImgs[sci] /= self.sciImgs[sci].sum()
@@ -667,6 +667,22 @@ class Sim(object):
         else:
             self.lgsPsfs = None
 
+        #Init Instantaneous PSF saving
+        if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
+            self.sciImgsInst = {}
+
+            for sci in xrange(self.config.sim.nSci):
+                self.sciImgsInst[sci] = numpy.zeros([self.config.sim.nIters,self.config.scis[sci].pxls,self.config.scis[sci].pxls])
+            
+  
+        #Init Instantaneous electric field
+        if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
+            self.scieFieldInst = {}
+              
+            for sci in xrange(self.config.sim.nSci):
+                self.scieFieldInst[sci] = numpy.zeros(([self.config.sim.nIters,self.config.scis[sci].pxls,self.config.scis[sci].pxls]), dtype=complex )
+
+
     def storeData(self, i):
         """
         Stores data from each frame in an appropriate data structure.
@@ -716,6 +732,16 @@ class Sim(object):
                         self.wfss[wfs].wfsDetectorPlane,
                         header=self.config.sim.saveHeader)
 
+        #Save Instantaneous PSF
+        if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
+            for sci in xrange(self.config.sim.nSci):
+                self.sciImgsInst[sci][i,:,:] = self.sciCams[sci].focalPlane#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection)
+
+        
+        #Save Instantaneous electric field
+        if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
+            for sci in xrange(self.config.sim.nSci):
+                self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection,e_field=True)
 
     def saveData(self):
         """
@@ -768,6 +794,29 @@ class Sim(object):
                                         self.sciImgs[i],
                                         header=self.config.sim.saveHeader,
                                         clobber=True )
+
+            if self.config.sim.saveInstPsf:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/sciPsfInst_%02d.fits"%i,
+                                 self.sciImgsInst[i],
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+            if self.config.sim.saveInstScieField:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/scieFieldInst_%02d_real.fits"%i,
+                                 self.scieFieldInst[i].real,
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+            if self.config.sim.saveInstScieField:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/scieFieldInst_%02d_imag.fits"%i,
+                                 self.scieFieldInst[i].imag,
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+
 
     def makeSaveHeader(self):
         """

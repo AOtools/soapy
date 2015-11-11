@@ -315,6 +315,8 @@ class SimConfig(ConfigObj):
         ``simOversize``     float: The fraction to pad the 
                             pupil size with to reduce edge 
                             effects                             ``0.1``
+                            
+            
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -332,7 +334,10 @@ class SimConfig(ConfigObj):
                                     Accessed from sim with ``sim.longStrehl``
                                     and ``sim.instStrehl``
         ``saveSciPsf``              Saves the science PSF.
+        ``saveInstPsf``             Saves the instantenous science PSF.
+        ``saveInstScieField``       Saves the instantaneous electric field at focal plane.
         ``saveSciRes``              Save Science residual phase
+        
         ======================      ===================
 
     """
@@ -362,6 +367,8 @@ class SimConfig(ConfigObj):
                                 ("saveStrehl", False),
                                 ("saveWfsFrames", False),
                                 ("saveSciPsf", False),
+                                ("saveInstPsf", False),
+                                ("saveInstScieField", False),
                                 ("saveWFE", False),
                                 ("saveSciRes", False),
                                 ("wfsMP", False),
