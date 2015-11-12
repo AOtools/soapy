@@ -165,7 +165,7 @@ class Sim(object):
 
         logger.setLoggingLevel(self.config.sim.verbosity)
         logger.setLoggingFile(self.config.sim.logfile)
-        logger.info("Starting Sim: {}".format(self.timeStamp()))
+        logger.info("Starting Sim: {}".format(self.getTimeStamp()))
 
         #calculate some params from read ones
         #calculated
@@ -487,18 +487,22 @@ class Sim(object):
         """
         t = time.time()
 
+        self.sciImgNo +=1
         for sci in xrange( self.config.sim.nSci ):
-            self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
-            self.sciImgNo +=1
-
-            self.sciCams[sci].longExpStrehl = self.sciImgs[sci].max()/(
-                                    self.sciImgNo*self.sciCams[sci].psfMax)
+            self.sciImgs[sci] += self.sciCams[sci].frame(self.scrns,dmShape)
+            
+            # Normalise long exposure psf
+            #self.sciImgs[sci] /= self.sciImgs[sci].sum()
+            self.sciCams[sci].longExpStrehl = (
+                    self.sciImgs[sci].max()/
+                    self.sciImgs[sci].sum()/
+                    self.sciCams[sci].psfMax)
 
         self.Tsci +=time.time()-t
 
     def aoloop(self):
         """
-        Main AO Loop - loop open
+        Main AO Loop
 
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters.
         """
@@ -596,11 +600,12 @@ class Sim(object):
         self.config.sim.saveHeader = self.makeSaveHeader()
 
         if self.config.sim.simName!=None:
-            self.path = self.config.sim.simName +"/"+self.timeStamp()
+            self.path = self.config.sim.simName +"/"+self.timeStamp
+            # make sure a different directory used by sleeping
+            time.sleep(1)
             try:
-                os.mkdir( self.path )
+                os.mkdir(self.path)
             except OSError:
-
                 os.mkdir(self.config.sim.simName)
                 os.mkdir(self.path)
 
@@ -608,7 +613,7 @@ class Sim(object):
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
 
-            shutil.copyfile( self.configFile, self.path+"/conf.py" )
+            shutil.copyfile(self.configFile, self.path+"/conf.py" )
 
         #Init Strehl Saving
         if self.config.sim.nSci>0:
@@ -662,6 +667,22 @@ class Sim(object):
         else:
             self.lgsPsfs = None
 
+        #Init Instantaneous PSF saving
+        if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
+            self.sciImgsInst = {}
+
+            for sci in xrange(self.config.sim.nSci):
+                self.sciImgsInst[sci] = numpy.zeros([self.config.sim.nIters,self.config.scis[sci].pxls,self.config.scis[sci].pxls])
+            
+  
+        #Init Instantaneous electric field
+        if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
+            self.scieFieldInst = {}
+              
+            for sci in xrange(self.config.sim.nSci):
+                self.scieFieldInst[sci] = numpy.zeros(([self.config.sim.nIters,self.config.scis[sci].pxls,self.config.scis[sci].pxls]), dtype=complex )
+
+
     def storeData(self, i):
         """
         Stores data from each frame in an appropriate data structure.
@@ -691,9 +712,13 @@ class Sim(object):
             for sci in xrange(self.config.sim.nSci):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
-                res = self.sciCams[sci].residual*self.sciCams[sci].r0Scale
-                self.WFE[sci,i] =  numpy.sqrt(
-                        ((res-res.mean())**2).sum()/self.mask.sum())
+
+                # Record WFE residual
+                res = self.sciCams[sci].residual
+                # Remove piston first
+                res -= res.sum()/self.mask.sum()
+                res *= self.mask
+                self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
 
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
@@ -707,6 +732,16 @@ class Sim(object):
                         self.wfss[wfs].wfsDetectorPlane,
                         header=self.config.sim.saveHeader)
 
+        #Save Instantaneous PSF
+        if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
+            for sci in xrange(self.config.sim.nSci):
+                self.sciImgsInst[sci][i,:,:] = self.sciCams[sci].focalPlane#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection)
+
+        
+        #Save Instantaneous electric field
+        if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
+            for sci in xrange(self.config.sim.nSci):
+                self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection,e_field=True)
 
     def saveData(self):
         """
@@ -760,20 +795,46 @@ class Sim(object):
                                         header=self.config.sim.saveHeader,
                                         clobber=True )
 
+            if self.config.sim.saveInstPsf:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/sciPsfInst_%02d.fits"%i,
+                                 self.sciImgsInst[i],
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+            if self.config.sim.saveInstScieField:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/scieFieldInst_%02d_real.fits"%i,
+                                 self.scieFieldInst[i].real,
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+            if self.config.sim.saveInstScieField:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/scieFieldInst_%02d_imag.fits"%i,
+                                 self.scieFieldInst[i].imag,
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+
+
     def makeSaveHeader(self):
         """
         Forms a header which can be used to give a header to FITS files saved by the simulation.
         """
 
         header = fits.Header()
+        self.timeStamp = self.getTimeStamp()
 
         # Sim Params
         header["INSTRUME"] = "SOAPY"
         header["SVER"] = __version__
         header["RTCNAME"] = "SOAPY"
         header["RTCVER"] = __version__
-        header["TELESCOP"] = self.config.sim.simName
+        header["TELESCOP"] = "SOAPY"
+        header["RUNID"] = self.config.sim.simName
         header["LOOP"] = True
+        header["TIME"] = self.timeStamp
 
         # Tel Params
         header["TELDIAM"] = self.config.tel.telDiam
@@ -827,7 +888,7 @@ class Sim(object):
 
         return header
 
-    def timeStamp(self):
+    def getTimeStamp(self):
         """
         Returns a formatted timestamp
 
