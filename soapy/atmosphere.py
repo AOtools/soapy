@@ -333,6 +333,9 @@ class atmos:
                         self.scrnStrengths[i], self.scrnSize,
                         (self.pxlScale**(-1.)), L0, l0)
 
+            # Turn to nm
+            scrns[i] *= (500./(2*numpy.pi))
+
         # pool = Pool(2)
         # args = []
         # for i in xrange(self.scrnNo):

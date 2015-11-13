@@ -5,7 +5,7 @@ direction.
 """
 
 import numpy
-import aoSimLib
+from . import aoSimLib
 
 class LineOfSight(object):
         def __init__(
