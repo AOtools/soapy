@@ -258,7 +258,6 @@ class GUI(QtGui.QMainWindow):
 
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     wfsPhase = plotDict["wfsPhase"][wfs]
-                    print("WFS Phase:{}".format(wfsPhase.max()))
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
 
@@ -273,7 +272,6 @@ class GUI(QtGui.QMainWindow):
             for dm in range(self.config.sim.nDM):
                 if numpy.any(plotDict["dmShape"][dm]) !=None:
                     dmShape = plotDict["dmShape"][dm]
-                    print("DM Shape:{}".format(dmShape.max()))
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
                                             lut=self.LUT, levels=scaleValues)
 
