@@ -9,6 +9,6 @@ addons:
     - python-scipy
     - libfftw3-dev
 # command to install dependencies
-install: "pip install -r requirements.txt"
+install: "pip install astropy"
 # command to run tests
 script: nosetests
