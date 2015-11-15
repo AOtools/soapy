@@ -7,9 +7,8 @@ addons:
     packages:
     - python-numpy
     - python-scipy
-    - python-pyfftw
     - libfftw3-dev
 # command to install dependencies
-install: "pip install astropy"
+install: "pip install astropy pyfftw"
 # command to run tests
 script: nosetests
