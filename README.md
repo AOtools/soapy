@@ -1,5 +1,6 @@
 #Simulation 'Optique Adaptative' with Python
 (formerly PyAOS)
+[![Build Status](https://travis-ci.org/andrewpaulreeves/soapy.svg)](https://travis-ci.org/andrewpaulreeves/soapy)
 
 ## Introduction
 
