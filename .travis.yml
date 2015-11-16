@@ -27,4 +27,5 @@ install:
 
 # Run test
 script:
-  - nosetests tests/
+  - cd tests
+  - nosetests
