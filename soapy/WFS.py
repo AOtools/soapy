@@ -181,10 +181,6 @@ class WFS(object):
         # For each scrn height they will be edited per
         self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
 
-        # number of photons for star magnitude, pupil diameter, exposure time
-        self.wfsConfig.wvlBand = 100
-        # self.xCoords = numpy.arange(self.simConfig.simSize).astype("float32")
-        # self.yCoords = self.xCoords.copy()
 
 
     def initFFTs(self):
@@ -1112,7 +1108,7 @@ class ShackHartmann(WFS):
         self.wfsDetectorPlane /= self.wfsDetectorPlane.sum()
         self.wfsDetectorPlane *= aoSimLib.photonsPerMag(
                 self.wfsConfig.GSMag, self.mask, self.simConfig.pxlScale**(-1),
-                self.wfsConfig.wvlBand, self.wfsConfig.exposureTime
+                self.wfsConfig.wvlBandWidth, self.wfsConfig.exposureTime
                 ) * self.wfsConfig.throughput
 
         if self.wfsConfig.photonNoise:

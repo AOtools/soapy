@@ -514,6 +514,8 @@ class WfsConfig(ConfigObj):
                             camera - must be higher than 
                             loopTime. If None, will be 
                             set to loopTime.                    ``None``
+        ``wvlBandWidth``    float: Width of wavelength
+                            band sent to WFS in nm              ``100``
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
@@ -558,6 +560,7 @@ class WfsConfig(ConfigObj):
                                 ("eReadNoise", 0),
                                 ("photonNoise", False),
                                 ("GSMag", 0.0),
+                                ("wvlBandWidth", 100.),
                             ]
         self.initParams()
 
