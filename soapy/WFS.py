@@ -663,7 +663,7 @@ class WFS(object):
                 self.zeroPhaseData()
 
                 self.makePhase(self.elongRadii[i], self.elongPos[i])
-                self.uncorrectedPhase = self.wfsPhase.copy()
+                self.uncorrectedPhase = self.wfsPhase.copy()/self.phs2Rad
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
                     self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
@@ -680,7 +680,7 @@ class WFS(object):
             else:
                 self.makePhase(self.radii)
 
-            self.uncorrectedPhase = self.wfsPhase.copy()
+            self.uncorrectedPhase = self.wfsPhase.copy()/self.phs2Rad
             if numpy.any(correction):
                 self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
             self.calcFocalPlane()
