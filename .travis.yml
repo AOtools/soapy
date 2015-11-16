@@ -1,5 +1,11 @@
 language: python
 sudo: false
+
+branches:
+    only:
+        - master
+        - numba
+        - WFS_noise
 python:
   - 2.7
   - 3.5
@@ -28,6 +34,6 @@ install:
 
 # Run test
 before_script:
-    cd tests
+    cd test
 script:
   - nosetests
