@@ -27,5 +27,5 @@ install:
 
 # Run test
 script:
-  - cd soapy/tests
+  - cd test
   - nosetests
