@@ -32,7 +32,7 @@ from threading import Thread
 
 from . import AOFFT
 
-#xrange now just "range" in python3. 
+#xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
 try:
     xrange
@@ -53,7 +53,7 @@ def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
         mode (string, optional): The fft mode used, defaults to fftw
         fftw_FLAGS (tuple, optional): flags for fftw, defaults to ("FFTW_MEASURE",)
         threads (int, optional): Number of threads used if mode is fftw
-    
+
     Returns:
         ndarray : The convolved 2-dimensional array
 
@@ -61,26 +61,26 @@ def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
     #Check arrays are same size
     if img1.shape!=img2.shape:
         raise ValueError("Arrays must have same dimensions")
-    
+
     #Initialise FFT objects
     fFFT = AOFFT.FFT(img1.shape, axes=(0,1), mode=mode, dtype="complex64",
-                direction="FORWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads) 
+                direction="FORWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)
     iFFT = AOFFT.FFT(img1.shape, axes=(0,1), mode=mode, dtype="complex64",
-                  direction="BACKWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)      
+                  direction="BACKWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)
     #backward FFT arrays
     iFFT.inputData[:] = img1
-    iImg1 = iFFT().copy()  
+    iImg1 = iFFT().copy()
     iFFT.inputData[:] = img2
     iImg2 = iFFT()
-    
+
     #Do convolution
     iImg1 *= iImg2
-    
+
     #do forward FFT
     fFFT.inputData[:] = iImg1
     return numpy.fft.fftshift(fFFT().real)
-    
-    
+
+
 def circle(radius, size, centre_offset=(0,0)):
     """
     Create a 2-dimensional array equal to 1 in a circle and 0 outside
@@ -91,7 +91,7 @@ def circle(radius, size, centre_offset=(0,0)):
         centre_offset (tuple): The coords of the centre of the circle
 
     Returns:
-        ndarray : The circle array 
+        ndarray : The circle array
     """
     size = int(numpy.round(size))
 
@@ -103,7 +103,7 @@ def circle(radius, size, centre_offset=(0,0)):
     radius+=0.5
 
     mask = x*x + y*y <= radius*radius
-    
+
     C = numpy.zeros((size, size))
     C[mask] = 1
     return C
@@ -115,7 +115,7 @@ def gaussian2d(size, width, amplitude=1., cent=None):
 
     Args:
         size (tuple, float): Dimensions of Array to place gaussian
-        width (tuple, float): Width of distribution. 
+        width (tuple, float): Width of distribution.
                                 Accepts tuple for x and y values.
         amplitude (float): Amplitude of guassian distribution
         cent (tuple): Centre of distribution on grid.
@@ -141,7 +141,7 @@ def gaussian2d(size, width, amplitude=1., cent=None):
         yCent = cent[1]
 
     X,Y = numpy.meshgrid(range(0, xSize), range(0, ySize))
-    
+
     image = amplitude * numpy.exp(
             -(((xCent-X)/xWidth)**2 + ((yCent-Y)/yWidth)**2)/2)
 
@@ -166,7 +166,7 @@ def zoom(array, newSize, order=3):
     Returns:
         ndarray : zoom array of new size.
     """
-   
+
     if order not in INTERP_KIND:
        raise ValueError("Order can either be 1, 3, or 5 only")
 
@@ -184,15 +184,15 @@ def zoom(array, newSize, order=3):
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
 
         realInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.real, copy=False, 
+                numpy.arange(array.shape[1]), array.real, copy=False,
                 kind=INTERP_KIND[order])
         imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array.imag, copy=False,
-                kind=INTERP_KIND[order])                 
-        return (realInterpObj(coordsY,coordsX) 
+                kind=INTERP_KIND[order])
+        return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
 
-        
+
 
     else:
 
@@ -201,7 +201,7 @@ def zoom(array, newSize, order=3):
                 kind=INTERP_KIND[order])
 
         #return numpy.flipud(numpy.rot90(interpObj(coordsY,coordsX)))
-        return interpObj(coordsY,coordsX) 
+        return interpObj(coordsY,coordsX)
 
 def zoom_rbs(array, newSize, order=3):
     """
@@ -229,16 +229,16 @@ def zoom_rbs(array, newSize, order=3):
 
     #If array is complex must do 2 interpolations
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
-        realInterpObj = RectBivariateSpline(   
-                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+        realInterpObj = RectBivariateSpline(
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]),
                 array.real, kx=order, ky=order)
-        imagInterpObj = RectBivariateSpline(   
-                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+        imagInterpObj = RectBivariateSpline(
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]),
                 array.imag, kx=order, ky=order)
-                         
+
         return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
-            
+
     else:
 
         interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
@@ -258,9 +258,9 @@ def interp1d_numpy(array, coords):
 
     Returns:
         ndarray: The interpolated array
-    """ 
+    """
     intCoords = coords.astype("int")
-    arrayInt = array[intCoords] 
+    arrayInt = array[intCoords]
     arrayInt1 = array[(intCoords+1).clip(0,array.shape[0]-1)]
     grad = arrayInt1 - arrayInt
 
@@ -271,14 +271,14 @@ def interp1d_numpy(array, coords):
     return interpArray
 
 
-   
+
 def zoom_numba(data, zoomArray, threads=None):
     """
     A function which deals with threaded numba interpolation.
 
     Parameters:
         array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
+        xCoords (ndarray): A 1-D array of x-coordinates
         yCoords (ndarray): A 2-D array of y-coordinates
         interpArray (ndarray): The array to place the calculation
         threads (int): Number of threads to use for calculation
@@ -286,16 +286,16 @@ def zoom_numba(data, zoomArray, threads=None):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
-    
+
     if threads!=1 and threads!=None:
-    
+
         nx = zoomArray.shape[0]
 
         Ts = []
         for t in range(threads):
-            Ts.append(Thread(target=zoom_numbaThread, 
+            Ts.append(Thread(target=zoom_numbaThread,
                 args = (
-                    data, 
+                    data,
                     numpy.array([int(t*nx/threads), int((t+1)*nx/threads)]),
                     zoomArray)
                 ))
@@ -303,7 +303,7 @@ def zoom_numba(data, zoomArray, threads=None):
 
         for T in Ts:
             T.join()
-    
+
     else:
         zoom_numba1(data, zoomArray)
 
@@ -330,7 +330,7 @@ def zoom_numbaThread(data,  chunkIndices, zoomArray):
         for j in xrange(zoomArray.shape[1]):
             y = j*numba.float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
             y1 = numba.int32(y)
-            
+
             xGrad1 = data[x1+1, y1] - data[x1, y1]
             a1 = data[x1, y1] + xGrad1*(x-x1)
 
@@ -342,6 +342,7 @@ def zoom_numbaThread(data,  chunkIndices, zoomArray):
 
 
     return zoomArray
+    
 @numba.jit(nopython=True)
 def zoom_numba1(data, zoomArray):
     """
@@ -363,7 +364,7 @@ def zoom_numba1(data, zoomArray):
         for j in xrange(zoomArray.shape[1]):
             y = j*numba.float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
             y1 = numba.int32(y)
-            
+
             xGrad1 = data[x1+1, y1] - data[x1, y1]
             a1 = data[x1, y1] + xGrad1*(x-x1)
 
@@ -382,7 +383,7 @@ def linterp2d_numba(data, xCoords, yCoords, interpArray, threads=None):
 
     Parameters:
         array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
+        xCoords (ndarray): A 1-D array of x-coordinates
         yCoords (ndarray): A 2-D array of y-coordinates
         interpArray (ndarray): The array to place the calculation
         threads (int): Number of threads to use for calculation
@@ -390,16 +391,16 @@ def linterp2d_numba(data, xCoords, yCoords, interpArray, threads=None):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
-    
+
     if threads!=1 and threads!=None:
-    
+
         nx = xCoords.shape[0]
 
         Ts = []
         for t in range(threads):
-            Ts.append(Thread(target=linterp2d_thread, 
+            Ts.append(Thread(target=linterp2d_thread,
                 args = (
-                    data, xCoords, yCoords, 
+                    data, xCoords, yCoords,
                     numpy.array([int(t*nx/threads), int((t+1)*nx/threads)]),
                     interpArray)
                 ))
@@ -407,7 +408,7 @@ def linterp2d_numba(data, xCoords, yCoords, interpArray, threads=None):
 
         for T in Ts:
             T.join()
-    
+
     else:
         linterp2d(data, xCoords, yCoords, interpArray)
 
@@ -422,7 +423,7 @@ def linterp2d_thread(data, xCoords, yCoords, chunkIndices, interpArray):
 
     Parameters:
         array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
+        xCoords (ndarray): A 1-D array of x-coordinates
         yCoords (ndarray): A 2-D array of y-coordinates
         chunkIndices (ndarray): A 2 element array, with (start Index, stop Index) to work on for the x-dimension.
         interpArray (ndarray): The array to place the calculation
@@ -441,8 +442,8 @@ def linterp2d_thread(data, xCoords, yCoords, chunkIndices, interpArray):
     for i in xrange(chunkIndices[0],chunkIndices[1]):
         x = xCoords[i]
         x1 = numba.int32(x)
-        for j in jRange: 
-            y = yCoords[j] 
+        for j in jRange:
+            y = yCoords[j]
             y1 = numba.int32(y)
 
             xGrad1 = data[x1+1, y1] - data[x1, y1]
@@ -464,7 +465,7 @@ def linterp2d(data, xCoords, yCoords, interpArray):
 
     Parameters:
         array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates 
+        xCoords (ndarray): A 1-D array of x-coordinates
         yCoords (ndarray): A 2-D array of y-coordinates
         interpArray (ndarray): The array to place the calculation
 
@@ -482,9 +483,9 @@ def linterp2d(data, xCoords, yCoords, interpArray):
     for i in xrange(xCoords.shape[0]):
         x = xCoords[i]
         x1 = numba.int32(x)
-        for j in jRange: 
+        for j in jRange:
 
-            y = yCoords[j] 
+            y = yCoords[j]
             y1 = numba.int32(y)
 
             xGrad1 = data[x1+1, y1] - data[x1, y1]
@@ -511,11 +512,11 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 
     Returns:
         ndarray: The interpolated array
-    """ 
+    """
 
     #xCoords, yCoords = numpy.meshgrid(yCoords, xCoords)
 
-    
+
     xIntCoords = xCoords.astype("int")
     yIntCoords = yCoords.astype("int")
 
@@ -528,10 +529,10 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
             xIntCoords, (yIntCoords+1).clip(0, array.shape[1]-1)] - arrayInt
 
     if numpy.any(interpArray):
-        interpArray[:] = (arrayInt + xGrad*(xCoords-xIntCoords) 
+        interpArray[:] = (arrayInt + xGrad*(xCoords-xIntCoords)
                             + yGrad*(yCoords-yIntCoords))
     else:
-        interpArray = (arrayInt + xGrad*(xCoords-xIntCoords) 
+        interpArray = (arrayInt + xGrad*(xCoords-xIntCoords)
                             + yGrad*(yCoords-yIntCoords))
 
     return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
@@ -543,7 +544,7 @@ def absSquare(data):
 
 @numba.jit(nopython=True)
 def binImg_numba(img, binSize, newImg):
-   
+
     for i in xrange(newImg.shape[0]):
         x1 = i*binSize
         for j in xrange(newImg.shape[1]):
@@ -561,7 +562,7 @@ def binImg_numba(img, binSize, newImg):
 ######################
 @numba.jit(nopython=True)
 def chopImage(image, imageStack,  subImgCoords, subImgSize):
-    
+
     for i in xrange(subImgCoords.shape[0]):
         x = numba.int32(round(subImgCoords[i, 0]))
         y = numba.int32(round(subImgCoords[i, 1]))
@@ -577,12 +578,12 @@ def findActiveSubaps(subaps, mask, threshold):
     '''
     Finds the subapertures which are "seen" be through the
     pupil function. Returns the coords of those subaps
-    
+
     Parameters:
         subaps (int): The number of subaps in x (assumes square)
         mask (ndarray): A pupil mask, where is transparent when 1, and opaque when 0
         threshold (float): The mean value across a subap to make it "active"
-        
+
     Returns:
         ndarray: An array of active subap coords
     '''
@@ -593,9 +594,9 @@ def findActiveSubaps(subaps, mask, threshold):
 
     for x in range(subaps):
         for y in range(subaps):
-            subap = mask[   
+            subap = mask[
                     numpy.round(x*xSpacing): numpy.round((x+1)*xSpacing),
-                    numpy.round(y*ySpacing): numpy.round((y+1)*ySpacing) 
+                    numpy.round(y*ySpacing): numpy.round((y+1)*ySpacing)
                     ]
 
             if subap.mean() >= threshold:
@@ -611,7 +612,7 @@ def binImgs(data, n):
     otherwise......
     '''
     shape = numpy.array( data.shape )
-    
+
     n = int(numpy.round(n))
 
     if len(data.shape)==2:
@@ -672,7 +673,7 @@ def brtPxlCentroid(img, nPxls, **kwargs):
     Centroids using brightest Pixel Algorithm
     (A. G. Basden et al,  MNRAS, 2011)
 
-    Finds the nPxlsth brightest pixel, subtracts that value from frame, 
+    Finds the nPxlsth brightest pixel, subtracts that value from frame,
     sets anything below 0 to 0, and finally takes centroid.
 
     Parameters:
@@ -763,21 +764,21 @@ def correlationCentriod(im, threshold_fac, ref):
     return cents
 
 def quadCell(img, **kwargs):
-    
+
     xSum = img.sum(-2)
     ySum = img.sum(-1)
-    
+
     xCent = xSum[...,1] - xSum[...,0]
     yCent = ySum[...,1] - ySum[...,0]
-    
+
     return numpy.array([xCent, yCent])
 
 def zernike(j, N):
     """
-     Creates the Zernike polynomial with mode index j, 
+     Creates the Zernike polynomial with mode index j,
      where j = 1 corresponds to piston.
 
-     Args: 
+     Args:
         j (int): The noll j number of the zernike mode
         N (int): The diameter of the zernike more in pixels
      Returns:
@@ -845,7 +846,7 @@ def zernIndex(j,sign=0):
 def zernikeArray(J, N):
     """
     Creates an array of Zernike Polynomials
-    
+
     Parameters:
         maxJ (int or list): Max Zernike polynomial to create, or list of zernikes J indices to create
         N (int): size of created arrays
@@ -906,18 +907,18 @@ def remapSubaps(wfsData, mask, xyOrder=1):
         xyOrder (int, optional): Are slopes ordered mode 1, xxx..., yyy..., or mode 2, xyxyxy....?
 
     Returns:
-        ndarray: 2, 2-d arrays for each frame of wfs data.    
+        ndarray: 2, 2-d arrays for each frame of wfs data.
     """
-    
+
 
     nSubaps = mask.shape[0]
     totalSubaps = mask.sum()
     nIters = wfsData.shape[0]
     subaps2d = numpy.zeros((nIters, 2, nSubaps, nSubaps))
 
-    
+
     for i in range(nIters):
-        n=0 
+        n=0
         for x in range(nSubaps):
             for y in range(nSubaps):
 
@@ -931,4 +932,3 @@ def remapSubaps(wfsData, mask, xyOrder=1):
                     n+=1
 
     return subaps2d
-
