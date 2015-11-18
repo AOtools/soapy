@@ -232,7 +232,7 @@ class MVM(Reconstructor):
     WFSs and inverts the resulting matrix to form a global interaction matrix.
     """
 
-    def calcCMat(self,callback=None, progressCallback=None):
+    def calcCMat(self, callback=None, progressCallback=None):
         '''
         Uses DM object makeIMat methods, then inverts each to create a
         control matrix
@@ -245,7 +245,7 @@ class MVM(Reconstructor):
 
         logger.info("Invert iMat with cond: {}".format(
                 self.dms[dm].dmConfig.svdConditioning))
-        self.controlMatrix = scipy.linalg.pinv(
+        self.controlMatrix[:] = scipy.linalg.pinv(
                 self.iMat, self.dms[dm].dmConfig.svdConditioning
                 )
 

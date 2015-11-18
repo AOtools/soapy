@@ -49,6 +49,7 @@ simConfiguration = {
 "WFS":{
     "GSPosition"    :   [(0,0), (-10,-10), (-10, 10), (10,-10), (10,10)   ],
     "GSHeight"      :   [0,     0,          0,       0,      0      ],
+    "GSMag"         :   [8,     8,          8,       8,      8      ]
     "nxSubaps"      :   [8,     8,          8,       8,      8      ],
     "pxlsPerSubap"  :   [10,    10,         10,      10,    10,     ],
     "subapFOV"      :   [4.0,   4.,         4.,     4.,     4.,     ],

@@ -574,7 +574,7 @@ def chopImage(image, imageStack,  subImgCoords, subImgSize):
 
 
 
-def findActiveSubaps(subaps, mask, threshold):
+def findActiveSubaps(subaps, mask, threshold, returnFill=False):
     '''
     Finds the subapertures which are "seen" be through the
     pupil function. Returns the coords of those subaps
@@ -583,6 +583,7 @@ def findActiveSubaps(subaps, mask, threshold):
         subaps (int): The number of subaps in x (assumes square)
         mask (ndarray): A pupil mask, where is transparent when 1, and opaque when 0
         threshold (float): The mean value across a subap to make it "active"
+        returnFill (optional, bool): Return an array of fill-factors
 
     Returns:
         ndarray: An array of active subap coords
@@ -591,6 +592,9 @@ def findActiveSubaps(subaps, mask, threshold):
     subapCoords = []
     xSpacing = mask.shape[0]/float(subaps)
     ySpacing = mask.shape[1]/float(subaps)
+
+    if returnFill:
+        fills = []
 
     for x in range(subaps):
         for y in range(subaps):
@@ -601,9 +605,15 @@ def findActiveSubaps(subaps, mask, threshold):
 
             if subap.mean() >= threshold:
                 subapCoords.append( [x*xSpacing, y*ySpacing])
+                if returnFill:
+                    fills.append(subap.mean())
 
     subapCoords = numpy.array( subapCoords )
-    return subapCoords
+
+    if returnFill:
+        return subapCoords, numpy.array(fills)
+    else:
+        return subapCoords
 
 def binImgs(data, n):
     '''
@@ -932,3 +942,32 @@ def remapSubaps(wfsData, mask, xyOrder=1):
                     n+=1
 
     return subaps2d
+
+def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
+    '''
+    Calculates the photon flux for a given aperture, star magnitude and wavelength band
+
+    Parameters:
+        mag (float): Star apparent magnitude
+        mask (ndarray): 2-d pupil mask array, 1 is transparent, 0 opaque
+        pxlScale (float): size in metres of each pixel in mask
+        wvlBand (float): length of wavelength band in nanometres
+        expTime (float): Exposure time in seconds
+
+    Returns:
+        float: number of photons
+    '''
+
+    #Area defined in cm, so turn m to cm
+    area = mask.sum() * pxlScale**2 * 100**2
+
+    photonPerSecPerAreaPerWvl = 1000 * (10**(-float(mag)/2.5))
+
+    #Wvl defined in Angstroms
+    photonPerSecPerArea = photonPerSecPerAreaPerWvl * wvlBand*10
+
+    photonPerSec = photonPerSecPerArea * area
+
+    photons = photonPerSec * expTime
+
+    return photons
