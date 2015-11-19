@@ -464,6 +464,16 @@ class WfsConfig(ConfigObj):
         ------------------- ---------------------------------- -----------
         ``type``            string: Which WFS object to load
                             from WFS.py?                        ``ShackHartmann``
+        ``GSMag``           float: Apparent magnitude of the 
+                            guide star                         ``0``
+        ``photonNoise``     bool: Include photon (shot) noise. ``False``
+        ``eReadNoise``      float: Electrons of read noise     ``0``
+        ``throughput``      float: Throughput of the entire
+                            optical and electronic system
+                            from guide star photons to
+                            recorded WFS detector counts.
+                            Includes atmospheric effects, the
+                            optical train and detector gain.   ``1.``
         ``propagationMode`` string: Mode of light propogation 
                             from GS. Can be "physical" or 
                             "geometric"\**.                     ``"geometric"``
@@ -504,6 +514,8 @@ class WfsConfig(ConfigObj):
                             camera - must be higher than 
                             loopTime. If None, will be 
                             set to loopTime.                    ``None``
+        ``wvlBandWidth``    float: Width of wavelength
+                            band sent to WFS in nm              ``100``
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
@@ -544,6 +556,11 @@ class WfsConfig(ConfigObj):
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
                                 ("referenceImage", None),
+                                ("throughput", 1.),
+                                ("eReadNoise", 0),
+                                ("photonNoise", False),
+                                ("GSMag", 0.0),
+                                ("wvlBandWidth", 100.),
                             ]
         self.initParams()
 
