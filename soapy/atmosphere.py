@@ -118,7 +118,7 @@ class atmos:
 
         scrnSize = int(round(self.scrnSize))
 
-        # The whole screens will be kept at this value, and then scaled to the 
+        # The whole screens will be kept at this value, and then scaled to the
         # correct r0 before being sent to the simulation
         self.wholeScrnR0 = 1.
 
@@ -309,7 +309,7 @@ class atmos:
             #remove piston from phase screens
             scrns[i] -= scrns[i].mean()
 
-            # Finally, scale for r0 and turn to nm 
+            # Finally, scale for r0 and turn to nm
             scrns[i] *= (self.scrnStrengths[i]/self.wholeScrnR0)**(-5./6.)
             scrns[i] *= (500/(2*numpy.pi))
 
@@ -317,7 +317,7 @@ class atmos:
 
     def randomScrns(self, subHarmonics=True):
         """
-        Generated random phase screens defined by the atmosphere 
+        Generated random phase screens defined by the atmosphere
         object parameters.
 
         Returns:
@@ -325,47 +325,47 @@ class atmos:
         """
         scrns = {}
         args = []
-    
-        #If no MP pool, just make screen sequentialy. 
+
+        #If no MP pool, just make screen sequentialy.
         if self.mpPool == None:
             for i in xrange(self.scrnNo):
                 if subharmonics:
                     scrns[i] = ft_sh_phase_screen(
-                            self.scrnStrengths[i], self.scrnSize, 
+                            self.scrnStrengths[i], self.scrnSize,
                             (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
                             0.01)
                 else:
                     scrns[i] = ft_phase_screen(
-                            self.scrnStrengths[i], self.scrnSize, 
-                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i], 
+                            self.scrnStrengths[i], self.scrnSize,
+                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
                             0.01)
-            # convert to nm
-            scrns[i] *= (500./(2*numpy.pi)) 
+                # convert to nm
+                scrns[i] *= (500./(2*numpy.pi))
 
         #If there is a pool, use it
         else:
-            if subHarmonics: 
+            if subHarmonics:
                 for i in range(self.scrnNo):
-                    args.append( 
-                            (ft_sh_phase_screen,  self.scrnStrengths[i], 
-                            self.scrnSize, (self.pxlScale**(-1.)), 
+                    args.append(
+                            (ft_sh_phase_screen,  self.scrnStrengths[i],
+                            self.scrnSize, (self.pxlScale**(-1.)),
                             self.atmosConfig.L0[i], 0.01))
-            
+
             else:
                 for i in range(self.scrnNo):
 
-                    args.append( 
-                            (ft_phase_screen,  self.scrnStrengths[i], 
-                            self.scrnSize, (self.pxlScale**(-1.)), 
+                    args.append(
+                            (ft_phase_screen,  self.scrnStrengths[i],
+                            self.scrnSize, (self.pxlScale**(-1.)),
                             self.atmosConfig.L0[i], 0.01))
-            
+
             #Do the calculation using the multi-process pool, put into dict
             s = self.mpPool.map(mpWrap, args)
             for i in range(self.scrnNo):
                 scrns[i] = s[i]
+                # convert to mn
+                scrns[i] *= (500./(2*numpy.pi))
 
-            # convert to mn
-            scrns[i] *= (500./(2*numpy.pi)) 
 
         return scrns
 
@@ -685,8 +685,8 @@ def mpWrap(args):
     """
     A helper to run python MP pool functions
 
-    Using the native python MP pool.map, it is not possible to pass multiple 
-    args. If all args are passed to this helper function as a tuple, with the 
+    Using the native python MP pool.map, it is not possible to pass multiple
+    args. If all args are passed to this helper function as a tuple, with the
     function itself as the first item, it will run it with the unpacked args
     and return the result.
 
