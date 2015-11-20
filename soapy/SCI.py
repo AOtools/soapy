@@ -207,6 +207,20 @@ class scienceCam(object):
         self.focalPlane /= self.focalPlane.sum()
 
     def frame(self, scrns, phaseCorrection=None):
+        """
+        Runs a single science camera frame with one or more phase screens
+
+        Parameters:
+            scrns (ndarray, list, dict): One or more 2-d phase screens. Phase in units of nm.
+            phaseCorrection (ndarray): Correction phase in nm
+
+        Returns:
+            ndarray: Resulting science PSF
+        """
+        #If scrns is not dict or list, assume array and put in list
+        t = type(scrns)
+        if t!=dict and t!=list:
+            scrns = [scrns]
 
         self.scrns = scrns
         self.calcPupilPhase()
