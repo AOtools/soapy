@@ -118,7 +118,7 @@ class Reconstructor(object):
                     cMatHDU.header["DMCOND"]), globals())
 
             if not numpy.allclose(dmConds, self.dmConds):
-                raise Exception("DM conditioning Parameter changed - will make new control matrix")
+                raise IOError("DM conditioning Parameter changed - will make new control matrix")
             if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:
                 logger.warning("loaded control matrix may not be compatibile with \
                                 the current simulation. Will try anyway....")
@@ -133,7 +133,7 @@ class Reconstructor(object):
 
         if cMat.shape != self.controlShape:
             logger.warning("designated control matrix does not match the expected shape")
-            raise Exception
+            raise IOError
         else:
             self.controlMatrix = cMat
 
@@ -163,15 +163,15 @@ class Reconstructor(object):
             iMat = fits.open(filenameIMat)[0].data
             iMatShapes = fits.open(filenameShapes)[0].data
 
-            if iMat.shape != (self.dms[dm].acts, 2*self.dms[dm].totalSubaps):
+            if iMat.shape != (self.dms[dm].acts, self.dms[dm].totalWfsMeasurements):
                 logger.warning(
                     "interaction matrix does not match required required size."
                     )
-                raise Exception
+                raise IOError
             if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
                 logger.warning(
                         "loaded DM shapes are not same size as current sim.")
-                raise Exception
+                raise IOError
             else:
                 self.dms[dm].iMat = iMat
                 self.dms[dm].iMatShapes = iMatShapes
@@ -190,9 +190,9 @@ class Reconstructor(object):
             try:
                 self.loadIMat()
                 logger.info("Interaction Matrices loaded successfully")
-            except:
+            except IOError:
                 #traceback.print_exc()
-                logger.warning("Load Interaction Matrices failed - will create new one.")
+                logger.info("Load Interaction Matrices failed - will create new one.")
                 self.makeIMat(callback=callback,
                          progressCallback=progressCallback)
                 self.saveIMat()
@@ -206,7 +206,7 @@ class Reconstructor(object):
             try:
                 self.loadCMat()
                 logger.info("Command Matrix Loaded Successfully")
-            except:
+            except IOError:
                 #traceback.print_exc()
                 logger.warning("Load Command Matrix failed - will create new one")
 
