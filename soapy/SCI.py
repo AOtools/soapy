@@ -217,7 +217,7 @@ class scienceCam(object):
         Returns:
             ndarray: Resulting science PSF
         """
-        #If scrns is not dict or list, assume array and put in list
+        # If scrns is not dict or list, assume array and put in list
         t = type(scrns)
         if t!=dict and t!=list:
             scrns = [scrns]
