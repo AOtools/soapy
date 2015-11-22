@@ -103,11 +103,11 @@ class atmos:
         atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths,
                 dtype="float32")
 
-        atmosConfig.scrnStrengths /= (
+        atmosConfig.normScrnStrengths = atmosConfig.scrnStrengths/(
                             atmosConfig.scrnStrengths[:self.scrnNo].sum())
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
-                                *atmosConfig.scrnStrengths)**(-3./5.) )
+                                *atmosConfig.normScrnStrengths)**(-3./5.) )
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
 
@@ -122,7 +122,7 @@ class atmos:
         # correct r0 before being sent to the simulation
         self.wholeScrnR0 = 1.
 
-        #If required, generate some new Kolmogorov phase screens
+        # If required, generate some new Kolmogorov phase screens
         if not atmosConfig.scrnNames:
             logger.info("Generating Phase Screens")
             for i in xrange(self.scrnNo):
@@ -141,7 +141,7 @@ class atmos:
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
-        #Otherwise, load some others from FITS file
+        # Otherwise, load some others from FITS file
         else:
             logger.info("Loading Phase Screens")
 
@@ -176,19 +176,19 @@ class atmos:
 #        for s in range(self.scrnNo):
 #            self.wholeScrns[s] *= (500e-9/(2*numpy.pi))
 #
-        #Set the initial starting point of the screen,
-        #If windspeed is negative, starts from the
-        #far-end of the screen to avoid rolling straight away
-        windDirs=numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
+        # Set the initial starting point of the screen,
+        # If windspeed is negative, starts from the
+        # far-end of the screen to avoid rolling straight away
+        windDirs= numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
         windV=(self.windSpeeds * numpy.array([numpy.cos(windDirs),
                                               numpy.sin(windDirs)])).T #This is velocity in metres per second
         windV *= self.looptime   #Now metres per looptime
         windV *= self.pxlScale   #Now pxls per looptime.....ideal!
         self.windV = windV
 
-        #Sets initial phase screen pos
-        #If velocity is negative in either direction, set the starting point
-        #to the end of the screen to avoid rolling too early.
+        # Sets initial phase screen pos
+        # If velocity is negative in either direction, set the starting point
+        # to the end of the screen to avoid rolling too early.
         for i in xrange(self.scrnNo):
             self.scrnPos[i] = numpy.array([0,0])
 
@@ -309,6 +309,12 @@ class atmos:
             #remove piston from phase screens
             scrns[i] -= scrns[i].mean()
 
+            # Calculate the r0 of each screen
+            self.atmosConfig.normScrnStrengths = (
+                    self.atmosConfig.scrnStrengths/
+                        self.atmosConfig.scrnStrengths[:self.scrnNo].sum())
+            self.scrnStrengths = ( ((self.r0**(-5./3.))
+                        *self.atmosConfig.normScrnStrengths)**(-3./5.))
             # Finally, scale for r0 and turn to nm
             scrns[i] *= (self.scrnStrengths[i]/self.wholeScrnR0)**(-5./6.)
             scrns[i] *= (500/(2*numpy.pi))
