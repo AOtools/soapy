@@ -145,10 +145,14 @@ class Reconstructor(object):
                     filenameIMat, self.dms[dm].iMat,
                     header=self.simConfig.saveHeader,
                     clobber=True)
-
-            fits.writeto(
-                    filenameShapes, self.dms[dm].iMatShapes,
-                    header=self.simConfig.saveHeader, clobber=True)
+            # If DM has pre made influence funcs, save them too
+            try:
+                fits.writeto(
+                        filenameShapes, self.dms[dm].iMatShapes,
+                        header=self.simConfig.saveHeader, clobber=True)
+            # If not, don't worry about it!
+            except AttributeError:
+                pass
 
     def loadIMat(self):
 
@@ -159,20 +163,33 @@ class Reconstructor(object):
             filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
 
             iMat = fits.open(filenameIMat)[0].data
-            iMatShapes = fits.open(filenameShapes)[0].data
+            
+            # See if influence functions are also there...
+            try:
+                iMatShapes = fits.open(filenameShapes)[0].data
+                # Check if loaded influence funcs are the right size
+                if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
+                    logger.warning(
+                            "loaded DM shapes are not same size as current sim."
+                            )
+                    raise IOError 
+                self.dms[dm].iMatShapes = iMatShapes
+
+            # If not, assume doesn't need them. 
+            # May raise an error elsewhere though
+            except IOError:
+                logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
+                pass
+
 
             if iMat.shape != (self.dms[dm].acts, self.dms[dm].totalWfsMeasurements):
                 logger.warning(
                     "interaction matrix does not match required required size."
                     )
                 raise IOError
-            if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
-                logger.warning(
-                        "loaded DM shapes are not same size as current sim.")
-                raise IOError
+
             else:
                 self.dms[dm].iMat = iMat
-                self.dms[dm].iMatShapes = iMatShapes
 
     def makeIMat(self, callback, progressCallback):
 

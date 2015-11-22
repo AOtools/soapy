@@ -136,7 +136,7 @@ class Sim(object):
         self.config = confParse.Configurator(self.configFile)
         self.config.loadSimParams()
         logger.statusMessage(
-                1, 1,"Loaded configuration file successfully!" )
+                0, 1,"Loaded configuration file successfully!" )
 
     def setLoggingLevel(self, level):
         """

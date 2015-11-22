@@ -53,7 +53,7 @@ try:
 except NameError:
     xrange = range
 
-class DM:
+class DM(object):
     """
     The base DM class
 
@@ -185,26 +185,26 @@ class DM:
         Returns:
             ndarray: A 2-d array with the DM shape
         '''
-        try:
-            self.newActCoeffs = dmCommands
+        # try:
+        self.newActCoeffs = dmCommands
 
-            # If loop is closed, only add residual measurements onto old
-            # actuator values
-            if closed:
-                self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
+        # If loop is closed, only add residual measurements onto old
+        # actuator values
+        if closed:
+            self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
 
-            else:
-                self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-                    + ( (1.-self.dmConfig.gain) * self.actCoeffs)
+        else:
+            self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
+                + ( (1.-self.dmConfig.gain) * self.actCoeffs)
 
-            self.dmShape = self.makeDMFrame(self.actCoeffs)
-            # Remove any piston term from DM
-            self.dmShape -= self.dmShape.mean()
+        self.dmShape = self.makeDMFrame(self.actCoeffs)
+        # Remove any piston term from DM
+        self.dmShape -= self.dmShape.mean()
 
-            return self.dmShape
+        return self.dmShape
 
-        except AttributeError:
-            raise AttributeError("DM Missing influence functions. Have you made an interaction matrix?")
+        # except AttributeError:
+        #     raise AttributeError("DM Missing influence functions. Have you made an interaction matrix?")
 
    
     def makeDMFrame(self, actCoeffs):
@@ -388,12 +388,15 @@ class FastPiezo(Piezo):
     A DM which simulates a Piezo DM. Faster than standard for big simulations as interpolates on each frame.
     """
     
-    def makeIMatShapes(self):
+    def getActiveActs(self):
+        acts = super(FastPiezo, self).getActiveActs()
         self.actGrid = numpy.zeros(
                 (self.dmConfig.nxActuators, self.dmConfig.nxActuators))
    
         # DM size is the pupil size, but withe one extra act on each side 
         self.dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
+
+        return acts
 
     def makeDMFrame(self, actCoeffs):
 
