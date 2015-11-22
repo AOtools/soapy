@@ -8,6 +8,7 @@ soapy.logger.setLoggingLevel(3)
 
 RESULTS = {
         "8x8": 0.47,
+        "8x8_open": 0.4,
         "8x8_offAxis": 0.22,
         "8x8_zernike": 0.36,
         "8x8_lgs"    : 0.27,
@@ -127,7 +128,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.aoloop()
 
         #Check results are ok
-        assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8"], atol=0.2)
+        assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_open"], atol=0.2)
 
 
 if __name__ == '__main__':
