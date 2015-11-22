@@ -120,7 +120,7 @@ class DM:
         self.makeIMatShapes()
 
         # Imat value is in microns
-        self.iMatShapes *= (self.dmConfig.iMatValue)
+        # self.iMatShapes *= (self.dmConfig.iMatValue)
 
         if self.dmConfig.rotation:
            self.iMatShapes = rotate(
@@ -137,22 +137,31 @@ class DM:
 
         iMat = numpy.zeros(
                 (self.iMatShapes.shape[0], self.totalWfsMeasurements) )
+
+        # A vector of DM commands to use when making the iMat
+        actCommands = numpy.zeros(self.acts)
         for i in xrange(self.iMatShapes.shape[0]):
             subap=0
-            for nWfs in range(len(self.wfss)):
 
+            # Set vector of iMat commands to 0...
+            actCommands[:] = 0
+            # Except the one we want to make an iMat for!
+            actCommands[i] = self.dmConfig.iMatValue
+            # Now get a DM shape for that command
+            self.dmShape = self.makeDMFrame(actCommands)
+            for nWfs in range(len(self.wfss)):
                 logger.debug("subap: {}".format(subap))
+                
+                # Send the DM shape off to the relavent WFS. put result in iMat
                 iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        self.wfss[nWfs].frame(
-                                self.iMatShapes[i], iMatFrame=True
-                       ))
-
-                self.dmShape = self.iMatShapes[i]
+                                self.dmShape, iMatFrame=True
+                       ))/self.dmConfig.iMatValue
 
                 if callback!=None:
                     callback()
 
-                logger.statusMessage(i, self.iMatShapes.shape[0],
+                logger.statusMessage(i, self.acts,
                         "Generating {} Actuator DM iMat".format(self.acts))
 
                 subap += 2*self.wfss[nWfs].activeSubaps
@@ -180,8 +189,8 @@ class DM:
         try:
             self.newActCoeffs = dmCommands
 
-            #If loop is closed, only add residual measurements onto old
-            #actuator values
+            # If loop is closed, only add residual measurements onto old
+            # actuator values
             if closed:
                 self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
 
@@ -190,7 +199,7 @@ class DM:
                     + ( (1.-self.dmConfig.gain) * self.actCoeffs)
 
             self.dmShape = self.makeDMFrame(self.actCoeffs)
-            #Remove any piston term from DM
+            # Remove any piston term from DM
             self.dmShape -= self.dmShape.mean()
 
             return self.dmShape
@@ -277,7 +286,7 @@ class Piezo(DM):
         #side
         dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
-        shapes = numpy.zeros( (self.acts, dmSize, dmSize), dtype="float32")
+        shapes = numpy.zeros((self.acts, dmSize, dmSize), dtype="float32")
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]
@@ -338,9 +347,11 @@ class GaussStack(Piezo):
                     self.simConfig.pupilSize, width, cent = (x,y))
 
         self.iMatShapes = shapes
+       
+        pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
                 self.iMatShapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                )#*self.mask
+                )
 
 
 
@@ -377,6 +388,10 @@ class fastPiezo(DM):
     """
     A DM which simulates a Piezo DM. Faster than standard for big simulations as interpolates on each frame.
     """
-
-    def dmFrame(self):
+    
+    def __init__(self):
         pass
+
+    def makeDMFrame(self):
+        pass
+        
