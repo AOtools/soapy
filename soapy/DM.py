@@ -73,10 +73,10 @@ class DM:
 
         self.actCoeffs = numpy.zeros( (self.acts) )
 
-        #Sort out which WFS(s) observes the DM (for iMat making)
+        # Sort out which WFS(s) observes the DM (for iMat making)
         if self.dmConfig.wfs!=None:
             try:
-                #Make sure the specifed WFS actually exists
+                # Make sure the specifed WFS actually exists
                 self.wfss = [wfss[self.dmConfig.wfs]]
                 self.wfs = self.wfss[0]
             except KeyError:
@@ -84,9 +84,8 @@ class DM:
         else:
             self.wfss = wfss
 
-        #find the total number of WFS subaps, and make imat
-        #placeholder
-        #print(self.wfss)
+        # find the total number of WFS subaps, and make imat
+        # placeholder
         self.totalWfsMeasurements = 0
         for nWfs in range(len(self.wfss)):
             self.totalWfsMeasurements += 2*self.wfss[nWfs].activeSubaps
@@ -136,12 +135,12 @@ class DM:
                    ]
 
         iMat = numpy.zeros(
-                (self.iMatShapes.shape[0], self.totalWfsMeasurements) )
+                (self.acts, self.totalWfsMeasurements) )
 
         # A vector of DM commands to use when making the iMat
         actCommands = numpy.zeros(self.acts)
-        for i in xrange(self.iMatShapes.shape[0]):
-            subap=0
+        for i in xrange(self.acts):
+            subap = 0
 
             # Set vector of iMat commands to 0...
             actCommands[:] = 0
@@ -282,7 +281,7 @@ class Piezo(DM):
         spacing to avoid strange edge effects.
         """
 
-        #Create a "dmSize" - the pupilSize but with 1 extr a actuator on each
+        #Create a "dmSize" - the pupilSize but with 1 extra actuator on each
         #side
         dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
@@ -384,14 +383,41 @@ class TT(DM):
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
 
 
-class fastPiezo(DM):
+class FastPiezo(Piezo):
     """
     A DM which simulates a Piezo DM. Faster than standard for big simulations as interpolates on each frame.
     """
     
-    def __init__(self):
-        pass
+    def makeIMatShapes(self):
+        self.actGrid = numpy.zeros(
+                (self.dmConfig.nxActuators, self.dmConfig.nxActuators))
+   
+        # DM size is the pupil size, but withe one extra act on each side 
+        self.dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
-    def makeDMFrame(self):
-        pass
+    def makeDMFrame(self, actCoeffs):
+
+        self.actGrid[(self.activeActs[:,0], self.activeActs[:,1])] = actCoeffs
+
+        # Add space around edge for 1 extra act to avoid edge effects
+        actGrid = numpy.pad(self.actGrid, ((1,1), (1,1)), mode="constant") 
+   
+        # Interpolate to previously determined "dmSize"
+        dmShape = aoSimLib.zoom_rbs(
+                actGrid, self.dmSize, order=self.dmConfig.interpOrder)
+
+        
+        # Now check if "dmSize" bigger or smaller than "simSize". 
+        # Crop or pad as appropriate 
+        if self.dmSize>self.simConfig.simSize:
+            coord = int(round(self.dmSize/2. - self.simConfig.simSize/2.))
+            self.dmShape = dmShape[coord:-coord, coord:-coord].astype("float32")
+
+        else:
+            pad = int(round((self.simConfig.simSize - self.dmSize)/2))
+            self.dmShape = numpy.pad(
+                    dmShape, ((pad,pad), (pad,pad)), mode="constant"
+                    ).astype("float32")
+       
+        return self.dmShape
         
