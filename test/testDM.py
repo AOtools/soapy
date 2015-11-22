@@ -79,3 +79,24 @@ class TestDM(unittest.TestCase):
         dm = DM.TT(config.sim, config.dms[0], [wfs], mask)
         dm.makeIMat()
 
+    
+    def testf_initFastPiezo(self):
+
+        config = confParse.Configurator("../conf/sh_8x8.py")
+        config.loadSimParams()
+        
+        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        dm = DM.FastPiezo(config.sim, config.dms[0], [wfs], mask)
+
+    def testg_iMatFastPiezo(self):
+
+        config = confParse.Configurator("../conf/sh_8x8.py")
+        config.loadSimParams()
+        
+        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        dm = DM.FastPiezo(config.sim, config.dms[0], [wfs], mask)
+        dm.makeIMat()
