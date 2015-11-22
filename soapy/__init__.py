@@ -22,7 +22,7 @@ from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 
-from simulation import Sim
+from .simulation import Sim
 
 #Try to import GUI, if not then its ok
 try: 

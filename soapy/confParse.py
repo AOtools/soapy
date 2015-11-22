@@ -29,11 +29,6 @@ import numpy
 import traceback
 from . import logger
 
-#How much bigger to make the simulation than asked for. The value is a ratio
-#of how much to pad on each side
-SIM_OVERSIZE = 0.1
-
-
 class ConfigurationError(Exception):
     pass
 
@@ -124,8 +119,8 @@ class Configurator(object):
 
         #We oversize the pupil to what we'll call the "simulation size"
         self.sim.simSize = int(self.sim.pupilSize 
-                + 2*numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
-        self.sim.simPad = int(numpy.round(SIM_OVERSIZE*self.sim.pupilSize))
+                + 2*numpy.round(self.sim.simOversize*self.sim.pupilSize))
+        self.sim.simPad = int(numpy.round(self.sim.simOversize*self.sim.pupilSize))
 
 
         #furthest out GS or SCI target defines the sub-scrn size
@@ -143,8 +138,7 @@ class Configurator(object):
                 H = self.wfss[gs].GSHeight
                 theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         (3600*180/numpy.pi)).max()
-                pos+=theta_n         
-            gsPos.append(pos)
+            gsPos.append(abs(numpy.array(pos)))
                
         for sci in range(self.sim.nSci):
             gsPos.append(self.scis[sci].position)
@@ -153,10 +147,10 @@ class Configurator(object):
             maxGSPos = numpy.array(gsPos).max()
         else:
             maxGSPos = 0
-
-        self.sim.scrnSize = numpy.ceil(
-                2*self.sim.pxlScale*self.atmos.scrnHeights.max()
-                *maxGSPos*numpy.pi/(3600.*180) 
+    
+        self.sim.scrnSize = 2*numpy.ceil(
+                self.sim.pxlScale*self.atmos.scrnHeights.max()
+                *abs(maxGSPos)*numpy.pi/(3600.*180) 
                 )+self.sim.simSize
         
         #Make scrnSize even
@@ -224,7 +218,6 @@ class ConfigObj(object):
     def initParams(self):
         for param in self.requiredParams:
             self.__setattr__(param, None)
-
 
     def loadParams(self, configDict):
 
@@ -319,6 +312,11 @@ class SimConfig(ConfigObj):
         ``learnAtmos``      str: if ``random``, then 
                             random phase screens used for 
                             `learn`                             ``random``
+        ``simOversize``     float: The fraction to pad the 
+                            pupil size with to reduce edge 
+                            effects                             ``0.1``
+                            
+            
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -336,7 +334,10 @@ class SimConfig(ConfigObj):
                                     Accessed from sim with ``sim.longStrehl``
                                     and ``sim.instStrehl``
         ``saveSciPsf``              Saves the science PSF.
+        ``saveInstPsf``             Saves the instantenous science PSF.
+        ``saveInstScieField``       Saves the instantaneous electric field at focal plane.
         ``saveSciRes``              Save Science residual phase
+        
         ======================      ===================
 
     """
@@ -366,6 +367,8 @@ class SimConfig(ConfigObj):
                                 ("saveStrehl", False),
                                 ("saveWfsFrames", False),
                                 ("saveSciPsf", False),
+                                ("saveInstPsf", False),
+                                ("saveInstScieField", False),
                                 ("saveWFE", False),
                                 ("saveSciRes", False),
                                 ("wfsMP", False),
@@ -373,6 +376,7 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"), 
+                                ("simOversize", 0.1),
                         ]
 
         self.initParams()
@@ -510,6 +514,8 @@ class WfsConfig(ConfigObj):
                             camera - must be higher than 
                             loopTime. If None, will be 
                             set to loopTime.                    ``None``
+        ``wvlBandWidth``    float: Width of wavelength
+                            band sent to WFS in nm              ``100``
         ``fftwThreads``     int: number of threads for fftw 
                             to use. If ``0``, will use 
                             system processor number.           ``1``
@@ -554,6 +560,7 @@ class WfsConfig(ConfigObj):
                                 ("eReadNoise", 0),
                                 ("photonNoise", False),
                                 ("GSMag", 0.0),
+                                ("wvlBandWidth", 100.),
                             ]
         self.initParams()
 
