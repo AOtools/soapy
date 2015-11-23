@@ -387,7 +387,9 @@ class FastPiezo(Piezo):
     """
     A DM which simulates a Piezo DM. Faster than standard for big simulations as interpolates on each frame.
     """
-    
+    def makeIMatShapes(self):
+        pass
+
     def getActiveActs(self):
         acts = super(FastPiezo, self).getActiveActs()
         self.actGrid = numpy.zeros(
