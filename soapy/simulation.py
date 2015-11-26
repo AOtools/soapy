@@ -623,12 +623,17 @@ class Sim(object):
 
             shutil.copyfile(self.configFile, self.path+"/conf.py" )
 
-        #Init Strehl Saving
+        # Init Strehl Saving
         if self.config.sim.nSci>0:
             self.instStrehl = numpy.zeros(
                     (self.config.sim.nSci, self.config.sim.nIters) )
             self.longStrehl = numpy.zeros(
                     (self.config.sim.nSci, self.config.sim.nIters) )
+
+            # Init science WFE saving
+            self.WFE = numpy.zeros(
+                        (self.config.sim.nSci, self.config.sim.nIters)
+                        )
 
         #Init science residual phase saving
         self.sciPhase = []
@@ -639,10 +644,7 @@ class Sim(object):
                             (self.config.sim.nIters, self.config.sim.simSize,
                             self.config.sim.simSize)))
 
-        #Init science WFE saving
-        self.WFE = numpy.zeros(
-                    (self.config.sim.nSci, self.config.sim.nIters)
-                    )
+
 
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
@@ -776,7 +778,7 @@ class Sim(object):
                         self.path+"/lgsPsf.fits", self.lgsPsfs,
                         header=self.config.sim.saveHeader, clobber=True)
 
-            if self.config.sim.saveWFE:
+            if self.config.sim.saveWfe:
                 fits.writeto(
                         self.path+"/WFE.fits", self.WFE,
                         header=self.config.sim.saveHeader, clobber=True)
