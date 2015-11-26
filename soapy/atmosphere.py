@@ -335,7 +335,7 @@ class atmos:
         #If no MP pool, just make screen sequentialy.
         if self.mpPool == None:
             for i in xrange(self.scrnNo):
-                if subharmonics:
+                if subHarmonics:
                     scrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], self.scrnSize,
                             (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
@@ -365,7 +365,7 @@ class atmos:
                             self.scrnSize, (self.pxlScale**(-1.)),
                             self.atmosConfig.L0[i], 0.01))
 
-            #Do the calculation using the multi-process pool, put into dict
+            # Do the calculation using the multi-process pool, put into dict
             s = self.mpPool.map(mpWrap, args)
             for i in range(self.scrnNo):
                 scrns[i] = s[i]
