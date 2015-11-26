@@ -3,7 +3,7 @@ import unittest
 import numpy
 
 
-class TestDM(unittest.TestCase):
+class TestAtmos(unittest.TestCase):
     
     def test_initAtmos(self):
         
