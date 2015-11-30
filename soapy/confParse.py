@@ -136,8 +136,9 @@ class Configurator(object):
                 dh = numpy.array([  -1*self.lgss[gs].elongationDepth/2.,
                                     self.lgss[gs].elongationDepth/2.])
                 H = self.wfss[gs].GSHeight
-                theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
+                theta_n = (max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         (3600*180/numpy.pi)).max()
+                pos+=theta_n
             gsPos.append(abs(numpy.array(pos)))
 
         for sci in range(self.sim.nSci):
