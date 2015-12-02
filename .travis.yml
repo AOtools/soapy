@@ -36,4 +36,7 @@ install:
 before_script:
     cd test
 script:
-    - nosetests
+    - nosetests --with-coverage --cover-package=soapy
+
+after_success:
+  - codecov
