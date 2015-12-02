@@ -5,7 +5,6 @@ branches:
     only:
         - master
         - numba
-        - WFS_noise
 python:
   - 2.7
   - 3.5
@@ -37,8 +36,4 @@ install:
 before_script:
     cd test
 script:
-    - nosetests -v
-    # --with-coverage --cover-package=soapy
-
-# after_success:
-#     codecov
+    - nosetests
