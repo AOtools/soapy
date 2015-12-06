@@ -38,10 +38,10 @@ class Configurator(object):
     The configuration class holding all simulation configuration information
 
     This class is used to load the parameter dictionary from file, instantiate each configuration object and calculate some other parameters from the parameters given.
-    
-    The configuration file given to this class must contain a python dictionary, named ``simConfiguration``. This must contain other dictionaries for each sub-module of the system, ``Sim``, ``Atmosphere``, ``Telescope``, ``WFS``, ``LGS``, ``DM``, ``Science``. For the final 4 sub-dictionaries, each entry must be formatted as a list (or numpy array) where each value corresponds to that component. 
 
-    The number of components on the module will only depend on the number set in the ``Sim`` dict. For example, if ``nGS`` is set to 2 in ``Sim``, then in the ``WFS`` dict, each parameters must have at least 2 entries, e.g. ``subaps : [10,10]``. If the parameter has more than 2 entries, then only the first 2 will be noted and any others discarded. 
+    The configuration file given to this class must contain a python dictionary, named ``simConfiguration``. This must contain other dictionaries for each sub-module of the system, ``Sim``, ``Atmosphere``, ``Telescope``, ``WFS``, ``LGS``, ``DM``, ``Science``. For the final 4 sub-dictionaries, each entry must be formatted as a list (or numpy array) where each value corresponds to that component.
+
+    The number of components on the module will only depend on the number set in the ``Sim`` dict. For example, if ``nGS`` is set to 2 in ``Sim``, then in the ``WFS`` dict, each parameters must have at least 2 entries, e.g. ``subaps : [10,10]``. If the parameter has more than 2 entries, then only the first 2 will be noted and any others discarded.
 
     Descriptions of the available parameters for each sub-module are given in that that config classes documentation
 
@@ -77,9 +77,9 @@ class Configurator(object):
         self.configDict = simConfiguration
 
     def loadSimParams(self):
-       
+
         self.readfile()
- 
+
         logger.debug("\nLoad Sim Params...")
         self.sim.loadParams(self.configDict["Sim"])
 
@@ -109,7 +109,7 @@ class Configurator(object):
             self.scis.append(SciConfig(sci))
             self.scis[sci].loadParams(self.configDict["Science"])
         self.calcParams()
-        
+
     def calcParams(self):
         """
         Calculates some parameters from the configuration parameters.
@@ -118,7 +118,7 @@ class Configurator(object):
                                     self.tel.telDiam)
 
         #We oversize the pupil to what we'll call the "simulation size"
-        self.sim.simSize = int(self.sim.pupilSize 
+        self.sim.simSize = int(self.sim.pupilSize
                 + 2*numpy.round(self.sim.simOversize*self.sim.pupilSize))
         self.sim.simPad = int(numpy.round(self.sim.simOversize*self.sim.pupilSize))
 
@@ -136,11 +136,11 @@ class Configurator(object):
                 dh = numpy.array([  -1*self.lgss[gs].elongationDepth/2.,
                                     self.lgss[gs].elongationDepth/2.])
                 H = self.wfss[gs].GSHeight
-                theta_n = abs(max(pos) - (dh*maxLaunch)/(H*(H+dh))*
+                theta_n = (max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         (3600*180/numpy.pi)).max()
-                pos+=theta_n         
-            gsPos.append(pos)
-               
+                pos+=theta_n
+            gsPos.append(abs(numpy.array(pos)))
+
         for sci in range(self.sim.nSci):
             gsPos.append(self.scis[sci].position)
 
@@ -149,11 +149,11 @@ class Configurator(object):
         else:
             maxGSPos = 0
 
-        self.sim.scrnSize = numpy.ceil(
-                2*self.sim.pxlScale*self.atmos.scrnHeights.max()
-                *maxGSPos*numpy.pi/(3600.*180) 
+        self.sim.scrnSize = 2*numpy.ceil(
+                self.sim.pxlScale*self.atmos.scrnHeights.max()
+                *abs(maxGSPos)*numpy.pi/(3600.*180)
                 )+self.sim.simSize
-        
+
         #Make scrnSize even
         if self.sim.scrnSize%2!=0:
             self.sim.scrnSize+=1
@@ -169,7 +169,7 @@ class Configurator(object):
                 break
         if wfsPhys:
             self.sim.scrnSize*=2
-            
+
         #If any wfs exposure times set to None, set to the sim loopTime
         for wfs in self.wfss:
             if not wfs.exposureTime:
@@ -278,7 +278,7 @@ class SimConfig(ConfigObj):
 
     Required:
         =============   ===================
-        **Parameter**   **Description** 
+        **Parameter**   **Description**
         -------------   -------------------
         ``pupilSize``   int: Number of phase points across the simulation pupil
         ``nIters``      int: Number of iteration to run simulation
@@ -290,49 +290,55 @@ class SimConfig(ConfigObj):
         ==================  =================================   ===============
         **Parameter**       **Description**                         **Default**
         ------------------  ---------------------------------   ---------------
-        ``nGS``             int: Number of Guide Stars and 
+        ``nGS``             int: Number of Guide Stars and
                             WFS                                 ``0``
         ``nDM``             int: Number of deformable Mirrors   ``0``
         ``nSci``            int: Number of Science Cameras      ``0``
-        ``reconstructor``   str: name of reconstructor 
-                            class to use. See 
+        ``reconstructor``   str: name of reconstructor
+                            class to use. See
                             ``reconstructor`` module
                             for available reconstructors.       ``"MVM"``
-        ``simName``         str: directory name to store 
+        ``simName``         str: directory name to store
                             simulation data                     ``None``
-        ``wfsMP``           bool: Each WFS uses its own 
+        ``wfsMP``           bool: Each WFS uses its own
                             process                             ``False``
-        ``verbosity``       int: debug output for the 
-                            simulation ranging from 0 
-                            (no-ouput) to 3 (all debug 
+        ``verbosity``       int: debug output for the
+                            simulation ranging from 0
+                            (no-ouput) to 3 (all debug
                             output)                             ``2``
-        ``logfile``         str: name of file to store 
+        ``logfile``         str: name of file to store
                             logging data,                       ``None``
         ``learnIters``      int: Number of `learn` iterations
                             for Learn & Apply reconstructor     ``0``
-        ``learnAtmos``      str: if ``random``, then 
-                            random phase screens used for 
+        ``learnAtmos``      str: if ``random``, then
+                            random phase screens used for
                             `learn`                             ``random``
-        ``simOversize``     float: The fraction to pad the 
-                            pupil size with to reduce edge 
+        ``simOversize``     float: The fraction to pad the
+                            pupil size with to reduce edge
                             effects                             ``0.1``
+
+
         ==================  =================================   ===============
 
     Data Saving (all default to False):
         ======================      ===================
-        **Parameter**               **Description** 
+        **Parameter**               **Description**
         ----------------------      -------------------
         ``saveSlopes``              Save all WFS slopes. Accessed from sim with
                                     ``sim.allSlopes``
         ``saveDmCommands``          Saves all DM Commands. Accessed from sim
                                     with ``sim.allDmCommands``
         ``saveWfsFrames``           Saves all WFS pixel data. Saves to disk a
-                                    after every frame to avoid using too much 
+                                    after every frame to avoid using too much
                                     memory
-        ``saveStrehl``              Saves the science camera Strehl Ratio. 
+        ``saveStrehl``              Saves the science camera Strehl Ratio.
                                     Accessed from sim with ``sim.longStrehl``
                                     and ``sim.instStrehl``
+        ``saveWfe``                 Saves the science camera wave front error.
+                                    Accessed from sim with ``sim.WFE``.
         ``saveSciPsf``              Saves the science PSF.
+        ``saveInstPsf``             Saves the instantenous science PSF.
+        ``saveInstScieField``       Saves the instantaneous electric field at focal plane.
         ``saveSciRes``              Save Science residual phase
         ======================      ===================
 
@@ -363,13 +369,15 @@ class SimConfig(ConfigObj):
                                 ("saveStrehl", False),
                                 ("saveWfsFrames", False),
                                 ("saveSciPsf", False),
-                                ("saveWFE", False),
+                                ("saveInstPsf", False),
+                                ("saveInstScieField", False),
+                                ("saveWfe", False),
                                 ("saveSciRes", False),
                                 ("wfsMP", False),
                                 ("verbosity", 2),
                                 ("logfile", None),
                                 ("learnIters", 0),
-                                ("learnAtmos", "random"), 
+                                ("learnAtmos", "random"),
                                 ("simOversize", 0.1),
                         ]
 
@@ -382,14 +390,14 @@ class AtmosConfig(ConfigObj):
 
     Required:
         ==================      ===================
-        **Parameter**           **Description** 
+        **Parameter**           **Description**
         ------------------      -------------------
         ``scrnNo``              int: Number of turbulence layers
         ``scrnHeights``         list, int: Phase screen heights in metres
         ``scrnStrength``        list, float: Relative layer scrnStrength
         ``windDirs``            list, float: Wind directions in degrees.
         ``windSpeeds``          list, float: Wind velocities in m/s
-        ``r0``                  float: integrated  seeing strength 
+        ``r0``                  float: integrated  seeing strength
                                 (metres at 550nm)
         ``wholeScrnSize``       int: Size of the phase screens to store in the
                                 ``atmosphere`` object
@@ -400,7 +408,7 @@ class AtmosConfig(ConfigObj):
         **Parameter**       **Description**                     **Default**
         ------------------  ---------------------------------   -----------
         ``scrnNames``       list, string: filenames of phase
-                            if loading from fits files. If 
+                            if loading from fits files. If
                             ``None`` will make new screens.     ``None``
         ``subHarmonics``    bool: Use sub-harmonic screen
                             generation algorithm for better
@@ -409,10 +417,10 @@ class AtmosConfig(ConfigObj):
         ``L0``              list, float: Outer scale of each
                             layer. Kolmogorov turbulence if
                             ``None``.                           ``None``
-        ``randomScrns``     bool: Use a random set of phase 
+        ``randomScrns``     bool: Use a random set of phase
                             phase screens for each loop
                             iteration?                          ``False``
-        ==================  =================================   ===========    
+        ==================  =================================   ===========
     """
 
     def __init__(self):
@@ -442,7 +450,7 @@ class WfsConfig(ConfigObj):
 
     Required:
         ==================      ===================
-        **Parameter**           **Description** 
+        **Parameter**           **Description**
         ------------------      -------------------
         ``GSPosition``          tuple: position of GS on-sky in arc-secs
         ``wavelength``          float: wavelength of GS light in metres
@@ -458,8 +466,18 @@ class WfsConfig(ConfigObj):
         ------------------- ---------------------------------- -----------
         ``type``            string: Which WFS object to load
                             from WFS.py?                        ``ShackHartmann``
-        ``propagationMode`` string: Mode of light propogation 
-                            from GS. Can be "physical" or 
+        ``GSMag``           float: Apparent magnitude of the
+                            guide star                         ``0``
+        ``photonNoise``     bool: Include photon (shot) noise. ``False``
+        ``eReadNoise``      float: Electrons of read noise     ``0``
+        ``throughput``      float: Throughput of the entire
+                            optical and electronic system
+                            from guide star photons to
+                            recorded WFS detector counts.
+                            Includes atmospheric effects, the
+                            optical train and detector gain.   ``1.``
+        ``propagationMode`` string: Mode of light propogation
+                            from GS. Can be "physical" or
                             "geometric"\**.                     ``"geometric"``
         ``subapFieldStop``  bool: if True, add a field stop to
                             the wfs to prevent spots wandering
@@ -472,38 +490,40 @@ class WfsConfig(ConfigObj):
                             from WFS slopes before
                             reconstruction.\**                  ``False``
         ``fftOversamp``     int: Multiplied by the number of
-                            of phase points required for FOV 
+                            of phase points required for FOV
                             to increase fidelity from FFT.      ``3``
         ``GSHeight``        float: Height of GS beacon. ``0``
                             if at infinity.                     ``0``
-        ``subapThreshold``  float: How full should subap be 
+        ``subapThreshold``  float: How full should subap be
                             to be used for wavefront sensing?   ``0.5``
         ``lgs``             bool: is WFS an LGS?                ``False``
-        ``centMethod``      string: Method used for 
-                            Centroiding. Can be 
+        ``centMethod``      string: Method used for
+                            Centroiding. Can be
                             ``centreOfGravity``,
-                            ``brightestPxl``, or 
+                            ``brightestPxl``, or
                             ``correlation``.\**                 ``centreOfGravity``
         ``referenceImage``  array: Reference images used in
                             the correlation centroider. Full
                             image plane image, each subap has
                             a separate reference image          ``None``
-        ``angleEquivNoise`` float: width of gaussian noise 
+        ``angleEquivNoise`` float: width of gaussian noise
                             added to slopes measurements
                             in arc-secs                         ``0``
         ``centThreshold``   float: Centroiding threshold as
                             a fraction of the max subap
                             value.\**                           ``0.1``
-        ``exposureTime``    float: Exposure time of the WFS 
-                            camera - must be higher than 
-                            loopTime. If None, will be 
+        ``exposureTime``    float: Exposure time of the WFS
+                            camera - must be higher than
+                            loopTime. If None, will be
                             set to loopTime.                    ``None``
-        ``fftwThreads``     int: number of threads for fftw 
-                            to use. If ``0``, will use 
+        ``wvlBandWidth``    float: Width of wavelength
+                            band sent to WFS in nm              ``100``
+        ``fftwThreads``     int: number of threads for fftw
+                            to use. If ``0``, will use
                             system processor number.           ``1``
-        ``fftwFlag``        str: Flag to pass to FFTW 
+        ``fftwFlag``        str: Flag to pass to FFTW
                             when preparing plan.               ``FFTW_PATIENT``
-        =================== ================================== =========== 
+        =================== ================================== ===========
 
 
         """
@@ -538,6 +558,11 @@ class WfsConfig(ConfigObj):
                                 ("type", "ShackHartmann"),
                                 ("exposureTime", None),
                                 ("referenceImage", None),
+                                ("throughput", 1.),
+                                ("eReadNoise", 0),
+                                ("photonNoise", False),
+                                ("GSMag", 0.0),
+                                ("wvlBandWidth", 100.),
                             ]
         self.initParams()
 
@@ -548,7 +573,7 @@ class TelConfig(ConfigObj):
 
     Required:
         =============   ===================
-        **Parameter**   **Description** 
+        **Parameter**   **Description**
         -------------   -------------------
         ``telDiam``     float: Diameter of telescope pupil in metres
         =============   ===================
@@ -559,9 +584,9 @@ class TelConfig(ConfigObj):
         ------------------  ---------------------------------   -----------
         ``obsDiam``         float: Diameter of central
                             obscuration                         ``0``
-        ``mask``            str: Shape of pupil (only 
+        ``mask``            str: Shape of pupil (only
                             accepts ``circle`` currently)       ``circle``
-        ==================  =================================   ===========  
+        ==================  =================================   ===========
 
     """
     def __init__(self):
@@ -576,7 +601,7 @@ class TelConfig(ConfigObj):
                                 ]
 
         self.initParams()
-    
+
 
 class LgsConfig(ConfigObj):
     """
@@ -588,35 +613,35 @@ class LgsConfig(ConfigObj):
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
         ``uplink``           bool: Include LGS uplink effects    ``False``
-        ``pupilDiam``        float: Diameter of LGS launch 
+        ``pupilDiam``        float: Diameter of LGS launch
                              aperture in metres.                 ``0.3``
-        ``wavelength``       float: Wavelength of laser beam 
+        ``wavelength``       float: Wavelength of laser beam
                              in metres                           ``600e-9``
-        ``propagationMode``  str: Mode of light propogation 
-                             from GS. Can be "physical" or 
+        ``propagationMode``  str: Mode of light propogation
+                             from GS. Can be "physical" or
                              "geometric".                        ``"phsyical"``
-        ``height``           float: Height to use physical 
-                             propogation of LGS (does not 
+        ``height``           float: Height to use physical
+                             propogation of LGS (does not
                              effect cone-effect) in metres       ``90000``
-        ``elongationDepth``  float: 
+        ``elongationDepth``  float:
                              Depth of LGS elongation in metres   ``0``
         ``elongationLayers`` int:
-                             Number of layers to simulate for 
+                             Number of layers to simulate for
                              elongation.                         ``10``
-        ``launchPosition``   tuple: The launch position of 
+        ``launchPosition``   tuple: The launch position of
                              the LGS in units of the pupil
-                             radii, where ``(0,0)`` is the 
-                             centre launched case, and 
+                             radii, where ``(0,0)`` is the
+                             centre launched case, and
                              ``(1,0)`` is side-launched.          ``(0,0)``
-        ``fftwThreads``      int: number of threads for fftw 
-                             to use. If ``0``, will use 
+        ``fftwThreads``      int: number of threads for fftw
+                             to use. If ``0``, will use
                              system processor number.             ``1``
-        ``fftwFlag``         str: Flag to pass to FFTW 
+        ``fftwFlag``         str: Flag to pass to FFTW
                              when preparing plan.                 ``FFTW_PATIENT``
         ``naProfile``        list: The relative sodium layer
                              strength for each elongation
                              layer. If None, all equal.          ``None``
-        ==================== =================================   ===========  
+        ==================== =================================   ===========
 
     """
     def __init__(self, N):
@@ -649,17 +674,17 @@ class DmConfig(ConfigObj):
 
     Required:
         ===================     ===============================================
-        **Parameter**           **Description** 
+        **Parameter**           **Description**
         -------------------     -----------------------------------------------
-        ``type``                string: Type of DM. This must the name of a 
+        ``type``                string: Type of DM. This must the name of a
                                 class in the ``DM`` module.
-        ``nxActuators``         int: Number independent DM shapes. e.g., for 
+        ``nxActuators``         int: Number independent DM shapes. e.g., for
                                 stack-array DMs this is number of actuators in
-                                one dimension, 
-                                for Zernike DMs this is number of Zernike 
+                                one dimension,
+                                for Zernike DMs this is number of Zernike
                                 modes.
-        ``gain``                float: The loop gain for the DM.\**    
-        ``svdConditioning``     float: The conditioning parameter used in the 
+        ``gain``                float: The loop gain for the DM.\**
+        ``svdConditioning``     float: The conditioning parameter used in the
                                 pseudo inverse of the interaction matrix. This
                                 is performed by `numpy.linalg.pinv <http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.pinv.html>`_.
         ===================     ===============================================
@@ -679,9 +704,9 @@ class DmConfig(ConfigObj):
                              including piezo actuators and
                              rotation.                           ``1``
         ``gaussWidth``       float: Width of Guass DM actuator
-                             as a fraction of the 
+                             as a fraction of the
                              inter-actuator spacing.             ``0.5``
-        ==================== =================================   ===========  
+        ==================== =================================   ===========
         """
 
 
@@ -697,7 +722,7 @@ class DmConfig(ConfigObj):
                                 ]
 
 
-        self.optionalParams = [ 
+        self.optionalParams = [
                                 ("closed", True),
                                 ("iMatValue", 10),
                                 ("wfs", None),
@@ -714,13 +739,13 @@ class SciConfig(ConfigObj):
 
     Required:
         ==================      ============================================
-        **Parameter**           **Description** 
+        **Parameter**           **Description**
         ------------------      --------------------------------------------
         ``position``            tuple: The position of the science camera
                                 in the field in arc-seconds
         ``FOV``                 float: The field of fiew of the science
-                                detector in arc-seconds 
-        ``wavelength``          float: The wavelength of the science 
+                                detector in arc-seconds
+        ``wavelength``          float: The wavelength of the science
                                 detector light
         ``pxls``                int: Number of pixels in the science detector
         ==================      ============================================
@@ -730,14 +755,14 @@ class SciConfig(ConfigObj):
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
         ``fftOversamp``      int: Multiplied by the number of
-                             of phase points required for FOV 
+                             of phase points required for FOV
                              to increase fidelity from FFT.      ``2``
-        ``fftwThreads``      int: number of threads for fftw 
-                             to use. If ``0``, will use 
+        ``fftwThreads``      int: number of threads for fftw
+                             to use. If ``0``, will use
                              system processor number.             ``1``
-        ``fftwFlag``         str: Flag to pass to FFTW 
-                             when preparing plan.                 ``FFTW_MEASURE``            
-        ==================== =================================   ===========   
+        ``fftwFlag``         str: Flag to pass to FFTW
+                             when preparing plan.                 ``FFTW_MEASURE``
+        ==================== =================================   ===========
 
     """
     def __init__(self, N):
@@ -770,10 +795,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-
-
-
-
-
-
-

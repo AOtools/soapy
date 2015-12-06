@@ -135,7 +135,8 @@ class Sim(object):
 
         self.config = confParse.Configurator(self.configFile)
         self.config.loadSimParams()
-        logger.info("Loaded configuration file successfully!")
+        logger.statusMessage(
+                0, 1,"Loaded configuration file successfully!" )
 
     def setLoggingLevel(self, level):
         """
@@ -487,23 +488,76 @@ class Sim(object):
         """
         t = time.time()
 
+        self.sciImgNo +=1
         for sci in xrange( self.config.sim.nSci ):
-            self.sciImgs[sci] +=self.sciCams[sci].frame(self.scrns,dmShape)
-            self.sciImgNo +=1
+            self.sciImgs[sci] += self.sciCams[sci].frame(self.scrns,dmShape)
 
-            self.sciCams[sci].longExpStrehl = self.sciImgs[sci].max()/(
-                                    self.sciImgNo*self.sciCams[sci].psfMax)
+            # Normalise long exposure psf
+            #self.sciImgs[sci] /= self.sciImgs[sci].sum()
+            self.sciCams[sci].longExpStrehl = (
+                    self.sciImgs[sci].max()/
+                    self.sciImgs[sci].sum()/
+                    self.sciCams[sci].psfMax)
 
         self.Tsci +=time.time()-t
 
+    def loopFrame(self):
+        """
+        Runs a single from of the entire AO system.
+
+        Moves the atmosphere, runs the WFSs, finds the corrective DM shape and finally runs the science cameras. This can be called over and over to form the "loop"
+        """
+        # Get next phase screens
+        t = time.time()
+        self.scrns = self.atmos.moveScrns()
+        self.Tatmos = time.time()-t
+
+        # Reset correction
+        self.closedCorrection[:] = 0
+        self.openCorrection[:] = 0
+
+        # Run Loop...
+        ########################################
+
+        # Get dmCommands from reconstructor
+        if self.config.sim.nDM:
+            self.dmCommands[:] = self.recon.reconstruct(self.slopes)
+
+        # Get dmShape from closed loop DMs
+        self.closedCorrection += self.runDM(
+                self.dmCommands, closed=True)
+
+        # Run WFS, with closed loop DM shape applied
+        self.slopes = self.runWfs(  dmShape=self.closedCorrection,
+                                    loopIter=self.iters)
+
+        # Get DM shape for open loop DMs, add to closed loop DM shape
+        self.openCorrection += self.runDM(  self.dmCommands,
+                                            closed=False)
+
+        # Pass whole combined DM shapes to science target
+        self.runSciCams(
+                    self.openCorrection+self.closedCorrection)
+
+        # Save Data
+        self.storeData(self.iters)
+
+
+        # logger.statusMessage(i, self.config.sim.nIters,
+        #                    "AO Loop")
+
+        self.printOutput(self.iters, strehl=True)
+
+        self.addToGuiQueue()
+
     def aoloop(self):
         """
-        Main AO Loop - loop open
+        Main AO Loop
 
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters.
         """
 
-        self.iters=1
+        self.iters=0
         self.correct=1
         self.go = True
 
@@ -515,51 +569,9 @@ class Sim(object):
 
         try:
             for i in xrange(self.config.sim.nIters):
+                self.iters=i
                 if self.go:
-
-                    # Get next phase screens
-                    t = time.time()
-                    self.scrns = self.atmos.moveScrns()
-                    self.Tatmos = time.time()-t
-
-                    # Reset correction
-                    self.closedCorrection[:] = 0
-                    self.openCorrection[:] = 0
-
-                    # Run Loop...
-                    ########################################
-
-                    # Get dmCommands from reconstructor
-                    if self.config.sim.nDM:
-                        self.dmCommands[:] = self.recon.reconstruct(self.slopes)
-
-                    # Get dmShape from closed loop DMs
-                    self.closedCorrection += self.runDM(
-                            self.dmCommands, closed=True)
-
-                    # Run WFS, with closed loop DM shape applied
-                    self.slopes = self.runWfs(  dmShape=self.closedCorrection,
-                                                loopIter=i)
-
-                    # Get DM shape for open loop DMs, add to closed loop DM shape
-                    self.openCorrection += self.runDM(  self.dmCommands,
-                                                        closed=False)
-
-                    # Pass whole combined DM shapes to science target
-                    self.runSciCams(
-                                self.openCorrection+self.closedCorrection)
-
-                    # Save Data
-                    self.storeData(i)
-
-                    self.iters = i
-
-                    # logger.statusMessage(i, self.config.sim.nIters,
-                    #                    "AO Loop")
-
-                    self.printOutput(i, strehl=True)
-
-                    self.addToGuiQueue()
+                    self.loopFrame()
                 else:
                     break
         except KeyboardInterrupt:
@@ -597,10 +609,11 @@ class Sim(object):
 
         if self.config.sim.simName!=None:
             self.path = self.config.sim.simName +"/"+self.timeStamp
+            # make sure a different directory used by sleeping
+            time.sleep(1)
             try:
-                os.mkdir( self.path )
+                os.mkdir(self.path)
             except OSError:
-
                 os.mkdir(self.config.sim.simName)
                 os.mkdir(self.path)
 
@@ -608,14 +621,19 @@ class Sim(object):
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
 
-            shutil.copyfile( self.configFile, self.path+"/conf.py" )
+            shutil.copyfile(self.configFile, self.path+"/conf.py" )
 
-        #Init Strehl Saving
+        # Init Strehl Saving
         if self.config.sim.nSci>0:
             self.instStrehl = numpy.zeros(
                     (self.config.sim.nSci, self.config.sim.nIters) )
             self.longStrehl = numpy.zeros(
                     (self.config.sim.nSci, self.config.sim.nIters) )
+
+            # Init science WFE saving
+            self.WFE = numpy.zeros(
+                        (self.config.sim.nSci, self.config.sim.nIters)
+                        )
 
         #Init science residual phase saving
         self.sciPhase = []
@@ -626,10 +644,7 @@ class Sim(object):
                             (self.config.sim.nIters, self.config.sim.simSize,
                             self.config.sim.simSize)))
 
-        #Init science WFE saving
-        self.WFE = numpy.zeros(
-                    (self.config.sim.nSci, self.config.sim.nIters)
-                    )
+
 
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
@@ -662,6 +677,22 @@ class Sim(object):
         else:
             self.lgsPsfs = None
 
+        #Init Instantaneous PSF saving
+        if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
+            self.sciImgsInst = {}
+
+            for sci in xrange(self.config.sim.nSci):
+                self.sciImgsInst[sci] = numpy.zeros([self.config.sim.nIters,self.config.scis[sci].pxls,self.config.scis[sci].pxls])
+
+
+        #Init Instantaneous electric field
+        if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
+            self.scieFieldInst = {}
+
+            for sci in xrange(self.config.sim.nSci):
+                self.scieFieldInst[sci] = numpy.zeros(([self.config.sim.nIters,self.config.scis[sci].pxls,self.config.scis[sci].pxls]), dtype=complex )
+
+
     def storeData(self, i):
         """
         Stores data from each frame in an appropriate data structure.
@@ -691,9 +722,13 @@ class Sim(object):
             for sci in xrange(self.config.sim.nSci):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
-                res = self.sciCams[sci].residual*self.sciCams[sci].r0Scale
-                self.WFE[sci,i] =  numpy.sqrt(
-                        ((res-res.mean())**2).sum()/self.mask.sum())
+
+                # Record WFE residual
+                res = self.sciCams[sci].residual
+                # Remove piston first
+                res -= res.sum()/self.mask.sum()
+                res *= self.mask
+                self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
 
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
@@ -707,6 +742,16 @@ class Sim(object):
                         self.wfss[wfs].wfsDetectorPlane,
                         header=self.config.sim.saveHeader)
 
+        #Save Instantaneous PSF
+        if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
+            for sci in xrange(self.config.sim.nSci):
+                self.sciImgsInst[sci][i,:,:] = self.sciCams[sci].focalPlane#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection)
+
+
+        #Save Instantaneous electric field
+        if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
+            for sci in xrange(self.config.sim.nSci):
+                self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection,e_field=True)
 
     def saveData(self):
         """
@@ -733,7 +778,7 @@ class Sim(object):
                         self.path+"/lgsPsf.fits", self.lgsPsfs,
                         header=self.config.sim.saveHeader, clobber=True)
 
-            if self.config.sim.saveWFE:
+            if self.config.sim.saveWfe:
                 fits.writeto(
                         self.path+"/WFE.fits", self.WFE,
                         header=self.config.sim.saveHeader, clobber=True)
@@ -759,6 +804,29 @@ class Sim(object):
                                         self.sciImgs[i],
                                         header=self.config.sim.saveHeader,
                                         clobber=True )
+
+            if self.config.sim.saveInstPsf:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/sciPsfInst_%02d.fits"%i,
+                                 self.sciImgsInst[i],
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+            if self.config.sim.saveInstScieField:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/scieFieldInst_%02d_real.fits"%i,
+                                 self.scieFieldInst[i].real,
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+            if self.config.sim.saveInstScieField:
+                for i in xrange(self.config.sim.nSci):
+                    fits.writeto(self.path+"/scieFieldInst_%02d_imag.fits"%i,
+                                 self.scieFieldInst[i].imag,
+                                 header=self.config.sim.saveHeader,
+                                 clobber=True )
+
+
 
     def makeSaveHeader(self):
         """

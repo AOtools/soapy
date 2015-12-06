@@ -19,7 +19,7 @@
 A module to provide a common logging interface for all simulation code.
 
 Contains a ``Logger`` object, which can either, print information, save to file
-or both. The verbosity can also be adjusted between 0 and 3, where all is logged when verbosity is 3, debugging and warning information is logged when verbosity is 2, warnings logged when verbosity is 1 and nothing is logged when verbosity is 0. 
+or both. The verbosity can also be adjusted between 0 and 3, where all is logged when verbosity is 3, debugging and warning information is logged when verbosity is 2, warnings logged when verbosity is 1 and nothing is logged when verbosity is 0.
 """
 import inspect
 import sys
@@ -120,7 +120,7 @@ def info(message):
 	Args:
 		message (string): The message to log
 	"""
-	
+
 	_printMessage(message, 2)
 
 def debug(message):
@@ -140,4 +140,3 @@ def warning(message):
 		message (string): The message to log
 	"""
 	_printMessage(message,1)
-
