@@ -387,7 +387,7 @@ class WFS(object):
 #############################################################
 
 #############################################################
-#Phase stacking routines for a WFS frame
+# Phase stacking routines for a WFS frame
 
     def getMetaPupilPos(self, height, GSPos=None):
         '''
@@ -402,12 +402,12 @@ class WFS(object):
         Returns:
             ndarray: The position of the centre of the metapupil in metres
         '''
-        #if no GSPos given, use system pos and convert into radians
+        # if no GSPos given, use system pos and convert into radians
         if not numpy.any(GSPos):
             GSPos = (   numpy.array(self.wfsConfig.GSPosition)
                         *numpy.pi/(3600.0*180.0) )
 
-        #Position of centre of GS metapupil off axis at required height
+        # Position of centre of GS metapupil off axis at required height
         GSCent = (numpy.tan(GSPos) * height)
 
         return GSCent
@@ -430,11 +430,11 @@ class WFS(object):
             ndarray: The meta pupil at the specified height
         '''
 
-        #If no size of metapupil given, use system pupil size
+        # If no size of metapupil given, use system pupil size
         if not simSize:
             simSize = self.simConfig.simSize
 
-        #If the radius is 0, then 0 phase is returned
+        # If the radius is 0, then 0 phase is returned
         if radius==0:
             return numpy.zeros((simSize, simSize))
 
@@ -463,13 +463,7 @@ class WFS(object):
                     "GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
 
-
-        # if (x1.is_integer() and x2.is_integer()
-        #         and y1.is_integer() and y2.is_integer()):
-        #     #Old, simple integer based solution
-        #     metaPupil= scrn[ x1:x2, y1:y2]
-        # else:
-        #If points are float, must interpolate. -1 as linspace goes to number
+        # Must interpolate. -1 as linspace goes to number
         xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
         yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
         interpObj = interp2d(
@@ -545,11 +539,9 @@ class WFS(object):
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
                             radius=radii[i], GSPos=GSPos)
-                            # pupilSize=2*self.simConfig.pupilSize)
             else:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            #pupilSize=2*self.simConfig.pupilSize,
                             GSPos=GSPos)
 
             #Add add phase from this layer
@@ -561,15 +553,6 @@ class WFS(object):
                     self.EField, self.wfsConfig.wavelength,
                     delta, delta, ht
                     )
-
-        # Multiply EField by aperture
-        # self.EField[:] *= self.mask
-        # self.EField[:] = self.physEField[
-        #                    self.simConfig.pupilSize/2.:
-        #                    3*self.simConfig.pupilSize/2.,
-        #                    self.simConfig.pupilSize/2.:
-        #                    3*self.simConfig.pupilSize/2.] * self.mask
-
 ######################################################
 
 
