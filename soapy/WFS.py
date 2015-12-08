@@ -181,7 +181,9 @@ class WFS(object):
         # For each scrn height they will be edited per
         self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
 
-
+        # This is the size of the phase to cut out
+        # Usually, it will be ``simSize``, but WFSs may require something different
+        self.phaseSize = self.simConfig.simSize
 
     def initFFTs(self):
         pass
@@ -196,8 +198,8 @@ class WFS(object):
         and the E-Field across the WFS
         """
 
-        self.wfsPhase = numpy.zeros([self.simConfig.simSize]*2, dtype=DTYPE)
-        self.EField = numpy.zeros([self.simConfig.simSize]*2, dtype=CDTYPE)
+        self.wfsPhase = numpy.zeros([self.phaseSize]*2, dtype=DTYPE)
+        self.EField = numpy.zeros([self.phaseSize]*2, dtype=CDTYPE)
 
     def initLGS(self):
         """
@@ -237,19 +239,19 @@ class WFS(object):
                 self.elong = self.lgsConfig.elongationDepth
                 self.elongLayers = self.lgsConfig.elongationLayers
 
-                #Get Heights of elong layers
+                # Get Heights of elong layers
                 self.elongHeights = numpy.linspace(
                     self.wfsConfig.GSHeight-self.elong/2.,
                     self.wfsConfig.GSHeight+self.elong/2.,
                     self.elongLayers
                     )
 
-                #Calculate the zernikes to add
+                # Calculate the zernikes to add
                 self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
 
-                #Calculate the radii of the metapupii at for different elong
-                #Layer heights
-                #Also calculate the required phase addition for each layer
+                # Calculate the radii of the metapupii at for different elong
+                # Layer heights
+                # Also calculate the required phase addition for each layer
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
@@ -261,7 +263,7 @@ class WFS(object):
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
 
-            #If GS at infinity cant do elongation
+            # If GS at infinity cant do elongation
             elif (self.wfsConfig.GSHeight==0 and
                     self.lgsConfig.elongationDepth!=0):
                 logger.warning("Not able to implement LGS Elongation as GS at infinity")
@@ -441,7 +443,8 @@ class WFS(object):
 
         logger.debug("GSCent {}".format(GSCent))
         scrnX, scrnY = scrn.shape
-        #If the GS is not at infinity, take into account cone effect
+
+        # If the GS is not at infinity, take into account cone effect
         if self.wfsConfig.GSHeight!=0:
             fact = float(2*radius)/self.simConfig.pupilSize
         else:
@@ -461,17 +464,17 @@ class WFS(object):
                             GSCent, scrn.shape, simSize, height) )
 
 
-        if (x1.is_integer() and x2.is_integer()
-                and y1.is_integer() and y2.is_integer()):
-            #Old, simple integer based solution
-            metaPupil= scrn[ x1:x2, y1:y2]
-        else:
-            #If points are float, must interpolate. -1 as linspace goes to number
-            xCoords = numpy.linspace(x1, x2-1, simSize)
-            yCoords = numpy.linspace(y1, y2-1, simSize)
-            interpObj = interp2d(
-                    self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)
+        # if (x1.is_integer() and x2.is_integer()
+        #         and y1.is_integer() and y2.is_integer()):
+        #     #Old, simple integer based solution
+        #     metaPupil= scrn[ x1:x2, y1:y2]
+        # else:
+        #If points are float, must interpolate. -1 as linspace goes to number
+        xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
+        yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
+        interpObj = interp2d(
+                self.scrnCoords, self.scrnCoords, scrn, copy=False)
+        metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil
 
@@ -645,7 +648,7 @@ class WFS(object):
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.phs2Rad
-        
+
         #If LGS elongation simulated
         if self.wfsConfig.lgs and self.elong!=0:
             for i in xrange(self.elongLayers):
@@ -663,7 +666,8 @@ class WFS(object):
             #If imat frame, dont want to make it off-axis
             if iMatFrame:
                 try:
-                    self.EField[:] = numpy.exp(1j*scrns[0]*self.phs2Rad)
+                    iMatPhase = aoSimLib.zoom(scrns[0], self.phaseSize, order=1)
+                    self.EField[:] = numpy.exp(1j*iMatPhase*self.phs2Rad)
                 except ValueError:
                     raise ValueError("If iMat Frame, scrn must be ``simSize``")
             else:
@@ -671,7 +675,9 @@ class WFS(object):
 
             self.uncorrectedPhase = self.wfsPhase.copy()/self.phs2Rad
             if numpy.any(correction):
-                self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
+                correctionPhase = aoSimLib.zoom(
+                        correction, self.phaseSize, order=1)
+                self.EField *= numpy.exp(-1j*correctionPhase*self.phs2Rad)
             self.calcFocalPlane()
 
         if read:
@@ -772,6 +778,7 @@ class ShackHartmann(WFS):
                 self.wfsConfig.nxSubaps*self.subapFOVSpacing*
                 (float(self.simConfig.simSize)/self.simConfig.pupilSize)
                 ))
+        self.phaseSize = self.scaledEFieldSize
 
         # Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
@@ -920,22 +927,22 @@ class ShackHartmann(WFS):
         only 1 pixel
         """
         if not self.wfsConfig.pxlsPerSubap%2:
-            #If pxlsPerSubap is even
-            #Angle we need to correct for half a pixel
+            # If pxlsPerSubap is even
+            # Angle we need to correct for half a pixel
             theta = self.SUBAP_OVERSIZE*self.subapFOVrad/ (
                     2*self.subapFFTPadding)
 
-            #Magnitude of tilt required to get that angle
-            A = theta*self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
+            # Magnitude of tilt required to get that angle
+            A = theta * self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
 
-            #Create tilt arrays and apply magnitude
-            coords = numpy.linspace(-1,1,self.subapFOVSpacing)
+            # Create tilt arrays and apply magnitude
+            coords = numpy.linspace(-1, 1, self.subapFOVSpacing)
             X,Y = numpy.meshgrid(coords,coords)
 
-            self.tiltFix = -1*A*(X+Y)
+            self.tiltFix = -1 * A * (X+Y)
 
         else:
-            self.tiltFix = numpy.zeros( (self.subapFOVSpacing,)*2)
+            self.tiltFix = numpy.zeros((self.subapFOVSpacing,)*2)
 
     def oneSubap(self, phs):
         '''
@@ -992,19 +999,19 @@ class ShackHartmann(WFS):
         '''
 
         #Scale phase (EField) to correct size for FOV (plus a bit with padding)
-        self.scaledEField = aoSimLib.zoom(
-                self.EField, self.scaledEFieldSize)*self.scaledMask
+        # self.scaledEField = aoSimLib.zoom(
+        #         self.EField, self.scaledEFieldSize)*self.scaledMask
 
         #Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.)
                 - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
-        self.scaledEField = self.scaledEField[coord:-coord, coord:-coord]
+        self.cropEField = self.EField[coord:-coord, coord:-coord]
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
             x,y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
-            self.subapArrays[i] = self.scaledEField[
+            self.subapArrays[i] = self.cropEField[
                                     int(x):
                                     int(x+self.subapFOVSpacing) ,
                                     int(y):
