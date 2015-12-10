@@ -1,3 +1,12 @@
+#0.10
+- Phase is now internally passed around in nano-metres
+- Added both WFS photon and read noise. Still needs comparisons to verify though
+- Added a DM which is interpolated on each frame - better for larger systems
+- Can now access and save the corrected EField (thanks @Robjharris37!)
+- Added testing infrastructure and code coverage checking - also added more tests
+- Data now saved with common FITS header
+
+
 #0.9.1
 - Tutorial added to docs
 
