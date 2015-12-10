@@ -117,7 +117,7 @@ class atmos:
 
         scrnSize = int(round(self.scrnSize))
 
-        # The whole screens will be kept at this value, and then scaled to the 
+        # The whole screens will be kept at this value, and then scaled to the
         # correct r0 before being sent to the simulation
         self.wholeScrnR0 = 1.
 
@@ -320,7 +320,7 @@ class atmos:
 
         return scrns
 
-    def randomScrns(self, subHarmonics=True, L0=30., l0=0.01):
+    def randomScrns(self, subHarmonics=True, l0=0.01):
         """
         Generated random phase screens defined by the atmosphere object parameters.
 
@@ -331,25 +331,17 @@ class atmos:
         scrns = {}
         for i in xrange(self.scrnNo):
             if subHarmonics:
+                print("SubHarmonics!")
                 scrns[i] = ft_sh_phase_screen(
                         self.scrnStrengths[i], self.scrnSize,
-                        (self.pxlScale**(-1.)), L0, l0)
+                        (self.pxlScale**(-1.)), self.atmosConfig.L0[i], l0)
             else:
                 scrns[i] = ft_phase_screen(
                         self.scrnStrengths[i], self.scrnSize,
-                        (self.pxlScale**(-1.)), L0, l0)
+                        (self.pxlScale**(-1.)), self.atmosConfig.L0[i], l0)
 
             # Turn to nm
             scrns[i] *= (500./(2*numpy.pi))
-
-        # pool = Pool(2)
-        # args = []
-        # for i in xrange(self.scrnNo):
-        #     args.append((self.scrnStrengths[i], self.scrnSize,
-        #                 self.pxlScale**(-1.), L0, l0))
-
-
-        # scrns = pool.map(pool_ft_sh_phase_screen, args)
 
         return scrns
 
