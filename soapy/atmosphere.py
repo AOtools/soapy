@@ -331,7 +331,6 @@ class atmos:
         scrns = {}
         for i in xrange(self.scrnNo):
             if subHarmonics:
-                print("SubHarmonics!")
                 scrns[i] = ft_sh_phase_screen(
                         self.scrnStrengths[i], self.scrnSize,
                         (self.pxlScale**(-1.)), self.atmosConfig.L0[i], l0)
