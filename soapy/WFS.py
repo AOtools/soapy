@@ -87,7 +87,7 @@ except ImportError:
         import pyfits as fits
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
-
+import numba
 
 from . import AOFFT, aoSimLib, LGS, logger
 from .tools import centroiders
@@ -388,7 +388,7 @@ class WFS(object):
 
 #############################################################
 #Phase stacking routines for a WFS frame
-
+    @numba.jit
     def getMetaPupilPos(self, height, GSPos=None):
         '''
         Finds the centre of a metapupil at a given height,
@@ -411,7 +411,7 @@ class WFS(object):
         GSCent = (numpy.tan(GSPos) * height)
 
         return GSCent
-
+    @numba.jit
     def getMetaPupilPhase(  self, scrn, height, radius=None, simSize=None,
                             GSPos=None):
         '''
@@ -480,7 +480,7 @@ class WFS(object):
 
         return self.metaPupil
 
-
+    @numba.jit
     def makePhaseGeo(self, radii=None, GSPos=None):
         '''
         Creates the total phase on a wavefront sensor which
@@ -651,7 +651,7 @@ class WFS(object):
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.phs2Rad
-        
+
         #If LGS elongation simulated
         if self.wfsConfig.lgs and self.elong!=0:
             for i in xrange(self.elongLayers):
@@ -992,8 +992,7 @@ class ShackHartmann(WFS):
         if detector:
             self.wfsDetectorPlane[:] = 0
 
-
-
+    @numba.jit
     def calcFocalPlane(self, intensity=1):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
@@ -1038,6 +1037,7 @@ class ShackHartmann(WFS):
             self.FPSubapArrays += intensity*aoSimLib.absSquare(
                     AOFFT.ftShift2d(self.FFT()))
 
+    @numba.jit
     def makeDetectorPlane(self):
         '''
         Scales and bins intensity data onto the detector with a given number of
@@ -1151,6 +1151,7 @@ class ShackHartmann(WFS):
         self.FFT.inputData[:] = self.iFFTFPSubapsArray
         self.FPSubapArrays[:] = AOFFT.ftShift2d(self.FFT()).real
 
+    @numba.jit
     def calculateSlopes(self):
         '''
         Calculates are returns the measured WFS slopes
