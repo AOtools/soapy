@@ -502,6 +502,8 @@ class WFS(object):
 
         self.EField[:] = numpy.exp(1j*self.wfsPhase)
 
+        return self.EField
+
 
     def makePhasePhysical(self, radii=None, GSPos=None):
         '''

@@ -64,7 +64,7 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
                 "SCI FFT Padding less than FOV size... Setting oversampling to %d" % self.sciConfig.fftOversamp)
 
         self.FFT = AOFFT.FFT(
-                inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1), 
+                inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1),
                 mode="pyfftw", dtype="complex64",
                 fftw_FLAGS=(sciConfig.fftwFlag, "FFTW_DESTROY_INPUT"),
                 THREADS=sciConfig.fftwThreads)
@@ -115,48 +115,48 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 #         when offset by a given angle in arcsecs
 #         Arguments:
 #             height (float): Height of the layer in metres
-# 
+#
 #         Returns:
 #             ndarray: The position of the centre of the metapupil in metres
 #         '''
-# 
+#
 #         # Convert positions into radians
 #         sciPos = numpy.array(
 #             self.sciConfig.position) * numpy.pi / (3600.0 * 180.0)
-# 
+#
 #         # Position of centre of GS metapupil off axis at required height
 #         sciCent = numpy.tan(sciPos) * height
-# 
+#
 #         return sciCent
-# 
+#
 #     def getMetaPupilPhase(self, scrn, height):
 #         '''
 #         Returns the phase across a metaPupil at some height
 #         and angular offset in arcsec
-# 
+#
 #         Parameters:
 #             scrn (ndarray): An array representing the phase screen
 #             height (float): Height of the phase screen
-# 
+#
 #         Return:
 #             ndarray: The meta pupil at the specified height
 #         '''
-# 
+#
 #         sciCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
 #         logger.debug("SciCent:({0},{1})".format(sciCent[0], sciCent[1]))
 #         scrnX, scrnY = scrn.shape
-# 
+#
 #         x1 = scrnX / 2. + sciCent[0] - self.simConfig.simSize / 2.0
 #         x2 = scrnX / 2. + sciCent[0] + self.simConfig.simSize / 2.0
 #         y1 = scrnY / 2. + sciCent[1] - self.simConfig.simSize / 2.0
 #         y2 = scrnY / 2. + sciCent[1] + self.simConfig.simSize / 2.0
-# 
+#
 #         logger.debug("Sci scrn Coords: ({0}:{1}, {2}:{3})".format(
 #             x1, x2, y1, y2))
-# 
+#
 #         if x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY:
 #             raise ValueError(  "Sci Position seperation requires larger scrn size")
-# 
+#
 #         if (x1.is_integer() and x2.is_integer()
 #                 and y1.is_integer() and y2.is_integer()):
 #             # Old, simple integer based solution
@@ -168,9 +168,9 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 #             scrnCoords = numpy.arange(scrnX)
 #             interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
 #             metaPupil = interpObj(yCoords, xCoords)
-# 
+#
 #         return metaPupil
-# 
+#
 #     def calcPupilPhase(self):
 #         '''
 #         Returns the total phase on a science Camera which is offset
@@ -180,14 +180,14 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 #         for i in range(len(self.scrns)):
 #             phase = self.getMetaPupilPhase(
 #                 self.scrns[i], self.atmosConfig.scrnHeights[i])
-# 
+#
 #             totalPhase += phase
-# 
+#
 #         self.phase = totalPhase
 
     def calcFocalPlane(self):
         '''
-        Takes the calculated pupil phase, scales for the correct FOV, 
+        Takes the calculated pupil phase, scales for the correct FOV,
         and uses an FFT to transform to the focal plane.
         '''
 
