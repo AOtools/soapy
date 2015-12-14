@@ -2,7 +2,3 @@ numpy
 scipy
 astropy
 pyfftw
-PyQt4
-pyqtgraph
-matplotlib
-ipython

@@ -70,17 +70,12 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
                 THREADS=sciConfig.fftwThreads)
 
         # Get phase scaling factor to get r0 in other wavelength
-        phsWvl = 500e-9
-        self.r0Scale = phsWvl / self.sciConfig.wavelength
-
-        self.calcTiltCorrect()
+        # phsWvl = 500e-9
+        # self.r0Scale = phsWvl / self.sciConfig.wavelength
+        # Convert phase to radians at science wavelength
+        self.phs2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
-        # self.FFT.inputData[:self.FOVPxlNo,:self.FOVPxlNo] \
-        #                                    =(numpy.exp(1j*self.scaledMask)
-        #                                            *self.scaledMask)
-        # fp = abs(AOFFT.ftShift2d(self.FFT()))**2
-        # binFp = aoSimLib.binImgs(fp, self.sciConfig.fftOversamp)
         self.residual = numpy.zeros((self.simConfig.simSize,) * 2)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
@@ -90,10 +85,9 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 
     def calcTiltCorrect(self):
         """
-        Calculates the required tilt to add to avoid  the PSF being centred
+        Calculates the required tilt to add to avoid the PSF being centred
         on one pixel only
         """
-
         # Only required if pxl number is even
         if not self.sciConfig.pxls % 2:
             # Need to correct for half a pixel angle
@@ -192,23 +186,43 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
         '''
 
         # Scaled the padded phase to the right size for the requried FOV
-        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
+        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo)
+
+        # Convert phase deviation to radians
+        phs*=self.phs2Rad
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
         phs = phs[coord:-coord, coord:-coord]
 
-        eField = numpy.exp(1j * (phs + self.tiltFix)) * self.scaledMask
+        eField = numpy.exp(1j * (phs)) * self.scaledMask
 
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField
-        focalPlane = AOFFT.ftShift2d(self.FFT())
+        focalPlane_efield = AOFFT.ftShift2d(self.FFT())
 
-        focalPlane = numpy.abs(focalPlane)**2
+        self.focalPlane_efield = aoSimLib.binImgs(
+            focalPlane_efield, self.sciConfig.fftOversamp)
 
-        self.focalPlane = aoSimLib.binImgs(
-            focalPlane, self.sciConfig.fftOversamp)
+        self.focalPlane = numpy.abs(self.focalPlane_efield.copy())**2
+
+        # Normalise the psf
+        self.focalPlane /= self.focalPlane.sum()
 
     def frame(self, scrns, phaseCorrection=None):
+        """
+        Runs a single science camera frame with one or more phase screens
+
+        Parameters:
+            scrns (ndarray, list, dict): One or more 2-d phase screens. Phase in units of nm.
+            phaseCorrection (ndarray): Correction phase in nm
+
+        Returns:
+            ndarray: Resulting science PSF
+        """
+        # If scrns is not dict or list, assume array and put in list
+        t = type(scrns)
+        if t!=dict and t!=list:
+            scrns = [scrns]
 
         self.scrns = scrns
         # self.calcPupilPhase()
@@ -224,6 +238,6 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
 
-        self.instStrehl = self.focalPlane.max() / self.psfMax
+        self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane

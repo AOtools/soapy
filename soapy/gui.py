@@ -22,8 +22,15 @@ The GUI for the Soapy adaptive optics simulation
 
 import os
 os.environ["QT_API"]="pyqt"
-from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
-from IPython.qt.inprocess import QtInProcessKernelManager
+
+# Do this so uses new Jupyter console if available
+try:
+    from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
+    from qtconsole.inprocess import QtInProcessKernelManager
+except ImportError:
+    from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
+    from IPython.qt.inprocess import QtInProcessKernelManager
+    
 from IPython.lib import guisupport
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -139,6 +146,12 @@ class GUI(QtGui.QMainWindow):
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
 
+    def moveEvent(self, event):
+        """
+        Overwrite PyQt Move event to force a repaint. (Might) fix a bug on some (my) macs
+        """
+        self.repaint()
+        super(GUI, self).moveEvent(event)
 
 ####################################
 #Load Param file methods
@@ -233,24 +246,18 @@ class GUI(QtGui.QMainWindow):
         self.updateLock.unlock()
 
         if plotDict:
+            
+            # Get the min and max plot scaling 
+            scaleValues = self.getPlotScaling(plotDict)
+
             for wfs in range(self.config.sim.nGS):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
                     self.wfsPlots[wfs].setImage(
                         plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-                try:
-                    scaleValues = [min(self.minValues), max(self.maxValues)]
-                except (AttributeError, ValueError):
-                    scaleValues = None
-                self.minValues = []
-                self.maxValues = []
+
 
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     wfsPhase = plotDict["wfsPhase"][wfs]
-                    self.minValues.append(wfsPhase.min())
-                    self.maxValues.append(wfsPhase.max())
-                    if not scaleValues:
-                        scaleValues = [wfsPhase.min(), wfsPhase.max()]
-
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
 
@@ -263,14 +270,8 @@ class GUI(QtGui.QMainWindow):
                 self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
 
             for dm in range(self.config.sim.nDM):
-
                 if numpy.any(plotDict["dmShape"][dm]) !=None:
                     dmShape = plotDict["dmShape"][dm]
-                    if not scaleValues:
-                        scaleValues = [dmShape.min(), dmShape.max()]
-                    self.minValues.append(dmShape.min())
-                    self.maxValues.append(dmShape.max())
-
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
                                             lut=self.LUT, levels=scaleValues)
 
@@ -285,10 +286,6 @@ class GUI(QtGui.QMainWindow):
 
                 if numpy.any(plotDict["residual"][sci])!=None:
                     residual = plotDict["residual"][sci]
-                    if not scaleValues:
-                        scaleValues = [residual.min(), residual.max()]
-                    self.minValues.append(residual.min())
-                    self.maxValues.append(residual.max())
 
                     self.resPlots[sci].setImage(
                             residual, lut=self.LUT, levels=scaleValues)
@@ -297,6 +294,34 @@ class GUI(QtGui.QMainWindow):
                 self.updateStrehls()
 
             self.app.processEvents()
+
+    def getPlotScaling(self, plotDict):
+        """
+        Loops through all phase plots to find the required min and max values for plot scaling
+        """
+        plotMins = []
+        plotMaxs = []
+        for wfs in range(self.config.sim.nGS):
+            if numpy.any(plotDict["wfsPhase"])!=None:
+                plotMins.append(plotDict["wfsPhase"][wfs].min())
+                plotMaxs.append(plotDict["wfsPhase"][wfs].max())
+
+        for dm in range(self.config.sim.nDM):
+            if numpy.any(plotDict["dmShape"][dm])!=None:
+                plotMins.append(plotDict["dmShape"][dm].min())
+                plotMaxs.append(plotDict["dmShape"][dm].max())
+
+        for sci in range(self.config.sim.nSci):
+            if numpy.any(plotDict["residual"][sci])!=None:
+                plotMins.append(plotDict["residual"][sci].min())
+                plotMaxs.append(plotDict["residual"][sci].max())
+
+        # Now get the min and max of mins and maxs
+        plotMin = min(plotMins)
+        plotMax = max(plotMaxs)
+        
+        return plotMin, plotMax
+
 
     def makeImageItem(self, layout, size):
         gv = pyqtgraph.GraphicsView()
