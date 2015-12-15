@@ -514,8 +514,8 @@ def quadCell(img, **kwargs):
     xSum = img.sum(-2)
     ySum = img.sum(-1)
 
-    xCent = xSum[...,1] - xSum[...,0]
-    yCent = ySum[...,1] - ySum[...,0]
+    xCent = xSum[..., 1] - xSum[..., 0]
+    yCent = ySum[..., 1] - ySum[..., 0]
 
     return numpy.array([xCent, yCent])
 
@@ -530,23 +530,23 @@ def zernike(j, N):
      Returns:
         ndarray: The Zernike mode
      """
-    n,m = zernIndex(j);
+    n, m = zernIndex(j)
 
-    coords = numpy.linspace(-1,1,N)
-    X,Y = numpy.meshgrid(coords,coords)
+    coords = numpy.linspace(-1, 1, N)
+    X, Y = numpy.meshgrid(coords, coords)
     R = numpy.sqrt(X**2 + Y**2)
-    theta = numpy.arctan2(Y,X)
+    theta = numpy.arctan2(Y, X)
 
-    if m==0:
-        Z = numpy.sqrt(n+1)*zernikeRadialFunc(n,0,R);
+    if m == 0:
+        Z = numpy.sqrt(n+1)*zernikeRadialFunc(n, 0, R)
     else:
-        if j%2==0: # j is even
-                Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n,m,R) * numpy.cos(m*theta)
+        if j%2 == 0: # j is even
+            Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n, m, R) * numpy.cos(m*theta)
         else:   #i is odd
-                Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n,m,R) * numpy.sin(m*theta)
+            Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n, m, R) * numpy.sin(m*theta)
 
 
-    return Z*circle(N/2., N)
+    return Z * circle(N/2., N)
 
 
 
@@ -564,7 +564,7 @@ def zernikeRadialFunc(n, m, r):
 
 
 
-def zernIndex(j,sign=0):
+def zernIndex(j, sign=0):
     """
     returns the [n,m] list giving the radial order n and azimutal order
     of the zernike polynomial of index j
