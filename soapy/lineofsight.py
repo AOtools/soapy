@@ -8,8 +8,11 @@ import numpy
 
 from . import aoSimLib, logger
 
+DTYPE = numpy.float32
+CDTYPE = numpy.complex64
+
 class LineOfSight(object):
-    def __init__(self, losConfig):
+    def __init__(self, propagationDirection="down"):
 
         self.calcInitParams()
 
@@ -19,16 +22,16 @@ class LineOfSight(object):
         else:
             self.radii = None
 
-        # Choose propagation method
-        if losConfig.propagationMode == "physical":
-
-            self.makePhase = self.makePhasePhysical
-            self.physEField = numpy.zeros(
-                (self.simConfig.pupilSize,)*2, dtype=CDTYPE)
-        else:
-            self.makePhase = self.makePhaseGeo
-
         self.allocDataArrays()
+        
+        # Check if geometric or physical
+        if self.config.propagationMode=="geometric":
+            self.makePhase = self.makePhaseGeometric
+        else:
+            if propagationDirection == "up":
+                self.makePhase = self.makePhasePhysUp
+            else:
+                self.makePhase = self.makePhasePhysDown
 
 ############################################################
 # Initialisation routines
@@ -211,9 +214,7 @@ class LineOfSight(object):
 
         self.makePhase(self.radii)
 
-
-class LineOfSight_Geometric(LineOfSight):
-    def makePhase(self, radii=None, pos=None):
+    def makePhaseGeometric(self, radii=None, pos=None):
         '''
         Creates the total phase on a wavefront sensor which
         is offset by a given angle
@@ -238,25 +239,7 @@ class LineOfSight_Geometric(LineOfSight):
 
         self.EField[:] = numpy.exp(1j*self.wfsPhase)
 
-
-class LineOfSight_Physical(LineOfSight):
-
-    def __init__(
-            self, direction="down", inPxlScale=None,
-            outPxlScale=None):
-        super(LineOfSight_Physical, self).__init__()
-
-        if direction=="down":
-            self.makePhase = self.makePhaseDown
-        elif direction=="up":
-            self.makePhase = self.makePhaseUp
-        else:
-            raise ValueError("`direction` must be either up or down")
-
-        self.inPxlScale = inPxlScale
-        self.outPxlScale = outPxlScale
-
-    def makePhaseDown(self, radii=None, pos=None):
+    def makePhasePhysDown(self, radii=None, pos=None):
         '''
         Finds total WFS complex amplitude by propagating light down
         phase scrns
@@ -312,7 +295,7 @@ class LineOfSight_Physical(LineOfSight):
 
         return self.EField
 
-    def makePhaseUp(self, altitude, radii=None, pos=None, mask=None):
+    def makePhasePhysUp(self, altitude, radii=None, pos=None, mask=None):
         '''
         Finds total WFS complex amplitude by propagating light down
         phase scrns

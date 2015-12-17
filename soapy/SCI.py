@@ -21,7 +21,7 @@ from . import aoSimLib, AOFFT, logger, lineofsight
 from scipy.interpolate import interp2d
 
 
-class ScienceCam(lineofsight.LineOfSight_Geometric):
+class ScienceCam(lineofsight.LineOfSight):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 

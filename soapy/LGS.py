@@ -51,7 +51,7 @@ class LGSObj(object):
                 0.5*self.lgsPupilSize, self.simConfig.simSize)
 
 
-class GeometricLGS(LGSObj, lineofsight.LineOfSight_Geometric):
+class GeometricLGS(LGSObj, lineofsight.LineOfSight):
 
     def setWFSParams(self, subapFOVRad, subapOversamp, subapFFTPadding):
 
@@ -142,7 +142,7 @@ class GeometricLGS(LGSObj, lineofsight.LineOfSight_Geometric):
         self.PSF = aoSimLib.binImgs(fPlane, self.padFactor)
 
 
-class PhysicalLGS(LGSObj, lineofsight.LineOfSight_Physical):
+class PhysicalLGS(LGSObj, lineofsight.LineOfSight):
 
     def __init__(self, simConfig, wfsConfig, lgsConfig, atmosConfig):
 
