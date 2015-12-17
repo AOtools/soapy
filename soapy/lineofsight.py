@@ -11,13 +11,11 @@ from . import aoSimLib, logger
 class LineOfSight(object):
     def __init__(self, losConfig):
 
-        self.losConfig = losConfig
-
         self.calcInitParams()
 
         # If GS not at infinity, find meta-pupil radii for each layer
-        if self.losConfig.height!=0:
-            self.radii = self.findMetaPupilSize(self.losConfig.GSHeight)
+        if self.config.height!=0:
+            self.radii = self.findMetaPupilSize(self.config.GSHeight)
         else:
             self.radii = None
 
@@ -103,7 +101,7 @@ class LineOfSight(object):
         '''
         #if no pos given, use system pos and convert into radians
         if not numpy.any(pos):
-            pos = (numpy.array(self.losConfig.GSPosition)
+            pos = (numpy.array(self.config.GSPosition)
                     *numpy.pi/(3600.0*180.0) )
 
         #Position of centre of GS metapupil off axis at required height

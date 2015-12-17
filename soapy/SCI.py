@@ -27,17 +27,17 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 
         self.simConfig = simConfig
         self.telConfig = telConfig
-        self.sciConfig = sciConfig
+        self.config = sciConfig
         self.atmosConfig = atmosConfig
         self.mask = mask
 
         super(ScienceCam, self).__init__(sciConfig)
 
-        self.FOVrad = self.sciConfig.FOV * numpy.pi / (180. * 3600)
+        self.FOVrad = self.config.FOV * numpy.pi / (180. * 3600)
 
         self.FOVPxlNo = numpy.round(
             self.telConfig.telDiam * self.FOVrad
-            / self.sciConfig.wavelength)
+            / self.config.wavelength)
 
         self.padFOVPxlNo = int(round(
             self.FOVPxlNo * float(self.simConfig.simSize)
@@ -54,14 +54,14 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
                                       ).astype("int32")
 
         # Init FFT object
-        self.FFTPadding = self.sciConfig.pxls * self.sciConfig.fftOversamp
+        self.FFTPadding = self.config.pxls * self.config.fftOversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding < self.FOVPxlNo:
-                self.sciConfig.fftOversamp += 1
+                self.config.fftOversamp += 1
                 self.FFTPadding\
-                    = self.sciConfig.pxls * self.sciConfig.fftOversamp
+                    = self.config.pxls * self.config.fftOversamp
             logger.info(
-                "SCI FFT Padding less than FOV size... Setting oversampling to %d" % self.sciConfig.fftOversamp)
+                "SCI FFT Padding less than FOV size... Setting oversampling to %d" % self.config.fftOversamp)
 
         self.FFT = AOFFT.FFT(
                 inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1),
@@ -71,9 +71,9 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 
         # Get phase scaling factor to get r0 in other wavelength
         # phsWvl = 500e-9
-        # self.r0Scale = phsWvl / self.sciConfig.wavelength
+        # self.r0Scale = phsWvl / self.config.wavelength
         # Convert phase to radians at science wavelength
-        self.phs2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
+        self.phs2Rad = 2*numpy.pi/(self.config.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.residual = numpy.zeros((self.simConfig.simSize,) * 2)
@@ -89,13 +89,13 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
         on one pixel only
         """
         # Only required if pxl number is even
-        if not self.sciConfig.pxls % 2:
+        if not self.config.pxls % 2:
             # Need to correct for half a pixel angle
             theta = float(self.FOVrad) / (2 * self.FFTPadding)
 
             # Find magnitude of tilt from this angle
             A = theta * self.telConfig.telDiam / \
-                (2 * self.sciConfig.wavelength) * 2 * numpy.pi
+                (2 * self.config.wavelength) * 2 * numpy.pi
 
             coords = numpy.linspace(-1, 1, self.FOVPxlNo)
             X, Y = numpy.meshgrid(coords, coords)
@@ -116,7 +116,7 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 #
 #         # Convert positions into radians
 #         sciPos = numpy.array(
-#             self.sciConfig.position) * numpy.pi / (3600.0 * 180.0)
+#             self.config.position) * numpy.pi / (3600.0 * 180.0)
 #
 #         # Position of centre of GS metapupil off axis at required height
 #         sciCent = numpy.tan(sciPos) * height
@@ -201,7 +201,7 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
         focalPlane_efield = AOFFT.ftShift2d(self.FFT())
 
         self.focalPlane_efield = aoSimLib.binImgs(
-            focalPlane_efield, self.sciConfig.fftOversamp)
+            focalPlane_efield, self.config.fftOversamp)
 
         self.focalPlane = numpy.abs(self.focalPlane_efield.copy())**2
 
@@ -226,7 +226,7 @@ class ScienceCam(lineofsight.LineOfSight_Geometric):
 
         self.scrns = scrns
         # self.calcPupilPhase()
-        self.makePhase(pos=self.sciConfig.position)
+        self.makePhase(pos=self.config.position)
 
         if numpy.any(phaseCorrection):
             self.residual = self.phase - (phaseCorrection)
