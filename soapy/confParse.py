@@ -785,7 +785,7 @@ class SciConfig(ConfigObj):
                                 ("fftwFlag", "FFTW_MEASURE"),
                                 ("fftwThreads", 1),
                                 ("height", 0),
-                                ("propagationMode", 0),
+                                ("propagationMode", "geometric"),
                                 ]
 
         self.initParams()

@@ -23,15 +23,15 @@ class LineOfSight(object):
             self.radii = None
 
         self.allocDataArrays()
-        
+
         # Check if geometric or physical
-        if self.config.propagationMode=="geometric":
-            self.makePhase = self.makePhaseGeometric
-        else:
+        if self.config.propagationMode=="physical":
             if propagationDirection == "up":
                 self.makePhase = self.makePhasePhysUp
             else:
                 self.makePhase = self.makePhasePhysDown
+        else:
+            self.makePhase = self.makePhaseGeometric
 
 ############################################################
 # Initialisation routines
@@ -54,7 +54,7 @@ class LineOfSight(object):
         and the E-Field across the WFS
         """
 
-        self.wfsPhase = numpy.zeros([self.simConfig.simSize]*2, dtype=DTYPE)
+        self.phase = numpy.zeros([self.simConfig.simSize]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.simConfig.simSize]*2, dtype=CDTYPE)
 
 
@@ -104,7 +104,7 @@ class LineOfSight(object):
         '''
         #if no pos given, use system pos and convert into radians
         if not numpy.any(pos):
-            pos = (numpy.array(self.config.GSPosition)
+            pos = (numpy.array(self.config.position)
                     *numpy.pi/(3600.0*180.0) )
 
         #Position of centre of GS metapupil off axis at required height
@@ -214,6 +214,7 @@ class LineOfSight(object):
 
         self.makePhase(self.radii)
 
+
     def makePhaseGeometric(self, radii=None, pos=None):
         '''
         Creates the total phase on a wavefront sensor which
@@ -224,7 +225,7 @@ class LineOfSight(object):
             pos (dict, optional): Position of GS in pixels. If not given uses GS position
         '''
 
-        for i in self.scrns:
+        for i in range(len(self.scrns)):
             logger.debug("Layer: {}".format(i))
             if radii:
                 phase = self.getMetaPupilPhase(
@@ -235,9 +236,9 @@ class LineOfSight(object):
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
                             pos=pos)
 
-            self.wfsPhase += phase
+            self.phase += phase
 
-        self.EField[:] = numpy.exp(1j*self.wfsPhase)
+        self.EField[:] = numpy.exp(1j*self.phase)
 
     def makePhasePhysDown(self, radii=None, pos=None):
         '''
