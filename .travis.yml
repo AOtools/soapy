@@ -32,11 +32,11 @@ install:
   - pip install pyfftw
   - pip install codecov
 
-# Run test
-before_script:
-    cd test
+# Use if anything needs to be done before tests are run
+# before_script:
+#     cd test
 script:
-    - nosetests --with-coverage --cover-package=soapy
+    - nosetests --with-coverage --cover-package=soapy test/
 
 after_success:
   - codecov
