@@ -5,6 +5,7 @@ direction.
 """
 
 import numpy
+from scipy.interpolate import interp2d
 
 from . import aoSimLib, logger
 
@@ -12,7 +13,7 @@ DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
 class LineOfSight(object):
-    def __init__(self, propagationDirection="down"):
+    def __init__(self, phaseSize=None, propagationDirection="down"):
 
         self.calcInitParams()
 
@@ -21,6 +22,12 @@ class LineOfSight(object):
             self.radii = self.findMetaPupilSize(self.config.GSHeight)
         else:
             self.radii = None
+
+
+        if phaseSize==None:
+            self.phaseSize = self.simConfig.simSize
+        else:
+            self.phaseSize = phaseSize
 
         self.allocDataArrays()
 
@@ -43,7 +50,6 @@ class LineOfSight(object):
         # For each scrn height they will be edited per
         self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
 
-
     def allocDataArrays(self):
         """
         Allocate the data arrays the WFS will require
@@ -54,8 +60,8 @@ class LineOfSight(object):
         and the E-Field across the WFS
         """
 
-        self.phase = numpy.zeros([self.simConfig.simSize]*2, dtype=DTYPE)
-        self.EField = numpy.zeros([self.simConfig.simSize]*2, dtype=CDTYPE)
+        self.phase = numpy.zeros([self.phaseSize]*2, dtype=DTYPE)
+        self.EField = numpy.zeros([self.phaseSize]*2, dtype=CDTYPE)
 
 
     def findMetaPupilSize(self, GSHeight):
@@ -123,18 +129,13 @@ class LineOfSight(object):
             scrn (ndarray): An array representing the phase screen
             height (float): Height of the phase screen
             radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
-            simSize (ndarray, optional): Size of screen to return. If not set, will use system pupil size.
             pos (tuple, optional): Angular position of guide star. If not set will use system position.
 
         Return:
             ndarray: The meta pupil at the specified height
         '''
 
-        #If no size of metapupil given, use system pupil size
-        if not simSize:
-            simSize = self.simConfig.simSize
-
-        #If the radius is 0, then 0 phase is returned
+        # If the radius is 0, then 0 phase is returned
         if radius==0:
             return numpy.zeros((simSize, simSize))
 
@@ -142,12 +143,13 @@ class LineOfSight(object):
         GSCent = self.getMetaPupilPos(height, pos) * self.simConfig.pxlScale
 
         scrnX, scrnY = scrn.shape
-        #If the GS is not at infinity, take into account cone effect
+        # If the GS is not at infinity, take into account cone effect
         if radius!=None:
             fact = float(2*radius)/self.simConfig.pupilSize
         else:
             fact = 1
 
+        simSize = self.simConfig.simSize
         x1 = scrnX/2. + GSCent[0] - fact*simSize/2.0
         x2 = scrnX/2. + GSCent[0] + fact*simSize/2.0
         y1 = scrnY/2. + GSCent[1] - fact*simSize/2.0
@@ -161,18 +163,11 @@ class LineOfSight(object):
                     "GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
 
-
-        if (x1.is_integer() and x2.is_integer()
-                and y1.is_integer() and y2.is_integer()):
-            #Old, simple integer based solution
-            metaPupil= scrn[ x1:x2, y1:y2]
-        else:
-            #If points are float, must interpolate. -1 as linspace goes to number
-            xCoords = numpy.linspace(x1, x2-1, simSize)
-            yCoords = numpy.linspace(y1, y2-1, simSize)
-            interpObj = interp2d(
-                    self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)
+        xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
+        yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
+        interpObj = interp2d(
+                self.scrnCoords, self.scrnCoords, scrn, copy=False)
+        metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil
 ######################################################
@@ -354,6 +349,7 @@ class LineOfSight(object):
         t = type(scrns)
         if t!=dict and t!=list:
             scrns = [scrns]
+        self.scrns = scrns
 
         self.zeroData()
         # self.scrns = {}
@@ -365,4 +361,8 @@ class LineOfSight(object):
         self.makePhase(self.radii)
 
         if numpy.any(correction):
+            correction = aoSimLib.zoom(correction, self.phaseSize)
             self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
+            self.residual = self.phase - correction
+        else:
+            self.residual = self.phase
