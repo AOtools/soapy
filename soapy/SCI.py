@@ -103,82 +103,6 @@ class ScienceCam(lineofsight.LineOfSight):
         else:
             self.tiltFix = numpy.zeros((self.FOVPxlNo,) * 2)
 
-#     def getMetaPupilPos(self, height):
-#         '''
-#         Finds the centre of a metapupil at a given height,
-#         when offset by a given angle in arcsecs
-#         Arguments:
-#             height (float): Height of the layer in metres
-#
-#         Returns:
-#             ndarray: The position of the centre of the metapupil in metres
-#         '''
-#
-#         # Convert positions into radians
-#         sciPos = numpy.array(
-#             self.config.position) * numpy.pi / (3600.0 * 180.0)
-#
-#         # Position of centre of GS metapupil off axis at required height
-#         sciCent = numpy.tan(sciPos) * height
-#
-#         return sciCent
-#
-#     def getMetaPupilPhase(self, scrn, height):
-#         '''
-#         Returns the phase across a metaPupil at some height
-#         and angular offset in arcsec
-#
-#         Parameters:
-#             scrn (ndarray): An array representing the phase screen
-#             height (float): Height of the phase screen
-#
-#         Return:
-#             ndarray: The meta pupil at the specified height
-#         '''
-#
-#         sciCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
-#         logger.debug("SciCent:({0},{1})".format(sciCent[0], sciCent[1]))
-#         scrnX, scrnY = scrn.shape
-#
-#         x1 = scrnX / 2. + sciCent[0] - self.simConfig.simSize / 2.0
-#         x2 = scrnX / 2. + sciCent[0] + self.simConfig.simSize / 2.0
-#         y1 = scrnY / 2. + sciCent[1] - self.simConfig.simSize / 2.0
-#         y2 = scrnY / 2. + sciCent[1] + self.simConfig.simSize / 2.0
-#
-#         logger.debug("Sci scrn Coords: ({0}:{1}, {2}:{3})".format(
-#             x1, x2, y1, y2))
-#
-#         if x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY:
-#             raise ValueError(  "Sci Position seperation requires larger scrn size")
-#
-#         if (x1.is_integer() and x2.is_integer()
-#                 and y1.is_integer() and y2.is_integer()):
-#             # Old, simple integer based solution
-#             metaPupil = scrn[x1:x2, y1:y2]
-#         else:
-#             # Dirty, temporary fix to interpolate between phase points
-#             xCoords = numpy.linspace(x1, x2 - 1, self.simConfig.simSize)
-#             yCoords = numpy.linspace(y1, y2 - 1, self.simConfig.simSize)
-#             scrnCoords = numpy.arange(scrnX)
-#             interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
-#             metaPupil = interpObj(yCoords, xCoords)
-#
-#         return metaPupil
-#
-#     def calcPupilPhase(self):
-#         '''
-#         Returns the total phase on a science Camera which is offset
-#         by a given angle
-#         '''
-#         totalPhase = numpy.zeros([self.simConfig.simSize] * 2)
-#         for i in range(len(self.scrns)):
-#             phase = self.getMetaPupilPhase(
-#                 self.scrns[i], self.atmosConfig.scrnHeights[i])
-#
-#             totalPhase += phase
-#
-#         self.phase = totalPhase
-
     def calcFocalPlane(self):
         '''
         Takes the calculated pupil phase, scales for the correct FOV,
@@ -186,10 +110,7 @@ class ScienceCam(lineofsight.LineOfSight):
         '''
 
         # Scaled the padded phase to the right size for the requried FOV
-        phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo)
-
-        # Convert phase deviation to radians
-        phs*=self.phs2Rad
+        phs = aoSimLib.zoom(self.EField, self.padFOVPxlNo)
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
@@ -219,19 +140,7 @@ class ScienceCam(lineofsight.LineOfSight):
         Returns:
             ndarray: Resulting science PSF
         """
-        # If scrns is not dict or list, assume array and put in list
-        t = type(scrns)
-        if t!=dict and t!=list:
-            scrns = [scrns]
-
-        self.scrns = scrns
-        # self.calcPupilPhase()
-        self.makePhase(pos=self.config.position)
-
-        if numpy.any(phaseCorrection):
-            self.residual = self.phase - (phaseCorrection)
-        else:
-            self.residual = self.phase
+        super(ScienceCam, self).frame(scrns, correction=phaseCorrection)
 
         self.calcFocalPlane()
 

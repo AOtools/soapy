@@ -175,45 +175,11 @@ class LineOfSight(object):
             metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil
-
-
 ######################################################
-    def zeroPhaseData(self):
+
+    def zeroData(self, **kwargs):
         self.EField[:] = 0
-        self.wfsPhase[:] = 0
-
-
-    def frame(self, scrns, correction=None, read=True):
-        '''
-        Runs one WFS frame
-
-        Runs a single frame of the WFS with a given set of phase screens and
-        some optional correction. If elongation is set, will run the phase
-        calculating and focal plane making methods multiple times for a few
-        different heights of LGS, then sum these onto a ``wfsDetectorPlane``.
-
-        Parameters:
-            scrns (list): A list or dict containing the phase screens
-            correction (ndarray, optional): The correction term to take from the phase screens before the WFS is run.
-            read (bool, optional): Should the WFS be read out? if False, then WFS image is calculated but slopes not calculated. defaults to True.
-
-        Returns:
-            ndarray: WFS Measurements
-        '''
-
-        #If scrns is not dict or list, assume array and put in list
-        t = type(scrns)
-        if t!=dict and t!=list:
-            scrns = [scrns]
-
-        self.zeroData(detector=read, inter=False)
-        self.scrns = {}
-        #Scale phase to WFS wvl
-        for i in xrange(len(scrns)):
-            self.scrns[i] = scrns[i].copy()*self.r0Scale
-
-        self.makePhase(self.radii)
-
+        self.phase[:] = 0
 
     def makePhaseGeometric(self, radii=None, pos=None):
         '''
@@ -238,6 +204,8 @@ class LineOfSight(object):
 
             self.phase += phase
 
+        # Convert phase to radians
+        self.phase *= self.phs2Rad
         self.EField[:] = numpy.exp(1j*self.phase)
 
     def makePhasePhysDown(self, radii=None, pos=None):
@@ -283,6 +251,10 @@ class LineOfSight(object):
             phase = self.getMetaPupilPhase(
                     self.scrns[i], self.atmosConfig.scrnHeights[i],
                     radius=radii[i], pos=pos)
+
+            # Convert phase to radians
+            phase *= self.phs2Rad
+
             # Add phase from this layer
             self.EField *= numpy.exp(1j*phase)
 
@@ -346,6 +318,8 @@ class LineOfSight(object):
             phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
                             radius=radius, pos=pos)
+            # Convert phase to radians
+            phase *= self.phs2Rad
 
             #Add add phase from this layer
             self.EField *= numpy.exp(1j*phase)
@@ -357,3 +331,38 @@ class LineOfSight(object):
                     delta, delta, altitude-self.atmosConfig.scrnHeights[-1]
                     )
         return self.EField
+
+    def frame(self, scrns, correction=None):
+        '''
+        Runs one WFS frame
+
+        Runs a single frame of the WFS with a given set of phase screens and
+        some optional correction. If elongation is set, will run the phase
+        calculating and focal plane making methods multiple times for a few
+        different heights of LGS, then sum these onto a ``wfsDetectorPlane``.
+
+        Parameters:
+            scrns (list): A list or dict containing the phase screens
+            correction (ndarray, optional): The correction term to take from the phase screens before the WFS is run.
+            read (bool, optional): Should the WFS be read out? if False, then WFS image is calculated but slopes not calculated. defaults to True.
+
+        Returns:
+            ndarray: WFS Measurements
+        '''
+
+        #If scrns is not dict or list, assume array and put in list
+        t = type(scrns)
+        if t!=dict and t!=list:
+            scrns = [scrns]
+
+        self.zeroData()
+        # self.scrns = {}
+        #
+        # # Convert phase to radians
+        # for i in xrange(len(scrns)):
+        #     self.scrns[i] = scrns[i].copy()*self.phs2Rad
+
+        self.makePhase(self.radii)
+
+        if numpy.any(correction):
+            self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
