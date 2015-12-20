@@ -46,7 +46,7 @@ class ScienceCam(lineofsight.LineOfSight):
             self.padFOVPxlNo += 1
 
         # Init line of sight - Get the phase at the right size for the FOV
-        super(ScienceCam, self).__init__(phaseSize=self.padFOVPxlNo)
+        super(ScienceCam, self).__init__()
 
         mask = self.mask[
                 self.simConfig.simPad:-self.simConfig.simPad,
@@ -79,7 +79,7 @@ class ScienceCam(lineofsight.LineOfSight):
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
-        self.Efield = numpy.zeros((self.phaseSize,) * 2, dtype=CDTYPE)
+        self.EField[:] = numpy.ones((self.phaseSize,) * 2, dtype=CDTYPE)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()
@@ -112,18 +112,21 @@ class ScienceCam(lineofsight.LineOfSight):
         and uses an FFT to transform to the focal plane.
         '''
 
+        # Apply the system mask
+        self.EField *= self.mask
+
         # Scaled the padded phase to the right size for the requried FOV
-        # phs = aoSimLib.zoom(self.EField, self.padFOVPxlNo)
+        self.EField_fov = aoSimLib.zoom(self.EField, self.padFOVPxlNo)
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
-        eField = self.EField[coord:-coord, coord:-coord]
+        self.EField_fov = self.EField_fov[coord:-coord, coord:-coord]
 
-        # eField = numpy.exp(1j * (phs)) * self.scaledMask
-
-        self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField
+        # Get the focal plan using an FFT
+        self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov
         focalPlane_efield = AOFFT.ftShift2d(self.FFT())
 
+        # Bin down to the required number of pixels
         self.focalPlane_efield = aoSimLib.binImgs(
             focalPlane_efield, self.config.fftOversamp)
 
