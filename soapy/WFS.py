@@ -89,7 +89,7 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from . import AOFFT, aoSimLib, LGS, logger
+from . import AOFFT, aoSimLib, LGS, logger, lineofsight
 from .tools import centroiders
 from .opticalPropagationLib import angularSpectrum
 
@@ -105,7 +105,7 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 
-class WFS(object):
+class WFS(lineofsight.LineOfSight):
     ''' A  WFS class.
 
         This is a base class which contains methods to initialise the WFS,
@@ -647,7 +647,7 @@ class WFS(object):
         #Scale phase to WFS wvl
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.phs2Rad
-        
+
         #If LGS elongation simulated
         if self.wfsConfig.lgs and self.elong!=0:
             for i in xrange(self.elongLayers):
