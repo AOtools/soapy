@@ -15,19 +15,12 @@ CDTYPE = numpy.complex64
 class LineOfSight(object):
     def __init__(self, phaseSize=None, propagationDirection="down"):
 
-        self.calcInitParams()
-
+        self.phaseSize = phaseSize
         # If GS not at infinity, find meta-pupil radii for each layer
-        if self.config.height!=0:
-            self.radii = self.findMetaPupilSize(self.config.GSHeight)
+        if self.height!=0:
+            self.radii = self.findMetaPupilSize(self.height)
         else:
             self.radii = None
-
-
-        if phaseSize==None:
-            self.phaseSize = self.simConfig.simSize
-        else:
-            self.phaseSize = phaseSize
 
         self.allocDataArrays()
 
@@ -40,15 +33,47 @@ class LineOfSight(object):
         else:
             self.makePhase = self.makePhaseGeometric
 
+    # Some attributes for compatability
+    @property
+    def height(self):
+        try:
+            return self.config.height
+        except AttributeError:
+            return self.config.GSHeight
+
+    @height.setter
+    def height(self, height):
+        try:
+            self.config.height
+            self.config.height = height
+        except AttributeError:
+            self.config.GSHeight
+            self.config.GSHeight = height
+
 ############################################################
 # Initialisation routines
-    def calcInitParams(self):
-
+    def calcInitParams(self, phaseSize=None):
+        print("LOS CIP")
+        print("PhaseSize:{}".format(phaseSize))
         self.telDiam = self.simConfig.pupilSize/self.simConfig.pxlScale
 
+        # Convert phase deviation to radians at wfs wavelength.
+        # (in nm remember...?)
+        self.phs2Rad = 2*numpy.pi/(self.config.wavelength * 10**9)
+
+
+        # Get the size of the phase required by the system
+        if phaseSize==None:
+            self.phaseSize = self.simConfig.simSize
+        else:
+            self.phaseSize = phaseSize
+
+        print("self.phaseSize:{}".format(self.phaseSize))
         # These are the coordinates of the sub-scrn to cut from the phase scrns
         # For each scrn height they will be edited per
         self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
+
+
 
     def allocDataArrays(self):
         """
@@ -59,7 +84,7 @@ class LineOfSight(object):
         keep it fast. This includes arrays for phase
         and the E-Field across the WFS
         """
-
+        print("allocDataArrays - phaseSize:{}".format(self.phaseSize))
         self.phase = numpy.zeros([self.phaseSize]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.phaseSize]*2, dtype=CDTYPE)
 
