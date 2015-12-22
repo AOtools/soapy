@@ -13,9 +13,19 @@ DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
 class LineOfSight(object):
-    def __init__(self, phaseSize=None, propagationDirection="down"):
+    def __init__(
+            self, config, simConfig, atmosConfig, phaseSize=None,
+            propagationDirection="down"):
 
-        self.phaseSize = phaseSize
+        self.config = config
+        self.simConfig = simConfig
+        self.atmosConfig = atmosConfig
+
+        if phaseSize==None:
+            self.phaseSize = simConfig.simSize
+        else:
+            self.phaseSize = phaseSize
+
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.height!=0:
             self.radii = self.findMetaPupilSize(self.height)
@@ -33,9 +43,10 @@ class LineOfSight(object):
         else:
             self.makePhase = self.makePhaseGeometric
 
-    # Some attributes for compatability
+    # Some attributes for compatability between WFS and others
     @property
     def height(self):
+        print("Ask for height")
         try:
             return self.config.height
         except AttributeError:
@@ -49,6 +60,25 @@ class LineOfSight(object):
         except AttributeError:
             self.config.GSHeight
             self.config.GSHeight = height
+
+    @property
+    def position(self):
+        print("Ask for position")
+        try:
+            return self.config.position
+        except AttributeError:
+            print("GSPosition:{}".format(self.config.GSPosition))
+            return self.config.GSPosition
+
+    @position.setter
+    def position(self, position):
+        try:
+            self.config.position
+            self.config.position = position
+        except AttributeError:
+            self.config.GSPosition
+            self.config.GSPosition = position
+
 
 ############################################################
 # Initialisation routines
@@ -135,7 +165,7 @@ class LineOfSight(object):
         '''
         #if no pos given, use system pos and convert into radians
         if not numpy.any(pos):
-            pos = (numpy.array(self.config.position)
+            pos = (numpy.array(self.position)
                     *numpy.pi/(3600.0*180.0) )
 
         #Position of centre of GS metapupil off axis at required height
@@ -173,7 +203,7 @@ class LineOfSight(object):
             fact = float(2*radius)/self.simConfig.pupilSize
         else:
             fact = 1
-
+        print("GSCent: {}".format(GSCent))
         simSize = self.simConfig.simSize
         x1 = scrnX/2. + GSCent[0] - fact*simSize/2.0
         x2 = scrnX/2. + GSCent[0] + fact*simSize/2.0
@@ -190,8 +220,9 @@ class LineOfSight(object):
 
         xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
         yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
+        scrnCoords = numpy.arange(scrnX)
         interpObj = interp2d(
-                self.scrnCoords, self.scrnCoords, scrn, copy=False)
+                scrnCoords, scrnCoords, scrn, copy=False)
         metaPupil = interpObj(xCoords, yCoords)
 
         return metaPupil

@@ -172,6 +172,12 @@ class WFS(lineofsight.LineOfSight):
 ############################################################
 # Initialisation routines
 
+    def initLOS(self):
+        """
+        Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
+        """
+        self.los = lineofsight.LineOfSight(self.config)
+
     def initLGS(self):
         """
         Initialises tithe LGS objects for the WFS
