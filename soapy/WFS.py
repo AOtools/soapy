@@ -105,7 +105,7 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 
-class WFS(lineofsight.LineOfSight):
+class WFS(object):
     ''' A  WFS class.
 
         This is a base class which contains methods to initialise the WFS,
@@ -142,9 +142,7 @@ class WFS(lineofsight.LineOfSight):
 
         # Init the line of sight
         print("Init LOS")
-        self.calcInitParams()
-        super(WFS, self).__init__()
-
+        self.initLos()
 
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.config.GSHeight != 0:
@@ -172,11 +170,14 @@ class WFS(lineofsight.LineOfSight):
 ############################################################
 # Initialisation routines
 
-    def initLOS(self):
+    def initLos(self):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
-        self.los = lineofsight.LineOfSight(self.config)
+        self.los = lineofsight.LineOfSight(
+                self.config, self.simConfig, self.atmosConfig,
+                phaseSize=self.simConfig.simSize, propagationDirection="down")
+        self.los.calcInitParams()
 
     def initLGS(self):
         """
