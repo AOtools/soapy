@@ -21,10 +21,7 @@ class LineOfSight(object):
         self.simConfig = simConfig
         self.atmosConfig = atmosConfig
 
-        if phaseSize==None:
-            self.phaseSize = simConfig.simSize
-        else:
-            self.phaseSize = phaseSize
+        self.calcInitParams(phaseSize)
 
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.height!=0:
@@ -173,8 +170,9 @@ class LineOfSight(object):
 
         return GSCent
 
-    def getMetaPupilPhase(  self, scrn, height, radius=None, simSize=None,
-                            pos=None):
+    def getMetaPupilPhase(
+            self, scrn, height, radius=None, simSize=None,
+            pos=None):
         '''
         Returns the phase across a metaPupil at some height and angular
         offset in arcsec. Interpolates phase to size of the pupil if cone
@@ -422,3 +420,5 @@ class LineOfSight(object):
             self.residual = self.phase - correction
         else:
             self.residual = self.phase
+
+        return self.residual
