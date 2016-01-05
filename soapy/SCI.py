@@ -23,7 +23,7 @@ from scipy.interpolate import interp2d
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
-class ScienceCam(lineofsight.LineOfSight):
+class ScienceCam(object):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 
@@ -46,7 +46,9 @@ class ScienceCam(lineofsight.LineOfSight):
             self.padFOVPxlNo += 1
 
         # Init line of sight - Get the phase at the right size for the FOV
-        super(ScienceCam, self).__init__()
+        self.los = lineofsight.LineOfSight(
+                self.config, self.simConfig, self.atmosConfig,
+                phaseSize=self.simConfig.simSize, propagationDirection="down")
 
         mask = self.mask[
                 self.simConfig.simPad:-self.simConfig.simPad,
@@ -79,7 +81,8 @@ class ScienceCam(lineofsight.LineOfSight):
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
-        self.EField[:] = numpy.ones((self.phaseSize,) * 2, dtype=CDTYPE)
+        self.los.EField[:] = numpy.ones(
+                (self.los.phaseSize,) * 2, dtype=CDTYPE)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()
@@ -111,6 +114,7 @@ class ScienceCam(lineofsight.LineOfSight):
         Takes the calculated pupil phase, scales for the correct FOV,
         and uses an FFT to transform to the focal plane.
         '''
+        self.EField = self.los.EField
 
         # Apply the system mask
         self.EField *= self.mask
@@ -147,7 +151,7 @@ class ScienceCam(lineofsight.LineOfSight):
             ndarray: Resulting science PSF
         """
 
-        super(ScienceCam, self).frame(scrns, correction=correction)
+        self.los.frame(scrns, correction=correction)
 
         self.calcFocalPlane()
 
