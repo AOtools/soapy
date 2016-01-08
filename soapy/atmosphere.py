@@ -117,7 +117,7 @@ class atmos:
 
         scrnSize = int(round(self.scrnSize))
 
-        # The whole screens will be kept at this value, and then scaled to the 
+        # The whole screens will be kept at this value, and then scaled to the
         # correct r0 before being sent to the simulation
         self.wholeScrnR0 = 1.
 
@@ -320,7 +320,7 @@ class atmos:
 
         return scrns
 
-    def randomScrns(self, subHarmonics=True, L0=30., l0=0.01):
+    def randomScrns(self, subHarmonics=True, l0=0.01):
         """
         Generated random phase screens defined by the atmosphere object parameters.
 
@@ -333,136 +333,16 @@ class atmos:
             if subHarmonics:
                 scrns[i] = ft_sh_phase_screen(
                         self.scrnStrengths[i], self.scrnSize,
-                        (self.pxlScale**(-1.)), L0, l0)
+                        (self.pxlScale**(-1.)), self.atmosConfig.L0[i], l0)
             else:
                 scrns[i] = ft_phase_screen(
                         self.scrnStrengths[i], self.scrnSize,
-                        (self.pxlScale**(-1.)), L0, l0)
+                        (self.pxlScale**(-1.)), self.atmosConfig.L0[i], l0)
 
             # Turn to nm
             scrns[i] *= (500./(2*numpy.pi))
 
-        # pool = Pool(2)
-        # args = []
-        # for i in xrange(self.scrnNo):
-        #     args.append((self.scrnStrengths[i], self.scrnSize,
-        #                 self.pxlScale**(-1.), L0, l0))
-
-
-        # scrns = pool.map(pool_ft_sh_phase_screen, args)
-
         return scrns
-
-
-#Commented as not used - apr 14-04-2015
-#class Screen(object):
-#
-#    def __init__(self, scrn, subscrnSize, order=3):
-#
-#        self.xCoords = numpy.arange(scrn.shape[0])
-#        self.yCoords = numpy.arange(scrn.shape[1])
-#
-#        self.interpObj = scipy.interpolate.RectBivariateSpline(
-#                                    self.xCoords, self.yCoords, scrn, kx=order,
-#                                    ky=order
-#                                    )
-#        self._subScrnCoordsX = numpy.arange(subscrnSize)
-#        self._subScrnCoordsY = numpy.arange(subscrnSize)
-#
-#        self.shape = (subscrnSize, subscrnSize)
-#
-#        self.currentPos = (0,0)
-#
-#    def _getScrnCoords(self):
-#
-#        return (self._subScrnCoordsX+self.currentPos[0],
-#                self._subScrnCoordsY+self.currentPos[1])
-#
-#
-#    def __getitem__(self, key):
-#
-#        try:
-#            #If too many dims...raise error
-#            if len(key)>2:
-#                raise IndexError("too many indices for array")
-#
-#            #If 2 dims
-#            if len(key)==2:
-#                #parse x-params
-#                if not key[0].start:
-#                    xstart = 0
-#                else:
-#                    xstart = key[0].start
-#
-#                if not key[0].stop:
-#                    xstop = self.shape[0]
-#                else:
-#                    xstop = key[0].stop
-#
-#                if not key[0].step:
-#                    xstep = 1
-#                else:
-#                    xstep = key[0].step
-#
-#                #parse y-params
-#                if not key[1].start:
-#                    ystart = 0
-#                else:
-#                    ystart = key[1].start
-#
-#                if not key[1].stop:
-#                    ystop = self.shape[1]
-#                else:
-#                    ystop = key[1].stop
-#
-#                if not key[1].step:
-#                    ystep = 1
-#                else:
-#                    ystep = key[1].step
-#        #Only x-coords given
-#        except TypeError:
-#
-#            #parse x-params
-#            if not key.start:
-#                xstart = 0
-#            else:
-#                xstart = key.start
-#
-#            if not key.stop:
-#                xstop = self.shape[0]
-#            else:
-#                xstop = key.stop
-#
-#            if not key.step:
-#                xstep = 1
-#            else:
-#                xstep = key.step
-#
-#            #Set y-params
-#            ystart = 0
-#            ystop = self.shape[1]
-#            ystep = 1
-#
-#        xN = (xstop-xstart)/xstep
-#        yN = (ystop-ystart)/ystep
-#
-#        return self.getSlice(xstart, xstop, xN, ystart, ystop, yN)
-#
-#
-#    def getSlice(self, xstart, xstop, xsize, ystart, ystop, ysize):
-#
-#        if ((xstop-xstart)/xsize)!=1:
-#            xCoords = numpy.linspace(xstart, xstop, xsize)+self.currentPos[0]
-#        else:
-#            xCoords = self.subScrnCoords[0]
-#
-#        if ((ystop-ystart)/ysize)!=1:
-#            yCoords = numpy.linspace(ystart, ystop, ysize)+self.currentPos[1]
-#        else:
-#            yCoords = self.subScrnCoords[1]
-#
-#        return self.interpObj(xCoords, yCoords)
-#    subScrnCoords = property(_getScrnCoords)
 
 
 def pool_ft_sh_phase_screen(args):
