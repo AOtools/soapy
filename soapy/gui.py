@@ -187,7 +187,7 @@ class GUI(QtGui.QMainWindow):
                     self.config.wfss[wfs].nxSubaps*self.config.wfss[wfs].pxlsPerSubap
                     )
             self.phasePlots[wfs] = self.makeImageItem(
-                    self.ui.phaseLayout,self.config.sim.simSize)
+                    self.ui.phaseLayout, self.config.sim.simSize)
 
             if self.config.lgss[wfs].uplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
@@ -260,6 +260,8 @@ class GUI(QtGui.QMainWindow):
                     wfsPhase = plotDict["wfsPhase"][wfs]
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
+                    self.phasePlots[wfs].getViewBox().setRange(
+                            QtCore.QRectF(0, 0, self.sim.wfss[wfs].phaseSize, self.sim.wfss[wfs].phaseSize))
 
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
@@ -337,8 +339,6 @@ class GUI(QtGui.QMainWindow):
         vb.addItem(img)
         vb.setRange(QtCore.QRectF(0, 0, size, size))
         return img
-
-
 
     def plotPupilOverlap(self):
 
