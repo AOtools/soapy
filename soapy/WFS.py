@@ -181,7 +181,9 @@ class WFS(object):
         # For each scrn height they will be edited per
         self.scrnCoords = numpy.arange(self.simConfig.scrnSize)
 
-
+        # This is the size of the phase to cut out
+        # Usually, it will be ``simSize``, but WFSs may require something different
+        self.phaseSize = self.simConfig.simSize
 
     def initFFTs(self):
         pass
@@ -196,10 +198,9 @@ class WFS(object):
         and the E-Field across the WFS
         """
 
-        self.wfsPhase = numpy.zeros([self.simConfig.simSize]*2, dtype=DTYPE)
-        self.EField = numpy.zeros([self.simConfig.simSize]*2, dtype=CDTYPE)
-        self.metaPupil = numpy.zeros(
-                (self.simConfig.simSize, self.simConfig.simSize))
+        self.wfsPhase = numpy.zeros([self.phaseSize]*2, dtype=DTYPE)
+        self.EField = numpy.zeros([self.phaseSize]*2, dtype=CDTYPE)
+        self.metaPupil = numpy.zeros([self.phaseSize,]*2, dtype=DTYPE)
 
     def initLGS(self):
         """
@@ -239,31 +240,31 @@ class WFS(object):
                 self.elong = self.lgsConfig.elongationDepth
                 self.elongLayers = self.lgsConfig.elongationLayers
 
-                #Get Heights of elong layers
+                # Get Heights of elong layers
                 self.elongHeights = numpy.linspace(
                     self.wfsConfig.GSHeight-self.elong/2.,
                     self.wfsConfig.GSHeight+self.elong/2.,
                     self.elongLayers
                     )
 
-                #Calculate the zernikes to add
-                self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
+                # Calculate the zernikes to add
+                self.elongZs = aoSimLib.zernikeArray(
+                            [2,3,4], self.simConfig.pupilSize)
 
-                #Calculate the radii of the metapupii at for different elong
-                #Layer heights
-                #Also calculate the required phase addition for each layer
+                # Calculate the radii of the metapupii at for different elong
+                # Layer heights
+                # Also calculate the required phase addition for each layer
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
-                    (self.elongLayers, self.simConfig.simSize,
-                    self.simConfig.simSize))
+                    (self.elongLayers, self.phaseSize, self.phaseSize))
                 for i in xrange(self.elongLayers):
                     self.elongRadii[i] = self.findMetaPupilSize(
                                                 float(self.elongHeights[i]))
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
 
-            #If GS at infinity cant do elongation
+            # If GS at infinity cant do elongation
             elif (self.wfsConfig.GSHeight==0 and
                     self.lgsConfig.elongationDepth!=0):
                 logger.warning("Not able to implement LGS Elongation as GS at infinity")
@@ -318,9 +319,9 @@ class WFS(object):
             ndarray: The phase addition required for that layer.
         """
 
-        #Calculate the path difference between the central GS height and the
-        #elongation "layer"
-        #Define these to make it easier
+        # Calculate the path difference between the central GS height and the
+        # elongation "layer"
+        # Define these to make it easier
         h = self.elongHeights[elongLayer]
         dh = h - self.wfsConfig.GSHeight
         H = self.lgsConfig.height
@@ -328,12 +329,12 @@ class WFS(object):
         D = self.telDiam
         theta = (d.astype("float")/H) - self.wfsConfig.GSPosition
 
-        #for the focus terms....
+        # for the focus terms....
         focalPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * ( (
             ( (self.telDiam/2.)**2 + (h**2) )**0.5\
           - ( (self.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh )
 
-        #For tilt terms.....
+        # For tilt terms.....
         tiltPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * (
             numpy.sqrt( (dh+H)**2. + ( (dh+H)*theta-d-D/2.)**2 )
             + numpy.sqrt( H**2 + (D/2. - d + H*theta)**2 )
@@ -342,11 +343,11 @@ class WFS(object):
 
 
         phaseAddition = numpy.zeros(
-                (  self.simConfig.pupilSize, self.simConfig.pupilSize) )
+                    (self.simConfig.pupilSize, self.simConfig.pupilSize))
 
         phaseAddition +=( (self.elongZs[2]/self.elongZs[2].max())
                              * focalPathDiff )
-        #X,Y tilt
+        # X,Y tilt
         phaseAddition += ( (self.elongZs[0]/self.elongZs[0].max())
                             *tiltPathDiff[0] )
         phaseAddition += ( (self.elongZs[1]/self.elongZs[1].max())
@@ -354,6 +355,8 @@ class WFS(object):
 
         pad = ((self.simConfig.simPad,)*2, (self.simConfig.simPad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
+
+        phaseAddition = aoSimLib.zoom(phaseAddition, self.phaseSize)
 
         return phaseAddition
 
@@ -387,7 +390,7 @@ class WFS(object):
 #############################################################
 
 #############################################################
-#Phase stacking routines for a WFS frame
+# Phase stacking routines for a WFS frame
     @numba.jit
     def getMetaPupilPos(self, height, GSPos=None):
         '''
@@ -402,12 +405,12 @@ class WFS(object):
         Returns:
             ndarray: The position of the centre of the metapupil in metres
         '''
-        #if no GSPos given, use system pos and convert into radians
+        # if no GSPos given, use system pos and convert into radians
         if not numpy.any(GSPos):
             GSPos = (   numpy.array(self.wfsConfig.GSPosition)
                         *numpy.pi/(3600.0*180.0) )
 
-        #Position of centre of GS metapupil off axis at required height
+        # Position of centre of GS metapupil off axis at required height
         GSCent = (numpy.tan(GSPos) * height)
 
         return GSCent
@@ -430,11 +433,11 @@ class WFS(object):
             ndarray: The meta pupil at the specified height
         '''
 
-        #If no size of metapupil given, use system pupil size
+        # If no size of metapupil given, use system pupil size
         if not simSize:
             simSize = self.simConfig.simSize
 
-        #If the radius is 0, then 0 phase is returned
+        # If the radius is 0, then 0 phase is returned
         if radius==0:
             return numpy.zeros((simSize, simSize))
 
@@ -443,7 +446,8 @@ class WFS(object):
 
         logger.debug("GSCent {}".format(GSCent))
         scrnX, scrnY = scrn.shape
-        #If the GS is not at infinity, take into account cone effect
+
+        # If the GS is not at infinity, take into account cone effect
         if self.wfsConfig.GSHeight!=0:
             fact = float(2*radius)/self.simConfig.pupilSize
         else:
@@ -462,19 +466,11 @@ class WFS(object):
                     "GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
 
+        # Must interpolate. -1 as linspace goes to number
+        xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
+        yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
 
-        if (x1.is_integer() and x2.is_integer()
-                and y1.is_integer() and y2.is_integer()):
-            #Old, simple integer based solution
-            self.metaPupil= scrn[ x1:x2, y1:y2]
-        else:
-            #If points are float, must interpolate. -1 as linspace goes to number
-            xCoords = numpy.linspace(x1, x2-1, simSize)
-            yCoords = numpy.linspace(y1, y2-1, simSize)
-            #interpObj = interp2d(
-            #       self.scrnCoords, self.scrnCoords, scrn, copy=False)
-            #self.metaPupil = interpObj(xCoords, yCoords)
-            aoSimLib.linterp2d_numba(
+        aoSimLib.linterp2d_numba(
                     scrn, xCoords, yCoords, self.metaPupil,
                     threads = self.simConfig.procs)
 
@@ -548,11 +544,9 @@ class WFS(object):
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
                             radius=radii[i], GSPos=GSPos)
-                            # pupilSize=2*self.simConfig.pupilSize)
             else:
                 phase = self.getMetaPupilPhase(
                             self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            #pupilSize=2*self.simConfig.pupilSize,
                             GSPos=GSPos)
 
             #Add add phase from this layer
@@ -564,15 +558,6 @@ class WFS(object):
                     self.EField, self.wfsConfig.wavelength,
                     delta, delta, ht
                     )
-
-        # Multiply EField by aperture
-        # self.EField[:] *= self.mask
-        # self.EField[:] = self.physEField[
-        #                    self.simConfig.pupilSize/2.:
-        #                    3*self.simConfig.pupilSize/2.,
-        #                    self.simConfig.pupilSize/2.:
-        #                    3*self.simConfig.pupilSize/2.] * self.mask
-
 ######################################################
 
 
@@ -669,15 +654,20 @@ class WFS(object):
             #If imat frame, dont want to make it off-axis
             if iMatFrame:
                 try:
-                    self.EField[:] = numpy.exp(1j*scrns[0]*self.phs2Rad)
+                    iMatPhase = aoSimLib.zoom(scrns[0], self.phaseSize, order=1)
+                    self.EField[:] = numpy.exp(1j*iMatPhase*self.phs2Rad)
                 except ValueError:
+                    import traceback
+                    traceback.print_exc()
                     raise ValueError("If iMat Frame, scrn must be ``simSize``")
             else:
                 self.makePhase(self.radii)
 
             self.uncorrectedPhase = self.wfsPhase.copy()/self.phs2Rad
             if numpy.any(correction):
-                self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
+                correctionPhase = aoSimLib.zoom(
+                        correction, self.phaseSize, order=1)
+                self.EField *= numpy.exp(-1j*correctionPhase*self.phs2Rad)
             self.calcFocalPlane()
 
         if read:
@@ -778,6 +768,7 @@ class ShackHartmann(WFS):
                 self.wfsConfig.nxSubaps*self.subapFOVSpacing*
                 (float(self.simConfig.simSize)/self.simConfig.pupilSize)
                 ))
+        self.phaseSize = self.scaledEFieldSize
 
         # Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
@@ -927,22 +918,22 @@ class ShackHartmann(WFS):
         only 1 pixel
         """
         if not self.wfsConfig.pxlsPerSubap%2:
-            #If pxlsPerSubap is even
-            #Angle we need to correct for half a pixel
+            # If pxlsPerSubap is even
+            # Angle we need to correct for half a pixel
             theta = self.SUBAP_OVERSIZE*self.subapFOVrad/ (
                     2*self.subapFFTPadding)
 
-            #Magnitude of tilt required to get that angle
-            A = theta*self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
+            # Magnitude of tilt required to get that angle
+            A = theta * self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
 
-            #Create tilt arrays and apply magnitude
-            coords = numpy.linspace(-1,1,self.subapFOVSpacing)
+            # Create tilt arrays and apply magnitude
+            coords = numpy.linspace(-1, 1, self.subapFOVSpacing)
             X,Y = numpy.meshgrid(coords,coords)
 
-            self.tiltFix = -1*A*(X+Y)
+            self.tiltFix = -1 * A * (X+Y)
 
         else:
-            self.tiltFix = numpy.zeros( (self.subapFOVSpacing,)*2)
+            self.tiltFix = numpy.zeros((self.subapFOVSpacing,)*2)
 
     def oneSubap(self, phs):
         '''
@@ -996,28 +987,27 @@ class ShackHartmann(WFS):
     def calcFocalPlane(self, intensity=1):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
-
+ 
         Parameters:
             intensity (float): The relative intensity to multiply the focal plane by.
         '''
         # Scale phase (EField) to correct size for FOV (plus a bit with padding)
         # self.scaledEField = aoSimLib.zoom(
         #       self.EField, self.scaledEFieldSize)*self.scaledMask
-        aoSimLib.zoom_numba(
-                self.EField, self.scaledEField, threads = self.simConfig.procs)
-        self.scaledEField*=self.scaledMask
+        # aoSimLib.zoom_numba(
+        #         self.EField, self.scaledEField, threads = self.simConfig.procs)
+        # self.scaledEField*=self.scaledMask
 
         # Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.)
-
                 - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
-        self.pupilEField = self.scaledEField[coord:-coord, coord:-coord]
+        self.cropEField = self.EField[coord:-coord, coord:-coord]
 
         # create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
             x,y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
-            self.subapArrays[i] = self.pupilEField[
+            self.subapArrays[i] = self.cropEField[
                                     int(x):
                                     int(x+self.subapFOVSpacing) ,
                                     int(y):
@@ -1201,9 +1191,9 @@ class ShackHartmann(WFS):
             pxlEquivNoise = (
                     self.wfsConfig.angleEquivNoise *
                     float(self.wfsConfig.pxlsPerSubap)
-                    /self.wfsConfig.subapFOV )
-            self.slopes += numpy.random.normal( 0, pxlEquivNoise,
-                                                2*self.activeSubaps)
+                    /self.wfsConfig.subapFOV)
+            self.slopes += numpy.random.normal( 
+                    0, pxlEquivNoise, 2*self.activeSubaps)
 
         return self.slopes
 
