@@ -231,8 +231,7 @@ class WFS(object):
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
-                    (self.elongLayers, self.simConfig.simSize,
-                    self.simConfig.simSize))
+                    (self.elongLayers, self.phaseSize, self.phaseSize))
                 for i in xrange(self.elongLayers):
                     self.elongRadii[i] = self.findMetaPupilSize(
                                                 float(self.elongHeights[i]))
@@ -266,9 +265,9 @@ class WFS(object):
             ndarray: The phase addition required for that layer.
         """
 
-        #Calculate the path difference between the central GS height and the
-        #elongation "layer"
-        #Define these to make it easier
+        # Calculate the path difference between the central GS height and the
+        # elongation "layer"
+        # Define these to make it easier
         h = self.elongHeights[elongLayer]
         dh = h - self.config.GSHeight
         H = self.lgsConfig.height
@@ -276,25 +275,26 @@ class WFS(object):
         D = self.los.telDiam
         theta = (d.astype("float")/H) - self.config.GSPosition
 
-        #for the focus terms....
-        focalPathDiff = (2*numpy.pi/self.config.wavelength) * ( (
-            ( (self.los.telDiam/2.)**2 + (h**2) )**0.5\
-          - ( (self.los.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh )
 
-        #For tilt terms.....
-        tiltPathDiff = (2*numpy.pi/self.config.wavelength) * (
-            numpy.sqrt( (dh+H)**2. + ( (dh+H)*theta-d-D/2.)**2 )
-            + numpy.sqrt( H**2 + (D/2. - d + H*theta)**2 )
-            - numpy.sqrt( H**2 + (H*theta - d - D/2.)**2)
-            - numpy.sqrt( (dh+H)**2 + (D/2. - d + (dh+H)*theta )**2 )    )
+        # for the focus terms....
+        focalPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * ( (
+            ( (self.telDiam/2.)**2 + (h**2) )**0.5\
+          - ( (self.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh )
+
+        # For tilt terms.....
+        tiltPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * (
+                numpy.sqrt( (dh+H)**2. + ( (dh+H)*theta-d-D/2.)**2 )
+                + numpy.sqrt( H**2 + (D/2. - d + H*theta)**2 )
+                - numpy.sqrt( H**2 + (H*theta - d - D/2.)**2)
+                - numpy.sqrt( (dh+H)**2 + (D/2. - d + (dh+H)*theta )**2))
 
 
         phaseAddition = numpy.zeros(
-                (  self.simConfig.pupilSize, self.simConfig.pupilSize) )
+                    (self.simConfig.pupilSize, self.simConfig.pupilSize))
 
         phaseAddition +=( (self.elongZs[2]/self.elongZs[2].max())
                              * focalPathDiff )
-        #X,Y tilt
+        # X,Y tilt
         phaseAddition += ( (self.elongZs[0]/self.elongZs[0].max())
                             *tiltPathDiff[0] )
         phaseAddition += ( (self.elongZs[1]/self.elongZs[1].max())
@@ -302,6 +302,8 @@ class WFS(object):
 
         pad = ((self.simConfig.simPad,)*2, (self.simConfig.simPad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
+
+        phaseAddition = aoSimLib.zoom(phaseAddition, self.phaseSize)
 
         return phaseAddition
 
