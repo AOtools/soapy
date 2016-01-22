@@ -69,7 +69,7 @@ class DM(object):
         self.wfss = wfss
         self.mask = mask
         self.acts = self.getActiveActs()
-        self.wvl = wfss[0].wfsConfig.wavelength
+        self.wvl = wfss[0].config.wavelength
 
         self.actCoeffs = numpy.zeros( (self.acts) )
 

@@ -305,6 +305,34 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 
     return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
 
+def padCropImg(img, newSize):
+    """
+    Pads or Crops a square image to a new square size
+
+    Parameters:
+        img (ndarray): Image to pad/crop
+        newSize (int): New size of square image
+
+    Returns:
+        ndarry: new image
+
+    """
+
+    imgSize = img.shape[0]
+    coord = int(round(0.5*abs(imgSize-newSize)))
+
+    if oldSize>=newSize:
+        newImg = img[coord, -coord: coord, -coord]
+
+    else:
+        newImg = numpy.zeros((newSize, newSize), dtype=img.dtype)
+        newImg[coord, -coord: coord, -coord] = img
+        
+    return newImg
+
+
+
+
 
 #######################
 #WFS Functions

@@ -724,7 +724,7 @@ class Sim(object):
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
                 # Record WFE residual
-                res = self.sciCams[sci].residual
+                res = self.sciCams[sci].los.residual
                 # Remove piston first
                 res -= res.sum()/self.mask.sum()
                 res *= self.mask
@@ -986,7 +986,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].residual.copy()*self.mask
+                        residual[i] = self.sciCams[i].los.residual.copy()*self.mask
                     except AttributeError:
                         residual[i] = None
 

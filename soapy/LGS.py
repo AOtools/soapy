@@ -30,7 +30,7 @@ except NameError:
     xrange = range
 
 
-class LGSObj(object):
+class LGS(object):
     '''
     A class to simulate the propogation of a laser up through turbulence.
     given a set of phase screens, this will return the PSF which would be present on-sky.
@@ -38,30 +38,46 @@ class LGSObj(object):
     it assumes that the laser is focussed at the height it is propogated to.
     '''
 
-    def __init__(self, simConfig, wfsConfig, lgsConfig, atmosConfig):
+    def __init__(
+            self, simConfig, wfsConfig, lgsConfig, atmosConfig, fieldDiam=None, 
+            outPxlScale=None):
 
         self.simConfig = simConfig
         self.wfsConfig = wfsConfig
-        self.lgsConfig = lgsConfig
+        self.config = lgsConfig
         self.atmosConfig = atmosConfig
 
-        self.LGSPupilSize = int(numpy.round(lgsConfig.pupilDiam
+        self.fieldDiam = fieldDiam
+        self.outPxlScale = outPxlScale
+        self.phaseSize = round(int(self.fieldDiam/self.outPxlScale))
+
+        self.LGSPupilSize = int(numpy.round(self.config.pupilDiam
                                             * self.simConfig.pxlScale))
-
-        #Phase power scaling factor for lgs wavelength
-        phsWvl = 550e-9
-        self.r0scale = phsWvl / self.lgsConfig.wavelength
-
         self.mask = aoSimLib.circle(
-                0.5*lgsConfig.pupilDiam*self.simConfig.pxlScale,
+                0.5*self.config.pupilDiam*self.simConfig.pxlScale,
                 self.simConfig.simSize)
         self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
+
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
             self.pupilPos[i] = self.metaPupilPos(
                 self.atmosConfig.scrnHeights[i]
                 )
 
+        self.initFFTs()
+
+    def initLos(self):
+        """
+        Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
+        """
+        self.los = lineofsight.LineOfSight(
+                    self.config, self.simConfig, self.atmosConfig,
+                    outDiam=self.fieldDiam, propagationDirection="up",
+                    outPxlScale=self.outPxlScale
+                    )
+
+
+    def initFFTs(self):
         self.FFT = AOFFT.FFT(
                 (simConfig.simSize, simConfig.simSize),
                 axes=(0,1),mode="pyfftw",
@@ -76,220 +92,53 @@ class LGSObj(object):
                 fftw_FLAGS=(lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
 
-
     def setWFSParams(self, subapFOVRad, subapOversamp, subapFFTPadding):
 
         self.subapFOVRad = subapFOVRad
         self.subapOversamp = subapOversamp
         self.subapFFTPadding = subapFFTPadding
 
-        #This is the size of the patch of sky the subap sees at the LGS height
-        self.FOVPatch = self.subapFOVRad*self.lgsConfig.height
+        # This is the size of the patch of sky the subap sees at the LGS height
+        self.FOVPatch = self.subapFOVRad*self.config.height
 
-        #This is the number of pxls used for correct FOV (same as a WFS subap)
-        self.LGSFOVPxls = numpy.round(
-                                self.lgsConfig.pupilDiam *
-                                self.subapFOVRad/self.lgsConfig.wavelength
-                                )
-        #Dont want to interpolate down as throwing away info - make sure we
-        #interpolate up - but will have to crop down again
-        self.fovOversize = 1
-        self.LGSFOVOversize = self.LGSFOVPxls
-        while self.LGSFOVPxls<self.LGSPupilSize:
-            self.fovOversize+=1
-            self.LGSFOVOversize = self.LGSFOVPxls * self.fovOversize
+    def getLgsPsf(self, scrns=None, phs=None):
+        # if self.config.propagationMode=="physical":
+        #     return self.getLgsPsfPhys(scrns, phs)
+        # else:
+        #     return self.getLgsPsfGeo(scrns, phs)
 
+        self.los.makePhase()
 
-        #This is the size padding size applied to the LGSFFT
-        #It is deliberatiely an integer number of wfs subap padding sizes
-        #so we can easily bin down to size again
-        self.padFactor = 1
-        self.LGSFFTPadding = self.subapFFTPadding
-        while self.LGSFFTPadding < self.LGSFOVOversize:
-            self.padFactor+=1
-            self.LGSFFTPadding = self.padFactor * self.subapFFTPadding
-        self.LGSFFTPadding*=self.fovOversize
-
-        #Set up requried FFTs
-        self.geoFFT = AOFFT.FFT(
-            inputSize=(self.LGSFFTPadding, self.LGSFFTPadding), axes=(0,1),
-            mode="pyfftw", dtype="complex64",
-            THREADS=self.lgsConfig.fftwThreads,
-            fftw_FLAGS=(self.lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
-
-        #Make new mask
-        self.geoMask = aoSimLib.circle(self.LGSFOVOversize/2.,
-             self.LGSFOVOversize)
-
-        #Get Tilt Correction
-        self.optimiseTilt()
-
-
-
-    def metaPupilPos(self, height):
-
-        #Convert positions into radians
-
-        GSPos = numpy.array(self.wfsConfig.GSPosition)*numpy.pi/(3600*180.0)
-
-        #Position of centre of GS metapupil off axis at required height
-        GSCent = numpy.tan(GSPos)*height
-
-        return GSCent
-
-
-    def metaPupilPhase(self, scrn, height, pos):
-
-        GSCent = pos*self.simConfig.pxlScale
-        scrnX,scrnY = scrn.shape
-
-        logger.debug("LGS Cent: ({})".format(GSCent))
-
-        x1 = scrnX/2. + GSCent[0] - self.simConfig.simSize/2.
-        x2 = scrnX/2. + GSCent[0] + self.simConfig.simSize/2.
-        y1 = scrnY/2. + GSCent[1] - self.simConfig.simSize/2.
-        y2 = scrnY/2. + GSCent[1] + self.simConfig.simSize/2.
-
-        logger.debug("LGS MetaPupil Coords: ({}:{}, {}:{})".format(x1,x2,y1,y2))
-
-        if (x1.is_integer() and x2.is_integer()
-                and y1.is_integer() and y2.is_integer()):
-            metaPupil = scrn[ x1:x2, y1:y2 ].copy()
+        if self.config.propagationMode=="physical":
+            self.psf1 = abs(self.los.EField)**2
 
         else:
-            xCoords = numpy.linspace(x1, x2-1, self.simConfig.simSize)
-            yCoords = numpy.linspace(y1, y2-1, self.simConfig.simSize)
-            scrnCoords = numpy.arange(self.simConfig.scrnSize)
 
-            interpObj = interp2d(scrnCoords, scrnCoords, scrn, copy=False)
-            metaPupil = interpObj(xCoords, yCoords)
+            self.geoFFT.inputData[  :self.LGSFOVOversize,
+                                    :self.LGSFOVOversize] = self.los.EField
+            fPlane = abs(AOFFT.ftShift2d(self.geoFFT())**2)
 
-        return metaPupil
-
-
-    def getPupilPhase(self, scrns):
-        self.pupilWavefront = numpy.zeros(
-                (self.simConfig.simSize,self.simConfig.simSize), dtype="complex64")
-
-        #Stack and sum up the wavefront front the
-        #phase screens in the LGS meta pupils
-        for layer in scrns:
-            logger.debug("layer: {}".format(layer))
-            self.pupilWavefront += self.metaPupilPhase(
-                            scrns[layer],
-                            self.atmosConfig.scrnHeights[layer],
-                            self.pupilPos[layer]
-                            )
-
-        #reduce to size of LGS pupil
-        self.pupilWavefront = self.pupilWavefront[
-                        0.5*(self.simConfig.simSize-self.LGSPupilSize):
-                        0.5*(self.simConfig.simSize+self.LGSPupilSize),
-                        0.5*(self.simConfig.simSize-self.LGSPupilSize):
-                        0.5*(self.simConfig.simSize+self.LGSPupilSize)  ]
-
-        return self.pupilWavefront
+            #Crop to required FOV
+            crop = self.subapFFTPadding*0.5/ self.fovOversize
+            fPlane = fPlane[self.LGSFFTPadding*0.5 - crop:
+                            self.LGSFFTPadding*0.5 + crop,
+                            self.LGSFFTPadding*0.5 - crop:
+                            self.LGSFFTPadding*0.5 + crop    ]
 
 
-class GeometricLGS(LGSObj):
-
-    def setWFSParams(self, subapFOVRad, subapOversamp, subapFFTPadding):
-
-        self.subapFOVRad = subapFOVRad
-        self.subapOversamp = subapOversamp
-        self.subapFFTPadding = subapFFTPadding
-
-        #This is the size of the patch of sky the subap sees at the LGS height
-        self.FOVPatch = self.subapFOVRad*self.lgsConfig.height
-
-        #This is the number of pxls used for correct FOV (same as a WFS subap)
-        self.LGSFOVPxls = numpy.round(
-                    self.lgsConfig.pupilDiam *
-                    self.subapFOVRad/self.lgsConfig.wavelength
-                    )
-        #Dont want to interpolate down as throwing away info - make sure we
-        #interpolate up - but will have to crop down again
-        self.fovOversize = 1
-        self.LGSFOVOversize = self.LGSFOVPxls
-        while self.LGSFOVPxls<self.LGSPupilSize:
-            self.fovOversize+=1
-            self.LGSFOVOversize = self.LGSFOVPxls * self.fovOversize
 
 
-        print("fovOversamp: %d"%self.fovOversize)
-
-        #This is the size padding size applied to the LGSFFT
-        #It is deliberatiely an integer number of wfs subap padding sizes
-        #so we can easily bin down to size again
-        self.padFactor = 1
-        self.LGSFFTPadding = self.subapFFTPadding
-        while self.LGSFFTPadding < self.LGSFOVOversize:
-            self.padFactor+=1
-            self.LGSFFTPadding = self.padFactor * self.subapFFTPadding
-        self.LGSFFTPadding*=self.fovOversize
-
-        #Set up requried FFTs
-        self.geoFFT = AOFFT.FFT(
-            inputSize=(self.LGSFFTPadding, self.LGSFFTPadding), axes=(0,1),
-            mode="pyfftw", dtype="complex64",
-            THREADS=self.lgsConfig.fftwThreads,
-            fftw_FLAGS=(self.lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
-
-        #Make new mask
-        self.geoMask = aoSimLib.circle(self.LGSFOVOversize/2.,
-             self.LGSFOVOversize)
-
-        #Get Tilt Correction
-        self.optimiseTilt()
-
-    def optimiseTilt(self):
-        '''
-        Finds the optimimum correction tilt to apply to each
-        subap to account for an odd even number of points in the subap
-        FFT.
-        to be executed during WFS initialisation.
-        '''
-        X,Y = numpy.meshgrid(numpy.linspace(-1,1,self.LGSFOVOversize),
-                             numpy.linspace(-1,1,self.LGSFOVOversize) )
-
-        O = numpy.ones((self.LGSFOVOversize, self.LGSFOVOversize))
-        res = scipy.optimize.minimize(self.optFunc,0,args=(X,Y,O),tol=0.0001,
-                                options={"maxiter":100})
-        A = res["x"]
-        print(res)
-        print("Found A!:%f"%A)
-        self.cTilt = A * (X+Y)
-
-
-    def optFunc(self,A,X,Y,O):
-        '''
-        Function the <optimiseTilt> function uses to optimise
-        corrective even pixel number tilt
-        '''
-
-        self.cTilt = A*(X+Y)
-        self.LGSPSF(phs=O)
-        cent = aoSimLib.simpleCentroid(self.PSF)
-
-        cent -= self.PSF.shape[0]/2.
-
-        return abs(cent[1]+cent[0])
-
-    def LGSPSF(self,scrns=None, phs=None):
+    def getLgsPsfGeo(self, scrns=None, phs=None):
 
         if scrns!=None:
             self.pupilWavefront = self.getPupilPhase(scrns)
         else:
             self.pupilWavefront = phs
 
-        self.scaledWavefront = aoSimLib.zoom( self.pupilWavefront,
+        self.scaledWavefront = aoSimLib.zoom(self.pupilWavefront,
                                                          self.LGSFOVOversize)
-
-        #Add corrective Tilts to phase
-        self.scaledWavefront += self.cTilt
-
         #Convert phase to complex amplitude (-1 as opposite direction)
-        self.EField =  numpy.exp(-1j*self.scaledWavefront)*self.geoMask
+        self.EField = numpy.exp(-1j*self.scaledWavefront)*self.geoMask
 
         self.geoFFT.inputData[  :self.LGSFOVOversize,
                                 :self.LGSFOVOversize] = self.EField
@@ -305,65 +154,8 @@ class GeometricLGS(LGSObj):
         #now bin to size of wfs
         self.PSF = aoSimLib.binImgs(fPlane, self.padFactor)
 
-class PhysicalLGS(LGSObj):
 
-    def setWFSParams(self, subapFOVRad, subapOversamp, subapFFTPadding):
-
-        self.subapFOVRad = subapFOVRad
-        self.subapOversamp = subapOversamp
-        self.subapFFTPadding = subapFFTPadding
-
-        #This is the size of the patch of sky the subap sees at the LGS height
-        self.FOVPatch = self.subapFOVRad*self.lgsConfig.height
-
-
-    def angularSpectrum(self, Uin, wvl, d1, d2, z):
-        N = Uin.shape[0] #Assumes Uin is square.
-        k = 2*numpy.pi/wvl     #optical wavevector
-
-        (x1,y1) = numpy.meshgrid(d1*numpy.arange(-N/2,N/2),
-                                 d1*numpy.arange(-N/2,N/2),)
-        r1sq = (x1**2 + y1**2) + 1e-10
-
-        #Spatial Frequencies (of source plane)
-        df1 = 1. / (N*d1)
-        fX,fY = numpy.meshgrid(df1*numpy.arange(-N/2,N/2),
-                               df1*numpy.arange(-N/2,N/2))
-        fsq = fX**2 + fY**2
-
-        #Scaling Param
-        m = float(d2)/d1
-
-        #Observation Plane Co-ords
-        x2,y2 = numpy.meshgrid( d2*numpy.arange(-N/2,N/2),
-                                d2*numpy.arange(-N/2,N/2) )
-        r2sq = x2**2 + y2**2
-
-        #Quadratic phase factors
-        Q1 = numpy.exp( 1j * k/2. * (1-m)/z * r1sq)
-
-        Q2 = numpy.exp(-1j * numpy.pi**2 * 2 * z/m/k*fsq)
-
-        Q3 = numpy.exp(1j * k/2. * (m-1)/(m*z) * r2sq)
-
-        #Compute propagated field
-        Uout = Q3 * self.ift2( Q2 * self.ft2(Q1 * Uin/m,d1),df1 )
-
-        return Uout
-
-    def ft2(self, g, delta):
-        self.FFT.inputData[:] = numpy.fft.fftshift(g)
-        G = numpy.fft.fftshift( self.FFT() * delta**2 )
-
-        return G
-
-    def ift2(self, G, delta_f):
-        N = G.shape[0]
-        self.iFFT.inputData[:] = numpy.fft.ifftshift(G)
-        g = numpy.fft.ifftshift(self.iFFT()) * (N * delta_f)**2
-        return g
-
-    def LGSPSF(self, scrns):
+    def getLgsPsfPhys(self, scrns=None, phs=None):
         '''
         Computes the LGS PSF for each frame by propagating
         light to each turbulent layer with a fresnel algorithm
@@ -382,12 +174,12 @@ class PhysicalLGS(LGSObj):
             self.z=0
             self.U *= numpy.exp(-1j*self.phs)
 
-        elif self.atmosConfig.scrnHeights[0] > self.lgsConfig.height:
+        elif self.atmosConfig.scrnHeights[0] > self.config.height:
             self.z = 0
 
         else:
             self.z = self.atmosConfig.scrnHeights[0]
-            self.U = self.angularSpectrum( self.U, self.lgsConfig.wavelength, self.d1, self.d2, self.z )
+            self.U = self.angularSpectrum( self.U, self.config.wavelength, self.d1, self.d2, self.z )
             self.U *= numpy.exp(-1j*self.phs)
 
         #Loop over remaining screens and propagate to the screen heights
@@ -403,7 +195,7 @@ class PhysicalLGS(LGSObj):
 
             if self.z != 0:
                 self.U = self.angularSpectrum(self.U,
-                                           self.lgsConfig.wavelength, self.d1, self.d2, self.z)
+                                           self.config.wavelength, self.d1, self.d2, self.z)
 
             self.U*=self.phs
             self.ht += self.z
@@ -411,12 +203,12 @@ class PhysicalLGS(LGSObj):
         #Finally, propagate to the last layer.
         #Here we scale the array differently to get the correct
         #output scaling for the oversampled WFS
-        self.z = self.lgsConfig.height - self.ht
+        self.z = self.config.height - self.ht
 
         #Perform calculation onto grid with same pixel scale as WFS subap
         self.gridScale = float(self.FOVPatch)/self.subapFFTPadding
-        self.Ufinal = self.angularSpectrum( self.U, self.lgsConfig.wavelength,
-                                        self.d1, self.gridScale, self.z)
+        self.Ufinal = self.angularSpectrum(
+                self.U, self.config.wavelength, self.d1, self.gridScale, self.z)
         self.psf1 = abs(self.Ufinal)**2
 
         #Now fit this grid onto size WFS is expecting

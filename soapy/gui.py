@@ -356,7 +356,7 @@ class GUI(QtGui.QMainWindow):
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
                 if self.sim.config.wfss[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfss[wfs].GSHeight==0:
-                    cent = (self.sim.wfss[wfs].getMetaPupilPos(
+                    cent = (self.sim.wfss[wfs].los.getMetaPupilPos(
                             self.sim.config.atmos.scrnHeights[i])
                             *self.sim.config.sim.pxlScale
                             +self.config.sim.pupilSize)
@@ -378,7 +378,7 @@ class GUI(QtGui.QMainWindow):
                     self.resultPlot.canvas.axes[i].set_xticks([])
 
             for sci in range(self.config.sim.nSci):
-                cent = self.sim.sciCams[sci].getMetaPupilPos(
+                cent = self.sim.sciCams[sci].los.getMetaPupilPos(
                         self.sim.config.atmos.scrnHeights[i])
                 cent*=self.sim.config.sim.pxlScale
                 cent+=self.config.sim.pupilSize
