@@ -487,8 +487,8 @@ class ShackHartmann(WFS):
 
         # Spacing on the "FOV Plane" - the number of elements required
         # for the correct subap FOV (from way FFT "phase" to "image" works)
-        self.subapFOVSpacing = numpy.round(self.subapDiam
-                                * self.subapFOVrad/ self.config.wavelength)
+        self.subapFOVSpacing = numpy.round(
+                self.subapDiam * self.subapFOVrad/ self.config.wavelength)
 
         # make twice as big to double subap FOV
         if self.config.subapFieldStop==True:
@@ -501,13 +501,13 @@ class ShackHartmann(WFS):
         self.config.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
                                             *self.config.pxlsPerSubap)
 
+        # The total size of the required EField for all subaps.
+        # Extra scaling to account for simSize padding
         self.scaledEFieldSize = int(round(
                 self.config.nxSubaps*self.subapFOVSpacing*
                 (float(self.simConfig.simSize)/self.simConfig.pupilSize)
                 ))
-        print(self.simConfig.simSize)
-        print(self.scaledEFieldSize)
-        print(self.simConfig.pxlScale)
+        # This the pixel scale required for the correct FOV
         outPxlScale = (float(self.simConfig.simSize)/float(self.scaledEFieldSize)) * (self.simConfig.pxlScale**-1)
         print(outPxlScale)
         self.los.calcInitParams(outPxlScale=outPxlScale)

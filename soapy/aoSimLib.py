@@ -319,6 +319,10 @@ def padCropImg(img, newSize):
     """
 
     imgSize = img.shape[0]
+
+    if imgSize==newSize:
+        return img
+
     coord = int(round(0.5*abs(imgSize-newSize)))
 
     print(imgSize, newSize)
