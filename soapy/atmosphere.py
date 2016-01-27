@@ -104,6 +104,8 @@ class atmos:
 
         atmosConfig.normScrnStrengths = atmosConfig.scrnStrengths/(
                             atmosConfig.scrnStrengths[:self.scrnNo].sum())
+        self.atmosConfig.scrnHeights = self.atmosConfig.scrnHeights[
+                    :self.atmosConfig.scrnNo]
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *atmosConfig.normScrnStrengths)**(-3./5.) )

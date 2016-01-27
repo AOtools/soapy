@@ -48,7 +48,7 @@ class ScienceCam(object):
         # Init line of sight - Get the phase at the right size for the FOV
         self.los = lineofsight.LineOfSight(
                 self.config, self.simConfig, self.atmosConfig,
-                phaseSize=self.simConfig.simSize, propagationDirection="down")
+                propagationDirection="down")
 
         mask = self.mask[
                 self.simConfig.simPad:-self.simConfig.simPad,
@@ -82,7 +82,7 @@ class ScienceCam(object):
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.los.EField[:] = numpy.ones(
-                (self.los.phaseSize,) * 2, dtype=CDTYPE)
+                (self.los.outPhaseSize,) * 2, dtype=CDTYPE)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()

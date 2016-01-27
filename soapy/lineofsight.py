@@ -83,11 +83,10 @@ class LineOfSight(object):
     def calcInitParams(self, outPxlScale=None, outDiam=None):
         self.telDiam = self.simConfig.pupilSize/self.simConfig.pxlScale
         self.simDiam = self.telDiam * float(self.simConfig.simSize)/self.simConfig.pupilSize
-    
+
         # Convert phase deviation to radians at wfs wavelength.
         # (in nm remember...?)
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength * 10**9)
-
 
         # Get the size of the phase required by the system
         self.inPxlScale = self.simConfig.pxlScale**-1
@@ -96,8 +95,13 @@ class LineOfSight(object):
             self.outPxlScale = self.simConfig.pxlScale**-1
         else:
             self.outPxlScale = outPxlScale
-        
-        self.outDiam = outDiam
+
+        if outDiam is None:
+            self.outDiam = self.simDiam
+        else:
+            self.outDiam = outDiam
+            self.outMask = aoSimLib.zoom(mask, outDiam).round()
+
         self.outPhaseSize = self.outDiam/self.outPxlScale
         print("self.outPxlScale:{}".format(self.outPxlScale))
         print("self.outPhaseSize:{}".format(self.outPhaseSize))
@@ -221,6 +225,7 @@ class LineOfSight(object):
                 scrnCoords, scrnCoords, scrn, copy=False)
         metaPupil = interpObj(xCoords, yCoords)
 
+        self.metaPupil = metaPupil
         return metaPupil
 ######################################################
 
@@ -265,9 +270,6 @@ class LineOfSight(object):
         # Convert phase to radians
         self.phase *= self.phs2Rad
 
-        if self.phase.shape[0]!=self.outPhaseSize:   
-            self.phase = aoSimLib.padCropImg(self.EField_buf, self.outPhaseSize)
-        
         self.EField[:] = numpy.exp(1j*self.phase)
 
         return self.EField
@@ -281,53 +283,55 @@ class LineOfSight(object):
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
             pos (dict, optional): Position of GS in pixels. If not given uses GS position.
         '''
-        
-        scrnNo = len(self.scrns) - 1
-        inDelta = outDelta = self.outPxlScale # Grid spacing for propagation
+
+        scrnNo = len(self.scrns)
         z_total = 0
         scrnRange = range(0, scrnNo)
 
         # Get initial up/down dependent params
         if self.propagationDirection == "up":
-            # initial index
-            i0 = 0
             ht = 0
             ht_final = self.config.altitude
             if ht_final==0:
                 raise ValueError("Can't propagate up to infinity")
             scrnAlts = self.atmosConfig.scrnHeights
-            self.EFieldBuf = self.mask.copy()
+            
+            self.EFieldBuf = self.outMask.copy().astype(CDTYPE)
+            logger.debug("Create EField Buf of mask")
 
         else:
-            i0 = scrnNo
-            ht = self.atmosConfig.scrnHeights[i0]
-            ht_final = 0      
+            ht = self.atmosConfig.scrnHeights[scrnNo-1]
+            ht_final = 0
             scrnRange = scrnRange[::-1]
             scrnAlts = self.atmosConfig.scrnHeights[::-1]
-            self.EFieldBuf = numpy.ones((sim.config.simSize,)*2)
-       
+            self.EFieldBuf = numpy.exp(
+                    1j*numpy.zeros((self.outPhaseSize,)*2)).astype(CDTYPE)
+            logger.debug("Create EField Buf of zero phase")
+
         # Propagate to first phase screen (if not already there)
         if ht!=scrnAlts[0]:
+            logger.debug("propagate to first phase screen")
             z = abs(scrnAlts[0] - ht)
-            self.EField_buf[:] = opticalPropagationLib.angularSpectrum(
-                        self.EField, self.config.wavelength,
-                        inDelta, outDelta, z)
-
-        # Go through and propagate between phase screens 
-        for i in scrnRange: 
+            self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(
+                        self.EFieldBuf, self.config.wavelength,
+                        self.outPxlScale, self.outPxlScale, z)
+        
+        print("ScrnRange:{}".format(scrnRange))
+        print("ScrnAlts: {}".format(scrnAlts))
+        # Go through and propagate between phase screens
+        for i in scrnRange:
             # Get phase for this layer
             if radii:
                 radius = radii[i]
             else:
                 radius = None
             phase = self.getMetaPupilPhase(
-                    self.scrns[i]*self.phs2Rad, 
+                    self.scrns[i],
                     self.atmosConfig.scrnHeights[i], radius=radius, pos=pos)
 
             # Get propagation distance for this layer
-            if i==scrnNo:
-                z = z_total - z
-                outDelta = self.outPxlScale
+            if i==(scrnNo-1):
+                z = abs(ht_final - ht) - z_total
             else:
                 z = abs(scrnAlts[i+1] - scrnAlts[i])
 
@@ -335,20 +339,16 @@ class LineOfSight(object):
             z_total += z
 
             # Apply phase to EField
-            self.EField_buf *= numpy.exp(1j*phase)
+            self.EFieldBuf *= numpy.exp(1j*phase*self.phs2Rad)
 
             # Do ASP for last layer to next
-            self.EField_buf[:] = opticalPropagationLib.angularSpectrum(
-                        self.EField, self.config.wavelength,
-                        inDelta, outDelta, z)
+            self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(
+                        self.EFieldBuf, self.config.wavelength,
+                        self.outPxlScale, self.outPxlScale, z)
 
             logger.debug("Propagation: {}, {} m. Total: {}".format(i, z, z_total))
-        
-        
-        if self.outPhaseSize==self.simConfig.simSize:
-            self.EField[:] = self.EField_buf
-        else:   
-            self.EField[:}] = aoSimLib.padCropImg(self.EField_buf, self.outPhaseSize)
+
+            self.EField[:] = self.EFieldBuf
 
         return self.EField
 
@@ -377,18 +377,12 @@ class LineOfSight(object):
         self.scrns = scrns
 
         self.zeroData()
-        # self.scrns = {}
-        #
-        # # Convert phase to radians
-        # for i in xrange(len(scrns)):
-        #     self.scrns[i] = scrns[i].copy()*self.phs2Rad
-
         self.makePhase(self.radii)
 
         if numpy.any(correction):
             correction = aoSimLib.zoom(correction, self.outPhaseSize)
             self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
-            self.residual = self.phase - correction
+            self.residual = self.phase/self.phs2Rad- correction
         else:
             self.residual = self.phase
 

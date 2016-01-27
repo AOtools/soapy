@@ -113,6 +113,8 @@ class WFS(object):
         guide star geometry.
 
         Parameters:
+
+
             simConfig (confObj): The simulation configuration object
             wfsConfig (confObj): The WFS configuration object
             atmosConfig (confObj): The atmosphere configuration object
@@ -179,7 +181,8 @@ class WFS(object):
         """
         self.los = lineofsight.LineOfSight(
                 self.config, self.simConfig, self.atmosConfig,
-                outPxlScale=self.simConfig.pxlScale**-1, propagationDirection="down")
+                outPxlScale=self.simConfig.pxlScale**-1, 
+                propagationDirection="down")
 
     def initLGS(self):
         """

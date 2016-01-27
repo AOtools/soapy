@@ -41,6 +41,11 @@ def angularSpectrum(inputComplexAmp, wvl, inputSpacing, outputSpacing, z):
         outputSpacing (float): The desired spacing between points on the output array in metres
         z (float): Distance to propagate in metres
     """
+    
+    # If propagation distance is 0, don't bother 
+    if z==0:
+        return inputComplexAmp
+
     N = inputComplexAmp.shape[0] #Assumes Uin is square.
     k = 2*numpy.pi/wvl     #optical wavevector
 

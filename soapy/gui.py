@@ -261,7 +261,7 @@ class GUI(QtGui.QMainWindow):
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
                     self.phasePlots[wfs].getViewBox().setRange(
-                            QtCore.QRectF(0, 0, self.sim.wfss[wfs].phaseSize, self.sim.wfss[wfs].phaseSize))
+                            QtCore.QRectF(0, 0, wfsPhase.shape[0], wfsPhase.shape[1]))
 
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(

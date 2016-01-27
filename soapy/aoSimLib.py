@@ -321,17 +321,15 @@ def padCropImg(img, newSize):
     imgSize = img.shape[0]
     coord = int(round(0.5*abs(imgSize-newSize)))
 
-    if oldSize>=newSize:
-        newImg = img[coord, -coord: coord, -coord]
+    print(imgSize, newSize)
+    if imgSize>=newSize:
+        newImg = img[coord: -coord, coord: -coord]
 
     else:
         newImg = numpy.zeros((newSize, newSize), dtype=img.dtype)
-        newImg[coord, -coord: coord, -coord] = img
+        newImg[coord: -coord, coord: -coord] = img
         
     return newImg
-
-
-
 
 
 #######################
