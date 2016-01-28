@@ -16,7 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
-from .import aoSimLib, AOFFT, logger
+from .import aoSimLib, AOFFT, logger, lineofsight
 
 import scipy.optimize
 from scipy.interpolate import interp2d
@@ -62,8 +62,8 @@ class LGS(object):
             self.nOutPxls = self.simConfig.simSize/self.simConfig.pxlScale/self.outPxlScale
         else:
             self.nOutPxls = lgsOutDiam/self.outPxlScale
-
-        self.phaseSize = round(int(self.fieldDiam/self.outPxlScale))
+        
+        self.initLos()
 
         self.LGSPupilSize = int(numpy.round(self.config.pupilDiam
                                             * self.simConfig.pxlScale))
@@ -74,7 +74,7 @@ class LGS(object):
 
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
-            self.pupilPos[i] = self.metaPupilPos(
+            self.pupilPos[i] = self.los.getMetaPupilPos(
                 self.atmosConfig.scrnHeights[i]
                 )
 
@@ -88,7 +88,7 @@ class LGS(object):
         """
         self.los = lineofsight.LineOfSight(
                     self.config, self.simConfig, self.atmosConfig,
-                    outDiam=self.fieldDiam, propagationDirection="up",
+                    propagationDirection="up",
                     outPxlScale=self.outPxlScale
                     )
 
