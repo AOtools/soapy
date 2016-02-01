@@ -22,16 +22,20 @@ class LineOfSight(object):
         atmosConfig: The soapy atmosphere config
         propagationDirection (str): Direction of light propagation, either `"up"` or `"down"`
         outPxlScale (float): The EField pixel scale required at the output (m/pxl)
+        mask (ndarray): Mask to apply at the *beginning* of propagation
     """
     def __init__(
             self, config, simConfig, atmosConfig,
-            propagationDirection="down", outPxlScale=None, outDiam=None):
+            propagationDirection="down", outPxlScale=None,
+            nOutPxls=None, mask=None):
 
         self.config = config
         self.simConfig = simConfig
         self.atmosConfig = atmosConfig
 
-        self.calcInitParams(outPxlScale, outDiam)
+        self.mask = mask
+
+        self.calcInitParams(outPxlScale, nOutPxls)
 
         self.propagationDirection = propagationDirection
 
@@ -80,13 +84,13 @@ class LineOfSight(object):
 
 ############################################################
 # Initialisation routines
-    def calcInitParams(self, outPxlScale=None, outDiam=None):
-        self.telDiam = self.simConfig.pupilSize/self.simConfig.pxlScale
-        self.simDiam = self.telDiam * float(self.simConfig.simSize)/self.simConfig.pupilSize
+    def calcInitParams(self, outPxlScale=None, nOutPxls=None):
 
         # Convert phase deviation to radians at wfs wavelength.
         # (in nm remember...?)
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength * 10**9)
+
+        self.telDiam = float(self.simConfig.pupilSize) / self.simConfig.pxlScale
 
         # Get the size of the phase required by the system
         self.inPxlScale = self.simConfig.pxlScale**-1
@@ -96,15 +100,18 @@ class LineOfSight(object):
         else:
             self.outPxlScale = outPxlScale
 
-        if outDiam is None:
-            self.outDiam = self.simDiam
+        if nOutPxls is None:
+            self.nOutPxls = self.simConfig.simSize
         else:
-            self.outDiam = outDiam
-            self.outMask = aoSimLib.zoom(mask, outDiam).round()
+            self.nOutPxls = nOutPxls
 
-        self.outPhaseSize = self.outDiam/self.outPxlScale
-        print("self.outPxlScale:{}".format(self.outPxlScale))
-        print("self.outPhaseSize:{}".format(self.outPhaseSize))
+        print("self.outPxlScale: {}".format(self.outPxlScale))
+        print("self.mask: {}".format(self.mask))
+        print("self.nOutPxls:{}".format(self.nOutPxls))
+        if self.mask is not None:
+            self.outMask = aoSimLib.zoom(
+                    self.mask, self.nOutPxls).round()
+
 
     def allocDataArrays(self):
         """
@@ -115,9 +122,9 @@ class LineOfSight(object):
         keep it fast. This includes arrays for phase
         and the E-Field across the WFS
         """
-        print("allocDataArrays - phaseSize:{}".format(self.outPhaseSize))
-        self.phase = numpy.zeros([self.outPhaseSize]*2, dtype=DTYPE)
-        self.EField = numpy.zeros([self.outPhaseSize]*2, dtype=CDTYPE)
+        print("allocDataArrays - phaseSize:{}".format(self.nOutPxls))
+        self.phase = numpy.zeros([self.nOutPxls]*2, dtype=DTYPE)
+        self.EField = numpy.zeros([self.nOutPxls]*2, dtype=CDTYPE)
 
 
     def findMetaPupilSize(self, GSHeight):
@@ -218,8 +225,8 @@ class LineOfSight(object):
                     "GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
                             GSCent, scrn.shape, simSize, height) )
 
-        xCoords = numpy.linspace(x1, x2-1, self.simDiam/self.outPxlScale)
-        yCoords = numpy.linspace(y1, y2-1, self.simDiam/self.outPxlScale)
+        xCoords = numpy.linspace(x1, x2-1, self.nOutPxls)
+        yCoords = numpy.linspace(y1, y2-1, self.nOutPxls)
         scrnCoords = numpy.arange(scrnX)
         interpObj = interp2d(
                 scrnCoords, scrnCoords, scrn, copy=False)
@@ -291,11 +298,11 @@ class LineOfSight(object):
         # Get initial up/down dependent params
         if self.propagationDirection == "up":
             ht = 0
-            ht_final = self.config.altitude
+            ht_final = self.config.height
             if ht_final==0:
                 raise ValueError("Can't propagate up to infinity")
             scrnAlts = self.atmosConfig.scrnHeights
-            
+
             self.EFieldBuf = self.outMask.copy().astype(CDTYPE)
             logger.debug("Create EField Buf of mask")
 
@@ -305,7 +312,7 @@ class LineOfSight(object):
             scrnRange = scrnRange[::-1]
             scrnAlts = self.atmosConfig.scrnHeights[::-1]
             self.EFieldBuf = numpy.exp(
-                    1j*numpy.zeros((self.outPhaseSize,)*2)).astype(CDTYPE)
+                    1j*numpy.zeros((self.nOutPxls,)*2)).astype(CDTYPE)
             logger.debug("Create EField Buf of zero phase")
 
         # Propagate to first phase screen (if not already there)
@@ -315,7 +322,7 @@ class LineOfSight(object):
             self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(
                         self.EFieldBuf, self.config.wavelength,
                         self.outPxlScale, self.outPxlScale, z)
-        
+
         print("ScrnRange:{}".format(scrnRange))
         print("ScrnAlts: {}".format(scrnAlts))
         # Go through and propagate between phase screens
@@ -380,7 +387,7 @@ class LineOfSight(object):
         self.makePhase(self.radii)
 
         if numpy.any(correction):
-            correction = aoSimLib.zoom(correction, self.outPhaseSize)
+            correction = aoSimLib.zoom(correction, self.nOutPxls)
             self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
             self.residual = self.phase/self.phs2Rad- correction
         else:

@@ -955,7 +955,7 @@ class Sim(object):
                         pass
 
                     try:
-                        lgsPsf[i] = self.wfss[i].LGS.psf1.copy()
+                        lgsPsf[i] = self.wfss[i].lgs.psf.copy()
                     except AttributeError:
                         lgsPsf[i] = None
                         pass

@@ -82,7 +82,7 @@ class ScienceCam(object):
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.los.EField[:] = numpy.ones(
-                (self.los.outPhaseSize,) * 2, dtype=CDTYPE)
+                (self.los.nOutPxls,) * 2, dtype=CDTYPE)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()

@@ -38,39 +38,41 @@ class LGS(object):
         simConfig: The Soapy simulation config
         wfsConfig: The relavent Soapy WFS configuration
         atmosConfig: The relavent Soapy atmosphere configuration
-        nLgsPxls (float): The number of pixels required across the LGS image
-        outPxlScale (float): The total angular field required by the WFS
+        nOutPxls (int): Number of pixels required in output LGS
+        outPxlScale (float): The pixel scale of the output LGS PSF in arcsecs per pixel
     '''
-
     def __init__(
-            self, simConfig, wfsConfig, lgsConfig, atmosConfig, lgsOutDiam=None,
-            outPxlScale=None):
+            self, simConfig, wfsConfig, lgsConfig, atmosConfig,
+            nOutPxls=None, outPxlScale=None):
 
         self.simConfig = simConfig
         self.wfsConfig = wfsConfig
         self.config = lgsConfig
         self.atmosConfig = atmosConfig
- 
+
         if outPxlScale is None:
             self.outPxlScale = 1./self.simConfig.pxlScale
         else:
             # The pixel scale in metres per pixel at the LGS altitude
-            self.outPxlScale = (outPxlScale/3600.)*(180/numpy.pi) * self.lgsConfig.height
-        
+            self.outPxlScale = (outPxlScale/3600.)*(numpy.pi/180.) * self.config.height
+
         # The number of pixels required across the LGS image
-        if lgsOutDiam is None:
-            self.nOutPxls = self.simConfig.simSize/self.simConfig.pxlScale/self.outPxlScale
+        if nOutPxls is None:
+            self.nOutPxls = self.simConfig.simSize
         else:
-            self.nOutPxls = lgsOutDiam/self.outPxlScale
-        
-        self.initLos()
+            self.nOutPxls = nOutPxls
+
+        self.config.position = self.wfsConfig.GSPosition
 
         self.LGSPupilSize = int(numpy.round(self.config.pupilDiam
                                             * self.simConfig.pxlScale))
+
         self.mask = aoSimLib.circle(
                 0.5*self.config.pupilDiam*self.simConfig.pxlScale,
                 self.simConfig.simSize)
         self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
+
+        self.initLos()
 
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
@@ -80,54 +82,47 @@ class LGS(object):
 
         self.initFFTs()
 
-
-
     def initLos(self):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
+        print("LGS: self.outPxlScale: {}".format(self.outPxlScale))
         self.los = lineofsight.LineOfSight(
                     self.config, self.simConfig, self.atmosConfig,
                     propagationDirection="up",
-                    outPxlScale=self.outPxlScale
+                    outPxlScale=self.outPxlScale, nOutPxls=self.nOutPxls,
+                    mask=self.mask
                     )
-
 
     def initFFTs(self):
         self.FFT = AOFFT.FFT(
-                (simConfig.simSize, simConfig.simSize),
+                (self.nOutPxls, self.nOutPxls),
                 axes=(0,1),mode="pyfftw",
                 dtype = "complex64",direction="FORWARD",
-                THREADS=lgsConfig.fftwThreads,
-                fftw_FLAGS=(lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
-                )
-        self.iFFT = AOFFT.FFT((simConfig.simSize,simConfig.simSize),
-                axes=(0,1),mode="pyfftw",
-                dtype="complex64",direction="BACKWARD",
-                THREADS=lgsConfig.fftwThreads,
-                fftw_FLAGS=(lgsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
+                THREADS=self.config.fftwThreads,
+                fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
 
 
-    def getLgsPsf(self, scrns=None, phs=None):
+    def getLgsPsf(self, scrns=None):
 
-        self.los.makePhase()
-    
-        self.lgsEField = aoSimLib.padCropImg(self.los.EField, self.nOutPxls)
+        self.los.frame(scrns)
 
         if self.config.propagationMode=="physical":
-            self.psf1 = abs(self.los.EField)**2
+            self.psf = abs(self.los.EField)**2
 
         else:
-            self.geoFFT.inputData[  :self.LGSFOVOversize,
-                                    :self.LGSFOVOversize] = self.los.EField
+            self.geoFFT.inputData[ :] = self.los.EField
             fPlane = abs(AOFFT.ftShift2d(self.geoFFT())**2)
 
-            #Crop to required FOV
+            # Crop to required FOV
             crop = self.subapFFTPadding*0.5/ self.fovOversize
-            fPlane = fPlane[self.LGSFFTPadding*0.5 - crop:
+            self.psf1 = fPlane[self.LGSFFTPadding*0.5 - crop:
                             self.LGSFFTPadding*0.5 + crop,
                             self.LGSFFTPadding*0.5 - crop:
                             self.LGSFFTPadding*0.5 + crop    ]
 
- 
+        # self.psf = aoSimLib.padCropImg(
+        #         self.psf, self.nOutPxls)
+
+        return self.psf
