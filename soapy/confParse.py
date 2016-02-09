@@ -198,6 +198,7 @@ class Configurator(object):
                 wfs.subapFieldStop = True
 
 
+
 class ConfigObj(object):
     def __init__(self):
 
@@ -271,6 +272,14 @@ class ConfigObj(object):
         """
         pass
 
+    def __iter__(self):
+        for param in self.requiredParams:
+            yield param, self.__dict__[param]
+        for param in self.optionalParams:
+            yield param[0], self.__dict__[param[0]]
+
+    def __len__(self):
+        return len(self.requiredParams)+len(self.optionalParams)
 
 class SimConfig(ConfigObj):
     """
@@ -543,7 +552,6 @@ class WfsConfig(ConfigObj):
         self.optionalParams = [ ("propagationMode", "geometric"),
                                 ("fftwThreads", 1),
                                 ("fftwFlag", "FFTW_PATIENT"),
-                                ("SNR", 0),
                                 ("angleEquivNoise", 0),
                                 ("subapFieldStop", False),
                                 ("bitDepth", 32),
