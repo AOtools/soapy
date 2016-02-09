@@ -278,6 +278,9 @@ class ConfigObj(object):
         for param in self.optionalParams:
             yield param[0], self.__dict__[param[0]]
 
+    def __len__(self):
+        return len(self.requiredParams)+len(self.optionalParams)
+
 class SimConfig(ConfigObj):
     """
     Configuration parameters relavent for the entire simulation. These should be held in the ``Sim`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
