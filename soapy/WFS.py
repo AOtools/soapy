@@ -147,7 +147,6 @@ class WFS(object):
         self.initLos()
 
         self.calcInitParams()
-        print("pxlsPerSubap2: {}".format(self.config.pxlsPerSubap2))
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.config.GSHeight != 0:
             self.radii = self.los.findMetaPupilSize(self.config.GSHeight)
