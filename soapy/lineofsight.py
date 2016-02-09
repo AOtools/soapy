@@ -12,6 +12,12 @@ from . import aoSimLib, logger, opticalPropagationLib
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
+# Python3 compatability
+try:
+    xrange
+except NameError:
+    xrange = range
+
 class LineOfSight(object):
     """
     A "Line of sight" through a number of turbulence layers in the atmosphere, observing ing a given direction.
