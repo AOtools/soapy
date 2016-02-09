@@ -840,7 +840,7 @@ class ANN(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dmCond[dm])
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dmConds[dm])
 
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
@@ -849,14 +849,17 @@ class ANN(Reconstructor):
         """
         Determine DM commands using previously made
         reconstructor from slopes. Uses Artificial Neural Network.
+
+        Slopes are normalised before being run through the network.
+
         Args:
             slopes (ndarray): array of slopes to reconstruct from
         Returns:
             ndarray: array to comands to be sent to DM
         """
         t=time.time()
-        offSlopes = slopes[self.wfss[0].activeSubaps*2:]
-        onSlopes = self.net.run(offSlopes)
+        offSlopes = slopes[self.wfss[0].activeSubaps*2:]/7 # normalise
+        onSlopes = self.net.run(offSlopes)*7 # un-normalise
         dmCommands = self.controlMatrix.T.dot(onSlopes)
 
         self.Trecon += time.time()-t
