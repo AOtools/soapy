@@ -29,7 +29,7 @@ class ScienceCam(object):
 
         self.simConfig = simConfig
         self.telConfig = telConfig
-        self.config = sciConfig
+        self.config = self.sciConfig = sciConfig # For compatability
         self.atmosConfig = atmosConfig
         self.mask = mask
         self.FOVrad = self.config.FOV * numpy.pi / (180. * 3600)
@@ -161,3 +161,7 @@ class ScienceCam(object):
         self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane
+
+
+# For compatability
+scienceCam = ScienceCam

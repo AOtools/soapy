@@ -74,6 +74,8 @@ class LGS(object):
 
         self.initLos()
 
+        # Calc input pixel scale for output pixel scale
+
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
             self.pupilPos[i] = self.los.getMetaPupilPos(

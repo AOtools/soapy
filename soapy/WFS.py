@@ -127,7 +127,7 @@ class WFS(object):
             mask=None):
 
         self.simConfig = simConfig
-        self.config = wfsConfig
+        self.config = self.wfsConfig = wfsConfig # For compatability
         self.atmosConfig = atmosConfig
         self.lgsConfig = lgsConfig
 
