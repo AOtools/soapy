@@ -51,10 +51,12 @@ class LGS(object):
         self.atmosConfig = atmosConfig
 
         if outPxlScale is None:
-            self.outPxlScale = 1./self.simConfig.pxlScale
+            self.outPxlScale_m = 1./self.simConfig.pxlScale
         else:
             # The pixel scale in metres per pixel at the LGS altitude
-            self.outPxlScale = (outPxlScale/3600.)*(numpy.pi/180.) * self.config.height
+            self.outPxlScale_m = (outPxlScale/3600.)*(numpy.pi/180.) * self.config.height
+        # Get the angular scale in radians of the output array
+        self.outPxlScale_rad = self.outPxlScale_m/self.config.height
 
         # The number of pixels required across the LGS image
         if nOutPxls is None:
@@ -97,6 +99,9 @@ class LGS(object):
                     )
 
     def initFFTs(self):
+        # FFT for geometric propagation
+        self.geoFPSize = self.nOutPxls*self.los.telDiam
+
         self.FFT = AOFFT.FFT(
                 (self.nOutPxls, self.nOutPxls),
                 axes=(0,1),mode="pyfftw",
@@ -109,22 +114,29 @@ class LGS(object):
     def getLgsPsf(self, scrns=None):
 
         self.los.frame(scrns)
-
         if self.config.propagationMode=="physical":
-            self.psf = abs(self.los.EField)**2
+            return self.getLgsPsf_physical(scrns)
+
+        elif self.config.propagationMode=="geometric":
+            return self.getLgsPsf_geometric(scrns)
 
         else:
-            self.geoFFT.inputData[ :] = self.los.EField
-            fPlane = abs(AOFFT.ftShift2d(self.geoFFT())**2)
+            raise ValueError("Don't know that LGS propagation mode")
 
-            # Crop to required FOV
-            crop = self.subapFFTPadding*0.5/ self.fovOversize
-            self.psf1 = fPlane[self.LGSFFTPadding*0.5 - crop:
-                            self.LGSFFTPadding*0.5 + crop,
-                            self.LGSFFTPadding*0.5 - crop:
-                            self.LGSFFTPadding*0.5 + crop    ]
+    def getLgsPsf_geometric(self, scrns=None):
+        self.geoFFT.inputData[:] = self.los.EField
+        fPlane = abs(AOFFT.ftShift2d(self.geoFFT())**2)
 
-        # self.psf = aoSimLib.padCropImg(
-        #         self.psf, self.nOutPxls)
+        # Crop to required FOV
+        crop = self.subapFFTPadding*0.5/ self.fovOversize
+        self.psf1 = fPlane[self.LGSFFTPadding*0.5 - crop:
+                        self.LGSFFTPadding*0.5 + crop,
+                        self.LGSFFTPadding*0.5 - crop:
+                        self.LGSFFTPadding*0.5 + crop    ]
 
+        return self.psf
+
+    def getLgsPsf_physical(self, scrns=None):
+
+        self.psf = abs(self.los.EField)**2
         return self.psf
