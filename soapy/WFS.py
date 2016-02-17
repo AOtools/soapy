@@ -643,7 +643,7 @@ class WFS(object):
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
                     self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
-                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
+                self.calcFocalPlane(self.lgsConfig.naProfile[i])
 
         #If no elongation
         else:
@@ -980,12 +980,13 @@ class ShackHartmann(WFS):
     def calcFocalPlane(self, intensity=1):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
+
+        Parameters:
+            intensity (float): The relative intensity of this frame, is used when multiple WFS frames taken for extended sources.
         '''
 
-        #Scale phase (EField) to correct size for FOV (plus a bit with padding)
-        # self.scaledEField = aoSimLib.zoom(
-        #         self.EField, self.scaledEFieldSize)*self.scaledMask
-
+        # Apply the scaled pupil mask
+        self.EField *= self.scaledMask
         #Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.)
                 - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
