@@ -19,8 +19,9 @@ install:
   - activate test-environment
   - pip install coverage
   - pip install codecov
-  - ps: Invoke-WebRequest -OutFile pyFFTW-0.10.1-cp27-none-win_amd64.whl https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win_amd64.whl#md5=a40e4087091caae7bb89986dbf612013
-  - pip install pyFFTW-0.10.1-cp27-none-win_amd64.whl
+  - conda install -c https://conda.anaconda.org/jesserobertson pyfftw
+  # - ps: Invoke-WebRequest -OutFile pyFFTW-0.10.1-cp27-none-win_amd64.whl https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win_amd64.whl#md5=a40e4087091caae7bb89986dbf612013
+  # - pip install pyFFTW-0.10.1-cp27-none-win_amd64.whl
   
 test_script:
   - nosetests test/
