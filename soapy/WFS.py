@@ -129,18 +129,12 @@ class WFS(object):
         self.atmosConfig = atmosConfig
         self.lgsConfig = lgsConfig
 
-        # If supplied use the mask
-        if numpy.any(mask):
-            self.mask = mask
-        else:
-            self.mask = aoSimLib.circle(
-                    self.simConfig.pupilSize/2., self.simConfig.simSize,
-                    )
-
         self.iMat = False
 
         # Set from knowledge of atmosphere module
         # self.phsWvl = 500e-9 #Notrequired as phase in nanometers now
+
+        WFS.setMask(self, mask)
 
         self.calcInitParams()
 
@@ -166,6 +160,17 @@ class WFS(object):
 
         self.calcTiltCorrect()
         self.getStatic()
+
+
+    def setMask(self, mask):
+        # If supplied use the mask
+        if numpy.any(mask):
+            self.mask = mask
+        else:
+            self.mask = aoSimLib.circle(
+                    self.simConfig.pupilSize/2., self.simConfig.simSize,
+                    )
+
 
 ############################################################
 # Initialisation routines
@@ -729,7 +734,6 @@ class WFS(object):
 class ShackHartmann(WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
-
     def calcInitParams(self):
         """
         Calculate some parameters to be used during initialisation
@@ -800,7 +804,12 @@ class ShackHartmann(WFS):
                 self.subapCoords*(
                         self.detectorPxls/float(self.simConfig.pupilSize) ) )
 
-        #Find the mask to apply to the scaled EField
+        self.setMask(self.mask)
+
+    def setMask(self, mask):
+        super(ShackHartmann, self).setMask(mask)
+
+        # Find the mask to apply to the scaled EField
         self.scaledMask = numpy.round(aoSimLib.zoom(
                     self.mask, self.scaledEFieldSize))
 
@@ -1027,13 +1036,13 @@ class ShackHartmann(WFS):
         array in correct order.
         '''
 
-        #If required, convolve with LGS PSF
+        # If required, convolve with LGS PSF
         if self.wfsConfig.lgs and self.LGS and self.lgsConfig.uplink and self.iMat!=True:
             self.LGSUplink()
 
 
-        #bins back down to correct size and then
-        #fits them back in to a focal plane array
+        # bins back down to correct size and then
+        # fits them back in to a focal plane array
         self.binnedFPSubapArrays[:] = aoSimLib.binImgs(self.FPSubapArrays,
                                             self.wfsConfig.fftOversamp)
 
@@ -1041,6 +1050,9 @@ class ShackHartmann(WFS):
                 = self.maxFlux\
                         * (self.binnedFPSubapArrays.T
                             /self.binnedFPSubapArrays.max((1,2))).T
+        # In case of empty sub-aps, will get NaNs
+        self.binnedFPSubapArrays[numpy.isnan(self.binnedFPSubapArrays)] = 0
+
         # Scale each sub-ap flux by sub-aperture fill-factor
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
