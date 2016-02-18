@@ -24,6 +24,7 @@ install:
   - pip install coverage
   - pip install codecov
   - "curl -O %PYFFTW_URL% -o %PYFFTW%"
+  - dir
   - "pip install %PYFFTW%"
   
 test_script:
