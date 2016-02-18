@@ -3,13 +3,13 @@ build: false
 environment:
   matrix:
     - PYTHON_VERSION: 2.7
-      MINICONDA: C:\Miniconda
-      PYFFTW: pyFFTW-0.10.1-cp27-none-win32.whl
-      PYFFTW_URL: https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win32.whl#md5=0d069156948ea166348ef7c217243d0c
+      MINICONDA: C:\Miniconda-x64
+      PYFFTW: pyFFTW-0.10.1-cp27-none-win_amd64.whl
+      PYFFTW_URL: https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win_amd64.whl#md5=a40e4087091caae7bb89986dbf612013
     - PYTHON_VERSION: 3.4
-      MINICONDA: C:\Miniconda3
-      PYFFTW: pyFFTW-0.10.1-cp34-none-win32.whl
-      PYFFTW_URL: https://pypi.python.org/packages/3.4/p/pyFFTW/pyFFTW-0.10.1-cp34-none-win32.whl#md5=52e59eac063b2250d6187c02b2e6294e
+      MINICONDA: C:\Miniconda35-x64
+      PYFFTW: pyFFTW-0.10.1-cp35-none-win_amd64.whl
+      PYFFTW_URL: https://pypi.python.org/packages/3.5/p/pyFFTW/pyFFTW-0.10.1-cp35-none-win_amd64.whl#md5=075826adf895e5cfc3a28f0012d82999
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
