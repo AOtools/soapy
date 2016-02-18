@@ -23,7 +23,7 @@ install:
   - activate test-environment
   - pip install coverage
   - pip install codecov
-  - "curl -O %PYFFTW_URL%
+  - "curl -O %PYFFTW_URL%"
   - "pip install %PYFFTW%"
   
 test_script:
