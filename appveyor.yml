@@ -4,8 +4,12 @@ environment:
   matrix:
     - PYTHON_VERSION: 2.7
       MINICONDA: C:\Miniconda
+      PYFFTW: pyFFTW-0.10.1-cp27-none-win32.whl
+      PYFFTW_URL: https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win32.whl#md5=0d069156948ea166348ef7c217243d0c
     - PYTHON_VERSION: 3.4
       MINICONDA: C:\Miniconda3
+      PYFFTW: pyFFTW-0.10.1-cp34-none-win32.whl
+      PYFFTW_URL: https://pypi.python.org/packages/3.4/p/pyFFTW/pyFFTW-0.10.1-cp34-none-win32.whl#md5=52e59eac063b2250d6187c02b2e6294e
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
@@ -19,9 +23,8 @@ install:
   - activate test-environment
   - pip install coverage
   - pip install codecov
-  # - conda install -c https://conda.anaconda.org/jesserobertson pyfftw
-  - ps: Invoke-WebRequest -OutFile pyFFTW-0.10.1-cp27-none-win32.whl https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win32.whl#md5=0d069156948ea166348ef7c217243d0c
-  - pip install pyFFTW-0.10.1-cp27-none-win32.whl
+  - ps: Invoke-WebRequest -OutFile %PYFFTW% %PYFFTW_URL%
+  - pip install %PYFFTW%
   
 test_script:
   - nosetests test/
