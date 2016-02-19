@@ -687,8 +687,6 @@ class WFS(object):
         if numpy.any(numpy.isnan(self.slopes)):
             self.slopes[numpy.isnan(self.slopes)] = 0
 
-        self.binnedFPSubapArrays[numpy.isnan(self.binnedFPSubapArrays)] = 0
-
         return self.slopes
 
     def addPhotonNoise(self):
