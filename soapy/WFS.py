@@ -685,7 +685,9 @@ class WFS(object):
 
         # Check that slopes aint `nan`s. Set to 0 if so
         if numpy.any(numpy.isnan(self.slopes)):
-            self.slopes[:] = 0
+            self.slopes[numpy.isnan(self.slopes)] = 0
+
+        self.binnedFPSubapArrays[numpy.isnan(self.binnedFPSubapArrays)] = 0
 
         return self.slopes
 
@@ -812,6 +814,13 @@ class ShackHartmann(WFS):
         # Find the mask to apply to the scaled EField
         self.scaledMask = numpy.round(aoSimLib.zoom(
                     self.mask, self.scaledEFieldSize))
+
+        p = self.simConfig.simPad
+        self.subapFillFactor = aoSimLib.computeFillFactor(
+                self.mask[p:-p, p:-p],
+                self.subapCoords,
+                round(float(self.simConfig.pupilSize)/self.wfsConfig.nxSubaps)
+                )
 
 
     def initFFTs(self):

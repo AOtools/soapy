@@ -351,6 +351,15 @@ def findActiveSubaps(subaps, mask, threshold, returnFill=False):
     else:
         return subapCoords
 
+def computeFillFactor(mask, subapPos, subapSpacing):
+
+    fills = numpy.zeros(len(subapPos))
+    for i, (x, y) in enumerate(subapPos):
+        fills[i] = mask[x:x+subapSpacing, y:y+subapSpacing].mean()
+
+    return fills
+
+
 def binImgs(data, n):
     '''
     Bins one or more images down by the given factor
