@@ -6,7 +6,7 @@ environment:
       MINICONDA: C:\Miniconda-x64
       PYFFTW: pyFFTW-0.10.1-cp27-none-win_amd64.whl
       PYFFTW_URL: https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win_amd64.whl
-    - PYTHON_VERSION: 3.4
+    - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda35-x64
       PYFFTW: pyFFTW-0.10.1-cp35-none-win_amd64.whl
       PYFFTW_URL: https://pypi.python.org/packages/3.5/p/pyFFTW/pyFFTW-0.10.1-cp35-none-win_amd64.whl
