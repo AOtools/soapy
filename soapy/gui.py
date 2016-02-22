@@ -30,7 +30,7 @@ try:
 except ImportError:
     from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
     from IPython.qt.inprocess import QtInProcessKernelManager
-    
+
 from IPython.lib import guisupport
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -246,15 +246,18 @@ class GUI(QtGui.QMainWindow):
         self.updateLock.unlock()
 
         if plotDict:
-            
-            # Get the min and max plot scaling 
+
+            # Get the min and max plot scaling
             scaleValues = self.getPlotScaling(plotDict)
 
             for wfs in range(self.config.sim.nGS):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
-                    self.wfsPlots[wfs].setImage(
-                        plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-
+                    wfsFP = plotDict['wfsFocalPlane'][wfs]
+                    self.wfsPlots[wfs].setImage(wfsFP, lut=self.LUT)
+                    self.wfsPlots[wfs].getViewBox().setRange(
+                            QtCore.QRectF(0, 0, wfsFP.shape[0],
+                            wfsFP.shape[1])
+                            )
 
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     wfsPhase = plotDict["wfsPhase"][wfs]
@@ -321,7 +324,7 @@ class GUI(QtGui.QMainWindow):
         # Now get the min and max of mins and maxs
         plotMin = min(plotMins)
         plotMax = max(plotMaxs)
-        
+
         return plotMin, plotMax
 
 

@@ -627,18 +627,24 @@ class WFS(object):
             self.wfsConfig.eReadNoise = 0
 
 
-        #If scrns is not dict or list, assume array and put in list
+        # If scrns is not dict or list, assume array and put in list
         t = type(scrns)
         if t!=dict and t!=list:
             scrns = [scrns]
 
+
         self.zeroData(detector=read, inter=False)
+
         self.scrns = {}
-        #Scale phase to WFS wvl
+        # Scale phase to WFS wvl
         for i in xrange(len(scrns)):
             self.scrns[i] = scrns[i].copy()*self.phs2Rad
+        # If there is correction, scale that too
+        if numpy.any(correction):
+            correction = correction.copy()*self.phs2Rad
 
-        #If LGS elongation simulated
+        # If LGS elongation simulated
+        #################################
         if self.wfsConfig.lgs and self.elong!=0:
             for i in xrange(self.elongLayers):
                 self.zeroPhaseData()
@@ -647,27 +653,33 @@ class WFS(object):
                 self.uncorrectedPhase = self.wfsPhase.copy()/self.phs2Rad
                 self.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
                 if numpy.any(correction):
-                    self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
+                    self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane(self.lgsConfig.naProfile[i])
+        ##################################
 
-        #If no elongation
+        # If no elongation
+        #################################
         else:
-            #If imat frame, dont want to make it off-axis
+            # If imat frame, dont want to make it off-axis
             if iMatFrame:
                 try:
-                    iMatPhase = aoSimLib.zoom(scrns[0], self.phaseSize, order=1)
-                    self.EField[:] = numpy.exp(1j*iMatPhase*self.phs2Rad)
+                    iMatPhase = aoSimLib.zoom(
+                            self.scrns[0], self.phaseSize, order=1)
+                    self.EField[:] = numpy.exp(1j*iMatPhase)
                 except ValueError:
                     raise ValueError("If iMat Frame, scrn must be ``simSize``")
             else:
                 self.makePhase(self.radii)
 
+            # Apply DM correction
+            # (first make copy of uncorrected Phase for plotting)
             self.uncorrectedPhase = self.wfsPhase.copy()/self.phs2Rad
             if numpy.any(correction):
                 correctionPhase = aoSimLib.zoom(
                         correction, self.phaseSize, order=1)
-                self.EField *= numpy.exp(-1j*correctionPhase*self.phs2Rad)
+                self.EField *= numpy.exp(-1j*correctionPhase)
             self.calcFocalPlane()
+        ##################################
 
         if read:
             self.makeDetectorPlane()
@@ -720,7 +732,7 @@ class WFS(object):
         pass
 
     def calculateSlopes(self):
-        self.slopes = self.EField
+        self.slopes = self.EField.copy()
 
     def zeroData(self, detector=True, inter=True):
         self.zeroPhaseData()
@@ -943,23 +955,6 @@ class ShackHartmann(WFS):
 
         else:
             self.tiltFix = numpy.zeros((self.subapFOVSpacing,)*2)
-
-    def oneSubap(self, phs):
-        '''
-        Processes one subaperture only, with given phase
-        '''
-        EField = numpy.exp(1j*phs)
-        FP = numpy.abs(numpy.fft.fftshift(
-            numpy.fft.fft2(EField * numpy.exp(1j*self.XTilt),
-                s=(self.subapFFTPadding,self.subapFFTPadding))))**2
-
-        FPDetector = aoSimLib.binImgs(FP,self.wfsConfig.fftOversamp)
-
-        slope = aoSimLib.simpleCentroid(FPDetector,
-                    self.wfsConfig.centThreshold)
-        slope -= self.wfsConfig.pxlsPerSubap2/2.
-        return slope
-
 
     def getStatic(self):
         """
@@ -1195,6 +1190,114 @@ class ShackHartmann(WFS):
         return self.slopes
 
 
+
+class Gradient(WFS):
+
+    def calcInitParams(self):
+        super(Gradient, self).calcInitParams()
+        self.subapSpacing = self.simConfig.pupilSize/self.wfsConfig.nxSubaps
+        self.findActiveSubaps()
+
+        # Arrays to be used for gradient calculation
+        coord = numpy.linspace(-1, 1, self.subapSpacing)
+        self.xGrad, self.yGrad = numpy.meshgrid(coord, coord)
+
+    def findActiveSubaps(self):
+        '''
+        Finds the subapertures which are not empty space
+        determined if mean of subap coords of the mask is above threshold.
+
+        '''
+
+        pupilMask = self.mask[
+                self.simConfig.simPad : -self.simConfig.simPad,
+                self.simConfig.simPad : -self.simConfig.simPad
+                ]
+        self.subapCoords, self.subapFillFactor = aoSimLib.findActiveSubaps(
+                self.wfsConfig.nxSubaps, pupilMask,
+                self.wfsConfig.subapThreshold, returnFill=True)
+
+        self.activeSubaps = self.subapCoords.shape[0]
+
+    def allocDataArrays(self):
+        """
+        Allocate the data arrays the WFS will require
+
+        Determines and allocates the various arrays the WFS will require to
+        avoid having to re-alloc memory during the running of the WFS and
+        keep it fast.
+        """
+
+        super(Gradient, self).allocDataArrays()
+
+        self.subapArrays=numpy.zeros(
+                (self.activeSubaps, self.subapSpacing, self.subapSpacing),
+                dtype=DTYPE)
+
+        self.slopes = numpy.zeros(2 * self.activeSubaps)
+
+
+
+    def calcFocalPlane(self, intensity=1):
+        '''
+        Calculates the wfs focal plane, given the phase across the WFS. For this WFS, chops the pupil phase up into sub-apertures.
+
+        Parameters:
+            intensity (float): The relative intensity of this frame, is used when multiple WFS frames taken for extended sources.
+        '''
+
+        # Apply the scaled pupil mask
+        self.wfsPhase *= self.mask
+
+        # Now cut out only the phase across the pupilSize
+        coord = self.simConfig.simPad
+        self.pupilPhase = self.EField[coord:-coord, coord:-coord]
+
+        #create an array of individual subap phase
+        for i, (x,y) in enumerate(self.subapCoords):
+            self.subapArrays[i] = self.pupilPhase[
+                    x: x+self.subapSpacing, y: y+self.subapSpacing]
+
+
+    def makeDetectorPlane(self):
+        '''
+        Creates a 'detector' image suitable
+        '''
+        self.wfsDetectorPlane = numpy.zeros((self.wfsConfig.nxSubaps,)*2)
+
+        coords = (self.subapCoords/self.subapSpacing).astype('int')
+        self.wfsDetectorPlane[coords[:,0], coords[:,1]] = self.subapArrays.mean((1,2))
+
+    def calculateSlopes(self):
+        '''
+        Calculates WFS slopes from wfsFocalPlane
+
+        Returns:
+            ndarray: array of all WFS measurements
+        '''
+        # Remove all piston from the sub-apertures
+        self.subapArrays = (self.subapArrays.T-self.subapArrays.mean((1,2))).T
+
+        # Integrate with tilt/tip to get slope measurements
+        self.xSlopes = (self.subapArrays * self.xGrad).sum((1,2))
+        self.ySlopes = (self.subapArrays * self.yGrad).sum((1,2))
+
+        self.slopes[:self.activeSubaps] = self.xSlopes
+        self.slopes[self.activeSubaps:] = self.ySlopes
+
+        if self.wfsConfig.removeTT == True:
+            self.slopes[:self.activeSubaps] -= self.slopes[:self.activeSubaps].mean()
+            self.slopes[self.activeSubaps:] -= self.slopes[self.activeSubaps:].mean()
+
+        if self.wfsConfig.angleEquivNoise and not self.iMat:
+            pxlEquivNoise = (
+                    self.wfsConfig.angleEquivNoise *
+                    float(self.wfsConfig.pxlsPerSubap)
+                    /self.wfsConfig.subapFOV )
+            self.slopes += numpy.random.normal( 0, pxlEquivNoise,
+                                                2*self.activeSubaps)
+
+        return self.slopes
 #  ______                          _     _
 #  | ___ \                        (_)   | |
 #  | |_/ /   _ _ __ __ _ _ __ ___  _  __| |
