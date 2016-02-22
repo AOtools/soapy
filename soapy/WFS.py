@@ -903,17 +903,7 @@ class ShackHartmann(WFS):
                                           self.subapFFTPadding,
                                           self.subapFFTPadding),dtype=DTYPE)
 
-        #First make wfs detector array - only needs to be of uints,
-        #Find which kind to save memory
-        # if (self.wfsConfig.bitDepth==8 or
-#                 self.wfsConfig.bitDepth==16 or
-#                 self.wfsConfig.bitDepth==32):
-#             self.dPlaneType = eval("numpy.uint%d"%self.wfsConfig.bitDepth)
-#         else:
-#    self.dPlaneType = numpy.uint32
-        #Commented so it will be float
-
-        self.maxFlux = 0.7 * 2**self.wfsConfig.bitDepth -1
+        # self.maxFlux = 0.7 * 2**self.wfsConfig.bitDepth -1
         self.wfsDetectorPlane = numpy.zeros( (  self.detectorPxls,
                                                 self.detectorPxls   ),
                                                 dtype = DTYPE )
@@ -1048,10 +1038,6 @@ class ShackHartmann(WFS):
         self.binnedFPSubapArrays[:] = aoSimLib.binImgs(self.FPSubapArrays,
                                             self.wfsConfig.fftOversamp)
 
-        self.binnedFPSubapArrays[:] \
-                = self.maxFlux\
-                        * (self.binnedFPSubapArrays.T
-                            /self.binnedFPSubapArrays.max((1,2))).T
         # In case of empty sub-aps, will get NaNs
         self.binnedFPSubapArrays[numpy.isnan(self.binnedFPSubapArrays)] = 0
 
