@@ -472,6 +472,8 @@ class WFS(object):
         # Must interpolate. -1 as linspace goes to number
         xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
         yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
+        # print(xCoords)
+        # print(yCoords)
         interpObj = interp2d(
                 self.scrnCoords, self.scrnCoords, scrn, copy=False)
         metaPupil = interpObj(xCoords, yCoords)
@@ -1157,15 +1159,18 @@ class Gradient(WFS):
         self.subapSpacing = self.simConfig.pupilSize/self.wfsConfig.nxSubaps
         self.findActiveSubaps()
 
-        # Normalise gradient measurement to 1 arcsec
+        # Normalise gradient measurement to 1 radian
         self.subapDiam = self.telDiam/self.wfsConfig.nxSubaps
-        amp = (1./3600) * (numpy.pi/180) * self.subapDiam/2.
+        # amp = (1./3600) * (numpy.pi/180) * self.subapDiam/2.
+        # amp = numpy.sin(1) * self.subapDiam/2.
+        amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
+        # amp = ((2*numpy.pi)/(self.wfsConfig.wavelength*1e9)) * (self.subapDiam/2.) * (numpy.pi/180)* (1./3600) # * (1./self.subapSpacing**2)
 
         # Arrays to be used for gradient calculation
         coord = numpy.linspace(-amp, amp, self.subapSpacing)
         self.xGrad, self.yGrad = numpy.meshgrid(coord, coord)
-        self.xGrad = self.xGrad**(-1) / self.subapSpacing**2
-        self.yGrad = self.yGrad**(-1) / self.subapSpacing**2
+        # self.xGrad = self.xGrad**(-1) / self.subapSpacing**2
+        # self.yGrad = self.yGrad**(-1) / self.subapSpacing**2
 
     def findActiveSubaps(self):
         '''
