@@ -189,8 +189,6 @@ def zoom(array, newSize, order=3):
         return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
 
-
-
     else:
 
         interpObj = interp2d(   numpy.arange(array.shape[0]),
