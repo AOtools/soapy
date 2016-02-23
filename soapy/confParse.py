@@ -154,11 +154,9 @@ class Configurator(object):
                 *abs(maxGSPos)*numpy.pi/(3600.*180)
                 )+self.sim.simSize
 
-        #Make scrnSize even
+        # Make scrnSize even
         if self.sim.scrnSize%2!=0:
             self.sim.scrnSize+=1
-
-
 
         #Check if any WFS use physical propogation.
         #If so, make oversize phase scrns
