@@ -676,3 +676,33 @@ def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
     photons = photonPerSec * expTime
 
     return photons
+
+
+#######################
+#Control Functions
+######################
+
+
+class FixedLengthBuffer:
+    '''
+    A fixed length buffer.
+
+    Each time the buffer is called the input value is stored.
+    If the buffer is full, the oldest value is removed and returned.
+    If the buffer is not yet full, a zero os similar shape as the last input
+    is returned.
+
+    Args:
+        length: length of the buffer.
+    '''
+
+    def __init__(self, length):
+        print("Creating buffer of length {0}".format(length))
+        self.buffer = [None] * length
+
+    def __call__(self, value):
+        self.buffer.append(value)
+        result = self.buffer.pop(0)
+        if result is None:
+            result = value*0.0
+        return result

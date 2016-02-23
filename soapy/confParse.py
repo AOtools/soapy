@@ -323,6 +323,8 @@ class SimConfig(ConfigObj):
         ``simOversize``     float: The fraction to pad the
                             pupil size with to reduce edge
                             effects                             ``1.2``
+        ``loopDelay``       int: loop delay in integer count
+                            of ``loopTime``                     ``0``
 
 
         ==================  =================================   ===============
@@ -386,6 +388,7 @@ class SimConfig(ConfigObj):
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"),
                                 ("simOversize", 1.2),
+                                ("loopDelay", 0),
                         ]
 
         self.initParams()
