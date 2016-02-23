@@ -118,9 +118,9 @@ class Configurator(object):
                                     self.tel.telDiam)
 
         #We oversize the pupil to what we'll call the "simulation size"
-        self.sim.simSize = int(self.sim.pupilSize
-                + 2*numpy.round(self.sim.simOversize*self.sim.pupilSize))
-        self.sim.simPad = int(numpy.round(self.sim.simOversize*self.sim.pupilSize))
+        simPadRatio = (self.sim.simOversize-1)/2.
+        self.sim.simPad = int(round(self.sim.pupilSize*simPadRatio))
+        self.sim.simSize = self.sim.pupilSize + 2*self.sim.simPad
 
 
         #furthest out GS or SCI target defines the sub-scrn size
@@ -322,7 +322,7 @@ class SimConfig(ConfigObj):
                             `learn`                             ``random``
         ``simOversize``     float: The fraction to pad the
                             pupil size with to reduce edge
-                            effects                             ``0.1``
+                            effects                             ``1.2``
 
 
         ==================  =================================   ===============
@@ -385,7 +385,7 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"),
-                                ("simOversize", 0.1),
+                                ("simOversize", 1.2),
                         ]
 
         self.initParams()
