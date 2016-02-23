@@ -1161,16 +1161,14 @@ class Gradient(WFS):
 
         # Normalise gradient measurement to 1 radian
         self.subapDiam = self.telDiam/self.wfsConfig.nxSubaps
-        # amp = (1./3600) * (numpy.pi/180) * self.subapDiam/2.
-        # amp = numpy.sin(1) * self.subapDiam/2.
+
         amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
-        # amp = ((2*numpy.pi)/(self.wfsConfig.wavelength*1e9)) * (self.subapDiam/2.) * (numpy.pi/180)* (1./3600) # * (1./self.subapSpacing**2)
+        # NEEDS FIXED - USEFUL FOR ONE SCENARIO (apr)
 
         # Arrays to be used for gradient calculation
         coord = numpy.linspace(-amp, amp, self.subapSpacing)
         self.xGrad, self.yGrad = numpy.meshgrid(coord, coord)
-        # self.xGrad = self.xGrad**(-1) / self.subapSpacing**2
-        # self.yGrad = self.yGrad**(-1) / self.subapSpacing**2
+
 
     def findActiveSubaps(self):
         '''
