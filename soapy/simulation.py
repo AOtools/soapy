@@ -280,8 +280,8 @@ class Sim(object):
         logger.info("Initialise Data Storage...")
         self.initSaveData()
 
-
-
+        #Init simulation
+        self.delay = aoSimLib.FixedLengthBuffer(self.config.sim.loopDelay)
         self.iters=0
 
         #Init performance tracking
@@ -522,6 +522,9 @@ class Sim(object):
         # Get dmCommands from reconstructor
         if self.config.sim.nDM:
             self.dmCommands[:] = self.recon.reconstruct(self.slopes)
+
+        # Delay the dmCommands if loopDelay is configured
+        self.dmCommands = self.delay(self.dmCommands)
 
         # Get dmShape from closed loop DMs
         self.closedCorrection += self.runDM(
