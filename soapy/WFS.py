@@ -1145,8 +1145,8 @@ class ShackHartmann(WFS):
                     self.wfsConfig.angleEquivNoise *
                     float(self.wfsConfig.pxlsPerSubap)
                     /self.wfsConfig.subapFOV )
-            self.slopes += numpy.random.normal( 0, pxlEquivNoise,
-                                                2*self.activeSubaps)
+            self.slopes += numpy.random.normal(
+                    0, pxlEquivNoise, 2*self.activeSubaps)
 
         return self.slopes
 
