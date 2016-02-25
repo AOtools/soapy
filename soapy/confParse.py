@@ -769,6 +769,9 @@ class SciConfig(ConfigObj):
                              system processor number.             ``1``
         ``fftwFlag``         str: Flag to pass to FFTW
                              when preparing plan.                 ``FFTW_MEASURE``
+        ``instStrehlWithTT`` bool: Whether or not to include
+                             tip/tilt in instantaneous Strehl
+                             calculations.                       ``False``
         ==================== =================================   ===========
 
     """
@@ -785,7 +788,8 @@ class SciConfig(ConfigObj):
                                 ]
         self.optionalParams = [ ("fftOversamp", 2),
                                 ("fftwFlag", "FFTW_MEASURE"),
-                                ("fftwThreads", 1)
+                                ("fftwThreads", 1),
+                                ("instStrehlWithTT", False),
                                 ]
 
         self.initParams()
