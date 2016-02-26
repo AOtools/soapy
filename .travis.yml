@@ -5,7 +5,7 @@ branches:
     only:
         - master
         - lineOfSightObj
-                #  - numba
+        - numba
 python:
   - 2.7
   - 3.5
