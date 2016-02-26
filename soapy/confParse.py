@@ -118,9 +118,9 @@ class Configurator(object):
                                     self.tel.telDiam)
 
         #We oversize the pupil to what we'll call the "simulation size"
-        self.sim.simSize = int(self.sim.pupilSize
-                + 2*numpy.round(self.sim.simOversize*self.sim.pupilSize))
-        self.sim.simPad = int(numpy.round(self.sim.simOversize*self.sim.pupilSize))
+        simPadRatio = (self.sim.simOversize-1)/2.
+        self.sim.simPad = int(round(self.sim.pupilSize*simPadRatio))
+        self.sim.simSize = self.sim.pupilSize + 2*self.sim.simPad
 
 
         #furthest out GS or SCI target defines the sub-scrn size
@@ -154,7 +154,7 @@ class Configurator(object):
                 *abs(maxGSPos)*numpy.pi/(3600.*180)
                 )+self.sim.simSize
 
-        #Make scrnSize even
+        # Make scrnSize even
         if self.sim.scrnSize%2!=0:
             self.sim.scrnSize+=1
 
@@ -203,6 +203,7 @@ class Configurator(object):
             lgs.fftwThreads = self.sim.procs
         for sci in self.scis:
             sci.fftwThreads = self.sim.procs
+
 
 
 
@@ -280,6 +281,14 @@ class ConfigObj(object):
         """
         pass
 
+    def __iter__(self):
+        for param in self.requiredParams:
+            yield param, self.__dict__[param]
+        for param in self.optionalParams:
+            yield param[0], self.__dict__[param[0]]
+
+    def __len__(self):
+        return len(self.requiredParams)+len(self.optionalParams)
 
 class SimConfig(ConfigObj):
     """
@@ -326,7 +335,9 @@ class SimConfig(ConfigObj):
                             in multiprocessing operations       ``1``
         ``simOversize``     float: The fraction to pad the
                             pupil size with to reduce edge
-                            effects                             ``0.1``
+                            effects                             ``1.2``
+        ``loopDelay``       int: loop delay in integer count
+                            of ``loopTime``                     ``0``
 
 
         ==================  =================================   ===============
@@ -390,7 +401,8 @@ class SimConfig(ConfigObj):
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"),
                                 ("procs", 1),
-                                ("simOversize", 0.1),
+                                ("simOversize", 1.2),
+                                ("loopDelay", 0),
                         ]
 
         self.initParams()
@@ -497,7 +509,6 @@ class WfsConfig(ConfigObj):
                             False, oversample subap FOV by a
                             factor of 2 to allow into adjacent
                             subaps.                             ``False``
-        ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
                             reconstruction.\**                  ``False``
@@ -555,10 +566,8 @@ class WfsConfig(ConfigObj):
         self.optionalParams = [ ("propagationMode", "geometric"),
                                 ("fftwThreads", 1),
                                 ("fftwFlag", "FFTW_PATIENT"),
-                                ("SNR", 0),
                                 ("angleEquivNoise", 0),
                                 ("subapFieldStop", False),
-                                ("bitDepth", 32),
                                 ("removeTT", "False"),
                                 ("angleEquivNoise", 0),
                                 ("fftOversamp", 3),
@@ -774,6 +783,9 @@ class SciConfig(ConfigObj):
                              system processor number.             ``1``
         ``fftwFlag``         str: Flag to pass to FFTW
                              when preparing plan.                 ``FFTW_MEASURE``
+        ``instStrehlWithTT`` bool: Whether or not to include
+                             tip/tilt in instantaneous Strehl
+                             calculations.                       ``False``
         ==================== =================================   ===========
 
     """
@@ -790,7 +802,8 @@ class SciConfig(ConfigObj):
                                 ]
         self.optionalParams = [ ("fftOversamp", 2),
                                 ("fftwFlag", "FFTW_MEASURE"),
-                                ("fftwThreads", 1)
+                                ("fftwThreads", 1),
+                                ("instStrehlWithTT", False),
                                 ]
 
         self.initParams()

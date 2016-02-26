@@ -192,8 +192,6 @@ def zoom(array, newSize, order=3):
         return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
 
-
-
     else:
 
         interpObj = interp2d(   numpy.arange(array.shape[0]),
@@ -615,6 +613,15 @@ def findActiveSubaps(subaps, mask, threshold, returnFill=False):
     else:
         return subapCoords
 
+def computeFillFactor(mask, subapPos, subapSpacing):
+
+    fills = numpy.zeros(len(subapPos))
+    for i, (x, y) in enumerate(subapPos):
+        fills[i] = mask[x:x+subapSpacing, y:y+subapSpacing].mean()
+
+    return fills
+
+
 def binImgs(data, n):
     '''
     Bins one or more images down by the given factor
@@ -971,3 +978,33 @@ def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
     photons = photonPerSec * expTime
 
     return photons
+
+
+#######################
+#Control Functions
+######################
+
+
+class FixedLengthBuffer:
+    '''
+    A fixed length buffer.
+
+    Each time the buffer is called the input value is stored.
+    If the buffer is full, the oldest value is removed and returned.
+    If the buffer is not yet full, a zero os similar shape as the last input
+    is returned.
+
+    Args:
+        length: length of the buffer.
+    '''
+
+    def __init__(self, length):
+        print("Creating buffer of length {0}".format(length))
+        self.buffer = [None] * length
+
+    def __call__(self, value):
+        self.buffer.append(value)
+        result = self.buffer.pop(0)
+        if result is None:
+            result = value*0.0
+        return result

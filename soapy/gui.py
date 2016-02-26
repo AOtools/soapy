@@ -30,7 +30,7 @@ try:
 except ImportError:
     from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
     from IPython.qt.inprocess import QtInProcessKernelManager
-    
+
 from IPython.lib import guisupport
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -39,6 +39,28 @@ from matplotlib.figure import Figure
 
 from PyQt4 import QtGui,QtCore
 import pyqtgraph
+
+# Change pyqtgraph colourmaps to more usual ones
+# set default colourmaps available
+pyqtgraph.graphicsItems.GradientEditorItem.Gradients = pyqtgraph.pgcollections.OrderedDict([
+    ('viridis', {'ticks': [(0.,  ( 68,   1,  84, 255)),
+                           (0.2, ( 65,  66, 134, 255)),
+                           (0.4, ( 42, 118, 142, 255)),
+                           (0.6, ( 32, 165, 133, 255)),
+                           (0.8, (112, 206,  86, 255)),
+                           (1.0, (241, 229,  28, 255))], 'mode':'rgb'}),
+    ('coolwarm', {'ticks': [(0.0, ( 59,  76, 192)),
+                            (0.5, (220, 220, 220)),
+                            (1.0, (180, 4, 38))], 'mode': 'rgb'}),
+    ('grey', {'ticks': [(0.0, (0, 0, 0, 255)),
+                        (1.0, (255, 255, 255, 255))], 'mode': 'rgb'}),
+    ('magma', {'ticks':[(0., (0, 0, 3, 255)),
+                        (0.25, (80, 18, 123, 255)),
+                        (0.5, (182,  54, 121, 255)),
+                        (0.75, (251, 136,  97, 255)),
+                        (1.0, (251, 252, 191))], 'mode':'rgb'})
+        ])
+
 from .AOGUIui import Ui_MainWindow
 from . import logger
 
@@ -246,15 +268,18 @@ class GUI(QtGui.QMainWindow):
         self.updateLock.unlock()
 
         if plotDict:
-            
-            # Get the min and max plot scaling 
+
+            # Get the min and max plot scaling
             scaleValues = self.getPlotScaling(plotDict)
 
             for wfs in range(self.config.sim.nGS):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
-                    self.wfsPlots[wfs].setImage(
-                        plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-
+                    wfsFP = plotDict['wfsFocalPlane'][wfs]
+                    self.wfsPlots[wfs].setImage(wfsFP, lut=self.LUT)
+                    self.wfsPlots[wfs].getViewBox().setRange(
+                            QtCore.QRectF(0, 0, wfsFP.shape[0],
+                            wfsFP.shape[1])
+                            )
 
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     wfsPhase = plotDict["wfsPhase"][wfs]
@@ -321,7 +346,7 @@ class GUI(QtGui.QMainWindow):
         # Now get the min and max of mins and maxs
         plotMin = min(plotMins)
         plotMax = max(plotMaxs)
-        
+
         return plotMin, plotMax
 
 
