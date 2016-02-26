@@ -11,7 +11,7 @@ This modularity is well illustrated by a data flow diagram describing the simula
 .. image:: imgs/DataFlow.svg
         :align: center
 
-  Figure 1. Soapy Data Flow
+Figure 1. Soapy Data Flow
 
 Class Hierarchy
 ---------------
@@ -20,6 +20,11 @@ Pythons Object Orientated nature has also been exploited. Categories of AO compo
 .. image:: imgs/FullClassDiagram.svg
         :align: center
 
-  Figure 2. Class diagram with example attributes and methods
+Figure 2. Class diagram with example attributes and methods
 
-It is aimed that in future developments of Soapy, this philosophy will be extended. Currently the WFS, science camera and LGS modules all deal with optical propagation through turbulence separately, clearly this should be combined into one place to easy code readability and maintenance. This is currently under development.
+It is aimed that in future developments of Soapy, this philosophy will be extended. Currently the WFS, science camera and LGS modules all deal with optical propagation through turbulence separately, clearly this should be combined into one place to easy code readability and maintenance. This is currently under development. Figure 3 shows all the Soapy classes in a simplified class diagram, including the new `LineOfSight` class currently under construction.
+
+.. image:: imgs/SimpleClassDiagram.svg
+        :align: center
+
+Figure 3. Full, simplified class diagram with classes under construction.
