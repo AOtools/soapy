@@ -115,10 +115,10 @@ class atmos:
         tau0 = 0.314 * self.r0 / vBar53
 
         ## Print turbuelnce summary
-        print("Turbulence summary:")
-        print("| r0 = {0:.2f} m".format(self.r0))
+        print("Turbulence summary @ 500 nm:")
+        print('| r0 = {0:.2f} m ({1:.2f}" seeing)'.format(self.r0, numpy.degrees(0.5e-6/self.r0)*3600.0))
         print("| Vbar_5/3 = {0:.2f} m/s".format(vBar53))
-        print("| tau0 = {0:.1f} ms".format(tau0*1e3))
+        print("| tau0 = {0:.2f} ms".format(tau0*1e3))
 
         self.scrnPos = {}
         self.wholeScrns = {}
