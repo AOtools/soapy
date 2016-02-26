@@ -235,6 +235,9 @@ class scienceCam(object):
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
 
-        self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
+        if self.sciConfig.instStrehlWithTT:
+            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
+        else:
+            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane
