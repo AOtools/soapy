@@ -18,6 +18,7 @@ Contents:
    simpleTutorial.rst
    Configuration.rst
    dataSources.rst
+   architecture.rst
    sim.rst
    atmos.rst
    wfs.rst
@@ -37,4 +38,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
