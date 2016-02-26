@@ -10,6 +10,12 @@ environment:
       MINICONDA: C:\Miniconda35-x64
       PYFFTW: pyFFTW-0.10.1-cp35-none-win_amd64.whl
       PYFFTW_URL: https://pypi.python.org/packages/3.5/p/pyFFTW/pyFFTW-0.10.1-cp35-none-win_amd64.whl
+  
+branches:
+  only:
+    - master
+    - numba
+    - lineOfSightObj
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
 
@@ -18,7 +24,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy nose astropy"
+  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy nose astropy numba"
   - activate test-environment
   - pip install coverage
   - pip install codecov
@@ -27,4 +33,4 @@ install:
   - "pip install %PYFFTW%"
   
 test_script:
-  - nosetests test/
+  - nosetests --verbosity=3 test/
