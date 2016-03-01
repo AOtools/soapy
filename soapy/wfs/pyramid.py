@@ -9,7 +9,8 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, aoSimLib, LGS, logger, wfs
+from .. import AOFFT, aoSimLib, LGS, logger
+from . import base
 from ..tools import centroiders
 from ..opticalPropagationLib import angularSpectrum
 
@@ -25,7 +26,7 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 
-class Pyramid(wfs.WFS):
+class Pyramid(base.WFS):
     """
     *Experimental* Pyramid WFS.
 
