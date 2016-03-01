@@ -53,7 +53,7 @@ try:
 except NameError:
     xrange = range
 
-class DM:
+class DM(object):
     """
     The base DM class
 
@@ -73,10 +73,10 @@ class DM:
 
         self.actCoeffs = numpy.zeros( (self.acts) )
 
-        #Sort out which WFS(s) observes the DM (for iMat making)
+        # Sort out which WFS(s) observes the DM (for iMat making)
         if self.dmConfig.wfs!=None:
             try:
-                #Make sure the specifed WFS actually exists
+                # Make sure the specifed WFS actually exists
                 self.wfss = [wfss[self.dmConfig.wfs]]
                 self.wfs = self.wfss[0]
             except KeyError:
@@ -84,9 +84,8 @@ class DM:
         else:
             self.wfss = wfss
 
-        #find the total number of WFS subaps, and make imat
-        #placeholder
-        #print(self.wfss)
+        # find the total number of WFS subaps, and make imat
+        # placeholder
         self.totalWfsMeasurements = 0
         for nWfs in range(len(self.wfss)):
             self.totalWfsMeasurements += 2*self.wfss[nWfs].activeSubaps
@@ -120,7 +119,7 @@ class DM:
         self.makeIMatShapes()
 
         # Imat value is in microns
-        self.iMatShapes *= (self.dmConfig.iMatValue)
+        # self.iMatShapes *= (self.dmConfig.iMatValue)
 
         if self.dmConfig.rotation:
            self.iMatShapes = rotate(
@@ -136,23 +135,32 @@ class DM:
                    ]
 
         iMat = numpy.zeros(
-                (self.iMatShapes.shape[0], self.totalWfsMeasurements) )
-        for i in xrange(self.iMatShapes.shape[0]):
-            subap=0
-            for nWfs in range(len(self.wfss)):
+                (self.acts, self.totalWfsMeasurements) )
 
+        # A vector of DM commands to use when making the iMat
+        actCommands = numpy.zeros(self.acts)
+        for i in xrange(self.acts):
+            subap = 0
+
+            # Set vector of iMat commands to 0...
+            actCommands[:] = 0
+            # Except the one we want to make an iMat for!
+            actCommands[i] = self.dmConfig.iMatValue
+            # Now get a DM shape for that command
+            self.dmShape = self.makeDMFrame(actCommands)
+            for nWfs in range(len(self.wfss)):
                 logger.debug("subap: {}".format(subap))
+
+                # Send the DM shape off to the relavent WFS. put result in iMat
                 iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        self.wfss[nWfs].frame(
-                                self.iMatShapes[i], iMatFrame=True
-                       ))
-
-                self.dmShape = self.iMatShapes[i]
+                                self.dmShape, iMatFrame=True
+                       ))/self.dmConfig.iMatValue
 
                 if callback!=None:
                     callback()
 
-                logger.statusMessage(i, self.iMatShapes.shape[0],
+                logger.statusMessage(i, self.acts,
                         "Generating {} Actuator DM iMat".format(self.acts))
 
                 subap += 2*self.wfss[nWfs].activeSubaps
@@ -160,7 +168,7 @@ class DM:
         self.iMat = iMat
         return iMat
 
-    def dmFrame ( self, dmCommands, closed=False):
+    def dmFrame(self, dmCommands, closed=False):
         '''
         Uses interaction matrix to calculate the final DM shape.
 
@@ -177,28 +185,32 @@ class DM:
         Returns:
             ndarray: A 2-d array with the DM shape
         '''
-        try:
-            self.newActCoeffs = dmCommands
+        # try:
+        self.newActCoeffs = dmCommands
 
-            #If loop is closed, only add residual measurements onto old
-            #actuator values
-            if closed:
-                self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
+        # If loop is closed, only add residual measurements onto old
+        # actuator values
+        if closed:
+            self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
 
-            else:
-                self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-                    + ( (1.-self.dmConfig.gain) * self.actCoeffs)
+        else:
+            self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
+                + ( (1.-self.dmConfig.gain) * self.actCoeffs)
 
-            self.dmShape = (self.iMatShapes.T*self.actCoeffs.T).T.sum(0)
+        self.dmShape = self.makeDMFrame(self.actCoeffs)
+        # Remove any piston term from DM
+        self.dmShape -= self.dmShape.mean()
 
-            #Remove any piston term from DM
-            self.dmShape -= self.dmShape.mean()
+        return self.dmShape
 
-            return self.dmShape
+        # except AttributeError:
+        #     raise AttributeError("DM Missing influence functions. Have you made an interaction matrix?")
 
-        except AttributeError:
-            raise AttributeError("DM Missing influence functions. Have you made an interaction matrix?")
 
+    def makeDMFrame(self, actCoeffs):
+
+            dmShape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
+            return dmShape
 
 class Zernike(DM):
     """
@@ -269,11 +281,11 @@ class Piezo(DM):
         spacing to avoid strange edge effects.
         """
 
-        #Create a "dmSize" - the pupilSize but with 1 extr a actuator on each
+        #Create a "dmSize" - the pupilSize but with 1 extra actuator on each
         #side
         dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
-        shapes = numpy.zeros( (self.acts, dmSize, dmSize), dtype="float32")
+        shapes = numpy.zeros((self.acts, dmSize, dmSize), dtype="float32")
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]
@@ -334,9 +346,11 @@ class GaussStack(Piezo):
                     self.simConfig.pupilSize, width, cent = (x,y))
 
         self.iMatShapes = shapes
+
+        pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
                 self.iMatShapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                )#*self.mask
+                )
 
 
 
@@ -360,117 +374,52 @@ class TT(DM):
         """
         Forms the DM influence functions, in this case just a tip and a tilt.
         """
-        #Make the TT across the entire sim shape, but want it 1 to -1 across
-        #pupil
+        # Make the TT across the entire sim shape, but want it 1 to -1 across
+        # pupil
         padMax = float(self.simConfig.simSize)/self.simConfig.pupilSize
 
-        coords = 0.01*numpy.linspace(
+        coords = numpy.linspace(
                     -padMax, padMax, self.simConfig.simSize)
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
 
-    # def makeIMat(self, callback=None, progressCallback=None ):
-   #      '''
-   #      makes IMat
-   #      '''
-   #      self.makeIMatShapes()
-   #
-   #      if self.dmConfig.rotation:
-   #          self.iMatShapes = rotate(
-   #                  self.iMatShapes, self.dmConfig.rotation,
-   #                  order=self.dmConfig.interpOrder, axes=(-2,-1))
-   #          rotShape = self.iMatShapes.shape
-   #          self.iMatShapes = self.iMatShapes[:,
-   #                  rotShape[1]/2. - self.simConfig.pupilSize/2.:
-   #                  rotShape[1]/2. + self.simConfig.pupilSize/2.,
-   #                  rotShape[2]/2. - self.simConfig.pupilSize/2.:
-   #                  rotShape[2]/2. + self.simConfig.pupilSize/2.
-   #                  ]
-   #
-   #      iMat = numpy.zeros( (2,2) )
-   #
-   #      slopesToTT = numpy.zeros((self.wfs.activeSubaps*2, 2))
-   #      slopesToTT[:self.wfs.activeSubaps, 0] = 1./self.wfs.activeSubaps
-   #      slopesToTT[self.wfs.activeSubaps:, 1] = 1./self.wfs.activeSubaps
-   #
-   #      for i in xrange(self.iMatShapes.shape[0]):
-   #
-   #          slopes = self.wfs.iMatFrame(self.iMatShapes[i])
-   #          iMat[i,:] = slopes.reshape(2,self.wfs.activeSubaps).mean(1)
-   #
-   #          logger.debug("DM IMat act: %i"%i)
-   #
-   #          self.dmShape = self.iMatShapes[i]
-   #
-   #          if callback!=None:
-   #              callback()
-   #
-   #          logger.statusMessage(i, self.iMatShapes.shape[0],
-   #                  "Generating {} Actuator DM iMat".format(self.acts))
-   #
-   #
-   #      self.iMat = iMat.dot(numpy.linalg.pinv(slopesToTT))
-   # return self.iMat
 
-
-class TT1:
-
-    def __init__(self, pupilSize, wfs, mask):
-        self.pupilSize = pupilSize
-        self.mask = mask
-        self.dmCommands = numpy.zeros(2)
-        self.wfs = wfs
-        self.wvl = wfs.wfsConfig.wavelength
-
-        self.makeIMatShapes()
+class FastPiezo(Piezo):
+    """
+    A DM which simulates a Piezo DM. Faster than standard for big simulations as interpolates on each frame.
+    """
 
     def getActiveActs(self):
-        return 2
+        acts = super(FastPiezo, self).getActiveActs()
+        self.actGrid = numpy.zeros(
+                (self.dmConfig.nxActuators, self.dmConfig.nxActuators))
 
-    def makeIMatShapes(self):
+        # DM size is the pupil size, but withe one extra act on each side
+        self.dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
-        coords = numpy.linspace(-1, 1, self.pupilSize)
+        return acts
 
-        X,Y = numpy.meshgrid( coords, coords )
+    def makeDMFrame(self, actCoeffs):
 
-        self.iMatShapes = numpy.array( [X*self.mask,Y*self.mask] )
+        self.actGrid[(self.activeActs[:,0], self.activeActs[:,1])] = actCoeffs
 
-    def makeIMat(self, callback=None, progressCallback=None):
+        # Add space around edge for 1 extra act to avoid edge effects
+        actGrid = numpy.pad(self.actGrid, ((1,1), (1,1)), mode="constant")
 
-        iMat = numpy.zeros((2,2))
+        # Interpolate to previously determined "dmSize"
+        dmShape = aoSimLib.zoom_rbs(
+                actGrid, self.dmSize, order=self.dmConfig.interpOrder)
 
-        for i in xrange(2):
-            self.dmShape = self.iMatShapes[i]
-            slopes = self.wfs.frame(self.iMatShapes[i], iMatFrame=True
-                                            ).reshape(2,
-                                            self.wfs.activeSubaps)
-            iMat[i] = slopes.mean(1)
 
-            if callback !=None:
-                callback()
+        # Now check if "dmSize" bigger or smaller than "simSize".
+        # Crop or pad as appropriate
+        if self.dmSize>self.simConfig.simSize:
+            coord = int(round(self.dmSize/2. - self.simConfig.simSize/2.))
+            self.dmShape = dmShape[coord:-coord, coord:-coord].astype("float32")
 
-        self.iMat = iMat
-        self.controlMatrix = numpy.linalg.pinv(iMat)
-        return iMat
-
-    def dmFrame(self, slopes, gain, closed=False):
-
-        #Get new commands from slopes
-        meanSlopes = slopes.reshape(2,self.wfs.activeSubaps).mean(1)
-        self.newDmCommands =  self.controlMatrix.dot(meanSlopes)
-
-        if closed:
-            #if closed loop update old commands
-            self.newDmCommands += self.dmCommands
-
-        #apply gain
-        self.dmCommands = (gain * self.newDmCommands)\
-                                + ( (1-gain) * self.dmCommands)
-
-        #Finally use commands to calculate dm shape
-        self.dmShape = (self.iMatShapes.T * self.dmCommands).T.sum(0)
-
-        #remove piston, and apply mask.
-        self.dmShape -= self.dmShape.mean()
-        self.dmShape *= self.mask
+        else:
+            pad = int(round((self.simConfig.simSize - self.dmSize)/2))
+            self.dmShape = numpy.pad(
+                    dmShape, ((pad,pad), (pad,pad)), mode="constant"
+                    ).astype("float32")
 
         return self.dmShape

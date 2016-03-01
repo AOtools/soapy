@@ -118,7 +118,7 @@ class Reconstructor(object):
                     cMatHDU.header["DMCOND"]), globals())
 
             if not numpy.allclose(dmConds, self.dmConds):
-                raise Exception("DM conditioning Parameter changed - will make new control matrix")
+                raise IOError("DM conditioning Parameter changed - will make new control matrix")
             if not numpy.all(dmActs==self.dmActs) or dmTypes!=self.dmTypes or dmNo!=dmNo:
                 logger.warning("loaded control matrix may not be compatibile with \
                                 the current simulation. Will try anyway....")
@@ -133,7 +133,7 @@ class Reconstructor(object):
 
         if cMat.shape != self.controlShape:
             logger.warning("designated control matrix does not match the expected shape")
-            raise Exception
+            raise IOError
         else:
             self.controlMatrix = cMat
 
@@ -147,10 +147,14 @@ class Reconstructor(object):
                     filenameIMat, self.dms[dm].iMat,
                     header=self.simConfig.saveHeader,
                     clobber=True)
-
-            fits.writeto(
-                    filenameShapes, self.dms[dm].iMatShapes,
-                    header=self.simConfig.saveHeader, clobber=True)
+            # If DM has pre made influence funcs, save them too
+            try:
+                fits.writeto(
+                        filenameShapes, self.dms[dm].iMatShapes,
+                        header=self.simConfig.saveHeader, clobber=True)
+            # If not, don't worry about it!
+            except AttributeError:
+                pass
 
     def loadIMat(self):
 
@@ -161,20 +165,33 @@ class Reconstructor(object):
             filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
 
             iMat = fits.open(filenameIMat)[0].data
-            iMatShapes = fits.open(filenameShapes)[0].data
+            
+            # See if influence functions are also there...
+            try:
+                iMatShapes = fits.open(filenameShapes)[0].data
+                # Check if loaded influence funcs are the right size
+                if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
+                    logger.warning(
+                            "loaded DM shapes are not same size as current sim."
+                            )
+                    raise IOError 
+                self.dms[dm].iMatShapes = iMatShapes
 
-            if iMat.shape != (self.dms[dm].acts, 2*self.dms[dm].totalSubaps):
+            # If not, assume doesn't need them. 
+            # May raise an error elsewhere though
+            except IOError:
+                logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
+                pass
+
+
+            if iMat.shape != (self.dms[dm].acts, self.dms[dm].totalWfsMeasurements):
                 logger.warning(
                     "interaction matrix does not match required required size."
                     )
-                raise Exception
-            if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
-                logger.warning(
-                        "loaded DM shapes are not same size as current sim.")
-                raise Exception
+                raise IOError
+
             else:
                 self.dms[dm].iMat = iMat
-                self.dms[dm].iMatShapes = iMatShapes
 
     def makeIMat(self, callback, progressCallback):
 
@@ -190,9 +207,9 @@ class Reconstructor(object):
             try:
                 self.loadIMat()
                 logger.info("Interaction Matrices loaded successfully")
-            except:
+            except IOError:
                 #traceback.print_exc()
-                logger.warning("Load Interaction Matrices failed - will create new one.")
+                logger.info("Load Interaction Matrices failed - will create new one.")
                 self.makeIMat(callback=callback,
                          progressCallback=progressCallback)
                 self.saveIMat()
@@ -206,7 +223,7 @@ class Reconstructor(object):
             try:
                 self.loadCMat()
                 logger.info("Command Matrix Loaded Successfully")
-            except:
+            except IOError:
                 #traceback.print_exc()
                 logger.warning("Load Command Matrix failed - will create new one")
 
@@ -823,7 +840,7 @@ class ANN(Reconstructor):
             if dmIMat.shape[0]==dmIMat.shape[1]:
                 dmCMat = numpy.inv(dmIMat)
             else:
-                dmCMat = numpy.linalg.pinv(dmIMat, self.dmCond[dm])
+                dmCMat = numpy.linalg.pinv(dmIMat, self.dmConds[dm])
 
             self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
             acts += self.dms[dm].acts
@@ -832,14 +849,17 @@ class ANN(Reconstructor):
         """
         Determine DM commands using previously made
         reconstructor from slopes. Uses Artificial Neural Network.
+
+        Slopes are normalised before being run through the network.
+
         Args:
             slopes (ndarray): array of slopes to reconstruct from
         Returns:
             ndarray: array to comands to be sent to DM
         """
         t=time.time()
-        offSlopes = slopes[self.wfss[0].activeSubaps*2:]
-        onSlopes = self.net.run(offSlopes)
+        offSlopes = slopes[self.wfss[0].activeSubaps*2:]/7 # normalise
+        onSlopes = self.net.run(offSlopes)*7 # un-normalise
         dmCommands = self.controlMatrix.T.dot(onSlopes)
 
         self.Trecon += time.time()-t

@@ -70,7 +70,7 @@ class scienceCam(object):
         # Get phase scaling factor to get r0 in other wavelength
         # phsWvl = 500e-9
         # self.r0Scale = phsWvl / self.sciConfig.wavelength
-        # Convert phase to radians at science wavelength 
+        # Convert phase to radians at science wavelength
         self.phs2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
@@ -179,7 +179,7 @@ class scienceCam(object):
 
     def calcFocalPlane(self):
         '''
-        Takes the calculated pupil phase, scales for the correct FOV, 
+        Takes the calculated pupil phase, scales for the correct FOV,
         and uses an FFT to transform to the focal plane.
         '''
 
@@ -187,7 +187,7 @@ class scienceCam(object):
         phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo)
 
         # Convert phase deviation to radians
-        phs*=self.phs2Rad
+        phs *= self.phs2Rad
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
@@ -197,7 +197,7 @@ class scienceCam(object):
 
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = eField
         focalPlane_efield = AOFFT.ftShift2d(self.FFT())
-        
+
         self.focalPlane_efield = aoSimLib.binImgs(
             focalPlane_efield, self.sciConfig.fftOversamp)
 
@@ -207,6 +207,20 @@ class scienceCam(object):
         self.focalPlane /= self.focalPlane.sum()
 
     def frame(self, scrns, phaseCorrection=None):
+        """
+        Runs a single science camera frame with one or more phase screens
+
+        Parameters:
+            scrns (ndarray, list, dict): One or more 2-d phase screens. Phase in units of nm.
+            phaseCorrection (ndarray): Correction phase in nm
+
+        Returns:
+            ndarray: Resulting science PSF
+        """
+        # If scrns is not dict or list, assume array and put in list
+        t = type(scrns)
+        if t!=dict and t!=list:
+            scrns = [scrns]
 
         self.scrns = scrns
         self.calcPupilPhase()
@@ -220,7 +234,10 @@ class scienceCam(object):
 
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
-        
-        self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
+
+        if self.sciConfig.instStrehlWithTT:
+            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
+        else:
+            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane
