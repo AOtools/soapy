@@ -24,8 +24,10 @@ del get_versions
 
 from .simulation import Sim
 
+# Compatability with older API
+import wfs as WFS
 #Try to import GUI, if not then its ok
-try: 
+try:
     from . import gui
 except ImportError:
     pass
