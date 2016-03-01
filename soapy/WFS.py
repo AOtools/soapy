@@ -606,6 +606,8 @@ class WFS(object):
         if t!=dict and t!=list:
             scrns = [scrns]
 
+        # Clear the data in the data in the WFE for the coming frame.
+        # If WFS is to be "read", clear the detector too.
         self.zeroData(detector=read, inter=False)
 
         self.scrns = {}
