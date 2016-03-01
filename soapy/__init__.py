@@ -26,6 +26,7 @@ from .simulation import Sim
 
 # Compatability with older API
 import wfs as WFS
+
 #Try to import GUI, if not then its ok
 try:
     from . import gui
