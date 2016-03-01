@@ -392,7 +392,7 @@ def binImgs(data, n):
 
         return binnedImg
 
-def simpleCentroid(img, threshold_frac=0, **kwargs):
+def centreOfGravity(img, threshold_frac=0, **kwargs):
     '''
     Centroids an image, or an array of images.
     Centroids over the last 2 dimensions.
@@ -489,6 +489,7 @@ def correlationCentriod(im, threshold_fac, ref):
     for frame in range(nt):
         # Correlate frame with reference image
         corr = corrConvolve(im[frame], ref[frame])
+
         # Find brightest pixel.
         index_y, index_x = numpy.unravel_index(corr.argmax(),
                                                corr.shape)

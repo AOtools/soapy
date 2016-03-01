@@ -43,7 +43,7 @@ def brightestPxl(img, threshold, **kwargs):
     Centroids using brightest Pixel Algorithm
     (A. G. Basden et al,  MNRAS, 2011)
 
-    Finds the nPxlsth brightest pixel, subtracts that value from frame, 
+    Finds the nPxlsth brightest pixel, subtracts that value from frame,
     sets anything below 0 to 0, and finally takes centroid.
 
     Parameters:
@@ -53,7 +53,7 @@ def brightestPxl(img, threshold, **kwargs):
     Returns:
         ndarray: Array of centroid values
     """
-    
+
     nPxls = threshold*img.shape[-1]*img.shape[-2]
 
     if len(img.shape)==2:
@@ -108,14 +108,18 @@ def correlation(im, threshold, ref):
 
     nt, ny, nx = im.shape
 
-    cents = numpy.zeros((2, nt))
+    # Remove min from each sub-ap to increase contrast
+    im = (im.T - im.min((1,2))).T
 
+    cents = numpy.zeros((2, nt))
+    from matplotlib import pyplot
     for frame in range(nt):
         # Correlate frame with reference image
         corr = corrConvolve(im[frame], ref[frame])
+
         # Find brightest pixel.
-        index_y, index_x = numpy.unravel_index(corr.argmax(),
-                                               corr.shape)
+        index_y, index_x = numpy.unravel_index(
+                corr.argmax(), corr.shape)
 
         # Apply threshold
         corr -= corr.min()
@@ -136,14 +140,14 @@ def correlation(im, threshold, ref):
         cx = (corr * XRAMP).sum() / si
         cy = (corr * YRAMP).sum() / si
 
-        cents[:, frame] = cx, cy
+        cents[:, frame] =  cy, cx
 
     return cents
 
 
 def quadCell(img, **kwargs):
     """
-    Centroider to be used for 2x2 images. 
+    Centroider to be used for 2x2 images.
 
     Parameters:
         img: 2d or greater rank array, where centroiding performed over last 2 dimensions
@@ -154,9 +158,8 @@ def quadCell(img, **kwargs):
 
     xSum = img.sum(-2)
     ySum = img.sum(-1)
-    
+
     xCent = xSum[...,1] - xSum[...,0]
     yCent = ySum[...,1] - ySum[...,0]
-    
-    return numpy.array([xCent, yCent])
 
+    return numpy.array([xCent, yCent])
