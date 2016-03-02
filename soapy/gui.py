@@ -276,10 +276,10 @@ class GUI(QtGui.QMainWindow):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
                     wfsFP = plotDict['wfsFocalPlane'][wfs]
                     self.wfsPlots[wfs].setImage(wfsFP, lut=self.LUT)
-                    self.wfsPlots[wfs].getViewBox().setRange(
-                            QtCore.QRectF(0, 0, wfsFP.shape[0],
-                            wfsFP.shape[1])
-                            )
+                    # self.wfsPlots[wfs].getViewBox().setRange(
+                    #         QtCore.QRectF(0, 0, wfsFP.shape[0],
+                    #         wfsFP.shape[1])
+                    #         )
 
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     wfsPhase = plotDict["wfsPhase"][wfs]
