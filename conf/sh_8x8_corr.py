@@ -55,8 +55,9 @@ simConfiguration = {
     "fftOversamp"   :   [3],
     "wavelength"    :   [600e-9],
     "centMethod"    :   ["centreOfGravity"],
-    "referenceImage":   ["refImNat.fits"],      # Doesn't work, need full path
-    "centThreshold" :   [0.1]
+    "referenceImage":   ["correlationRef/refImNat.fits"],      # Doesn't work, need full path
+    "centThreshold" :   [0.1],
+    "type"          :   ["ExtendedSH"]
     },
 
 "LGS":{
