@@ -112,7 +112,6 @@ def correlation(im, threshold, ref):
     im = (im.T - im.min((1,2))).T
 
     cents = numpy.zeros((2, nt))
-    from matplotlib import pyplot
     for frame in range(nt):
         # Correlate frame with reference image
         corr = corrConvolve(im[frame], ref[frame])

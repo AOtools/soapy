@@ -66,8 +66,7 @@ class ShackHartmann(base.WFS):
         # Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
 
-        # For correlation centroider, open reference image.
-        self.referenceImage = self.wfsConfig.referenceImage
+
 
 
     def findActiveSubaps(self):
@@ -422,7 +421,6 @@ class ShackHartmann(base.WFS):
         slopes = eval("centroiders."+self.wfsConfig.centMethod)(
                 self.centSubapArrays,
                 threshold=self.wfsConfig.centThreshold,
-                ref=self.referenceImage
                      )
 
 
@@ -447,49 +445,3 @@ class ShackHartmann(base.WFS):
                     0, pxlEquivNoise, 2*self.activeSubaps)
 
         return self.slopes
-
-    @property
-    def referenceImage(self):
-        """
-        A reference image to be used by a correlation centroider.
-        """
-        return self._referenceImage
-
-    @referenceImage.setter
-    def referenceImage(self, referenceImage):
-
-        if referenceImage is not None:
-            # If given value is a string, assume a filename of fits file
-            if isinstance(referenceImage, str):
-                print('Its a string!')
-                referenceImage = fits.getdata(referenceImage)
-
-            # Shape of expected ref values
-            refShape = (
-                    self.activeSubaps, self.wfsConfig.pxlsPerSubap,
-                    self.wfsConfig.pxlsPerSubap)
-            self._referenceImage = numpy.zeros(refShape)
-
-            # if its an array of sub-aps, no work needed
-            if referenceImage.shape == refShape:
-                self._referenceImage = referenceImage
-
-
-            # If its the size of a sub-ap, set all subaps to that value
-            elif referenceImage.shape == (self.wfsConfig.pxlsPerSubap,)*2:
-                # Make a placeholder for the reference image
-                self._referenceImage = numpy.zeros(
-                        (self.activeSubaps, self.wfsConfig.pxlsPerSubap,
-                        self.wfsConfig.pxlsPerSubap))
-                self._referenceImage[:] = referenceImage
-
-            # If its the size of the detector, assume its a tiled array of sub-aps
-            elif referenceImage.shape == (self.detectorPxls,)*2:
-
-                for i, (x, y) in enumerate(self.detectorSubapCoords):
-                    self._referenceImage[i] = referenceImage[
-                            x:x+self.wfsConfig.pxlsPerSubap,
-                            y:y+self.wfsConfig.pxlsPerSubap]
-
-        else:
-            self._referenceImage = None

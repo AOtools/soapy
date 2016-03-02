@@ -6,3 +6,4 @@ import shackhartmann, gradient, pyramid
 from shackhartmann import ShackHartmann
 from gradient import Gradient
 from pyramid import Pyramid
+from extendedshackhartmann import ExtendedSH

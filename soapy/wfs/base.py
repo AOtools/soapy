@@ -472,8 +472,7 @@ class WFS(object):
         # Must interpolate. -1 as linspace goes to number
         xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
         yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
-        # print(xCoords)
-        # print(yCoords)
+
         interpObj = interp2d(
                 self.scrnCoords, self.scrnCoords, scrn, copy=False)
         metaPupil = interpObj(xCoords, yCoords)
@@ -600,7 +599,6 @@ class WFS(object):
             eReadNoise = self.wfsConfig.eReadNoise
             self.wfsConfig.eReadNoise = 0
 
-
         # If scrns is not dict or list, assume array and put in list
         t = type(scrns)
         if t!=dict and t!=list:
@@ -609,7 +607,6 @@ class WFS(object):
         # Clear the data in the data in the WFE for the coming frame.
         # If WFS is to be "read", clear the detector too.
         self.zeroData(detector=read, inter=False)
-
         self.scrns = {}
         # Scale phase to WFS wvl
         for i in xrange(len(scrns)):
@@ -617,7 +614,6 @@ class WFS(object):
         # If there is correction, scale that too
         if numpy.any(correction):
             correction = correction.copy()*self.phs2Rad
-
         # If LGS elongation simulated
         #################################
         if self.wfsConfig.lgs and self.elong!=0:
@@ -631,7 +627,6 @@ class WFS(object):
                     self.EField *= numpy.exp(-1j*correction)
                 self.calcFocalPlane(self.lgsConfig.naProfile[i])
         ##################################
-
         # If no elongation
         #################################
         else:
@@ -658,7 +653,6 @@ class WFS(object):
                 self.EField *= numpy.exp(-1j*correction)
             self.calcFocalPlane()
         ##################################
-
         if read:
             self.makeDetectorPlane()
             self.calculateSlopes()
