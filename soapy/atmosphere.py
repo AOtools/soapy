@@ -110,9 +110,18 @@ class atmos:
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
 
-        # Computes tau0 the AO time constant (Roddier 1981)
+        # Computes tau0, the AO time constant (Roddier 1981), at current wind speed
         vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
         tau0 = 0.314 * self.r0 / vBar53
+
+        # If tau0 specified
+        if atmosConfig.tau0:
+            print("Scaling wind speeds for tau0 from {0:.2f} ms to requested {1:.2f} ms...".format(tau0*1e3, atmosConfig.tau0*1e3))
+            # Scale wind speeds
+            self.windSpeeds = self.windSpeeds*tau0/atmosConfig.tau0
+            # Computes tau0 at scaled wind speeds
+            vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
+            tau0 = 0.314 * self.r0 / vBar53
 
         ## Print turbuelnce summary
         print("Turbulence summary @ 500 nm:")
