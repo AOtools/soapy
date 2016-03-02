@@ -208,7 +208,7 @@ class Sim(object):
             try:
                 wfsClass = eval("wfs.{}".format(self.config.wfss[nwfs].type))
             except AttributeError:
-                raise confParse.Co]nfigurationError(
+                raise confParse.ConfigurationError(
                         "No WFS of type {} found.".format(
                                 self.config.wfss[wfs].type))
 
