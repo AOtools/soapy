@@ -65,11 +65,14 @@ class ExtendedSH(shackhartmann.ShackHartmann):
     def allocDataArrays(self):
         super(ExtendedSH, self).allocDataArrays()
 
-        # Make a convolution object to apply the object
-        self.objectConv = AOFFT.Convolve(
-                self.FPSubapArrays.shape, self.extendedObject.shape,
-                threads=self.wfsConfig.fftwThreads, axes=(-2,-1)
-                )
+        # Make a convolution object to apply the object, if object is given
+        if self.extendedObject == None:
+            self.objectConv = None
+        else:
+            self.objectConv = AOFFT.Convolve(
+                    self.FPSubapArrays.shape, self.extendedObject.shape,
+                    threads=self.wfsConfig.fftwThreads, axes=(-2,-1)
+                    )
 
     def makeDetectorPlane(self):
         """
