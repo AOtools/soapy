@@ -1,9 +1,7 @@
-#Simulation 'Optique Adaptative' with Python
-(formerly PyAOS)
+#Fork of Simulation 'Optique Adaptative' with Python
+#### Original SOAPY simulation can be found [here](https://github.com/soapy/soapy)
 
-[![Build Status](https://travis-ci.org/soapy/soapy.svg?branch=master)](https://travis-ci.org/soapy/soapy)
-[![Build status](https://ci.appveyor.com/api/projects/status/o4vl97d67iyb0d62/branch/master?svg=true)](https://ci.appveyor.com/project/andrewpaulreeves/soapy/branch/master)
-[![codecov.io](https://codecov.io/github/andrewpaulreeves/soapy/coverage.svg?branch=master)](https://codecov.io/github/andrewpaulreeves/soapy?branch=master)
+[![Build Status](https://travis-ci.org/matthewtownson/soapy.svg?branch=master)](https://travis-ci.org/matthewtownson/soapy)
 
 ## Introduction
 
