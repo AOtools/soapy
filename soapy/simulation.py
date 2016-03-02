@@ -61,7 +61,7 @@ Examples:
 
 #sim imports
 from . import atmosphere, logger
-from . import WFS
+from . import wfs as WFS
 from . import DM
 from . import RECON
 from . import SCI
