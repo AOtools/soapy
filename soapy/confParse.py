@@ -430,6 +430,8 @@ class AtmosConfig(ConfigObj):
         ``randomScrns``     bool: Use a random set of phase
                             phase screens for each loop
                             iteration?                          ``False``
+        ``tau0``            float: Turbulence coherence time,
+                            if set wind speeds are scaled.      ``None``
         ==================  =================================   ===========
     """
 
@@ -448,7 +450,8 @@ class AtmosConfig(ConfigObj):
         self.optionalParams = [ ("scrnNames",None),
                                 ("subHarmonics",False),
                                 ("L0", None),
-                                ("randomScrns", False)
+                                ("randomScrns", False),
+                                ("tau0", None),
                                 ]
 
         self.initParams()
