@@ -22,8 +22,15 @@ The GUI for the Soapy adaptive optics simulation
 
 import os
 os.environ["QT_API"]="pyqt"
-from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
-from IPython.qt.inprocess import QtInProcessKernelManager
+
+# Do this so uses new Jupyter console if available
+try:
+    from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
+    from qtconsole.inprocess import QtInProcessKernelManager
+except ImportError:
+    from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
+    from IPython.qt.inprocess import QtInProcessKernelManager
+
 from IPython.lib import guisupport
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -32,6 +39,28 @@ from matplotlib.figure import Figure
 
 from PyQt4 import QtGui,QtCore
 import pyqtgraph
+
+# Change pyqtgraph colourmaps to more usual ones
+# set default colourmaps available
+pyqtgraph.graphicsItems.GradientEditorItem.Gradients = pyqtgraph.pgcollections.OrderedDict([
+    ('viridis', {'ticks': [(0.,  ( 68,   1,  84, 255)),
+                           (0.2, ( 65,  66, 134, 255)),
+                           (0.4, ( 42, 118, 142, 255)),
+                           (0.6, ( 32, 165, 133, 255)),
+                           (0.8, (112, 206,  86, 255)),
+                           (1.0, (241, 229,  28, 255))], 'mode':'rgb'}),
+    ('coolwarm', {'ticks': [(0.0, ( 59,  76, 192)),
+                            (0.5, (220, 220, 220)),
+                            (1.0, (180, 4, 38))], 'mode': 'rgb'}),
+    ('grey', {'ticks': [(0.0, (0, 0, 0, 255)),
+                        (1.0, (255, 255, 255, 255))], 'mode': 'rgb'}),
+    ('magma', {'ticks':[(0., (0, 0, 3, 255)),
+                        (0.25, (80, 18, 123, 255)),
+                        (0.5, (182,  54, 121, 255)),
+                        (0.75, (251, 136,  97, 255)),
+                        (1.0, (251, 252, 191))], 'mode':'rgb'})
+        ])
+
 from .AOGUIui import Ui_MainWindow
 from . import logger
 
@@ -139,6 +168,12 @@ class GUI(QtGui.QMainWindow):
         self.console.write("Running %s\n"%self.sim.configFile)
         sys.exit(self.app.exec_())
 
+    def moveEvent(self, event):
+        """
+        Overwrite PyQt Move event to force a repaint. (Might) fix a bug on some (my) macs
+        """
+        self.repaint()
+        super(GUI, self).moveEvent(event)
 
 ####################################
 #Load Param file methods
@@ -174,7 +209,7 @@ class GUI(QtGui.QMainWindow):
                     self.config.wfss[wfs].nxSubaps*self.config.wfss[wfs].pxlsPerSubap
                     )
             self.phasePlots[wfs] = self.makeImageItem(
-                    self.ui.phaseLayout,self.config.sim.simSize)
+                    self.ui.phaseLayout, self.config.sim.simSize)
 
             if self.config.lgss[wfs].uplink == 1:
                 self.lgsPlots[wfs] = self.makeImageItem(
@@ -233,26 +268,25 @@ class GUI(QtGui.QMainWindow):
         self.updateLock.unlock()
 
         if plotDict:
+
+            # Get the min and max plot scaling
+            scaleValues = self.getPlotScaling(plotDict)
+
             for wfs in range(self.config.sim.nGS):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
-                    self.wfsPlots[wfs].setImage(
-                        plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-                try:
-                    scaleValues = [min(self.minValues), max(self.maxValues)]
-                except (AttributeError, ValueError):
-                    scaleValues = None
-                self.minValues = []
-                self.maxValues = []
+                    wfsFP = plotDict['wfsFocalPlane'][wfs]
+                    self.wfsPlots[wfs].setImage(wfsFP, lut=self.LUT)
+                    # self.wfsPlots[wfs].getViewBox().setRange(
+                    #         QtCore.QRectF(0, 0, wfsFP.shape[0],
+                    #         wfsFP.shape[1])
+                    #         )
 
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     wfsPhase = plotDict["wfsPhase"][wfs]
-                    self.minValues.append(wfsPhase.min())
-                    self.maxValues.append(wfsPhase.max())
-                    if not scaleValues:
-                        scaleValues = [wfsPhase.min(), wfsPhase.max()]
-
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
+                    self.phasePlots[wfs].getViewBox().setRange(
+                            QtCore.QRectF(0, 0, self.sim.wfss[wfs].phaseSize, self.sim.wfss[wfs].phaseSize))
 
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
@@ -263,14 +297,8 @@ class GUI(QtGui.QMainWindow):
                 self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
 
             for dm in range(self.config.sim.nDM):
-
                 if numpy.any(plotDict["dmShape"][dm]) !=None:
                     dmShape = plotDict["dmShape"][dm]
-                    if not scaleValues:
-                        scaleValues = [dmShape.min(), dmShape.max()]
-                    self.minValues.append(dmShape.min())
-                    self.maxValues.append(dmShape.max())
-
                     self.dmPlots[dm].setImage(plotDict["dmShape"][dm],
                                             lut=self.LUT, levels=scaleValues)
 
@@ -285,10 +313,6 @@ class GUI(QtGui.QMainWindow):
 
                 if numpy.any(plotDict["residual"][sci])!=None:
                     residual = plotDict["residual"][sci]
-                    if not scaleValues:
-                        scaleValues = [residual.min(), residual.max()]
-                    self.minValues.append(residual.min())
-                    self.maxValues.append(residual.max())
 
                     self.resPlots[sci].setImage(
                             residual, lut=self.LUT, levels=scaleValues)
@@ -297,6 +321,34 @@ class GUI(QtGui.QMainWindow):
                 self.updateStrehls()
 
             self.app.processEvents()
+
+    def getPlotScaling(self, plotDict):
+        """
+        Loops through all phase plots to find the required min and max values for plot scaling
+        """
+        plotMins = []
+        plotMaxs = []
+        for wfs in range(self.config.sim.nGS):
+            if numpy.any(plotDict["wfsPhase"])!=None:
+                plotMins.append(plotDict["wfsPhase"][wfs].min())
+                plotMaxs.append(plotDict["wfsPhase"][wfs].max())
+
+        for dm in range(self.config.sim.nDM):
+            if numpy.any(plotDict["dmShape"][dm])!=None:
+                plotMins.append(plotDict["dmShape"][dm].min())
+                plotMaxs.append(plotDict["dmShape"][dm].max())
+
+        for sci in range(self.config.sim.nSci):
+            if numpy.any(plotDict["residual"][sci])!=None:
+                plotMins.append(plotDict["residual"][sci].min())
+                plotMaxs.append(plotDict["residual"][sci].max())
+
+        # Now get the min and max of mins and maxs
+        plotMin = min(plotMins)
+        plotMax = max(plotMaxs)
+
+        return plotMin, plotMax
+
 
     def makeImageItem(self, layout, size):
         gv = pyqtgraph.GraphicsView()
@@ -312,8 +364,6 @@ class GUI(QtGui.QMainWindow):
         vb.addItem(img)
         vb.setRange(QtCore.QRectF(0, 0, size, size))
         return img
-
-
 
     def plotPupilOverlap(self):
 

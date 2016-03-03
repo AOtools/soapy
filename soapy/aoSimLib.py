@@ -30,15 +30,16 @@ INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
 
 from . import AOFFT
 
-#xrange now just "range" in python3. 
+#xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
 try:
     xrange
 except NameError:
     xrange = range
 
-def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
-                 threads=0):
+def convolve(
+        img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
+        threads=0):
     '''
     Convolves two, 2-dimensional arrays
 
@@ -50,7 +51,7 @@ def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
         mode (string, optional): The fft mode used, defaults to fftw
         fftw_FLAGS (tuple, optional): flags for fftw, defaults to ("FFTW_MEASURE",)
         threads (int, optional): Number of threads used if mode is fftw
-    
+
     Returns:
         ndarray : The convolved 2-dimensional array
 
@@ -58,26 +59,26 @@ def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
     #Check arrays are same size
     if img1.shape!=img2.shape:
         raise ValueError("Arrays must have same dimensions")
-    
+
     #Initialise FFT objects
     fFFT = AOFFT.FFT(img1.shape, axes=(0,1), mode=mode, dtype="complex64",
-                direction="FORWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads) 
+                direction="FORWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)
     iFFT = AOFFT.FFT(img1.shape, axes=(0,1), mode=mode, dtype="complex64",
-                  direction="BACKWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)      
+                  direction="BACKWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)
     #backward FFT arrays
     iFFT.inputData[:] = img1
-    iImg1 = iFFT().copy()  
+    iImg1 = iFFT().copy()
     iFFT.inputData[:] = img2
     iImg2 = iFFT()
-    
+
     #Do convolution
     iImg1 *= iImg2
-    
+
     #do forward FFT
     fFFT.inputData[:] = iImg1
     return numpy.fft.fftshift(fFFT().real)
-    
-    
+
+
 def circle(radius, size, centre_offset=(0,0)):
     """
     Create a 2-dimensional array equal to 1 in a circle and 0 outside
@@ -88,7 +89,7 @@ def circle(radius, size, centre_offset=(0,0)):
         centre_offset (tuple): The coords of the centre of the circle
 
     Returns:
-        ndarray : The circle array 
+        ndarray : The circle array
     """
     size = int(numpy.round(size))
 
@@ -100,7 +101,7 @@ def circle(radius, size, centre_offset=(0,0)):
     radius+=0.5
 
     mask = x*x + y*y <= radius*radius
-    
+
     C = numpy.zeros((size, size))
     C[mask] = 1
     return C
@@ -112,7 +113,7 @@ def gaussian2d(size, width, amplitude=1., cent=None):
 
     Args:
         size (tuple, float): Dimensions of Array to place gaussian
-        width (tuple, float): Width of distribution. 
+        width (tuple, float): Width of distribution.
                                 Accepts tuple for x and y values.
         amplitude (float): Amplitude of guassian distribution
         cent (tuple): Centre of distribution on grid.
@@ -138,7 +139,7 @@ def gaussian2d(size, width, amplitude=1., cent=None):
         yCent = cent[1]
 
     X,Y = numpy.meshgrid(range(0, xSize), range(0, ySize))
-    
+
     image = amplitude * numpy.exp(
             -(((xCent-X)/xWidth)**2 + ((yCent-Y)/yWidth)**2)/2)
 
@@ -163,7 +164,7 @@ def zoom(array, newSize, order=3):
     Returns:
         ndarray : zoom array of new size.
     """
-   
+
     if order not in INTERP_KIND:
        raise ValueError("Order can either be 1, 3, or 5 only")
 
@@ -181,15 +182,13 @@ def zoom(array, newSize, order=3):
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
 
         realInterpObj = interp2d(   numpy.arange(array.shape[0]),
-                numpy.arange(array.shape[1]), array.real, copy=False, 
+                numpy.arange(array.shape[1]), array.real, copy=False,
                 kind=INTERP_KIND[order])
         imagInterpObj = interp2d(   numpy.arange(array.shape[0]),
                 numpy.arange(array.shape[1]), array.imag, copy=False,
-                kind=INTERP_KIND[order])                 
-        return (realInterpObj(coordsY,coordsX) 
+                kind=INTERP_KIND[order])
+        return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
-
-        
 
     else:
 
@@ -198,7 +197,7 @@ def zoom(array, newSize, order=3):
                 kind=INTERP_KIND[order])
 
         #return numpy.flipud(numpy.rot90(interpObj(coordsY,coordsX)))
-        return interpObj(coordsY,coordsX) 
+        return interpObj(coordsY,coordsX)
 
 def zoom_rbs(array, newSize, order=3):
     """
@@ -226,16 +225,16 @@ def zoom_rbs(array, newSize, order=3):
 
     #If array is complex must do 2 interpolations
     if array.dtype==numpy.complex64 or array.dtype==numpy.complex128:
-        realInterpObj = RectBivariateSpline(   
-                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+        realInterpObj = RectBivariateSpline(
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]),
                 array.real, kx=order, ky=order)
-        imagInterpObj = RectBivariateSpline(   
-                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]), 
+        imagInterpObj = RectBivariateSpline(
+                numpy.arange(array.shape[0]), numpy.arange(array.shape[1]),
                 array.imag, kx=order, ky=order)
-                         
+
         return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
-            
+
     else:
 
         interpObj = RectBivariateSpline(   numpy.arange(array.shape[0]),
@@ -255,9 +254,9 @@ def interp1d_numpy(array, coords):
 
     Returns:
         ndarray: The interpolated array
-    """ 
+    """
     intCoords = coords.astype("int")
-    arrayInt = array[intCoords] 
+    arrayInt = array[intCoords]
     arrayInt1 = array[(intCoords+1).clip(0,array.shape[0]-1)]
     grad = arrayInt1 - arrayInt
 
@@ -280,11 +279,11 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 
     Returns:
         ndarray: The interpolated array
-    """ 
+    """
 
     #xCoords, yCoords = numpy.meshgrid(yCoords, xCoords)
 
-    
+
     xIntCoords = xCoords.astype("int")
     yIntCoords = yCoords.astype("int")
 
@@ -297,10 +296,10 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
             xIntCoords, (yIntCoords+1).clip(0, array.shape[1]-1)] - arrayInt
 
     if numpy.any(interpArray):
-        interpArray[:] = (arrayInt + xGrad*(xCoords-xIntCoords) 
+        interpArray[:] = (arrayInt + xGrad*(xCoords-xIntCoords)
                             + yGrad*(yCoords-yIntCoords))
     else:
-        interpArray = (arrayInt + xGrad*(xCoords-xIntCoords) 
+        interpArray = (arrayInt + xGrad*(xCoords-xIntCoords)
                             + yGrad*(yCoords-yIntCoords))
 
     return numpy.flipud(numpy.rot90(interpArray.clip(array.min(), array.max())))
@@ -310,16 +309,17 @@ def interp2d_numpy(array, xCoords, yCoords, interpArray=None):
 #WFS Functions
 ######################
 
-def findActiveSubaps(subaps, mask, threshold):
+def findActiveSubaps(subaps, mask, threshold, returnFill=False):
     '''
     Finds the subapertures which are "seen" be through the
     pupil function. Returns the coords of those subaps
-    
+
     Parameters:
         subaps (int): The number of subaps in x (assumes square)
         mask (ndarray): A pupil mask, where is transparent when 1, and opaque when 0
         threshold (float): The mean value across a subap to make it "active"
-        
+        returnFill (optional, bool): Return an array of fill-factors
+
     Returns:
         ndarray: An array of active subap coords
     '''
@@ -328,18 +328,36 @@ def findActiveSubaps(subaps, mask, threshold):
     xSpacing = mask.shape[0]/float(subaps)
     ySpacing = mask.shape[1]/float(subaps)
 
+    if returnFill:
+        fills = []
+
     for x in range(subaps):
         for y in range(subaps):
-            subap = mask[   
+            subap = mask[
                     numpy.round(x*xSpacing): numpy.round((x+1)*xSpacing),
-                    numpy.round(y*ySpacing): numpy.round((y+1)*ySpacing) 
+                    numpy.round(y*ySpacing): numpy.round((y+1)*ySpacing)
                     ]
 
             if subap.mean() >= threshold:
                 subapCoords.append( [x*xSpacing, y*ySpacing])
+                if returnFill:
+                    fills.append(subap.mean())
 
     subapCoords = numpy.array( subapCoords )
-    return subapCoords
+
+    if returnFill:
+        return subapCoords, numpy.array(fills)
+    else:
+        return subapCoords
+
+def computeFillFactor(mask, subapPos, subapSpacing):
+
+    fills = numpy.zeros(len(subapPos))
+    for i, (x, y) in enumerate(subapPos):
+        fills[i] = mask[x:x+subapSpacing, y:y+subapSpacing].mean()
+
+    return fills
+
 
 def binImgs(data, n):
     '''
@@ -348,7 +366,7 @@ def binImgs(data, n):
     otherwise......
     '''
     shape = numpy.array( data.shape )
-    
+
     n = int(numpy.round(n))
 
     if len(data.shape)==2:
@@ -375,7 +393,7 @@ def binImgs(data, n):
 
         return binnedImg
 
-def simpleCentroid(img, threshold_frac=0, **kwargs):
+def centreOfGravity(img, threshold_frac=0, **kwargs):
     '''
     Centroids an image, or an array of images.
     Centroids over the last 2 dimensions.
@@ -409,7 +427,7 @@ def brtPxlCentroid(img, nPxls, **kwargs):
     Centroids using brightest Pixel Algorithm
     (A. G. Basden et al,  MNRAS, 2011)
 
-    Finds the nPxlsth brightest pixel, subtracts that value from frame, 
+    Finds the nPxlsth brightest pixel, subtracts that value from frame,
     sets anything below 0 to 0, and finally takes centroid.
 
     Parameters:
@@ -472,6 +490,7 @@ def correlationCentriod(im, threshold_fac, ref):
     for frame in range(nt):
         # Correlate frame with reference image
         corr = corrConvolve(im[frame], ref[frame])
+
         # Find brightest pixel.
         index_y, index_x = numpy.unravel_index(corr.argmax(),
                                                corr.shape)
@@ -500,21 +519,21 @@ def correlationCentriod(im, threshold_fac, ref):
     return cents
 
 def quadCell(img, **kwargs):
-    
+
     xSum = img.sum(-2)
     ySum = img.sum(-1)
-    
+
     xCent = xSum[...,1] - xSum[...,0]
     yCent = ySum[...,1] - ySum[...,0]
-    
+
     return numpy.array([xCent, yCent])
 
 def zernike(j, N):
     """
-     Creates the Zernike polynomial with mode index j, 
+     Creates the Zernike polynomial with mode index j,
      where j = 1 corresponds to piston.
 
-     Args: 
+     Args:
         j (int): The noll j number of the zernike mode
         N (int): The diameter of the zernike more in pixels
      Returns:
@@ -582,7 +601,7 @@ def zernIndex(j,sign=0):
 def zernikeArray(J, N):
     """
     Creates an array of Zernike Polynomials
-    
+
     Parameters:
         maxJ (int or list): Max Zernike polynomial to create, or list of zernikes J indices to create
         N (int): size of created arrays
@@ -630,3 +649,57 @@ def aziAvg(data):
         avg[i] = (ring*data).sum()/(ring.sum())
 
     return avg
+
+def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
+    '''
+    Calculates the photon flux for a given aperture, star magnitude and wavelength band
+
+    Parameters:
+        mag (float): Star apparent magnitude
+        mask (ndarray): 2-d pupil mask array, 1 is transparent, 0 opaque
+        pxlScale (float): size in metres of each pixel in mask
+        wvlBand (float): length of wavelength band in nanometres
+        expTime (float): Exposure time in seconds
+
+    Returns:
+        float: number of photons
+    '''
+
+    #Area defined in cm, so turn m to cm
+    area = mask.sum() * pxlScale**2 * 100**2
+
+    photonPerSecPerAreaPerWvl = 1000 * (10**(-float(mag)/2.5))
+
+    #Wvl defined in Angstroms
+    photonPerSecPerArea = photonPerSecPerAreaPerWvl * wvlBand*10
+
+    photonPerSec = photonPerSecPerArea * area
+
+    photons = photonPerSec * expTime
+
+    return photons
+
+
+#######################
+#Control Functions
+######################
+
+
+class DelayBuffer(list):
+    '''
+    A delay buffer.
+
+    Each time delay() is called on the buffer, the input value is stored.
+    If the buffer is larger than count, the oldest value is removed and returned.
+    If the buffer is not yet full, a zero of similar shape as the last input
+    is returned.
+    '''
+
+    def delay(self, value, count):
+        self.append(value)
+        if len(self) <= count:
+            result = value*0.0
+        else:
+            for _ in range(len(self)-count):
+                result = self.pop(0)
+        return result

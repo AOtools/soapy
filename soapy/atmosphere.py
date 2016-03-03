@@ -22,16 +22,16 @@ The Soapy module used to simulate the atmosphere.
 
 This module contains an ``atmos`` object, which can be used to create or load a specified number of phase screens corresponding to atmospheric turbulence layers. The layers can then be moved with the ``moveScrns`` method, at a specified wind velocity and direction, where the screen is interpolated if it does not fall on an integer number of pixels. Alternatively, random screens with the same statistics as the global phase screens can be generated using the ``randomScrns`` method.
 
-The module also contains a number of functions used to create the phase screens, many of these are ported from the book `Numerical Simulation of Optical Propagation`, Schmidt, 2010. It is possible to create a number of phase screens using the :py:func:`makePhaseScreens` function  which are saved to file in a format which can be read by the simulation. 
+The module also contains a number of functions used to create the phase screens, many of these are ported from the book `Numerical Simulation of Optical Propagation`, Schmidt, 2010. It is possible to create a number of phase screens using the :py:func:`makePhaseScreens` function  which are saved to file in a format which can be read by the simulation.
 
 Examples:
-    
+
     To get the configuration objects::
-        
+
         from soapy import confParse, atmosphere
 
         config = confParse.Configurator("sh_8x8.py")
-        config.loadSimParams() 
+        config.loadSimParams()
 
     Initialise the amosphere (creating or loading phase screens)::
 
@@ -41,7 +41,7 @@ Examples:
 
         for i in range(10):
             phaseScrns = atmosphere.moveScrns()
-            
+
     or create 10 sets of random screens::
 
         for i in range(10):
@@ -82,7 +82,7 @@ class atmos:
 
     If loaded from file, the screens should have a header with the parameter ``R0`` specifying the r0 fried parameter of the screen in pixels.
 
-    The method ``moveScrns`` can be called on each iteration of the AO system to move the scrns forward by one time step. The size of this is defined by parameters given in 
+    The method ``moveScrns`` can be called on each iteration of the AO system to move the scrns forward by one time step. The size of this is defined by parameters given in
 
     The method ``randomScrns`` returns a set of random phase screens with the smame statistics as the ``atmos`` object.
     '''
@@ -99,16 +99,35 @@ class atmos:
 
         self.atmosConfig = atmosConfig
 
-        atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths, 
+        atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths,
                 dtype="float32")
 
-        atmosConfig.scrnStrengths /= (
+        atmosConfig.normScrnStrengths = atmosConfig.scrnStrengths/(
                             atmosConfig.scrnStrengths[:self.scrnNo].sum())
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
-                                *atmosConfig.scrnStrengths)**(-3./5.) )
+                                *atmosConfig.normScrnStrengths)**(-3./5.) )
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
+
+        # Computes tau0, the AO time constant (Roddier 1981), at current wind speed
+        vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
+        tau0 = 0.314 * self.r0 / vBar53
+
+        # If tau0 specified
+        if atmosConfig.tau0:
+            print("Scaling wind speeds for tau0 from {0:.2f} ms to requested {1:.2f} ms...".format(tau0*1e3, atmosConfig.tau0*1e3))
+            # Scale wind speeds
+            self.windSpeeds = self.windSpeeds*tau0/atmosConfig.tau0
+            # Computes tau0 at scaled wind speeds
+            vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
+            tau0 = 0.314 * self.r0 / vBar53
+
+        ## Print turbuelnce summary
+        print("Turbulence summary @ 500 nm:")
+        print('| r0 = {0:.2f} m ({1:.2f}" seeing)'.format(self.r0, numpy.degrees(0.5e-6/self.r0)*3600.0))
+        print("| Vbar_5/3 = {0:.2f} m/s".format(vBar53))
+        print("| tau0 = {0:.2f} ms".format(tau0*1e3))
 
         self.scrnPos = {}
         self.wholeScrns = {}
@@ -117,7 +136,11 @@ class atmos:
 
         scrnSize = int(round(self.scrnSize))
 
-        #If required, generate some new Kolmogorov phase screens
+        # The whole screens will be kept at this value, and then scaled to the
+        # correct r0 before being sent to the simulation
+        self.wholeScrnR0 = 1.
+
+        # If required, generate some new Kolmogorov phase screens
         if not atmosConfig.scrnNames:
             logger.info("Generating Phase Screens")
             for i in xrange(self.scrnNo):
@@ -125,18 +148,18 @@ class atmos:
                 logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
                 if atmosConfig.subHarmonics:
                     self.wholeScrns[i] = ft_sh_phase_screen(
-                            self.scrnStrengths[i], 
-                            self.wholeScrnSize, 1./self.pxlScale, 
+                            self.wholeScrnR0,
+                            self.wholeScrnSize, 1./self.pxlScale,
                             atmosConfig.L0[i], 0.01)
                 else:
                     self.wholeScrns[i] = ft_phase_screen(
-                            self.scrnStrengths[i], 
+                            self.wholeScrnR0,
                             self.wholeScrnSize, 1./self.pxlScale,
                             atmosConfig.L0[i], 0.01)
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
-        #Otherwise, load some others from FITS file
+        # Otherwise, load some others from FITS file
         else:
             logger.info("Loading Phase Screens")
 
@@ -146,14 +169,14 @@ class atmos:
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
-                #Do the loaded scrns tell us how strong they are?
-                #Theyre r0 must be in pixels! label: "R0"
-                #If so, we can scale them to the desired r0
+                # Do the loaded scrns tell us how strong they are?
+                # Theyre r0 must be in pixels! label: "R0"
+                # If so, we can scale them to the desired r0
                 try:
                     r0 = float(fitsHDU.header["R0"])
                     r0_metres = r0/self.pxlScale
                     self.wholeScrns[i] *=(
-                                 (self.scrnStrengths[i]/r0_metres)**(-5./6.)
+                                 (self.wholeScrnR0/r0_metres)**(-5./6.)
                                          )
 
                 except KeyError:
@@ -166,21 +189,24 @@ class atmos:
             if self.wholeScrnSize < self.scrnSize:
                 raise Exception("required scrn size larger than phase screen")
 
-
-
-        #Set the initial starting point of the screen,
-        #If windspeed is negative, starts from the
-        #far-end of the screen to avoid rolling straight away
-        windDirs=numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
+        # However we made the phase screen, turn it into meters for ease of
+        # use
+#        for s in range(self.scrnNo):
+#            self.wholeScrns[s] *= (500e-9/(2*numpy.pi))
+#
+        # Set the initial starting point of the screen,
+        # If windspeed is negative, starts from the
+        # far-end of the screen to avoid rolling straight away
+        windDirs= numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
         windV=(self.windSpeeds * numpy.array([numpy.cos(windDirs),
                                               numpy.sin(windDirs)])).T #This is velocity in metres per second
         windV *= self.looptime   #Now metres per looptime
         windV *= self.pxlScale   #Now pxls per looptime.....ideal!
         self.windV = windV
 
-        #Sets initial phase screen pos
-        #If velocity is negative in either direction, set the starting point
-        #to the end of the screen to avoid rolling too early.
+        # Sets initial phase screen pos
+        # If velocity is negative in either direction, set the starting point
+        # to the end of the screen to avoid rolling too early.
         for i in xrange(self.scrnNo):
             self.scrnPos[i] = numpy.array([0,0])
 
@@ -207,7 +233,7 @@ class atmos:
 
     def saveScrns(self, DIR):
         """
-        Saves the currently loaded phase screens to file, 
+        Saves the currently loaded phase screens to file,
         saving the r0 value in the fits header (in units of pixels).
 
         Args:
@@ -221,7 +247,7 @@ class atmos:
                     self.scrnStrengths[scrn]*self.pxlScale)
             hdu.writeto(DIR+"/scrn{}.fits".format(scrn))
             logger.info("Done!")
-        
+
 
     def moveScrns(self):
         """
@@ -301,9 +327,19 @@ class atmos:
             #remove piston from phase screens
             scrns[i] -= scrns[i].mean()
 
+            # Calculate the r0 of each screen
+            self.atmosConfig.normScrnStrengths = (
+                    self.atmosConfig.scrnStrengths/
+                        self.atmosConfig.scrnStrengths[:self.scrnNo].sum())
+            self.scrnStrengths = ( ((self.r0**(-5./3.))
+                        *self.atmosConfig.normScrnStrengths)**(-3./5.))
+            # Finally, scale for r0 and turn to nm
+            scrns[i] *= (self.scrnStrengths[i]/self.wholeScrnR0)**(-5./6.)
+            scrns[i] *= (500/(2*numpy.pi))
+
         return scrns
 
-    def randomScrns(self, subHarmonics=True, L0=30., l0=0.01):
+    def randomScrns(self, subHarmonics=True, l0=0.01):
         """
         Generated random phase screens defined by the atmosphere object parameters.
 
@@ -315,134 +351,17 @@ class atmos:
         for i in xrange(self.scrnNo):
             if subHarmonics:
                 scrns[i] = ft_sh_phase_screen(
-                        self.scrnStrengths[i], self.scrnSize, 
-                        (self.pxlScale**(-1.)), L0, l0)
+                        self.scrnStrengths[i], self.scrnSize,
+                        (self.pxlScale**(-1.)), self.atmosConfig.L0[i], l0)
             else:
                 scrns[i] = ft_phase_screen(
-                        self.scrnStrengths[i], self.scrnSize, 
-                        (self.pxlScale**(-1.)), L0, l0)
+                        self.scrnStrengths[i], self.scrnSize,
+                        (self.pxlScale**(-1.)), self.atmosConfig.L0[i], l0)
 
-        # pool = Pool(2)
-        # args = []
-        # for i in xrange(self.scrnNo):
-        #     args.append((self.scrnStrengths[i], self.scrnSize, 
-        #                 self.pxlScale**(-1.), L0, l0))
-
-
-        # scrns = pool.map(pool_ft_sh_phase_screen, args)
+            # Turn to nm
+            scrns[i] *= (500./(2*numpy.pi))
 
         return scrns
-
-
-#Commented as not used - apr 14-04-2015
-#class Screen(object):
-#
-#    def __init__(self, scrn, subscrnSize, order=3):
-#
-#        self.xCoords = numpy.arange(scrn.shape[0])
-#        self.yCoords = numpy.arange(scrn.shape[1])
-#
-#        self.interpObj = scipy.interpolate.RectBivariateSpline(
-#                                    self.xCoords, self.yCoords, scrn, kx=order,
-#                                    ky=order
-#                                    )
-#        self._subScrnCoordsX = numpy.arange(subscrnSize)
-#        self._subScrnCoordsY = numpy.arange(subscrnSize)
-#           
-#        self.shape = (subscrnSize, subscrnSize)
-#
-#        self.currentPos = (0,0)
-#
-#    def _getScrnCoords(self):
-#        
-#        return (self._subScrnCoordsX+self.currentPos[0],
-#                self._subScrnCoordsY+self.currentPos[1])
-#
-#
-#    def __getitem__(self, key):
-#
-#        try:
-#            #If too many dims...raise error
-#            if len(key)>2:
-#                raise IndexError("too many indices for array")
-#
-#            #If 2 dims
-#            if len(key)==2:
-#                #parse x-params
-#                if not key[0].start:
-#                    xstart = 0
-#                else:
-#                    xstart = key[0].start
-#                
-#                if not key[0].stop:
-#                    xstop = self.shape[0]
-#                else:
-#                    xstop = key[0].stop
-#                
-#                if not key[0].step:
-#                    xstep = 1
-#                else:
-#                    xstep = key[0].step
-#
-#                #parse y-params
-#                if not key[1].start:
-#                    ystart = 0
-#                else:
-#                    ystart = key[1].start
-#                
-#                if not key[1].stop:
-#                    ystop = self.shape[1]
-#                else:
-#                    ystop = key[1].stop
-#                
-#                if not key[1].step:
-#                    ystep = 1
-#                else:
-#                    ystep = key[1].step
-#        #Only x-coords given        
-#        except TypeError:
-#                
-#            #parse x-params
-#            if not key.start:
-#                xstart = 0
-#            else:
-#                xstart = key.start
-#            
-#            if not key.stop:
-#                xstop = self.shape[0]
-#            else:
-#                xstop = key.stop
-#            
-#            if not key.step:
-#                xstep = 1
-#            else:
-#                xstep = key.step
-#
-#            #Set y-params
-#            ystart = 0 
-#            ystop = self.shape[1]
-#            ystep = 1
-#
-#        xN = (xstop-xstart)/xstep
-#        yN = (ystop-ystart)/ystep
-#
-#        return self.getSlice(xstart, xstop, xN, ystart, ystop, yN)
-#
-#
-#    def getSlice(self, xstart, xstop, xsize, ystart, ystop, ysize):
-#
-#        if ((xstop-xstart)/xsize)!=1:
-#            xCoords = numpy.linspace(xstart, xstop, xsize)+self.currentPos[0]
-#        else:
-#            xCoords = self.subScrnCoords[0]
-#
-#        if ((ystop-ystart)/ysize)!=1:
-#            yCoords = numpy.linspace(ystart, ystop, ysize)+self.currentPos[1]
-#        else:
-#            yCoords = self.subScrnCoords[1]
-#
-#        return self.interpObj(xCoords, yCoords)
-#    subScrnCoords = property(_getScrnCoords)
 
 
 def pool_ft_sh_phase_screen(args):
@@ -458,7 +377,7 @@ def makePhaseScreens(
     """
     Creates and saves a set of phase screens to be used by the simulation.
 
-    Creates ``nScrns`` phase screens, with the required parameters, then saves 
+    Creates ``nScrns`` phase screens, with the required parameters, then saves
     them to the directory specified by ``DIR``. Each screen is given a FITS
     header with its value of r0, which will be scaled by on simulation when
     its loaded.
@@ -472,18 +391,18 @@ def makePhaseScreens(
         l0 (float): Inner scale of each screen.
         returnScrns (bool, optional): Whether to return a list of screens. True by default, but if screens are very large, False might be preferred so they aren't kept in memory if saving to disk.
         DIR (str, optional): The directory to save the screens.
-        SH (bool, optional): If True, add sub-harmonics to screens for more 
+        SH (bool, optional): If True, add sub-harmonics to screens for more
                 accurate power spectra, though screens no-longer periodic.
-   
+
     Returns:
         list: A list containing all the screens.
     """
-   
+
     #Make directory if it doesnt exist already
     if DIR:
         if not os.path.isdir(DIR):
             os.makedirs(DIR)
-    
+
     #An empty container to put our screens in
     if returnScrns:
         scrns = []
@@ -503,7 +422,7 @@ def makePhaseScreens(
             hdu = fits.PrimaryHDU(scrn)
             hdu.header["R0"] = str(r0/pxlScale)
             hdu.writeto(DIR+"/scrn{}.fits".format(i))
-    
+
     if returnScrns:
         return scrns
 
@@ -513,7 +432,7 @@ def ft_sh_phase_screen(r0, N, delta, L0, l0, FFT=None):
     Creates a random phase screen with Von Karmen statistics with added
     sub-harmonics to augment tip-tilt modes.
     (Schmidt 2010)
-    
+
     Args:
         r0 (float): r0 parameter of scrn in metres
         N (int): Size of phase scrn in pxls
@@ -588,7 +507,7 @@ def ift2(G, delta_f ,FFT=None):
         delta_f: pixel seperation
         FFT (FFT object, optional): An accelerated FFT object
     """
-        
+
     N = G.shape[0]
 
     if FFT:
@@ -602,7 +521,7 @@ def ft_phase_screen(r0, N, delta, L0, l0, FFT=None):
     '''
     Creates a random phase screen with Von Karmen statistics.
     (Schmidt 2010)
-    
+
     Parameters:
         r0 (float): r0 parameter of scrn in metres
         N (int): Size of phase scrn in pxls

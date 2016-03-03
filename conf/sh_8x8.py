@@ -48,6 +48,7 @@ simConfiguration = {
 "WFS":{
     "GSPosition"    :   [(0,0)],
     "GSHeight"      :   [0],
+    "GSMag"         :   [8],
     "nxSubaps"      :   [8],
     "pxlsPerSubap"  :   [10],
     "subapFOV"      :   [2.5],
@@ -68,7 +69,7 @@ simConfiguration = {
     "svdConditioning":   [1e-15,     0.05],
     "closed"         :   [True,      True],
     "gain"           :   [0.6,       0.7],
-    "iMatValue"      :   [2.,       0.2 ],
+    "iMatValue"      :   [2e3,       500],
     },
 
 "Science":{

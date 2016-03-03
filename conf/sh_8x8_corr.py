@@ -12,13 +12,13 @@ simConfiguration = {
 "Sim":{
     "simName"       :  "sh_8x8",
     "logfile"       :   "sh_8x8.log",
-    "pupilSize"     :   128, 
+    "pupilSize"     :   128,
     "nGS"           :   1,
     "nDM"           :   2,
     "nSci"          :   1,
     "nIters"        :   5000,
     "loopTime"      :   1/400.0,
-    "reconstructor" :   "MVM", 
+    "reconstructor" :   "MVM",
 
     "verbosity"     :   2,
 
@@ -48,14 +48,16 @@ simConfiguration = {
 "WFS":{
     "GSPosition"    :   [(0,0)],
     "GSHeight"      :   [0],
+    "GSMag"         :   [8],
     "nxSubaps"      :   [8],
     "pxlsPerSubap"  :   [10],
     "subapFOV"      :   [2.5],
     "fftOversamp"   :   [3],
     "wavelength"    :   [600e-9],
-    "centMethod"    :   ["correlation"],
-    "referenceImage":   ["refImNat.fits"],
-    "centThreshold" :   [0.1]
+    "centMethod"    :   ["centreOfGravity"],
+    "referenceImage":   ["correlationRef/refImNat.fits"],      # Doesn't work, need full path
+    "centThreshold" :   [0.1],
+    "type"          :   ["ExtendedSH"]
     },
 
 "LGS":{
@@ -79,6 +81,3 @@ simConfiguration = {
     "fftOversamp"      :   [2],
     }
 }
-
-
-

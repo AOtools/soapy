@@ -22,10 +22,13 @@ from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 
-from simulation import Sim
+from .simulation import Sim
+
+# Compatability with older API
+from . import wfs as WFS
 
 #Try to import GUI, if not then its ok
-try: 
+try:
     from . import gui
 except ImportError:
     pass
