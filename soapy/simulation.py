@@ -281,7 +281,7 @@ class Sim(object):
         self.initSaveData()
 
         #Init simulation
-        self.delay = aoSimLib.FixedLengthBuffer(self.config.sim.loopDelay)
+        self.buffer = aoSimLib.DelayBuffer()
         self.iters=0
 
         #Init performance tracking
@@ -524,7 +524,7 @@ class Sim(object):
             self.dmCommands[:] = self.recon.reconstruct(self.slopes)
 
         # Delay the dmCommands if loopDelay is configured
-        self.dmCommands = self.delay(self.dmCommands)
+        self.dmCommands = self.buffer.delay(self.dmCommands, self.config.sim.loopDelay)
 
         # Get dmShape from closed loop DMs
         self.closedCorrection += self.runDM(
