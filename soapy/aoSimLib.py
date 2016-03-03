@@ -684,26 +684,21 @@ def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
 ######################
 
 
-class FixedLengthBuffer:
+class DelayBuffer(list):
     '''
-    A fixed length buffer.
+    A delay buffer.
 
-    Each time the buffer is called the input value is stored.
-    If the buffer is full, the oldest value is removed and returned.
-    If the buffer is not yet full, a zero os similar shape as the last input
+    Each time delay() is called on the buffer, the input value is stored.
+    If the buffer is larger than count, the oldest value is removed and returned.
+    If the buffer is not yet full, a zero of similar shape as the last input
     is returned.
-
-    Args:
-        length: length of the buffer.
     '''
 
-    def __init__(self, length):
-        print("Creating buffer of length {0}".format(length))
-        self.buffer = [None] * length
-
-    def __call__(self, value):
-        self.buffer.append(value)
-        result = self.buffer.pop(0)
-        if result is None:
+    def delay(self, value, count):
+        self.append(value)
+        if len(self) <= count:
             result = value*0.0
+        else:
+            for _ in range(len(self)-count):
+                result = self.pop(0)
         return result
