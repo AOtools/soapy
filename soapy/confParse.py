@@ -531,7 +531,10 @@ class WfsConfig(ConfigObj):
         ``wvlBandWidth``    float: Width of wavelength
                             band sent to WFS in nm              ``100``
         ``extendedObject``  ndarray or str: The object used
-                            as extended source for WFS.         ``None``
+                            as extended source for WFS, of
+                            size 2*fftOversamp*pxlsPerSubap.
+                            The FOV of the object should be
+                            twice the FOV of the sub-aperture.  ``None``
         ``fftwThreads``     int: number of threads for fftw
                             to use. If ``0``, will use
                             system processor number.           ``1``
