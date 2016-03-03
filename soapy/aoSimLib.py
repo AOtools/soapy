@@ -37,8 +37,9 @@ try:
 except NameError:
     xrange = range
 
-def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
-                 threads=0):
+def convolve(
+        img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
+        threads=0):
     '''
     Convolves two, 2-dimensional arrays
 

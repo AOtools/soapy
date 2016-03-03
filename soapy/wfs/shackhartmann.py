@@ -66,8 +66,7 @@ class ShackHartmann(base.WFS):
         # Calculate the subaps which are actually seen behind the pupil mask
         self.findActiveSubaps()
 
-
-
+        self.referenceImage = self.wfsConfig.referenceImage
 
     def findActiveSubaps(self):
         '''
@@ -415,12 +414,14 @@ class ShackHartmann(base.WFS):
             x, y = self.detectorSubapCoords[i]
             x = int(x)
             y = int(y)
-            self.centSubapArrays[i] = self.wfsDetectorPlane[x:x+self.wfsConfig.pxlsPerSubap,
-                                                    y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
+            self.centSubapArrays[i] = self.wfsDetectorPlane[
+                    x:x+self.wfsConfig.pxlsPerSubap,
+                    y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
         slopes = eval("centroiders."+self.wfsConfig.centMethod)(
                 self.centSubapArrays,
                 threshold=self.wfsConfig.centThreshold,
+                ref=self.referenceImage
                      )
 
 

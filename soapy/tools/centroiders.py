@@ -105,7 +105,6 @@ def correlation(im, threshold, ref):
     Returns:
         ndarray: centroids of im, given as x, y
     '''
-
     nt, ny, nx = im.shape
 
     # Remove min from each sub-ap to increase contrast
