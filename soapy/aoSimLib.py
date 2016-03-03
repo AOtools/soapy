@@ -39,9 +39,10 @@ try:
 except NameError:
     xrange = range
 
+def convolve(
+        img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
+        threads=0):
 
-def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
-                 threads=0):
     '''
     Convolves two, 2-dimensional arrays
 
@@ -340,7 +341,7 @@ def zoom_numbaThread(data,  chunkIndices, zoomArray):
 
 
     return zoomArray
-    
+
 @numba.jit(nopython=True)
 def zoom_numba1(data, zoomArray):
     """
@@ -656,7 +657,7 @@ def binImgs(data, n):
 
         return binnedImg
 
-def simpleCentroid(img, threshold_frac=0, **kwargs):
+def centreOfGravity(img, threshold_frac=0, **kwargs):
     '''
     Centroids an image, or an array of images.
     Centroids over the last 2 dimensions.
@@ -753,6 +754,7 @@ def correlationCentriod(im, threshold_fac, ref):
     for frame in range(nt):
         # Correlate frame with reference image
         corr = corrConvolve(im[frame], ref[frame])
+
         # Find brightest pixel.
         index_y, index_x = numpy.unravel_index(corr.argmax(),
                                                corr.shape)
@@ -985,26 +987,21 @@ def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
 ######################
 
 
-class FixedLengthBuffer:
+class DelayBuffer(list):
     '''
-    A fixed length buffer.
+    A delay buffer.
 
-    Each time the buffer is called the input value is stored.
-    If the buffer is full, the oldest value is removed and returned.
-    If the buffer is not yet full, a zero os similar shape as the last input
+    Each time delay() is called on the buffer, the input value is stored.
+    If the buffer is larger than count, the oldest value is removed and returned.
+    If the buffer is not yet full, a zero of similar shape as the last input
     is returned.
-
-    Args:
-        length: length of the buffer.
     '''
 
-    def __init__(self, length):
-        print("Creating buffer of length {0}".format(length))
-        self.buffer = [None] * length
-
-    def __call__(self, value):
-        self.buffer.append(value)
-        result = self.buffer.pop(0)
-        if result is None:
+    def delay(self, value, count):
+        self.append(value)
+        if len(self) <= count:
             result = value*0.0
+        else:
+            for _ in range(len(self)-count):
+                result = self.pop(0)
         return result
