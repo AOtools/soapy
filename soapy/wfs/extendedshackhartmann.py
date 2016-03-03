@@ -71,7 +71,7 @@ class ExtendedSH(shackhartmann.ShackHartmann):
         else:
             self.objectConv = AOFFT.Convolve(
                     self.FPSubapArrays.shape, self.extendedObject.shape,
-                    threads=self.wfsConfig.fftwThreads, axes=(-2,-1)
+                    threads=self.wfsConfig.fftwThreads, axes=(-2, -1)
                     )
 
     def makeDetectorPlane(self):
@@ -81,8 +81,8 @@ class ExtendedSH(shackhartmann.ShackHartmann):
         """
         if self.extendedObject is not None:
             # Perform correlation to get subap images
-            self.FPSubapArrays = self.objectConv(
-                    self.FPSubapArrays, self.extendedObject)
+            self.FPSubapArrays[:] = self.objectConv(
+                    self.FPSubapArrays, self.extendedObject).real
 
         # If sub-ap is oversized, apply field mask (TODO:make more general)
         if self.SUBAP_OVERSIZE!=1:
