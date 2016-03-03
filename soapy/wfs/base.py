@@ -205,6 +205,7 @@ class WFS(object):
 
         self.wfsPhase = numpy.zeros([self.phaseSize]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.phaseSize]*2, dtype=CDTYPE)
+        self.metaPupil = numpy.zeros([self.phaseSize,]*2, dtype=DTYPE)
 
     def initLGS(self):
         """
@@ -359,7 +360,9 @@ class WFS(object):
         pad = ((self.simConfig.simPad,)*2, (self.simConfig.simPad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
 
-        phaseAddition = aoSimLib.zoom(phaseAddition, self.phaseSize)
+        phaseAddition = aoSimLib.zoom_numba(
+                phaseAddition, (self.phaseSize,)*2,
+                threads=self.simConfig.threads)
 
         return phaseAddition
 
@@ -473,11 +476,11 @@ class WFS(object):
         xCoords = numpy.linspace(x1, x2-1, self.phaseSize)
         yCoords = numpy.linspace(y1, y2-1, self.phaseSize)
 
-        interpObj = interp2d(
-                self.scrnCoords, self.scrnCoords, scrn, copy=False)
-        metaPupil = interpObj(xCoords, yCoords)
+        aoSimLib.linterp2d_numba(
+                scrn, xCoords, yCoords, self.metaPupil,
+                threads=self.simConfig.procs)
 
-        return metaPupil
+        return self.metaPupil
 
     def makePhaseGeo(self, radii=None, GSPos=None):
         '''
@@ -633,8 +636,8 @@ class WFS(object):
             # If imat frame, dont want to make it off-axis
             if iMatFrame:
                 try:
-                    iMatPhase = aoSimLib.zoom(
-                            self.scrns[0], self.phaseSize, order=1)
+                    iMatPhase = aoSimLib.zoom_numba(
+                            self.scrns[0], (self.phaseSize,)*2, threads=self.simConfig.procs)
                     self.wfsPhase[:] = iMatPhase
                     self.EField[:] = numpy.exp(1j*iMatPhase)
                 except ValueError:
@@ -647,8 +650,8 @@ class WFS(object):
             self.uncorrectedPhase = self.wfsPhase.copy()/self.phs2Rad
             if numpy.any(correction):
                 if correction.shape!=(self.phaseSize, self.phaseSize):
-                    correction = aoSimLib.zoom(
-                        correction, self.phaseSize, order=1)
+                    correction = aoSimLib.zoom_numba(
+                        correction, (self.phaseSize,)*2, self.simConfig.procs)
                 self.wfsPhase -= correction
                 self.EField *= numpy.exp(-1j*correction)
             self.calcFocalPlane()

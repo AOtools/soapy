@@ -86,7 +86,7 @@ class scienceCam(object):
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()
         self.longExpStrehl = 0
-        self.instStrehl = 0 
+        self.instStrehl = 0
 
         #Init a circular buffer for interpolation
         self.metaPupil = numpy.zeros((self.simConfig.simSize,)*2)
@@ -199,12 +199,12 @@ class scienceCam(object):
         aoSimLib.zoom_numba(
                 self.residual, self.phsBuffer, self.simConfig.procs
                 )
-    
+
         #phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo) * self.r0Scale
-         
+
         #Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo-self.FOVPxlNo)/2.))
-        phs = self.phsBuffer[coord:-coord, coord:-coord] 
+        phs = self.phsBuffer[coord:-coord, coord:-coord]
 
         # Convert phase deviation to radians
         phs *= self.phs2Rad

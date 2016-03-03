@@ -277,14 +277,14 @@ def zoom_numba(data, zoomArray, threads=None):
 
     Parameters:
         array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates
-        yCoords (ndarray): A 2-D array of y-coordinates
-        interpArray (ndarray): The array to place the calculation
+        zoomArray (ndarray, tuple): The array to place the calculation, or the shape to return
         threads (int): Number of threads to use for calculation
 
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
+    if isinstance(zoomArray, numpy.ndarray) is not True:
+        zoomArray = numpy.zeros((zoomArray))
 
     if threads!=1 and threads!=None:
 
