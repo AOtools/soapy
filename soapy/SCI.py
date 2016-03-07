@@ -70,8 +70,8 @@ class scienceCam(object):
         # Get phase scaling factor to get r0 in other wavelength
         # phsWvl = 500e-9
         # self.r0Scale = phsWvl / self.sciConfig.wavelength
-        # Convert phase to radians at science wavelength
-        self.phs2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
+        # Convert phase in nm to radians at science wavelength
+        self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.residual = numpy.zeros((self.simConfig.simSize,) * 2)
@@ -186,8 +186,8 @@ class scienceCam(object):
         # Scaled the padded phase to the right size for the requried FOV
         phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo)
 
-        # Convert phase deviation to radians
-        phs *= self.phs2Rad
+        # Convert phase deviation in nm to radians
+        phs *= self.phsNm2Rad
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
