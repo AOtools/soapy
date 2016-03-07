@@ -19,6 +19,7 @@
 import numpy
 from . import aoSimLib, AOFFT, logger
 from scipy.interpolate import interp2d
+import scipy.optimize as opt
 
 
 class scienceCam(object):
@@ -253,8 +254,19 @@ class singleModeFibre(scienceCam):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
         scienceCam.__init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask)
-        self.fibre_efield = aoSimLib.gaussian2d((self.simConfig.simSize, self.simConfig.simSize), (20.0, 20.0))
-        self.fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(self.fibre_efield)**2))
+        self.normMask = self.mask / numpy.sqrt(numpy.sum(numpy.abs(self.mask)**2))
+        self.fibreSize = opt.minimize_scalar(self.refCouplingLoss, bracket=[1.0, self.simConfig.simSize]).x
+        self.refStrehl = 1.0 - self.refCouplingLoss(self.fibreSize)
+        self.fibre_efield = self.fibreEfield(self.fibreSize)
+        print("Coupling efficiency: {0:.3f}".format(self.refStrehl))
+
+    def fibreEfield(self, size):
+        fibre_efield = aoSimLib.gaussian2d((self.simConfig.simSize, self.simConfig.simSize), (size, size))
+        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(aoSimLib.gaussian2d((self.simConfig.simSize*3, self.simConfig.simSize*3), (size, size)))**2))
+        return fibre_efield
+
+    def refCouplingLoss(self, size):
+        return 1.0 - numpy.abs(numpy.sum(self.fibreEfield(size) * self.normMask))**2
 
     def calcInstStrehl(self):
-        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.mask))**2/numpy.sum(numpy.abs(self.mask)**2)
+        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.normMask))**2
