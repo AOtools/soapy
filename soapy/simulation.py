@@ -224,8 +224,6 @@ class Sim(object):
 
         #init DMs
         logger.info("Initialising DMs...")
-
-
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
@@ -268,7 +266,11 @@ class Sim(object):
         self.sciImgs = {}
         self.sciImgNo=0
         for sci in xrange(self.config.sim.nSci):
-            self.sciCams[sci] = SCI.scienceCam(
+            try:
+                sciObj = eval( "SCI."+self.config.scis[sci].type)
+            except AttributeError:
+                raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[sci].type))
+            self.sciCams[sci] = sciObj(
                         self.config.sim, self.config.tel, self.config.atmos,
                         self.config.scis[sci], self.mask
                         )
