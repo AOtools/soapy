@@ -247,3 +247,12 @@ class scienceCam(object):
         # self.residual*=self.mask
 
         return self.focalPlane
+
+
+class singleModeFibre(scienceCam):
+
+    def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
+        scienceCam.__init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask)
+
+    def calcInstStrehl(self):
+        self.instStrehl = numpy.exp(-numpy.var(self.residual[numpy.where(self.mask)]*self.phsNm2Rad))
