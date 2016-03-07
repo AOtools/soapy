@@ -206,6 +206,15 @@ class scienceCam(object):
         # Normalise the psf
         self.focalPlane /= self.focalPlane.sum()
 
+    def calcInstStrehl(self):
+        """
+        Calculates the instantaneous Strehl, including TT if configured.
+        """
+        if self.sciConfig.instStrehlWithTT:
+            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
+        else:
+            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
+
     def frame(self, scrns, phaseCorrection=None):
         """
         Runs a single science camera frame with one or more phase screens
@@ -232,12 +241,9 @@ class scienceCam(object):
 
         self.calcFocalPlane()
 
+        self.calcInstStrehl()
+
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
-
-        if self.sciConfig.instStrehlWithTT:
-            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
-        else:
-            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane
