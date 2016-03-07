@@ -770,6 +770,9 @@ class SciConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
+        ``type``             string: Type of science camera
+                             This must the name of a class
+                             in the ``WFS`` module.              ``scienceCam``
         ``fftOversamp``      int: Multiplied by the number of
                              of phase points required for FOV
                              to increase fidelity from FFT.      ``2``
@@ -795,7 +798,8 @@ class SciConfig(ConfigObj):
                                 "wavelength",
                                 "pxls",
                                 ]
-        self.optionalParams = [ ("fftOversamp", 2),
+        self.optionalParams = [ ("type", "scienceCam"),
+                                ("fftOversamp", 2),
                                 ("fftwFlag", "FFTW_MEASURE"),
                                 ("fftwThreads", 1),
                                 ("instStrehlWithTT", False),

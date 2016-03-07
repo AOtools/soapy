@@ -70,8 +70,8 @@ class scienceCam(object):
         # Get phase scaling factor to get r0 in other wavelength
         # phsWvl = 500e-9
         # self.r0Scale = phsWvl / self.sciConfig.wavelength
-        # Convert phase to radians at science wavelength
-        self.phs2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
+        # Convert phase in nm to radians at science wavelength
+        self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.residual = numpy.zeros((self.simConfig.simSize,) * 2)
@@ -186,8 +186,8 @@ class scienceCam(object):
         # Scaled the padded phase to the right size for the requried FOV
         phs = aoSimLib.zoom(self.residual, self.padFOVPxlNo)
 
-        # Convert phase deviation to radians
-        phs *= self.phs2Rad
+        # Convert phase deviation in nm to radians
+        phs *= self.phsNm2Rad
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
@@ -205,6 +205,15 @@ class scienceCam(object):
 
         # Normalise the psf
         self.focalPlane /= self.focalPlane.sum()
+
+    def calcInstStrehl(self):
+        """
+        Calculates the instantaneous Strehl, including TT if configured.
+        """
+        if self.sciConfig.instStrehlWithTT:
+            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
+        else:
+            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
     def frame(self, scrns, phaseCorrection=None):
         """
@@ -232,12 +241,20 @@ class scienceCam(object):
 
         self.calcFocalPlane()
 
+        self.calcInstStrehl()
+
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
 
-        if self.sciConfig.instStrehlWithTT:
-            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
-        else:
-            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
-
         return self.focalPlane
+
+
+class singleModeFibre(scienceCam):
+
+    def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
+        scienceCam.__init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask)
+        self.fibre_efield = aoSimLib.gaussian2d((self.simConfig.simSize, self.simConfig.simSize), (20.0, 20.0))
+        self.fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(self.fibre_efield)**2))
+
+    def calcInstStrehl(self):
+        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.mask))**2/numpy.sum(numpy.abs(self.mask)**2)
