@@ -253,6 +253,8 @@ class singleModeFibre(scienceCam):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
         scienceCam.__init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask)
+        self.fibre_efield = aoSimLib.gaussian2d((self.simConfig.simSize, self.simConfig.simSize), (20.0, 20.0))
+        self.fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(self.fibre_efield)**2))
 
     def calcInstStrehl(self):
-        self.instStrehl = numpy.exp(-numpy.var(self.residual[numpy.where(self.mask)]*self.phsNm2Rad))
+        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.mask))**2/numpy.sum(numpy.abs(self.mask)**2)
