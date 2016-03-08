@@ -2,7 +2,7 @@
 (formerly PyAOS)
 
 [![Build Status](https://travis-ci.org/soapy/soapy.svg?branch=master)](https://travis-ci.org/soapy/soapy)
-[![Build status](https://ci.appveyor.com/api/projects/status/o4vl97d67iyb0d62/branch/master?svg=true)](https://ci.appveyor.com/project/andrewpaulreeves/soapy/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/ea65yv0p7s32ejxx/branch/master?svg=true)](https://ci.appveyor.com/project/Soapy/soapy/branch/master)
 [![codecov.io](https://codecov.io/github/soapy/soapy/coverage.svg?branch=master)](https://codecov.io/github/soapy/soapy?branch=master)
 
 ## Introduction
