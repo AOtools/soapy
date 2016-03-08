@@ -17,6 +17,10 @@ import os
 import shlex
 from mock import Mock as MagicMock
 
+# Add soapy to path
+SOAPY_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..')
+sys.path.append(SOAPY_DIR)
+
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
@@ -32,7 +36,7 @@ MOCK_MODULES = ['pyfftw', 'ipython','pyfits', 'PyQt4','IPython.qt.console.rich_i
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-# import soapy
+import soapy
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
