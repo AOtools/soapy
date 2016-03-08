@@ -1,0 +1,36 @@
+build: false
+
+environment:
+  matrix:
+    - PYTHON_VERSION: 2.7
+      MINICONDA: C:\Miniconda-x64
+      PYFFTW: pyFFTW-0.10.1-cp27-none-win_amd64.whl
+      PYFFTW_URL: https://pypi.python.org/packages/2.7/p/pyFFTW/pyFFTW-0.10.1-cp27-none-win_amd64.whl
+    - PYTHON_VERSION: 3.5
+      MINICONDA: C:\Miniconda35-x64
+      PYFFTW: pyFFTW-0.10.1-cp35-none-win_amd64.whl
+      PYFFTW_URL: https://pypi.python.org/packages/3.5/p/pyFFTW/pyFFTW-0.10.1-cp35-none-win_amd64.whl
+  
+branches:
+  only:
+    - master
+    - numba
+    - lineOfSightObj
+init:
+  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+
+install:
+  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy nose astropy numba"
+  - activate test-environment
+  - pip install coverage
+  - pip install codecov
+  - "curl -O %PYFFTW_URL% -o %PYFFTW%"
+  - dir
+  - "pip install %PYFFTW%"
+  
+test_script:
+  - nosetests --verbosity=3 test/

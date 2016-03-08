@@ -118,9 +118,9 @@ class Configurator(object):
                                     self.tel.telDiam)
 
         #We oversize the pupil to what we'll call the "simulation size"
-        self.sim.simSize = int(self.sim.pupilSize
-                + 2*numpy.round(self.sim.simOversize*self.sim.pupilSize))
-        self.sim.simPad = int(numpy.round(self.sim.simOversize*self.sim.pupilSize))
+        simPadRatio = (self.sim.simOversize-1)/2.
+        self.sim.simPad = int(round(self.sim.pupilSize*simPadRatio))
+        self.sim.simSize = self.sim.pupilSize + 2*self.sim.simPad
 
 
         #furthest out GS or SCI target defines the sub-scrn size
@@ -154,11 +154,9 @@ class Configurator(object):
                 *abs(maxGSPos)*numpy.pi/(3600.*180)
                 )+self.sim.simSize
 
-        #Make scrnSize even
+        # Make scrnSize even
         if self.sim.scrnSize%2!=0:
             self.sim.scrnSize+=1
-
-
 
         #Check if any WFS use physical propogation.
         #If so, make oversize phase scrns
@@ -324,7 +322,9 @@ class SimConfig(ConfigObj):
                             `learn`                             ``random``
         ``simOversize``     float: The fraction to pad the
                             pupil size with to reduce edge
-                            effects                             ``0.1``
+                            effects                             ``1.2``
+        ``loopDelay``       int: loop delay in integer count
+                            of ``loopTime``                     ``0``
 
 
         ==================  =================================   ===============
@@ -387,7 +387,8 @@ class SimConfig(ConfigObj):
                                 ("logfile", None),
                                 ("learnIters", 0),
                                 ("learnAtmos", "random"),
-                                ("simOversize", 0.1),
+                                ("simOversize", 1.2),
+                                ("loopDelay", 0),
                         ]
 
         self.initParams()
@@ -429,6 +430,8 @@ class AtmosConfig(ConfigObj):
         ``randomScrns``     bool: Use a random set of phase
                             phase screens for each loop
                             iteration?                          ``False``
+        ``tau0``            float: Turbulence coherence time,
+                            if set wind speeds are scaled.      ``None``
         ==================  =================================   ===========
     """
 
@@ -447,7 +450,8 @@ class AtmosConfig(ConfigObj):
         self.optionalParams = [ ("scrnNames",None),
                                 ("subHarmonics",False),
                                 ("L0", None),
-                                ("randomScrns", False)
+                                ("randomScrns", False),
+                                ("tau0", None),
                                 ]
 
         self.initParams()
@@ -494,7 +498,6 @@ class WfsConfig(ConfigObj):
                             False, oversample subap FOV by a
                             factor of 2 to allow into adjacent
                             subaps.                             ``False``
-        ``bitDepth``        int: bitdepth of WFS detector       ``32``
         ``removeTT``        bool: if True, remove TT signal
                             from WFS slopes before
                             reconstruction.\**                  ``False``
@@ -527,6 +530,11 @@ class WfsConfig(ConfigObj):
                             set to loopTime.                    ``None``
         ``wvlBandWidth``    float: Width of wavelength
                             band sent to WFS in nm              ``100``
+        ``extendedObject``  ndarray or str: The object used
+                            as extended source for WFS, of
+                            size 2*fftOversamp*pxlsPerSubap.
+                            The FOV of the object should be
+                            twice the FOV of the sub-aperture.  ``None``
         ``fftwThreads``     int: number of threads for fftw
                             to use. If ``0``, will use
                             system processor number.           ``1``
@@ -554,7 +562,6 @@ class WfsConfig(ConfigObj):
                                 ("fftwFlag", "FFTW_PATIENT"),
                                 ("angleEquivNoise", 0),
                                 ("subapFieldStop", False),
-                                ("bitDepth", 32),
                                 ("removeTT", "False"),
                                 ("angleEquivNoise", 0),
                                 ("fftOversamp", 3),
@@ -571,6 +578,7 @@ class WfsConfig(ConfigObj):
                                 ("photonNoise", False),
                                 ("GSMag", 0.0),
                                 ("wvlBandWidth", 100.),
+                                ("extendedObject", None)
                             ]
         self.initParams()
 
@@ -775,6 +783,9 @@ class SciConfig(ConfigObj):
         ``propagationMode``  str: Mode of light propogation
                              from object. Can be "physical" or
                              "geometric".                       ``"geometric"``
+        ``instStrehlWithTT`` bool: Whether or not to include
+                             tip/tilt in instantaneous Strehl
+                             calculations.                       ``False``
         ==================== =================================   ===========
 
     """
@@ -794,6 +805,7 @@ class SciConfig(ConfigObj):
                                 ("fftwThreads", 1),
                                 ("height", 0),
                                 ("propagationMode", "geometric"),
+                                ("instStrehlWithTT", False),
                                 ]
 
         self.initParams()

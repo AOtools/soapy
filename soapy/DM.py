@@ -374,11 +374,11 @@ class TT(DM):
         """
         Forms the DM influence functions, in this case just a tip and a tilt.
         """
-        #Make the TT across the entire sim shape, but want it 1 to -1 across
-        #pupil
+        # Make the TT across the entire sim shape, but want it 1 to -1 across
+        # pupil
         padMax = float(self.simConfig.simSize)/self.simConfig.pupilSize
 
-        coords = 0.01*numpy.linspace(
+        coords = numpy.linspace(
                     -padMax, padMax, self.simConfig.simSize)
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
 

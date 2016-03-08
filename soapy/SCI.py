@@ -74,9 +74,6 @@ class ScienceCam(object):
                 fftw_FLAGS=(sciConfig.fftwFlag, "FFTW_DESTROY_INPUT"),
                 THREADS=sciConfig.fftwThreads)
 
-        # Get phase scaling factor to get r0 in other wavelength
-        # phsWvl = 500e-9
-        # self.r0Scale = phsWvl / self.config.wavelength
         # Convert phase to radians at science wavelength
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength*10**9)
 
@@ -158,7 +155,10 @@ class ScienceCam(object):
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
 
-        self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
+        if self.sciConfig.instStrehlWithTT:
+            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
+        else:
+            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
 
         return self.focalPlane
 

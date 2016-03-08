@@ -15,7 +15,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author='Andrew Reeves',
     author_email='a.p.reeves@durham.ac.uk',
-    packages=['soapy', 'soapy.tools'],
+    packages=['soapy', 'soapy.wfs', 'soapy.tools'],
     scripts=['bin/soapy'],
     description='A tomographic astronomical adaptive optics simulation with realistic laser guide star propagation.',
     long_description=open('README.md').read(),
