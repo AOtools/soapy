@@ -32,7 +32,7 @@ MOCK_MODULES = ['pyfftw', 'ipython','pyfits', 'PyQt4','IPython.qt.console.rich_i
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-import soapy
+# import soapy
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
