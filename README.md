@@ -4,6 +4,7 @@
 [![Build Status](https://travis-ci.org/soapy/soapy.svg?branch=master)](https://travis-ci.org/soapy/soapy)
 [![Build status](https://ci.appveyor.com/api/projects/status/ea65yv0p7s32ejxx/branch/master?svg=true)](https://ci.appveyor.com/project/Soapy/soapy/branch/master)
 [![codecov.io](https://codecov.io/github/soapy/soapy/coverage.svg?branch=master)](https://codecov.io/github/soapy/soapy?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/soapy/badge/?version=latest)](http://soapy.readthedocs.org/en/latest/?badge=latest)
 
 ## Introduction
 
