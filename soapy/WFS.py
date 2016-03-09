@@ -621,7 +621,6 @@ class ShackHartmann(WFS):
                                           self.subapFFTPadding,
                                           self.subapFFTPadding),dtype=DTYPE)
 
-        self.maxFlux = 0.7 * 2**self.config.bitDepth -1
         self.wfsDetectorPlane = numpy.zeros( (  self.detectorPxls,
                                                 self.detectorPxls   ),
                                                 dtype = DTYPE )
@@ -779,10 +778,7 @@ class ShackHartmann(WFS):
         self.binnedFPSubapArrays[:] = aoSimLib.binImgs(self.FPSubapArrays,
                                             self.config.fftOversamp)
 
-        self.binnedFPSubapArrays[:] \
-                = self.maxFlux\
-                        * (self.binnedFPSubapArrays.T
-                            /self.binnedFPSubapArrays.max((1,2))).T
+
         # Scale each sub-ap flux by sub-aperture fill-factor
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T

@@ -250,10 +250,6 @@ class LineOfSight(object):
         # Check if geometric or physical
         if self.config.propagationMode == "physical":
             return self.makePhasePhys(radii, pos)
-            # if self.propagationDirection == "up":
-            #     return self.makePhasePhysUp(radii, pos)
-            # else:
-            #     return self.makePhasePhysDown(radii, pos)
         else:
             return self.makePhaseGeometric(radii, pos)
 
