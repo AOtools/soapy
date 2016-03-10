@@ -139,8 +139,8 @@ class ShackHartmann(base.WFS):
                 THREADS=self.wfsConfig.fftwThreads,
                 fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
 
-        #If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
-        #This works even if no lgsConfig.uplink as ``and`` short circuits
+        # If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
+        # This works even if no lgsConfig.uplink as ``and`` short circuits
         if self.lgsConfig and self.lgsConfig.uplink:
             self.iFFT = AOFFT.FFT(
                     inputSize = (self.activeSubaps,
@@ -158,6 +158,14 @@ class ShackHartmann(base.WFS):
                     THREADS=self.wfsConfig.fftwThreads,
                     fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
+
+    def initLGS(self):
+        super(ShackHartmann, self).initLGS()
+        self.lgs = LGS.LGS(
+                self.simConfig, self.config, self.lgsConfig, self.atmosConfig,
+                nOutPxls=self.subapFFTPadding,
+                outPxlScale=float(self.subapFOV)/self.subapFFTPadding
+                )
 
     def allocDataArrays(self):
         """

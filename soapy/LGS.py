@@ -50,6 +50,7 @@ class LGS(object):
         self.config = lgsConfig
         self.atmosConfig = atmosConfig
 
+        self.outPxlScale = outPxlScale
         if outPxlScale is None:
             self.outPxlScale_m = 1./self.simConfig.pxlScale
         else:
@@ -64,6 +65,8 @@ class LGS(object):
         else:
             self.nOutPxls = nOutPxls
 
+        self.FOV = self.nOutPxls * self.outPxlScale
+
         self.config.position = self.wfsConfig.GSPosition
 
         self.LGSPupilSize = int(numpy.round(self.config.pupilDiam
@@ -76,8 +79,7 @@ class LGS(object):
 
         self.initLos()
 
-        # Calc input pixel scale for output pixel scale
-
+        # Find central position of the LGS pupil at each altitude.
         self.pupilPos = {}
         for i in xrange(self.atmosConfig.scrnNo):
             self.pupilPos[i] = self.los.getMetaPupilPos(
@@ -90,7 +92,7 @@ class LGS(object):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
-        print("LGS: self.outPxlScale: {}".format(self.outPxlScale))
+        # print("LGS: self.outPxlScale: {}".format(self.outPxlScale))
         self.los = lineofsight.LineOfSight(
                     self.config, self.simConfig, self.atmosConfig,
                     propagationDirection="up",
@@ -109,6 +111,9 @@ class LGS(object):
                 THREADS=self.config.fftwThreads,
                 fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
+
+    def calcInitParams(self):
+
 
 
     def getLgsPsf(self, scrns=None):
