@@ -113,7 +113,7 @@ class LGS(object):
                 )
 
     def calcInitParams(self):
-
+        pass
 
 
     def getLgsPsf(self, scrns=None):
