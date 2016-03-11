@@ -196,6 +196,54 @@ class Configurator(object):
                 wfs.subapFieldStop = True
 
 
+class YAML_Configurator(Configurator):
+
+    def readfile(self):
+
+        #Exec the config file, which should contain a dict ``simConfiguration``
+        try:
+            with open(self.filename) as file_:
+                exec(file_.read(), globals())
+        except:
+            traceback.print_exc()
+            raise ConfigurationError(
+                    "Error loading config file: {}".format(self.filename))
+
+        self.configDict = simConfiguration
+
+    def loadSimParams(self):
+
+        self.readfile()
+
+        logger.debug("\nLoad Sim Params...")
+        self.sim.loadParams(self.configDict["Sim"])
+
+        logger.debug("\nLoad Atmosphere Params...")
+        self.atmos.loadParams(self.configDict["Atmosphere"])
+
+        logger.debug("\nLoad Telescope Params...")
+        self.tel.loadParams(self.configDict["Telescope"])
+
+        for wfs in range(self.sim.nGS):
+            logger.debug("Load WFS {} Params...".format(wfs))
+            self.wfss.append(WfsConfig(wfs))
+            self.wfss[wfs].loadParams(self.configDict["WFS"])
+
+        for lgs in range(self.sim.nGS):
+            logger.debug("Load LGS {} Params".format(lgs))
+            self.lgss.append(LgsConfig(lgs))
+            self.lgss[lgs].loadParams(self.configDict["LGS"])
+
+        for dm in range(self.sim.nDM):
+            logger.debug("Load DM {} Params".format(dm))
+            self.dms.append(DmConfig(dm))
+            self.dms[dm].loadParams(self.configDict["DM"])
+
+        for sci in range(self.sim.nSci):
+            logger.debug("Load Science {} Params".format(sci))
+            self.scis.append(SciConfig(sci))
+            self.scis[sci].loadParams(self.configDict["Science"])
+        self.calcParams()
 
 class ConfigObj(object):
     def __init__(self):
