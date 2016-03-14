@@ -455,11 +455,11 @@ class GUI(QtGui.QMainWindow):
             del plt
 
         self.strehlPlts=[]
-        if self.config.sim.nSci>0:
-            self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[0],
-                    linestyle=":", color=self.colorList[self.colorNo]))
-            self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[0],
-                 color=self.colorList[self.colorNo]))
+        for sci in xrange(self.config.sim.nSci):
+            self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[sci],
+                    linestyle=":", color=self.colorList[(self.colorNo+sci) % len(self.colorList)]))
+            self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[sci],
+                 color=self.colorList[(self.colorNo+sci) % len(self.colorList)]))
         self.resultPlot.canvas.draw()
 
     def updateStats(self, itersPerSec, timeRemaining):

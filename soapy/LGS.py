@@ -65,7 +65,7 @@ class LGS(object):
         else:
             self.nOutPxls = nOutPxls
 
-        self.FOV = self.nOutPxls * self.outPxlScale
+        self.fov = self.nOutPxls * self.outPxlScale
 
         self.config.position = self.wfsConfig.GSPosition
 
@@ -113,7 +113,14 @@ class LGS(object):
                 )
 
     def calcInitParams(self):
-        pass
+
+        # The number of points required to get the correct FOV after the FFT
+        fov_rad = self.fov / 206265.
+        self.nFovPxls = self.fov * self.config.pupilDiam / self.wavelength
+
+
+        print("LGS FOV PXLS: {}".format(self.nFovPxls))
+
 
 
     def getLgsPsf(self, scrns=None):
