@@ -1,13 +1,13 @@
-simName:  sh_8x8
-pupilSize:   128
-nGS:   1
-nDM:   2
-nSci:   1
-nIters:   5000
-loopTime:   1/400.0
-reconstructor:   "MVM"
+simName: sh_8x8
+pupilSize: 128
+nGS: 1
+nDM: 2
+nSci: 1
+nIters: 5000
+loopTime: 0.25
+reconstructor: "MVM"
 
-verbosity     :   2
+verbosity: 2
 
 saveCMat: False
 saveSlopes: True
