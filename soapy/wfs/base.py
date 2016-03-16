@@ -145,7 +145,6 @@ class WFS(object):
         self.iMat = False
 
         # Init the line of sight
-        print("Init LOS")
         self.initLos()
 
         self.calcInitParams()
@@ -194,7 +193,6 @@ class WFS(object):
         """
         self.los = lineofsight.LineOfSight(
                 self.config, self.simConfig, self.atmosConfig,
-                outPxlScale=self.simConfig.pxlScale**-1,
                 propagationDirection="down")
 
     def initLGS(self):
@@ -211,12 +209,12 @@ class WFS(object):
         # Choose the correct LGS object, either with physical or geometric
         # or geometric propagation.
         if self.lgsConfig.uplink:
-
-            self.lgs = LGS.LGS(
+            lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
+            self.lgs = lgsObj(
                     self.simConfig, self.config, self.lgsConfig,
                     self.atmosConfig)
         else:
-            self.LGS = None
+            self.lgs = None
 
         self.lgsLaunchPos = None
         self.elong = 0

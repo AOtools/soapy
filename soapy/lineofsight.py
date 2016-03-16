@@ -26,14 +26,16 @@ class LineOfSight(object):
         config: The soapy config for the line of sight
         simConfig: The soapy simulation config
         atmosConfig: The soapy atmosphere config
-        propagationDirection (str): Direction of light propagation, either `"up"` or `"down"`
-        outPxlScale (float): The EField pixel scale required at the output (m/pxl)
-        mask (ndarray): Mask to apply at the *beginning* of propagation
+        propagationDirection (str, optional): Direction of light propagation, either `"up"` or `"down"`
+        outPxlScale (float, optional): The EField pixel scale required at the output (m/pxl)
+        nOutPxls (int, optional): Number of pixels to return in EFIeld
+        mask (ndarray, optional): Mask to apply at the *beginning* of propagation
+        metaPupilPos (list, dict, optional): A list of dictionary of the meta pupil position at each turbulence layer height. If None, works it out from GS position.
     """
     def __init__(
             self, config, simConfig, atmosConfig,
             propagationDirection="down", outPxlScale=None,
-            nOutPxls=None, mask=None):
+            nOutPxls=None, mask=None, metaPupilPos=None):
 
         self.config = config
         self.simConfig = simConfig
@@ -53,6 +55,8 @@ class LineOfSight(object):
 
         self.allocDataArrays()
 
+        # Can be set to use other values as metapupil position
+        self.metaPupilPos = metaPupilPos
 
     # Some attributes for compatability between WFS and others
     @property
@@ -111,9 +115,6 @@ class LineOfSight(object):
         else:
             self.nOutPxls = nOutPxls
 
-        print("self.outPxlScale: {}".format(self.outPxlScale))
-        print("self.mask: {}".format(self.mask))
-        print("self.nOutPxls:{}".format(self.nOutPxls))
         if self.mask is not None:
             self.outMask = aoSimLib.zoom(
                     self.mask, self.nOutPxls).round()
@@ -128,7 +129,6 @@ class LineOfSight(object):
         keep it fast. This includes arrays for phase
         and the E-Field across the WFS
         """
-        print("allocDataArrays - phaseSize:{}".format(self.nOutPxls))
         self.phase = numpy.zeros([self.nOutPxls]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.nOutPxls]*2, dtype=CDTYPE)
 
@@ -198,7 +198,7 @@ class LineOfSight(object):
             scrn (ndarray): An array representing the phase screen
             height (float): Height of the phase screen
             radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
-            pos (tuple, optional): Angular position of guide star. If not set will use system position.
+            ndarray (tuple, optional): Central position of the LOS from the on-axis point in metres (x, y)
 
         Return:
             ndarray: The meta pupil at the specified height
@@ -208,20 +208,31 @@ class LineOfSight(object):
         if radius==0:
             return numpy.zeros((simSize, simSize))
 
+        if pos is None:
+            GSCent = self.getMetaPupilPos(height, pos) * self.simConfig.pxlScale
+        else:
+            GSCent = pos * self.simConfig.pxlScale
 
-        GSCent = self.getMetaPupilPos(height, pos) * self.simConfig.pxlScale
+        # Find the size in metres of phase that is required
+        self.phaseRadius = (self.outPxlScale * self.nOutPxls)/2.
+        # And a corresponding coordinate on the phase screen
+        self.phaseCoord = int(round(self.phaseRadius * self.simConfig.pxlScale))
 
+        logger.debug('phaseCoord:{}'.format(self.phaseCoord))
+        # The sizes of the phase screen
         scrnX, scrnY = scrn.shape
+
         # If the GS is not at infinity, take into account cone effect
         if radius!=None:
             fact = float(2*radius)/self.simConfig.pupilSize
         else:
             fact = 1
+
         simSize = self.simConfig.simSize
-        x1 = scrnX/2. + GSCent[0] - fact*simSize/2.0
-        x2 = scrnX/2. + GSCent[0] + fact*simSize/2.0
-        y1 = scrnY/2. + GSCent[1] - fact*simSize/2.0
-        y2 = scrnY/2. + GSCent[1] + fact*simSize/2.0
+        x1 = scrnX/2. + GSCent[0] - fact*self.phaseCoord
+        x2 = scrnX/2. + GSCent[0] + fact*self.phaseCoord
+        y1 = scrnY/2. + GSCent[1] - fact*self.phaseCoord
+        y2 = scrnY/2. + GSCent[1] + fact*self.phaseCoord
 
         logger.debug("LoS Scrn Coords - ({0}:{1}, {2}:{3})".format(
                 x1,x2,y1,y2))
@@ -246,51 +257,58 @@ class LineOfSight(object):
         self.EField[:] = 0
         self.phase[:] = 0
 
-    def makePhase(self, radii=None, pos=None):
+    def makePhase(self, radii=None):
         # Check if geometric or physical
-        if self.config.propagationMode == "physical":
-            return self.makePhasePhys(radii, pos)
+        if self.config.propagationMode == "Physical":
+            return self.makePhasePhys(radii)
         else:
-            return self.makePhaseGeometric(radii, pos)
+            return self.makePhaseGeometric(radii)
 
-    def makePhaseGeometric(self, radii=None, pos=None):
+    def makePhaseGeometric(self, radii=None):
         '''
         Creates the total phase on a wavefront sensor which
         is offset by a given angle
 
         Parameters
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
-            pos (dict, optional): Position of GS in pixels. If not given uses GS position
         '''
 
         for i in range(len(self.scrns)):
             logger.debug("Layer: {}".format(i))
-            if radii:
-                phase = self.getMetaPupilPhase(
-                            self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            radius=radii[i], pos=pos)
+            if radii is None:
+                radius = None
             else:
-                phase = self.getMetaPupilPhase(
-                            self.scrns[i], self.atmosConfig.scrnHeights[i],
-                            pos=pos)
+                radius = radii[i]
+
+            if self.metaPupilPos is None:
+                pos = None
+            else:
+                pos = self.metaPupilPos[i]
+
+            phase = self.getMetaPupilPhase(
+                    self.scrns[i], self.atmosConfig.scrnHeights[i],
+                    pos=pos, radius=radius)
 
             self.phase += phase
 
         # Convert phase to radians
         self.phase *= self.phs2Rad
 
+        # Change sign if propagating up
+        if self.propagationDirection=='up':
+            self.phase *= -1
+
         self.EField[:] = numpy.exp(1j*self.phase)
 
         return self.EField
 
-    def makePhasePhys(self, radii=None, pos=None):
+    def makePhasePhys(self, radii=None):
         '''
         Finds total WFS complex amplitude by propagating light through
         phase scrns
 
         Parameters
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
-            pos (dict, optional): Position of GS in pixels. If not given uses GS position.
         '''
 
         scrnNo = len(self.scrns)
@@ -325,18 +343,30 @@ class LineOfSight(object):
                         self.EFieldBuf, self.config.wavelength,
                         self.outPxlScale, self.outPxlScale, z)
 
-        print("ScrnRange:{}".format(scrnRange))
-        print("ScrnAlts: {}".format(scrnAlts))
         # Go through and propagate between phase screens
         for i in scrnRange:
-            # Get phase for this layer
-            if radii:
-                radius = radii[i]
-            else:
+            # Check optional radii and position
+            if radii is None:
                 radius = None
+            else:
+                radius = radii[i]
+
+            if self.metaPupilPos is None:
+                pos = None
+            else:
+                pos = self.metaPupilPos[i]
+
+            # Get phase for this layer
             phase = self.getMetaPupilPhase(
                     self.scrns[i],
                     self.atmosConfig.scrnHeights[i], radius=radius, pos=pos)
+
+            # Convert phase to radians
+            phase *= self.phs2Rad
+
+            # Change sign if propagating up
+            if self.propagationDirection=='up':
+                self.phase *= -1
 
             # Get propagation distance for this layer
             if i==(scrnNo-1):
@@ -348,7 +378,7 @@ class LineOfSight(object):
             z_total += z
 
             # Apply phase to EField
-            self.EFieldBuf *= numpy.exp(1j*phase*self.phs2Rad)
+            self.EFieldBuf *= numpy.exp(1j*phase)
 
             # Do ASP for last layer to next
             self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(

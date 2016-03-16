@@ -162,7 +162,7 @@ class Configurator(object):
         #If so, make oversize phase scrns
         wfsPhys = False
         for wfs in range(self.sim.nGS):
-            if self.wfss[wfs].propagationMode=="physical":
+            if self.wfss[wfs].propagationMode=="Physical":
                 wfsPhys = True
                 break
         if wfsPhys:
@@ -490,8 +490,8 @@ class WfsConfig(ConfigObj):
                             Includes atmospheric effects, the
                             optical train and detector gain.   ``1.``
         ``propagationMode`` string: Mode of light propogation
-                            from GS. Can be "physical" or
-                            "geometric"\**.                     ``"geometric"``
+                            from GS. Can be "Physical" or
+                            "Geometric"\**.                     ``"Geometric"``
         ``subapFieldStop``  bool: if True, add a field stop to
                             the wfs to prevent spots wandering
                             into adjacent sub-apertures. if
@@ -634,8 +634,8 @@ class LgsConfig(ConfigObj):
         ``wavelength``       float: Wavelength of laser beam
                              in metres                           ``600e-9``
         ``propagationMode``  str: Mode of light propogation
-                             from GS. Can be "physical" or
-                             "geometric".                        ``"phsyical"``
+                             from GS. Can be "Physical" or
+                             "Geometric".                        ``"Phsyical"``
         ``height``           float: Height to use physical
                              propogation of LGS (does not
                              effect cone-effect) in metres       ``90000``
@@ -670,7 +670,7 @@ class LgsConfig(ConfigObj):
         self.optionalParams = [ ("uplink", False),
                                 ("pupilDiam", 0.3),
                                 ("wavelength", 600e-9),
-                                ("propagationMode", "physical"),
+                                ("propagationMode", "Physical"),
                                 ("height", 90000),
                                 ("fftwFlag", "FFTW_PATIENT"),
                                 ("fftwThreads", 0),
@@ -784,8 +784,8 @@ class SciConfig(ConfigObj):
          ``height``          float: Altitude of the object.
                              0 denotes infinity.                  ``0``
         ``propagationMode``  str: Mode of light propogation
-                             from object. Can be "physical" or
-                             "geometric".                       ``"geometric"``
+                             from object. Can be "Physical" or
+                             "Geometric".                       ``"Geometric"``
         ``instStrehlWithTT`` bool: Whether or not to include
                              tip/tilt in instantaneous Strehl
                              calculations.                       ``False``
@@ -808,7 +808,7 @@ class SciConfig(ConfigObj):
                                 ("fftwFlag", "FFTW_MEASURE"),
                                 ("fftwThreads", 1),
                                 ("height", 0),
-                                ("propagationMode", "geometric"),
+                                ("propagationMode", "Geometric"),
                                 ("instStrehlWithTT", False),
                                 ]
 

@@ -28,11 +28,12 @@ try:
 except NameError:
     xrange = range
 
+RAD2ASEC = 206265.
 
 class LGS(object):
     '''
     A class to simulate the propogation of a laser up through turbulence.
-    given a set of phase screens, this will return the PSF which would be present on-sky.
+    Given a set of phase screens, this will return the PSF which would be present on-sky.
 
     Parameters:
         simConfig: The Soapy simulation config
@@ -41,6 +42,7 @@ class LGS(object):
         nOutPxls (int): Number of pixels required in output LGS
         outPxlScale (float): The pixel scale of the output LGS PSF in arcsecs per pixel
     '''
+
     def __init__(
             self, simConfig, wfsConfig, lgsConfig, atmosConfig,
             nOutPxls=None, outPxlScale=None):
@@ -51,104 +53,220 @@ class LGS(object):
         self.atmosConfig = atmosConfig
 
         self.outPxlScale = outPxlScale
-        if outPxlScale is None:
-            self.outPxlScale_m = 1./self.simConfig.pxlScale
-        else:
-            # The pixel scale in metres per pixel at the LGS altitude
-            self.outPxlScale_m = (outPxlScale/3600.)*(numpy.pi/180.) * self.config.height
-        # Get the angular scale in radians of the output array
-        self.outPxlScale_rad = self.outPxlScale_m/self.config.height
+        self.nOutPxls = nOutPxls
 
-        # The number of pixels required across the LGS image
-        if nOutPxls is None:
-            self.nOutPxls = self.simConfig.simSize
-        else:
-            self.nOutPxls = nOutPxls
-
-        self.fov = self.nOutPxls * self.outPxlScale
+        # get this no of pixels from the LOS if not other wise told
+        # Change in ``calcInitParams`` if you want more or less
+        self.losNOutPxls = self.nOutPxls
+        self.losOutPxlScale = self.outPxlScale
 
         self.config.position = self.wfsConfig.GSPosition
+        self.losMask = None
 
-        self.LGSPupilSize = int(numpy.round(self.config.pupilDiam
-                                            * self.simConfig.pxlScale))
-
-        self.mask = aoSimLib.circle(
-                0.5*self.config.pupilDiam*self.simConfig.pxlScale,
-                self.simConfig.simSize)
-        self.geoMask = aoSimLib.circle(self.LGSPupilSize/2., self.LGSPupilSize)
+        self.calcInitParams()
 
         self.initLos()
 
-        # Find central position of the LGS pupil at each altitude.
-        self.pupilPos = {}
-        for i in xrange(self.atmosConfig.scrnNo):
-            self.pupilPos[i] = self.los.getMetaPupilPos(
-                self.atmosConfig.scrnHeights[i]
-                )
-
         self.initFFTs()
+
+    def initFFTs(self):
+        """
+        Virtual Method as many LGS implentations will require extra FFTs
+        """
+        pass
 
     def initLos(self):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
-        # print("LGS: self.outPxlScale: {}".format(self.outPxlScale))
+        # Init the line of sight object for light propation through turbulence
         self.los = lineofsight.LineOfSight(
                     self.config, self.simConfig, self.atmosConfig,
-                    propagationDirection="up",
-                    outPxlScale=self.outPxlScale, nOutPxls=self.nOutPxls,
-                    mask=self.mask
+                    propagationDirection="up", nOutPxls=self.losNOutPxls,
+                    mask=self.losMask, outPxlScale=self.losOutPxlScale,
                     )
+
+        # Find central position of the LGS pupil at each altitude.
+        self.los.metaPupilPos = {}
+        for i in xrange(self.atmosConfig.scrnNo):
+            self.los.metaPupilPos[i] = lgsOALaunchMetaPupilPos(
+                    self.config.position,
+                    numpy.array(self.config.launchPosition)*self.los.telDiam/2.,
+                    self.config.height, self.atmosConfig.scrnHeights[i]
+                    )
+        # Check position not too far from centre. May need more phase!
+        maxPos = numpy.array(
+                self.los.metaPupilPos.values()).max()*self.simConfig.pxlScale
+        if 2*(maxPos+self.simConfig.pupilSize/2.) > self.simConfig.simSize:
+            logger.warning(
+                    "LGS far off-axis - likely need to make simOversize bigger")
+
+    def getLgsPsf(self, scrns):
+        logger.debug("Get LGS PSF")
+        self.los.frame(scrns)
+        self.EField = self.los.EField
+        self.phase = self.los.phase
+
+
+class LGS_Geometric(LGS):
+    '''
+    A class to simulate the propogation of a laser up through turbulence using a geometric algorithm.
+    Given a set of phase screens, this will return the PSF which would be present on-sky.
+
+    Parameters:
+        simConfig: The Soapy simulation config
+        wfsConfig: The relavent Soapy WFS configuration
+        atmosConfig: The relavent Soapy atmosphere configuration
+        nOutPxls (int): Number of pixels required in output LGS
+        outPxlScale (float): The pixel scale of the output LGS PSF in arcsecs per pixel
+    '''
+
+    def calcInitParams(self):
+        """
+        Calculate some useful paramters to be used later
+        """
+        self.lgsPupilPxls = int(
+                round(self.config.pupilDiam * self.simConfig.pxlScale))
+
+        if self.outPxlScale is None:
+            self.outPxlScale_m = 1./self.simConfig.pxlScale
+        else:
+            # The pixel scale in metres per pixel at the LGS altitude
+            self.outPxlScale_m = (self.outPxlScale/3600.)*(numpy.pi/180.) * self.config.height
+
+        # Get the angular scale in radians of the output array
+        self.outPxlScale_rad = self.outPxlScale_m/self.config.height
+
+        # The number of pixels required across the LGS image
+        if self.nOutPxls is None:
+            self.nOutPxls = self.simConfig.simSize
+
+        # Field of fov of the requested LGS PSF image
+        self.fov = (self.nOutPxls * self.outPxlScale_rad) * RAD2ASEC
+
+        # The number of points required to get the correct FOV after the FFT
+        fov_rad = self.fov / RAD2ASEC
+        self.nFovPxls = (fov_rad * self.config.pupilDiam
+                / self.config.wavelength)
+
+        # The mask to apply before geometric FFTing
+        self.mask = aoSimLib.circle(self.nFovPxls/2., self.nFovPxls)
+
+        self.losNOutPxls = self.lgsPupilPxls
+        self.losOutPxlScale = self.config.pupilDiam/self.lgsPupilPxls
+
 
     def initFFTs(self):
         # FFT for geometric propagation
-        self.geoFPSize = self.nOutPxls*self.los.telDiam
-
         self.FFT = AOFFT.FFT(
                 (self.nOutPxls, self.nOutPxls),
-                axes=(0,1),mode="pyfftw",
+                axes=(0,1), mode="pyfftw",
                 dtype = "complex64",direction="FORWARD",
                 THREADS=self.config.fftwThreads,
                 fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
 
+
+    def getLgsPsf(self, scrns):
+        super(LGS_Geometric, self).getLgsPsf(scrns)
+
+        # Pick out lgs Pupil sized chunk of field in middle
+        # coord = (self.los.EField.shape[0]-self.lgsPupilPxls)/2.
+        # lgsEField = self.los.EField[coord: -coord, coord: -coord]
+
+        # Scale to the desired size for LGS FOV
+        lgsEField = aoSimLib.zoom(self.EField, self.nFovPxls)*self.mask
+
+        self.FFT.inputData[:self.nFovPxls, :self.nFovPxls] = lgsEField
+        self.psf = abs(AOFFT.ftShift2d(self.FFT())**2)
+
+        return self.psf
+
+
+class LGS_Physical(LGS):
+    '''
+    A class to simulate the propogation of a laser up through turbulence using a geometric algorithm.
+    Given a set of phase screens, this will return the PSF which would be present on-sky.
+
+    Parameters:
+        simConfig: The Soapy simulation config
+        wfsConfig: The relavent Soapy WFS configuration
+        atmosConfig: The relavent Soapy atmosphere configuration
+        nOutPxls (int): Number of pixels required in output LGS
+        outPxlScale (float): The pixel scale of the output LGS PSF in arcsecs per pixel
+    '''
+
     def calcInitParams(self):
+        """
+        Calculate some useful paramters to be used later
+        """
+
+        self.mask = aoSimLib.circle(
+                0.5*self.config.pupilDiam*self.simConfig.pxlScale,
+                self.simConfig.simSize)
+
+        if self.outPxlScale is None:
+            self.outPxlScale_m = 1./self.simConfig.pxlScale
+        else:
+            # The pixel scale in metres per pixel at the LGS altitude
+            self.outPxlScale_m = (self.outPxlScale / RAD2ASEC) * self.config.height
+
+        # Get the angular scale in radians of the output array
+        self.outPxlScale_rad = self.outPxlScale_m/self.config.height
+
+
+        # The number of pixels required across the LGS image
+        if self.nOutPxls is None:
+            self.nOutPxls = self.simConfig.simSize
+
+        # Field of fov of the requested LGS PSF image
+        self.fov = (self.nOutPxls * self.outPxlScale_rad) * RAD2ASEC
 
         # The number of points required to get the correct FOV after the FFT
-        fov_rad = self.fov / 206265.
-        self.nFovPxls = self.fov * self.config.pupilDiam / self.wavelength
+        fov_rad = self.fov / RAD2ASEC
+        self.nFovPxls = (fov_rad * self.config.pupilDiam
+                / self.config.wavelength)
 
+        # The mask to apply before physical propagation
+        self.lgsPupilPxls = int(round(self.config.pupilDiam/self.outPxlScale_m))
+        self.mask = aoSimLib.circle(self.lgsPupilPxls/2., 3*self.nOutPxls)
+        self.losMask = self.mask
 
-        print("LGS FOV PXLS: {}".format(self.nFovPxls))
-
-
+        self.losOutPxlScale = self.outPxlScale_m
+        self.losNOutPxls = 3*self.nOutPxls
 
     def getLgsPsf(self, scrns=None):
+        """
+        Return the LGS PSF to be used in WFS calculation
+        """
+        super(LGS_Physical, self).getLgsPsf(scrns)
 
-        self.los.frame(scrns)
-        if self.config.propagationMode=="physical":
-            return self.getLgsPsf_physical(scrns)
+        # Pick out middle of oversized fov
 
-        elif self.config.propagationMode=="geometric":
-            return self.getLgsPsf_geometric(scrns)
-
-        else:
-            raise ValueError("Don't know that LGS propagation mode")
-
-    def getLgsPsf_geometric(self, scrns=None):
-        self.geoFFT.inputData[:] = self.los.EField
-        fPlane = abs(AOFFT.ftShift2d(self.geoFFT())**2)
-
-        # Crop to required FOV
-        crop = self.subapFFTPadding*0.5/ self.fovOversize
-        self.psf1 = fPlane[self.LGSFFTPadding*0.5 - crop:
-                        self.LGSFFTPadding*0.5 + crop,
-                        self.LGSFFTPadding*0.5 - crop:
-                        self.LGSFFTPadding*0.5 + crop    ]
-
+        self.psf = abs(self.EField[
+                self.nOutPxls: -self.nOutPxls,
+                self.nOutPxls: -self.nOutPxls])**2
         return self.psf
 
-    def getLgsPsf_physical(self, scrns=None):
 
-        self.psf = abs(self.los.EField)**2
-        return self.psf
+def lgsOALaunchMetaPupilPos(gsPos, launchPos, lgsHt, layerHt):
+    """
+    Finds the centre of a meta-pupil in the atmosphere sampled by an LGS launched from a position off-axis from the centre of the telescope.
+
+    Parameters:
+        gsPos (ndarray): The X,Y position of the guide star in arcsecs
+        launchPos (ndarray): The X, Y launch position of the telescope in metres from the telescope centre
+        lgsHt (float): The altitude of the LGS beacon
+        layerHt (float): The height of the meta-pupil of interest
+
+    Returns:
+        ndarray: Position in X,Y from the on-axis line-of-sight of the meta-pupil centre.
+    """
+
+    gsPos_rad = numpy.array(gsPos)/RAD2ASEC
+    launchPos = numpy.array(launchPos)
+    # Equation worked out painstakingly with vast number of triangles...
+    # (please try out and verify!)
+    pos = launchPos + layerHt * gsPos_rad - (layerHt * launchPos / lgsHt)
+
+    return pos

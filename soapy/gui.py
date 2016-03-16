@@ -249,7 +249,7 @@ class GUI(QtGui.QMainWindow):
             self.gainSpins[dm].valueChanged.connect(
                                                 partial(self.gainChanged,dm))
 
-        self.ui.progressBar.setValue( 100)
+        self.ui.progressBar.setValue(100)
         self.statsThread = StatsThread(self.sim)
 
     def update(self):
