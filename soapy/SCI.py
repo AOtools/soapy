@@ -22,7 +22,7 @@ from scipy.interpolate import interp2d
 import scipy.optimize as opt
 
 
-class scienceCam(object):
+class PSF(object):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 
@@ -250,7 +250,7 @@ class scienceCam(object):
         return self.focalPlane
 
 
-class singleModeFibre(scienceCam):
+class singleModeFibre(PSF):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
         scienceCam.__init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask)
@@ -270,3 +270,6 @@ class singleModeFibre(scienceCam):
 
     def calcInstStrehl(self):
         self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.normMask))**2
+
+# Compatability with older versions
+scienceCam = PSF

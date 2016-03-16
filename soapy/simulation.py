@@ -132,8 +132,7 @@ class Sim(object):
         if configFile:
             self.configFile = configFile
 
-        self.config = confParse.Configurator(self.configFile)
-        self.config.loadSimParams()
+        self.config = confParse.loadSoapyConfig(self.configFile)
         logger.statusMessage(
                 0, 1,"Loaded configuration file successfully!" )
 

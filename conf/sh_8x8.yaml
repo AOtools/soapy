@@ -4,7 +4,7 @@ nGS: 1
 nDM: 2
 nSci: 1
 nIters: 5000
-loopTime: 0.25
+loopTime: 0.0025
 reconstructor: "MVM"
 
 verbosity: 2
@@ -33,7 +33,7 @@ Telescope:
 
 WFS:
   - ShackHartmann:
-      GSPosition: (0,0)
+      GSPosition: [0, 0]
       GSHeight: 0
       GSMag: 8
       nxSubaps: 8
@@ -49,6 +49,7 @@ DM:
       closed: True
       iMatValue: 2e3
       gain: 0.6
+      svdConditioning: 1e-15
 
   - Piezo:
       closed: True
@@ -59,7 +60,7 @@ DM:
 
 Science:
   - PSF:
-      position: (0,0)
+      position: [0, 0]
       FOV: 2.0
       wavelength: 1.65e-6
       pxls: 128
