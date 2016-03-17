@@ -115,7 +115,13 @@ class LineOfSight(object):
 ############################################################
 # Initialisation routines
     def calcInitParams(self, outPxlScale=None, nOutPxls=None):
+        """
+        Calculates some parameters required later
 
+        Parameters:
+            outPxlScale (float): Pixel scale of required phase/EField (metres/pxl)
+            nOutPxls (int): Size of output array in pixels
+        """
         # Convert phase deviation to radians at wfs wavelength.
         # (in nm remember...?)
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength * 10**9)
@@ -142,12 +148,12 @@ class LineOfSight(object):
 
     def allocDataArrays(self):
         """
-        Allocate the data arrays the WFS will require
+        Allocate the data arrays the LOS will require
 
-        Determines and allocates the various arrays the WFS will require to
-        avoid having to re-alloc memory during the running of the WFS and
+        Determines and allocates the various arrays the LOS will require to
+        avoid having to re-alloc memory during the running of the LOS and
         keep it fast. This includes arrays for phase
-        and the E-Field across the WFS
+        and the E-Field across the LOS
         """
         self.phase = numpy.zeros([self.nOutPxls]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.nOutPxls]*2, dtype=CDTYPE)
@@ -156,7 +162,7 @@ class LineOfSight(object):
     def findMetaPupilSize(self, GSHeight):
         '''
         Evaluates the sizes of the effective metePupils
-        at each screen height if an GS of finite height is used.
+        at each screen height - if a GS of finite height is used.
 
         Parameters:
             GSHeight (float): The height of the GS in metres
@@ -187,12 +193,12 @@ class LineOfSight(object):
     def getMetaPupilPos(self, height, pos=None):
         '''
         Finds the centre of a metapupil at a given height,
-        when offset by a given angle in arsecs, in metres from the ()
+        when offset by a given angle in arsecs, in metres from the central position
 
-        Arguments:
+        Parameters:
             height (float): Height of the layer in metres
             pos (tuple, optional):  The angular position of the GS in radians.
-                                    If not set, will use the WFS position
+                                    If not set, will use the config position
 
         Returns:
             ndarray: The position of the centre of the metapupil in metres
@@ -208,7 +214,7 @@ class LineOfSight(object):
         return GSCent
 
     def getMetaPupilPhase(
-            self, scrn, height, radius=None, simSize=None, pos=None):
+            self, scrn, height, radius=None,  pos=None):
         '''
         Returns the phase across a metaPupil at some height and angular
         offset in arcsec. Interpolates phase to size of the pupil if cone
@@ -218,7 +224,7 @@ class LineOfSight(object):
             scrn (ndarray): An array representing the phase screen
             height (float): Height of the phase screen
             radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
-            ndarray (tuple, optional): Central position of the LOS from the on-axis point in metres (x, y)
+            pos (ndarray, optional): X, Y central position of the metapupil in metres. If None, then config used to calculate it.
 
         Return:
             ndarray: The meta pupil at the specified height
@@ -274,10 +280,17 @@ class LineOfSight(object):
 ######################################################
 
     def zeroData(self, **kwargs):
+        """
+        Sets the phase and complex amp data to zero
+        """
         self.EField[:] = 0
         self.phase[:] = 0
 
     def makePhase(self, radii=None):
+        """
+        Generates the required phase or EField. Uses difference approach depending on whether propagation is geometric or physical
+        (makePhaseGeometric or makePhasePhys respectively)
+        """
         # Check if geometric or physical
         if self.config.propagationMode == "Physical":
             return self.makePhasePhys(radii)
@@ -286,8 +299,7 @@ class LineOfSight(object):
 
     def makePhaseGeometric(self, radii=None):
         '''
-        Creates the total phase on a wavefront sensor which
-        is offset by a given angle
+        Creates the total phase along line of sight offset by a given angle using a geometric ray tracing approach
 
         Parameters
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
@@ -324,8 +336,7 @@ class LineOfSight(object):
 
     def makePhasePhys(self, radii=None):
         '''
-        Finds total WFS complex amplitude by propagating light through
-        phase scrns
+        Finds total line of sight complex amplitude by propagating light through phase screens
 
         Parameters
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
@@ -413,12 +424,11 @@ class LineOfSight(object):
 
     def frame(self, scrns, correction=None):
         '''
-        Runs one WFS frame
+        Runs one frame through a line of sight
 
-        Runs a single frame of the WFS with a given set of phase screens and
-        some optional correction. If elongation is set, will run the phase
-        calculating and focal plane making methods multiple times for a few
-        different heights of LGS, then sum these onto a ``wfsDetectorPlane``.
+        Finds the phase or complex amplitude through line of sight for a
+        single simulation frame, with a given set of phase screens and
+        some optional correction.
 
         Parameters:
             scrns (list): A list or dict containing the phase screens
