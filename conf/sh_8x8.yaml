@@ -14,7 +14,7 @@ saveSlopes: True
 saveDmCommands:   False
 saveLgsPsf: False
 saveSciPsf: True
-
+procs: 8
 
 Atmosphere:
   scrnNo: 4

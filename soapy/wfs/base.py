@@ -409,7 +409,6 @@ class WFS(object):
                     iMatPhase = aoSimLib.zoom_numba(
                             self.los.scrns[0], (self.los.nOutPxls,)*2, threads=self.simConfig.procs)
 
-                    self.los.phase[:] = iMatPhase
                     self.los.EField[:] = numpy.exp(1j*iMatPhase*self.los.phs2Rad)
 
                 except ValueError:

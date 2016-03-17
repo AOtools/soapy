@@ -230,11 +230,14 @@ class PY_Configurator(object):
         #Use the simulation ``procs`` value to determine how many threads in
         #multi-threaded/processed operations
         for wfs in self.wfss:
-            wfs.fftwThreads = self.sim.procs
+            if wfs is not None:
+                wfs.fftwThreads = self.sim.procs
         for lgs in self.lgss:
-            lgs.fftwThreads = self.sim.procs
+            if lgs is not None:
+                lgs.fftwThreads = self.sim.procs
         for sci in self.scis:
-            sci.fftwThreads = self.sim.procs
+            if sci is not None:
+                sci.fftwThreads = self.sim.procs
 
 
 

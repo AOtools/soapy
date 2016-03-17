@@ -29,6 +29,8 @@ from scipy.interpolate import interp2d
 
 from . import aoSimLib, logger, opticalPropagationLib
 
+import numba
+
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -142,8 +144,9 @@ class LineOfSight(object):
             self.nOutPxls = nOutPxls
 
         if self.mask is not None:
-            self.outMask = aoSimLib.zoom(
-                    self.mask, self.nOutPxls).round()
+            self.outMask = aoSimLib.zoom_numba(
+                    self.mask, numpy.zeros((self.nOutPxls,)*2),
+                    threads=self.simConfig.procs).round()
 
 
     def allocDataArrays(self):
@@ -157,8 +160,9 @@ class LineOfSight(object):
         """
         self.phase = numpy.zeros([self.nOutPxls]*2, dtype=DTYPE)
         self.EField = numpy.zeros([self.nOutPxls]*2, dtype=CDTYPE)
+        self.metaPupil = numpy.zeros_like(self.phase)
 
-
+    @numba.jit(nopython=True)
     def findMetaPupilSize(self, GSHeight):
         '''
         Evaluates the sizes of the effective metePupils
@@ -182,14 +186,14 @@ class LineOfSight(object):
 
             #If scrn is above LGS, radius is 0
             if self.atmosConfig.scrnHeights[i]>=GSHeight:
-                radii[i]=0
+                radii[i] = 0
 
         return radii
 
 
  #############################################################
 #Phase stacking routines for a WFS frame
-
+    @numba.jit
     def getMetaPupilPos(self, height, pos=None):
         '''
         Finds the centre of a metapupil at a given height,
@@ -213,6 +217,7 @@ class LineOfSight(object):
 
         return GSCent
 
+    @numba.jit
     def getMetaPupilPhase(
             self, scrn, height, radius=None,  pos=None):
         '''
@@ -231,8 +236,8 @@ class LineOfSight(object):
         '''
 
         # If the radius is 0, then 0 phase is returned
-        if radius==0:
-            return numpy.zeros((simSize, simSize))
+        if radius is 0:
+            return numpy.zeros((self.nOutPxls, self.nOutPxls))
 
         if pos is None:
             GSCent = self.getMetaPupilPos(height, pos) * self.simConfig.pxlScale
@@ -270,13 +275,12 @@ class LineOfSight(object):
 
         xCoords = numpy.linspace(x1, x2-1, self.nOutPxls)
         yCoords = numpy.linspace(y1, y2-1, self.nOutPxls)
-        scrnCoords = numpy.arange(scrnX)
-        interpObj = interp2d(
-                scrnCoords, scrnCoords, scrn, copy=False)
-        metaPupil = interpObj(xCoords, yCoords)
 
-        self.metaPupil = metaPupil
-        return metaPupil
+        self.metaPupil = aoSimLib.linterp2d_numba(
+                scrn, xCoords, yCoords, self.metaPupil
+                )
+
+        return self.metaPupil
 ######################################################
 
     def zeroData(self, **kwargs):
@@ -297,6 +301,7 @@ class LineOfSight(object):
         else:
             return self.makePhaseGeometric(radii)
 
+    @numba.jit
     def makePhaseGeometric(self, radii=None):
         '''
         Creates the total phase along line of sight offset by a given angle using a geometric ray tracing approach
@@ -334,6 +339,7 @@ class LineOfSight(object):
 
         return self.EField
 
+    @numba.jit
     def makePhasePhys(self, radii=None):
         '''
         Finds total line of sight complex amplitude by propagating light through phase screens
@@ -422,6 +428,7 @@ class LineOfSight(object):
 
         return self.EField
 
+    @numba.jit
     def frame(self, scrns, correction=None):
         '''
         Runs one frame through a line of sight
@@ -448,8 +455,10 @@ class LineOfSight(object):
         self.zeroData()
         self.makePhase(self.radii)
 
-        if numpy.any(correction):
-            correction = aoSimLib.zoom(correction, self.nOutPxls)
+        if correction is not None:
+            correction = aoSimLib.zoom_numba(
+                    correction, numpy.empty((self.nOutPxls,)*2),
+                    threads=self.simConfig.procs)
             self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
             self.residual = self.phase/self.phs2Rad- correction
         else:

@@ -209,8 +209,8 @@ class DM(object):
 
     def makeDMFrame(self, actCoeffs):
 
-            dmShape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
-            return dmShape
+        dmShape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
+        return dmShape
 
 class Zernike(DM):
     """

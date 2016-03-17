@@ -14,6 +14,8 @@ from . import base
 from ..tools import centroiders
 from ..opticalPropagationLib import angularSpectrum
 
+import numba
+
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
 try:
@@ -252,7 +254,7 @@ class ShackHartmann(base.WFS):
         if detector:
             self.wfsDetectorPlane[:] = 0
 
-
+    @numba.jit
     def calcFocalPlane(self, intensity=1):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
@@ -292,7 +294,7 @@ class ShackHartmann(base.WFS):
             self.FPSubapArrays += intensity*numpy.abs(
                     AOFFT.ftShift2d(self.FFT()))**2
 
-
+    @numba.jit
     def makeDetectorPlane(self):
         '''
         Scales and bins intensity data onto the detector with a given number of
@@ -405,6 +407,7 @@ class ShackHartmann(base.WFS):
         self.FFT.inputData[:] = self.iFFTFPSubapsArray
         self.FPSubapArrays[:] = AOFFT.ftShift2d(self.FFT()).real
 
+    @numba.jit
     def calculateSlopes(self):
         '''
         Calculates WFS slopes from wfsFocalPlane
