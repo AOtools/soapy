@@ -35,35 +35,41 @@ class ShackHartmann(base.WFS):
         """
         super(ShackHartmann, self).calcInitParams()
 
-        self.subapFOVrad = self.wfsConfig.subapFOV * numpy.pi / (180. * 3600)
-        self.subapDiam = self.telDiam/self.wfsConfig.nxSubaps
+        self.subapFOVrad = self.config.subapFOV * numpy.pi / (180. * 3600)
+        self.subapDiam = self.los.telDiam/self.config.nxSubaps
 
         # spacing between subaps in pupil Plane (size "pupilSize")
-        self.PPSpacing = float(self.simConfig.pupilSize)/self.wfsConfig.nxSubaps
+        self.PPSpacing = float(self.simConfig.pupilSize)/self.config.nxSubaps
 
         # Spacing on the "FOV Plane" - the number of elements required
         # for the correct subap FOV (from way FFT "phase" to "image" works)
-        self.subapFOVSpacing = numpy.round(self.subapDiam
-                                * self.subapFOVrad/ self.wfsConfig.wavelength)
+        self.subapFOVSpacing = numpy.round(
+                self.subapDiam * self.subapFOVrad/ self.config.wavelength)
 
         # make twice as big to double subap FOV
-        if self.wfsConfig.subapFieldStop==True:
+        if self.config.subapFieldStop==True:
             self.SUBAP_OVERSIZE = 1
         else:
             self.SUBAP_OVERSIZE = 2
 
-        self.detectorPxls = self.wfsConfig.pxlsPerSubap*self.wfsConfig.nxSubaps
+        self.detectorPxls = self.config.pxlsPerSubap*self.config.nxSubaps
         self.subapFOVSpacing *= self.SUBAP_OVERSIZE
-        self.wfsConfig.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
-                                            *self.wfsConfig.pxlsPerSubap)
+        self.config.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
+                                            *self.config.pxlsPerSubap)
 
-        self.scaledEFieldSize =int(round(
-                self.wfsConfig.nxSubaps*self.subapFOVSpacing*
+        # The total size of the required EField for all subaps.
+        # Extra scaling to account for simSize padding
+        self.scaledEFieldSize = int(round(
+                self.config.nxSubaps*self.subapFOVSpacing*
                 (float(self.simConfig.simSize)/self.simConfig.pupilSize)
                 ))
-        self.phaseSize = self.scaledEFieldSize
+        # This the pixel scale required for the correct FOV
+        outPxlScale = (float(self.simConfig.simSize)/float(self.scaledEFieldSize)) * (self.simConfig.pxlScale**-1)
+        self.los.calcInitParams(
+                outPxlScale=outPxlScale, nOutPxls=self.scaledEFieldSize)
 
-        # Calculate the subaps which are actually seen behind the pupil mask
+
+        # Calculate the subaps that are actually seen behind the pupil mask
         self.findActiveSubaps()
 
         self.referenceImage = self.wfsConfig.referenceImage
@@ -72,7 +78,6 @@ class ShackHartmann(base.WFS):
         '''
         Finds the subapertures which are not empty space
         determined if mean of subap coords of the mask is above threshold.
-
         '''
 
         mask = self.mask[
@@ -132,8 +137,8 @@ class ShackHartmann(base.WFS):
                 THREADS=self.wfsConfig.fftwThreads,
                 fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
 
-        #If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
-        #This works even if no lgsConfig.uplink as ``and`` short circuits
+        # If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
+        # This works even if no lgsConfig.uplink as ``and`` short circuits
         if self.lgsConfig and self.lgsConfig.uplink:
             self.iFFT = AOFFT.FFT(
                     inputSize = (self.activeSubaps,
@@ -152,6 +157,15 @@ class ShackHartmann(base.WFS):
                     fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
+    def initLGS(self):
+        super(ShackHartmann, self).initLGS()
+        lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
+        self.lgs = lgsObj(
+                self.simConfig, self.config, self.lgsConfig, self.atmosConfig,
+                nOutPxls=self.subapFFTPadding,
+                outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
+                )
+
     def allocDataArrays(self):
         """
         Allocate the data arrays the WFS will require
@@ -160,8 +174,7 @@ class ShackHartmann(base.WFS):
         avoid having to re-alloc memory during the running of the WFS and
         keep it fast.
         """
-
-        super(ShackHartmann,self).allocDataArrays()
+        self.los.allocDataArrays()
 
         self.subapArrays=numpy.zeros((self.activeSubaps,
                                       self.subapFOVSpacing,
@@ -180,18 +193,9 @@ class ShackHartmann(base.WFS):
                                                 dtype = DTYPE )
         #Array used when centroiding subaps
         self.centSubapArrays = numpy.zeros( (self.activeSubaps,
-              self.wfsConfig.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
+              self.config.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
 
         self.slopes = numpy.zeros( 2*self.activeSubaps )
-
-    def initLGS(self):
-        super(ShackHartmann, self).initLGS()
-        #Tell the LGS a bit about the WFS
-        #(TODO-get rid of this and put into LGS object init)
-        if self.LGS:
-            self.LGS.setWFSParams(
-                    self.SUBAP_OVERSIZE*self.subapFOVrad,
-                    self.wfsConfig.fftOversamp, self.subapFFTPadding)
 
 
     def calcTiltCorrect(self):
@@ -300,8 +304,8 @@ class ShackHartmann(base.WFS):
         '''
 
         # If required, convolve with LGS PSF
-        if self.wfsConfig.lgs and self.LGS and self.lgsConfig.uplink and self.iMat!=True:
-            self.LGSUplink()
+        if self.wfsConfig.lgs and self.lgs and self.lgsConfig.uplink and self.iMat!=True:
+            self.applyLgsUplink()
 
 
         # bins back down to correct size and then
@@ -380,15 +384,15 @@ class ShackHartmann(base.WFS):
         if self.wfsConfig.eReadNoise!=0:
             self.addReadNoise()
 
-    def LGSUplink(self):
+    def applyLgsUplink(self):
         '''
         A method to deal with convolving the LGS PSF
         with the subap focal plane.
         '''
 
-        self.LGS.LGSPSF(self.scrns)
+        self.lgs.getLgsPsf(self.los.scrns)
 
-        self.lgs_iFFT.inputData[:] = self.LGS.PSF
+        self.lgs_iFFT.inputData[:] = self.lgs.psf
         self.iFFTLGSPSF = self.lgs_iFFT()
 
         self.iFFT.inputData[:] = self.FPSubapArrays

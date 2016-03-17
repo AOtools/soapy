@@ -69,7 +69,7 @@ class DM(object):
         self.wfss = wfss
         self.mask = mask
         self.acts = self.getActiveActs()
-        self.wvl = wfss[0].wfsConfig.wavelength
+        self.wvl = wfss[0].config.wavelength
 
         self.actCoeffs = numpy.zeros( (self.acts) )
 
@@ -122,17 +122,17 @@ class DM(object):
         # self.iMatShapes *= (self.dmConfig.iMatValue)
 
         if self.dmConfig.rotation:
-           self.iMatShapes = rotate(
-                   self.iMatShapes, self.dmConfig.rotation,
-                   order=self.dmConfig.interpOrder, axes=(-2,-1)
-                   )
-           rotShape = self.iMatShapes.shape
-           self.iMatShapes = self.iMatShapes[:,
-                   rotShape[1]/2. - self.simConfig.simSize/2.:
-                   rotShape[1]/2. + self.simConfig.simSize/2.,
-                   rotShape[2]/2. - self.simConfig.simSize/2.:
-                   rotShape[2]/2. + self.simConfig.simSize/2.
-                   ]
+            self.iMatShapes = rotate(
+                    self.iMatShapes, self.dmConfig.rotation,
+                    order=self.dmConfig.interpOrder, axes=(-2,-1)
+                    )
+            rotShape = self.iMatShapes.shape
+            self.iMatShapes = self.iMatShapes[:,
+                    rotShape[1]/2. - self.simConfig.simSize/2.:
+                    rotShape[1]/2. + self.simConfig.simSize/2.,
+                    rotShape[2]/2. - self.simConfig.simSize/2.:
+                    rotShape[2]/2. + self.simConfig.simSize/2.
+                    ]
 
         iMat = numpy.zeros(
                 (self.acts, self.totalWfsMeasurements) )
