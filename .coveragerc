@@ -1,2 +1,2 @@
 [run]
-omit = *AOGUIui.py, *gui.py, _version.py
+omit = *AOGUIui.py, *gui.py, *_version.py
