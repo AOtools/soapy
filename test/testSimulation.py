@@ -10,11 +10,12 @@ soapy.logger.setLoggingLevel(3)
 
 RESULTS = {
         "8x8": 0.47,
-        "8x8_open": 0.3,
+        "8x8_open": 0.4,
         "8x8_offAxis": 0.22,
         "8x8_zernike": 0.36,
         "8x8_lgs"    : 0.27,
         "8x8_phys": 0.53,
+        "8x8_lgsuplink":0.35,
         }
 
 
@@ -82,7 +83,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.dms[0].type = "Zernike"
         sim.config.dms[0].nxActuators = 45
         sim.config.dms[0].svdConditioning = 0.01
-        sim.config.dms[0].iMatValue=100
+        sim.config.dms[0].iMatValue = 100
 
         sim.aoinit()
 
@@ -93,7 +94,6 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(
                 sim.longStrehl[0,-1], RESULTS["8x8_zernike"], atol=0.2)
-
 
 
     def testCone(self):
@@ -132,6 +132,39 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_open"], atol=0.2)
 
+    def testLgsUplink_phys(self):
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
+        sim.config.sim.simName = None
+        sim.config.sim.logfile = None
+        sim.config.sim.nIters = 100
+        sim.config.wfss[0].GSPosition = (0, 0)
+        sim.config.wfss[1].GSPosition = (0, 0)
+        sim.config.lgss[1].propagationMode = "Physical"
+        sim.aoinit()
+
+        sim.makeIMat(forceNew=True)
+
+        sim.aoloop()
+
+        #Check results are ok
+        assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
+
+    def testLgsUplink_geo(self):
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
+        sim.config.sim.simName = None
+        sim.config.sim.logfile = None
+        sim.config.sim.nIters = 100
+        sim.config.wfss[0].GSPosition = (0, 0)
+        sim.config.wfss[1].GSPosition = (0, 0)
+        sim.config.lgss[1].propagationMode = "Geometric"
+        sim.aoinit()
+
+        sim.makeIMat(forceNew=True)
+
+        sim.aoloop()
+
+        #Check results are ok
+        assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
 
 if __name__ == '__main__':
     unittest.main()
