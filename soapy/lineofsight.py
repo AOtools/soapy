@@ -1,7 +1,27 @@
 """
-A generalised 'line of sight' object, which calculates the resulting phase
-or complex amplitude from propogating through the atmosphere in a given
-direction.
+A generalised module to provide phase or the EField through a "Line Of Sight"
+
+Line of Sight Object
+====================
+The module contains a 'lineOfSight' object, which calculates the resulting phase or complex amplitude from propogating through the atmosphere in a given
+direction. This can be done using either geometric propagation, where phase is simply summed for each layer, or physical propagation, where the phase is propagated between layers using an angular spectrum propagation method. Light can propogate either up or down.
+
+The Object takes a 'config' as an argument, which is likely to be the same config object as the module using it (WFSs, ScienceCams, or LGSs). It should contain paramters required, such as the observation direction and light wavelength. The `config` also determines whether to use physical or geometric propagation through the 'propagationMode' parameter.
+
+Examples::
+
+    from soapy import confParse, lineofsight
+
+    # Initialise a soapy conifuration file
+    config = confParse.loadSoapyConfig('conf/sh_8x8.py')
+
+    # Can make a 'LineOfSight' for WFSs
+    los = lineofsight.LineOfSight(config.wfss[0], config.sim, config.atmos)
+
+    # Get resulting complex amplitude through line of sight
+    EField = los.frame(some_phase_screens)
+
+
 """
 
 import numpy

@@ -30,8 +30,7 @@ Examples:
 
         from soapy import confParse, atmosphere
 
-        config = confParse.Configurator("sh_8x8.py")
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig
 
     Initialise the amosphere (creating or loading phase screens)::
 

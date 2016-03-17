@@ -21,6 +21,7 @@ Contents:
    architecture.rst
    sim.rst
    atmos.rst
+   lineofsight.rst
    wfs.rst
    dms.rst
    lgs.rst
