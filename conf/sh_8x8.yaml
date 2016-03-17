@@ -39,17 +39,13 @@ WFS:
       nxSubaps: 8
       pxlsPerSubap: 10
       subapFOV: 2.5
-      fftOversamp: 3
       wavelength: 600e-9
-      centMethod: brightestPxl
-      centThreshold: 0.1
 
 DM:
   - TT:
       closed: True
       iMatValue: 2e3
       gain: 0.6
-      svdConditioning: 1e-15
 
   - Piezo:
       closed: True
@@ -58,10 +54,10 @@ DM:
       gain: 0.7
       iMatValue: 500
 
+
 Science:
   - PSF:
       position: [0, 0]
       FOV: 2.0
       wavelength: 1.65e-6
       pxls: 128
-      fftOversamp: 2

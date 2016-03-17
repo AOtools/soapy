@@ -131,6 +131,24 @@ class PY_Configurator(object):
         """
         Calculates some parameters from the configuration parameters.
         """
+
+        # Run calcparams on each config object
+        self.sim.calcParams()
+        self.atmos.calcParams()
+        self.tel.calcParams()
+        for w in self.wfss:
+            if w is not None:
+                w.calcParams()
+        for l in self.lgss:
+            if l is not None:
+                l.calcParams()
+        for d in self.dms:
+            if d is not None:
+                d.calcParams()
+        for s in self.scis:
+            if s is not None:
+                s.calcParams()
+
         self.sim.pxlScale = (float(self.sim.pupilSize)/
                                     self.tel.telDiam)
 
@@ -144,8 +162,8 @@ class PY_Configurator(object):
         gsPos = []
         for gs in range(self.sim.nGS):
             pos = self.wfss[gs].GSPosition.astype('float')
-            # Need to add bit if the GS is an elongation off-axis LGS
 
+            # Need to add bit if the GS is an elongated off-axis LGS
             if (hasattr(self.lgss[gs], 'elongationDepth')
                     and self.lgss[gs].elongationDepth is not 0):
                 # This calculation is done more explicitely in the WFS module
@@ -198,7 +216,7 @@ class PY_Configurator(object):
 
 
         #If outer scale is None, set all to 100m
-        if self.atmos.L0==None:
+        if self.atmos.L0 is None:
             self.atmos.L0 = []
             for scrn in range(self.atmos.scrnNo):
                 self.atmos.L0.append(100.)
@@ -209,6 +227,47 @@ class PY_Configurator(object):
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture".format(wfs))
                 wfs.subapFieldStop = True
 
+
+    def __iter__(self):
+        objs = {'Sim': dict(self.sim),
+                'Atmosphere': dict(self.atmos),
+                'Telescope': dict(self.tel),
+                'WFS': [],
+                'LGS': [],
+                'DM': [],
+                'Science': []
+                }
+
+        for w in self.wfss:
+            if w is not None:
+                objs['WFS'].append(dict(w))
+            else:
+                objs['WFS'].append(None)
+
+        for l in self.lgss:
+            if l is not None:
+                objs['LGS'].append(dict(l))
+            else:
+                objs['LGS'].append(None)
+
+        for d in self.dms:
+            if d is not None:
+                objs['DM'].append(dict(d))
+            else:
+                objs['DM'].append(None)
+
+        for s in self.scis:
+            if s is not None:
+                objs['Science'].append(dict(s))
+            else:
+                objs['Science'].append(None)
+
+        for configName, configObj in objs.iteritems():
+            yield configName, configObj
+
+    def __len__(self):
+        # Always have sim, atmos, tel, DMs, WFSs, LGSs, and Scis
+        return 7
 
 class YAML_Configurator(PY_Configurator):
 

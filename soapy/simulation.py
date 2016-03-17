@@ -156,7 +156,7 @@ class Sim(object):
         Initialises and passes relevant data to sim objects. This does important pre-run tasks, such as creating or loading phase screens, determining WFS geometry, setting propagation modes and pre-allocating data arrays used later in the simulation.
         '''
 
-        #Read params if they haven't been read before
+        # Read params if they haven't been read before
         try:
             self.config.sim.pupilSize
         except:
@@ -166,8 +166,7 @@ class Sim(object):
         logger.setLoggingFile(self.config.sim.logfile)
         logger.info("Starting Sim: {}".format(self.getTimeStamp()))
 
-        #calculate some params from read ones
-        #calculated
+        # Calculate some params from read ones
         self.config.calcParams()
 
         #Init Pupil Mask
