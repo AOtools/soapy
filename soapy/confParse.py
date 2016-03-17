@@ -842,7 +842,7 @@ class LgsConfig(ConfigObj):
     optionalParams = [  ("uplink", False),
                         ("pupilDiam", 0.3),
                         ("wavelength", 600e-9),
-                        ("propagationMode", "physical"),
+                        ("propagationMode", "Physical"),
                         ("height", 90000),
                         ("fftwFlag", "FFTW_PATIENT"),
                         ("fftwThreads", 0),
@@ -851,7 +851,7 @@ class LgsConfig(ConfigObj):
                         ("launchPosition",  numpy.array([0,0])),
                         ("naProfile", None),
                         ]
-    calculatedParams = []
+    calculatedParams = ["position"]
 
     allowedAttrs = copy.copy(
             requiredParams + calculatedParams + CONFIG_ATTRIBUTES)
