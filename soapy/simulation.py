@@ -229,9 +229,7 @@ class Sim(object):
                      self.wfss[nwfs].activeSubaps*2))
 
         #init DMs
-        logger.info("Initialising DMs...")
-
-
+        logger.info("Initialising {0} DMs...".format(self.config.sim.nDM))
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
@@ -269,12 +267,17 @@ class Sim(object):
 
 
         #init Science Cameras
-        logger.info("Initialising Science Cams...")
+        logger.info("Initialising {0} Science Cams...".format(self.config.sim.nSci))
         self.sciCams = {}
         self.sciImgs = {}
         self.sciImgNo=0
         for sci in xrange(self.config.sim.nSci):
-            self.sciCams[sci] = SCI.scienceCam(
+
+            try:
+                sciObj = eval( "SCI."+self.config.scis[sci].type)
+            except AttributeError:
+                raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[sci].type))
+            self.sciCams[sci] = sciObj(
                         self.config.sim, self.config.tel, self.config.atmos,
                         self.config.scis[sci], self.mask
                         )
@@ -733,7 +736,7 @@ class Sim(object):
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
                 # Record WFE residual
-                res = self.sciCams[sci].residual
+                res = self.sciCams[sci].los.residual
                 # Remove piston first
                 res -= res.sum()/self.mask.sum()
                 res *= self.mask
@@ -964,7 +967,7 @@ class Sim(object):
                         pass
 
                     try:
-                        lgsPsf[i] = self.wfss[i].LGS.psf1.copy()
+                        lgsPsf[i] = self.wfss[i].lgs.psf.copy()
                     except AttributeError:
                         lgsPsf[i] = None
                         pass
@@ -995,7 +998,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].residual.copy()*self.mask
+                        residual[i] = self.sciCams[i].los.residual.copy()*self.mask
                     except AttributeError:
                         residual[i] = None
 

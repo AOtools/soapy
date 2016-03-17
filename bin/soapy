@@ -58,6 +58,8 @@ if __name__=="__main__":
     parser.add_argument("-v", "--version", action="version",
             version=soapy.__version__)
 
+    parser.add_argument('-d', "--debug", action='store_true', dest='debug',
+        help='Sets the verbosity to highest level for debugging purposes (same is -v 3)')
 
     bin_path = os.path.abspath(os.path.realpath(__file__)+"/..")
 
@@ -70,8 +72,13 @@ if __name__=="__main__":
     else:
         configFile = bin_path+"/../conf/sh_8x8.py"
 
-    #Run sim with given args
-    soapy.logger.setLoggingLevel(args.verbosity)
+    # Run sim with given args
+    # Set the verbosity
+    if args.debug:
+        verbosity = 3
+    else:
+        verbosity = args.verbosity
+    soapy.logger.setLoggingLevel(verbosity)
 
     #init sim with conf file
     sim = soapy.Sim(configFile)

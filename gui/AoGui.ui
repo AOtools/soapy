@@ -20,6 +20,9 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
+      <property name="handleWidth">
+       <number>4</number>
+      </property>
       <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout_6">
         <item>
@@ -113,9 +116,15 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
+       <property name="handleWidth">
+        <number>4</number>
+       </property>
        <widget class="QSplitter" name="splitter">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
+        </property>
+        <property name="handleWidth">
+         <number>4</number>
         </property>
         <widget class="QWidget" name="layoutWidget">
          <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -268,6 +277,9 @@
       <widget class="QSplitter" name="splitter_3">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="handleWidth">
+        <number>4</number>
        </property>
        <widget class="QWidget" name="horizontalLayoutWidget">
         <layout class="QHBoxLayout" name="consoleLayout"/>

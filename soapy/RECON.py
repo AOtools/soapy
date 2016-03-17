@@ -290,8 +290,8 @@ class MVM_SeparateDMs(Reconstructor):
             # now put carefully back into one control matrix
             for w, wfs in enumerate(self.dms[dm].wfss):
                 self.controlMatrix[
-                        wfs.wfsConfig.dataStart:
-                                wfs.wfsConfig.dataStart + 2*wfs.activeSubaps,
+                        wfs.config.dataStart:
+                                wfs.config.dataStart + 2*wfs.activeSubaps,
                         acts:acts+self.dms[dm].acts] = dmCMat
 
             acts += self.dms[dm].acts
@@ -307,20 +307,20 @@ class MVM_SeparateDMs(Reconstructor):
         """
 
         if self.dms[0].dmConfig.type=="TT":
-            ttMean = slopes[self.dms[0].wfs.wfsConfig.dataStart:
+            ttMean = slopes[self.dms[0].wfs.config.dataStart:
                             (self.dms[0].wfs.activeSubaps*2
-                                +self.dms[0].wfs.wfsConfig.dataStart)
+                                +self.dms[0].wfs.config.dataStart)
                             ].reshape(2,
                                 self.dms[0].wfs.activeSubaps).mean(1)
             ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
             slopes[
-                    self.dms[0].wfs.wfsConfig.dataStart:
-                    (self.dms[0].wfs.wfsConfig.dataStart
+                    self.dms[0].wfs.config.dataStart:
+                    (self.dms[0].wfs.config.dataStart
                         +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
             slopes[
-                    self.dms[0].wfs.wfsConfig.dataStart
+                    self.dms[0].wfs.config.dataStart
                         +self.dms[0].wfs.activeSubaps:
-                    self.dms[0].wfs.wfsConfig.dataStart
+                    self.dms[0].wfs.config.dataStart
                         +2*self.dms[0].wfs.activeSubaps] -= ttMean[1]
 
             #get dm commands for the calculated on axis slopes
@@ -522,12 +522,12 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
 
         self.covMat = numpy.cov(self.learnSlopes.T)
         Conoff = self.covMat[
-                self.wfss[1].wfsConfig.dataStart:
-                        self.wfss[2].wfsConfig.dataStart,
-                self.wfss[2].wfsConfig.dataStart:
+                self.wfss[1].config.dataStart:
+                        self.wfss[2].config.dataStart,
+                self.wfss[2].config.dataStart:
                 ]
-        Coffoff = self.covMat[  self.wfss[2].wfsConfig.dataStart:,
-                                self.wfss[2].wfsConfig.dataStart:    ]
+        Coffoff = self.covMat[  self.wfss[2].config.dataStart:,
+                                self.wfss[2].config.dataStart:    ]
 
         logger.info("Inverting offoff Covariance Matrix")
         iCoffoff = numpy.linalg.pinv(Coffoff)
@@ -556,7 +556,7 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
 
         #Retreive pseudo on-axis slopes from tomo reconstructor
         slopes_HO = self.tomoRecon.dot(
-                slopes[self.wfss[2].wfsConfig.dataStart:])
+                slopes[self.wfss[2].config.dataStart:])
 
         # Probably should remove TT from these slopes?
         nSubaps = slopes_HO.shape[0]
@@ -565,16 +565,16 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
 
         # Final slopes are TT slopes appended to the tomographic High order slopes
         onSlopes = numpy.append(
-                slopes[:self.wfss[1].wfsConfig.dataStart], slopes_HO)
+                slopes[:self.wfss[1].config.dataStart], slopes_HO)
 
         dmCommands = self.controlMatrix.T.dot(onSlopes)
 
         #
         # ttCommands = self.controlMatrix[
-        #         :self.wfss[1].wfsConfig.dataStart,:2].T.dot(slopes_TT)
+        #         :self.wfss[1].config.dataStart,:2].T.dot(slopes_TT)
         #
         # hoCommands = self.controlMatrix[
-        #         self.wfss[1].wfsConfig.dataStart:,2:].T.dot(slopes_HO)
+        #         self.wfss[1].config.dataStart:,2:].T.dot(slopes_HO)
         #
         # #if self.dms[0].dmConfig.type=="TT":
         #    ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
@@ -625,13 +625,13 @@ class GLAO_4LGS(MVM):
             ndarray: array to commands to be sent to DM
         """
 
-        offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
+        offSlopes = slopes[self.wfss[2].config.dataStart:]
         meanOffSlopes = offSlopes.reshape(4,self.wfss[2].activeSubaps*2).mean(0)
 
         meanOffSlopes = self.removeCommonTT(meanOffSlopes, [1])
 
         slopes = numpy.append(
-                slopes[:self.wfss[1].wfsConfig.dataStart], meanOffSlopes)
+                slopes[:self.wfss[1].config.dataStart], meanOffSlopes)
 
         return super(LgsTT, self).reconstruct(slopes)
 
@@ -777,7 +777,7 @@ class LgsTT(LearnAndApply):
         """
 
         #Get off axis slopes and remove *common* TT
-        offSlopes = slopes[self.wfss[2].wfsConfig.dataStart:]
+        offSlopes = slopes[self.wfss[2].config.dataStart:]
         offSlopes = self.removeCommonTT(offSlopes,[2,3,4,5])
 
         #Use the tomo matrix to get pseudo on-axis slopes
@@ -785,7 +785,7 @@ class LgsTT(LearnAndApply):
 
         #Combine on-axis slopes with TT measurements
         slopes = numpy.append(
-                slopes[:self.wfss[1].wfsConfig.dataStart], psuedoOnSlopes)
+                slopes[:self.wfss[1].config.dataStart], psuedoOnSlopes)
 
         #Send to command matrices to get dmCommands
         return super(LgsTT, self).reconstruct(slopes)
