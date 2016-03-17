@@ -5,16 +5,13 @@ Wave-front Sensors
 ==========
 WFS Module
 ==========
-.. automodule:: soapy.WFS
+.. automodule:: soapy.wfs
 
 Base WFS Class
 ==============
 
-.. autoclass:: soapy.WFS.WFS
+.. autoclass:: soapy.wfs.base.WFS
     :members:
 
-.. autoclass:: soapy.WFS.ShackHartmann
-    :members:
-
-.. autoclass:: soapy.WFS.Pyramid
+.. autoclass:: soapy.wfs.shackhartmann.ShackHartmann
     :members:
