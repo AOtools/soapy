@@ -132,8 +132,7 @@ class Sim(object):
         if configFile:
             self.configFile = configFile
 
-        self.config = confParse.Configurator(self.configFile)
-        self.config.loadSimParams()
+        self.config = confParse.loadSoapyConfig(self.configFile)
         logger.statusMessage(
                 0, 1,"Loaded configuration file successfully!" )
 
@@ -157,7 +156,7 @@ class Sim(object):
         Initialises and passes relevant data to sim objects. This does important pre-run tasks, such as creating or loading phase screens, determining WFS geometry, setting propagation modes and pre-allocating data arrays used later in the simulation.
         '''
 
-        #Read params if they haven't been read before
+        # Read params if they haven't been read before
         try:
             self.config.sim.pupilSize
         except:
@@ -167,16 +166,15 @@ class Sim(object):
         logger.setLoggingFile(self.config.sim.logfile)
         logger.info("Starting Sim: {}".format(self.getTimeStamp()))
 
-        #Make a pool of mp workers to do some work
-        #This will always exist in this class, but in other sim modules may
-        #not be there (so musn't be relied upon!)
+        # Make a pool of mp workers to do some work
+        # This will always exist in this class, but in other sim modules may
+        # not be there (so musn't be relied upon!)
         self.mpPool = Pool(self.config.sim.procs)
 
-        #calculate some params from read ones
-        #calculated
+        # calculate some params from read ones
         self.config.calcParams()
 
-        #Init Pupil Mask
+        # Init Pupil Mask
         logger.info("Creating mask...")
         if self.config.tel.mask == "circle":
             self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
@@ -195,7 +193,7 @@ class Sim(object):
         self.atmos = atmosphere.atmos(
                 self.config.sim, self.config.atmos, self.mpPool)
 
-        #Find if WFSs should each have own process
+        # Find if WFSs should each have own process
         if self.config.sim.wfsMP:
 
             logger.info("Setting fftwThreads to 1 as WFS MP")
@@ -205,7 +203,7 @@ class Sim(object):
         else:
             self.runWfs = self.runWfs_noMP
 
-        #init WFSs
+        # init WFSs
         logger.info("Initialising WFSs....")
         self.wfss = {}
         self.config.sim.totalWfsData = 0

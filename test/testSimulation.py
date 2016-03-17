@@ -107,7 +107,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
-        sim.config.sim.GSHeight=25000
+        sim.config.wfss[0].GSHeight=25000
 
         sim.aoinit()
 

@@ -211,7 +211,7 @@ class GUI(QtGui.QMainWindow):
             self.phasePlots[wfs] = self.makeImageItem(
                     self.ui.phaseLayout, self.config.sim.simSize)
 
-            if self.config.lgss[wfs].uplink == 1:
+            if ((self.config.lgss[wfs] is not None) and (self.config.lgss[wfs].uplink == 1)):
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
 
