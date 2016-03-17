@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Sat May  2 15:09:53 2015
+# Created: Fri Oct  2 09:47:17 2015
 #      by: PyQt4 UI code generator 4.11.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -33,6 +33,7 @@ class Ui_MainWindow(object):
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.splitter_4 = QtGui.QSplitter(self.centralwidget)
         self.splitter_4.setOrientation(QtCore.Qt.Vertical)
+        self.splitter_4.setHandleWidth(4)
         self.splitter_4.setObjectName(_fromUtf8("splitter_4"))
         self.layoutWidget = QtGui.QWidget(self.splitter_4)
         self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
@@ -84,9 +85,11 @@ class Ui_MainWindow(object):
         self.splitter_2 = QtGui.QSplitter(self.splitter_4)
         self.splitter_2.setEnabled(True)
         self.splitter_2.setOrientation(QtCore.Qt.Horizontal)
+        self.splitter_2.setHandleWidth(4)
         self.splitter_2.setObjectName(_fromUtf8("splitter_2"))
         self.splitter = QtGui.QSplitter(self.splitter_2)
         self.splitter.setOrientation(QtCore.Qt.Vertical)
+        self.splitter.setHandleWidth(4)
         self.splitter.setObjectName(_fromUtf8("splitter"))
         self.layoutWidget1 = QtGui.QWidget(self.splitter)
         self.layoutWidget1.setObjectName(_fromUtf8("layoutWidget1"))
@@ -198,6 +201,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_8.addLayout(self.verticalLayout_7)
         self.splitter_3 = QtGui.QSplitter(self.splitter_4)
         self.splitter_3.setOrientation(QtCore.Qt.Horizontal)
+        self.splitter_3.setHandleWidth(4)
         self.splitter_3.setObjectName(_fromUtf8("splitter_3"))
         self.horizontalLayoutWidget = QtGui.QWidget(self.splitter_3)
         self.horizontalLayoutWidget.setObjectName(_fromUtf8("horizontalLayoutWidget"))
