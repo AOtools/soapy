@@ -415,6 +415,7 @@ class WFS(object):
                 correctionPhase = aoSimLib.zoom(
                         correction, self.los.nOutPxls, order=1)
                 self.los.EField *= numpy.exp(-1j*correctionPhase*self.los.phs2Rad)
+                self.los.phase -= correctionPhase * self.los.phs2Rad
             self.calcFocalPlane()
 
         if read:
@@ -422,7 +423,7 @@ class WFS(object):
             self.calculateSlopes()
             self.zeroData(detector=False)
 
-        #Turn back on stuff disabled for iMat
+        # Turn back on stuff disabled for iMat
         if iMatFrame:
             self.iMat=False
             self.config.removeTT = removeTT

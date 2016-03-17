@@ -42,7 +42,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
-        sim.config.wfss[0].propagationMode="physical"
+        sim.config.wfss[0].propagationMode="Physical"
 
         sim.aoinit()
 

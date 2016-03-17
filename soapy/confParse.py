@@ -713,7 +713,7 @@ class WfsConfig(ConfigObj):
                         "pxlsPerSubap",
                         "subapFOV",
                         ]
-    optionalParams = [  ("propagationMode", "geometric"),
+    optionalParams = [  ("propagationMode", "Geometric"),
                         ("fftwThreads", 1),
                         ("fftwFlag", "FFTW_PATIENT"),
                         ("angleEquivNoise", 0),

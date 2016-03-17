@@ -48,7 +48,7 @@ class TestWfs(unittest.TestCase):
 
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
         config.loadSimParams()
-        config.wfss[0].propagationMode = "physical"
+        config.wfss[0].propagationMode = "Physical"
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
