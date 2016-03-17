@@ -69,7 +69,7 @@ class DM(object):
         self.wfss = wfss
         self.mask = mask
         self.acts = self.getActiveActs()
-        self.wvl = wfss[0].wfsConfig.wavelength
+        self.wvl = wfss[0].config.wavelength
 
         self.actCoeffs = numpy.zeros( (self.acts) )
 
@@ -122,17 +122,17 @@ class DM(object):
         # self.iMatShapes *= (self.dmConfig.iMatValue)
 
         if self.dmConfig.rotation:
-           self.iMatShapes = rotate(
-                   self.iMatShapes, self.dmConfig.rotation,
-                   order=self.dmConfig.interpOrder, axes=(-2,-1)
-                   )
-           rotShape = self.iMatShapes.shape
-           self.iMatShapes = self.iMatShapes[:,
-                   rotShape[1]/2. - self.simConfig.simSize/2.:
-                   rotShape[1]/2. + self.simConfig.simSize/2.,
-                   rotShape[2]/2. - self.simConfig.simSize/2.:
-                   rotShape[2]/2. + self.simConfig.simSize/2.
-                   ]
+            self.iMatShapes = rotate(
+                    self.iMatShapes, self.dmConfig.rotation,
+                    order=self.dmConfig.interpOrder, axes=(-2,-1)
+                    )
+            rotShape = self.iMatShapes.shape
+            self.iMatShapes = self.iMatShapes[:,
+                    rotShape[1]/2. - self.simConfig.simSize/2.:
+                    rotShape[1]/2. + self.simConfig.simSize/2.,
+                    rotShape[2]/2. - self.simConfig.simSize/2.:
+                    rotShape[2]/2. + self.simConfig.simSize/2.
+                    ]
 
         iMat = numpy.zeros(
                 (self.acts, self.totalWfsMeasurements) )
@@ -150,7 +150,7 @@ class DM(object):
             self.dmShape = self.makeDMFrame(actCommands)
             for nWfs in range(len(self.wfss)):
                 logger.debug("subap: {}".format(subap))
-                
+
                 # Send the DM shape off to the relavent WFS. put result in iMat
                 iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        self.wfss[nWfs].frame(
@@ -206,11 +206,11 @@ class DM(object):
         # except AttributeError:
         #     raise AttributeError("DM Missing influence functions. Have you made an interaction matrix?")
 
-   
+
     def makeDMFrame(self, actCoeffs):
-            
-            dmShape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
-            return dmShape
+
+        dmShape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
+        return dmShape
 
 class Zernike(DM):
     """
@@ -346,7 +346,7 @@ class GaussStack(Piezo):
                     self.simConfig.pupilSize, width, cent = (x,y))
 
         self.iMatShapes = shapes
-       
+
         pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
                 self.iMatShapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
@@ -374,11 +374,11 @@ class TT(DM):
         """
         Forms the DM influence functions, in this case just a tip and a tilt.
         """
-        #Make the TT across the entire sim shape, but want it 1 to -1 across
-        #pupil
+        # Make the TT across the entire sim shape, but want it 1 to -1 across
+        # pupil
         padMax = float(self.simConfig.simSize)/self.simConfig.pupilSize
 
-        coords = 0.01*numpy.linspace(
+        coords = numpy.linspace(
                     -padMax, padMax, self.simConfig.simSize)
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
 
@@ -394,8 +394,8 @@ class FastPiezo(Piezo):
         acts = super(FastPiezo, self).getActiveActs()
         self.actGrid = numpy.zeros(
                 (self.dmConfig.nxActuators, self.dmConfig.nxActuators))
-   
-        # DM size is the pupil size, but withe one extra act on each side 
+
+        # DM size is the pupil size, but withe one extra act on each side
         self.dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
 
         return acts
@@ -405,15 +405,15 @@ class FastPiezo(Piezo):
         self.actGrid[(self.activeActs[:,0], self.activeActs[:,1])] = actCoeffs
 
         # Add space around edge for 1 extra act to avoid edge effects
-        actGrid = numpy.pad(self.actGrid, ((1,1), (1,1)), mode="constant") 
-   
+        actGrid = numpy.pad(self.actGrid, ((1,1), (1,1)), mode="constant")
+
         # Interpolate to previously determined "dmSize"
         dmShape = aoSimLib.zoom_rbs(
                 actGrid, self.dmSize, order=self.dmConfig.interpOrder)
 
-        
-        # Now check if "dmSize" bigger or smaller than "simSize". 
-        # Crop or pad as appropriate 
+
+        # Now check if "dmSize" bigger or smaller than "simSize".
+        # Crop or pad as appropriate
         if self.dmSize>self.simConfig.simSize:
             coord = int(round(self.dmSize/2. - self.simConfig.simSize/2.))
             self.dmShape = dmShape[coord:-coord, coord:-coord].astype("float32")
@@ -423,6 +423,5 @@ class FastPiezo(Piezo):
             self.dmShape = numpy.pad(
                     dmShape, ((pad,pad), (pad,pad)), mode="constant"
                     ).astype("float32")
-       
+
         return self.dmShape
-        

@@ -30,7 +30,7 @@ try:
 except ImportError:
     from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
     from IPython.qt.inprocess import QtInProcessKernelManager
-    
+
 from IPython.lib import guisupport
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -39,6 +39,28 @@ from matplotlib.figure import Figure
 
 from PyQt4 import QtGui,QtCore
 import pyqtgraph
+
+# Change pyqtgraph colourmaps to more usual ones
+# set default colourmaps available
+pyqtgraph.graphicsItems.GradientEditorItem.Gradients = pyqtgraph.pgcollections.OrderedDict([
+    ('viridis', {'ticks': [(0.,  ( 68,   1,  84, 255)),
+                           (0.2, ( 65,  66, 134, 255)),
+                           (0.4, ( 42, 118, 142, 255)),
+                           (0.6, ( 32, 165, 133, 255)),
+                           (0.8, (112, 206,  86, 255)),
+                           (1.0, (241, 229,  28, 255))], 'mode':'rgb'}),
+    ('coolwarm', {'ticks': [(0.0, ( 59,  76, 192)),
+                            (0.5, (220, 220, 220)),
+                            (1.0, (180, 4, 38))], 'mode': 'rgb'}),
+    ('grey', {'ticks': [(0.0, (0, 0, 0, 255)),
+                        (1.0, (255, 255, 255, 255))], 'mode': 'rgb'}),
+    ('magma', {'ticks':[(0., (0, 0, 3, 255)),
+                        (0.25, (80, 18, 123, 255)),
+                        (0.5, (182,  54, 121, 255)),
+                        (0.75, (251, 136,  97, 255)),
+                        (1.0, (251, 252, 191))], 'mode':'rgb'})
+        ])
+
 from .AOGUIui import Ui_MainWindow
 from . import logger
 
@@ -187,9 +209,9 @@ class GUI(QtGui.QMainWindow):
                     self.config.wfss[wfs].nxSubaps*self.config.wfss[wfs].pxlsPerSubap
                     )
             self.phasePlots[wfs] = self.makeImageItem(
-                    self.ui.phaseLayout,self.config.sim.simSize)
+                    self.ui.phaseLayout, self.config.sim.simSize)
 
-            if self.config.lgss[wfs].uplink == 1:
+            if ((self.config.lgss[wfs] is not None) and (self.config.lgss[wfs].uplink == 1)):
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
 
@@ -227,7 +249,7 @@ class GUI(QtGui.QMainWindow):
             self.gainSpins[dm].valueChanged.connect(
                                                 partial(self.gainChanged,dm))
 
-        self.ui.progressBar.setValue( 100)
+        self.ui.progressBar.setValue(100)
         self.statsThread = StatsThread(self.sim)
 
     def update(self):
@@ -246,20 +268,25 @@ class GUI(QtGui.QMainWindow):
         self.updateLock.unlock()
 
         if plotDict:
-            
-            # Get the min and max plot scaling 
+
+            # Get the min and max plot scaling
             scaleValues = self.getPlotScaling(plotDict)
 
             for wfs in range(self.config.sim.nGS):
                 if numpy.any(plotDict["wfsFocalPlane"][wfs])!=None:
-                    self.wfsPlots[wfs].setImage(
-                        plotDict["wfsFocalPlane"][wfs], lut=self.LUT)
-
+                    wfsFP = plotDict['wfsFocalPlane'][wfs]
+                    self.wfsPlots[wfs].setImage(wfsFP, lut=self.LUT)
+                    # self.wfsPlots[wfs].getViewBox().setRange(
+                    #         QtCore.QRectF(0, 0, wfsFP.shape[0],
+                    #         wfsFP.shape[1])
+                    #         )
 
                 if numpy.any(plotDict["wfsPhase"][wfs])!=None:
                     wfsPhase = plotDict["wfsPhase"][wfs]
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
+                    self.phasePlots[wfs].getViewBox().setRange(
+                            QtCore.QRectF(0, 0, wfsPhase.shape[0], wfsPhase.shape[1]))
 
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
@@ -319,7 +346,7 @@ class GUI(QtGui.QMainWindow):
         # Now get the min and max of mins and maxs
         plotMin = min(plotMins)
         plotMax = max(plotMaxs)
-        
+
         return plotMin, plotMax
 
 
@@ -338,8 +365,6 @@ class GUI(QtGui.QMainWindow):
         vb.setRange(QtCore.QRectF(0, 0, size, size))
         return img
 
-
-
     def plotPupilOverlap(self):
 
         if self.resultPlot:
@@ -356,7 +381,7 @@ class GUI(QtGui.QMainWindow):
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
                 if self.sim.config.wfss[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfss[wfs].GSHeight==0:
-                    cent = (self.sim.wfss[wfs].getMetaPupilPos(
+                    cent = (self.sim.wfss[wfs].los.getMetaPupilPos(
                             self.sim.config.atmos.scrnHeights[i])
                             *self.sim.config.sim.pxlScale
                             +self.config.sim.pupilSize)
@@ -378,7 +403,7 @@ class GUI(QtGui.QMainWindow):
                     self.resultPlot.canvas.axes[i].set_xticks([])
 
             for sci in range(self.config.sim.nSci):
-                cent = self.sim.sciCams[sci].getMetaPupilPos(
+                cent = self.sim.sciCams[sci].los.getMetaPupilPos(
                         self.sim.config.atmos.scrnHeights[i])
                 cent*=self.sim.config.sim.pxlScale
                 cent+=self.config.sim.pupilSize
@@ -430,11 +455,11 @@ class GUI(QtGui.QMainWindow):
             del plt
 
         self.strehlPlts=[]
-        if self.config.sim.nSci>0:
-            self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[0],
-                    linestyle=":", color=self.colorList[self.colorNo]))
-            self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[0],
-                 color=self.colorList[self.colorNo]))
+        for sci in xrange(self.config.sim.nSci):
+            self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[sci],
+                    linestyle=":", color=self.colorList[(self.colorNo+sci) % len(self.colorList)]))
+            self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[sci],
+                 color=self.colorList[(self.colorNo+sci) % len(self.colorList)]))
         self.resultPlot.canvas.draw()
 
     def updateStats(self, itersPerSec, timeRemaining):

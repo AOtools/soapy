@@ -18,8 +18,10 @@ Contents:
    simpleTutorial.rst
    Configuration.rst
    dataSources.rst
+   architecture.rst
    sim.rst
    atmos.rst
+   lineofsight.rst
    wfs.rst
    dms.rst
    lgs.rst
@@ -37,4 +39,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

@@ -4,8 +4,8 @@ sudo: false
 branches:
     only:
         - master
+        - lineOfSightObj
         - numba
-        - WFS_noise
 python:
   - 2.7
   - 3.5
@@ -31,14 +31,14 @@ install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose astropy numba
   - python setup.py install
   - pip install pyfftw
+  - pip install coverage
   - pip install codecov
 
-# Run test
-before_script:
-    cd test
+# Use if anything needs to be done before tests are run
+# before_script:
+#     cd test
 script:
-    - nosetests -v
-    # --with-coverage --cover-package=soapy
+    - nosetests --verbosity=3 --with-coverage --cover-package=soapy test/
 
-# after_success:
-#     codecov
+after_success:
+  - codecov

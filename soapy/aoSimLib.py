@@ -39,9 +39,10 @@ try:
 except NameError:
     xrange = range
 
+def convolve(
+        img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
+        threads=0):
 
-def convolve(img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
-                 threads=0):
     '''
     Convolves two, 2-dimensional arrays
 
@@ -192,8 +193,6 @@ def zoom(array, newSize, order=3):
         return (realInterpObj(coordsY,coordsX)
                             + 1j*imagInterpObj(coordsY,coordsX))
 
-
-
     else:
 
         interpObj = interp2d(   numpy.arange(array.shape[0]),
@@ -278,14 +277,14 @@ def zoom_numba(data, zoomArray, threads=None):
 
     Parameters:
         array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates
-        yCoords (ndarray): A 2-D array of y-coordinates
-        interpArray (ndarray): The array to place the calculation
+        zoomArray (ndarray, tuple): The array to place the calculation, or the shape to return
         threads (int): Number of threads to use for calculation
 
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
+    if isinstance(zoomArray, numpy.ndarray) is not True:
+        zoomArray = numpy.zeros((zoomArray))
 
     if threads!=1 and threads!=None:
 
@@ -342,7 +341,7 @@ def zoom_numbaThread(data,  chunkIndices, zoomArray):
 
 
     return zoomArray
-    
+
 @numba.jit(nopython=True)
 def zoom_numba1(data, zoomArray):
     """
@@ -554,6 +553,34 @@ def binImg_numba(img, binSize, newImg):
                 for y in xrange(binSize):
                     newImg[i,j] += img[x+x1, y+y1]
 
+def padCropImg(img, newSize):
+    """
+    Pads or Crops a square image to a new square size
+
+    Parameters:
+        img (ndarray): Image to pad/crop
+        newSize (int): New size of square image
+
+    Returns:
+        ndarry: new image
+
+    """
+
+    imgSize = img.shape[0]
+
+    if imgSize==newSize:
+        return img
+
+    coord = int(round(0.5*abs(imgSize-newSize)))
+
+    print(imgSize, newSize)
+    if imgSize>=newSize:
+        newImg = img[coord: -coord, coord: -coord]
+
+    else:
+        newImg = numpy.zeros((newSize, newSize), dtype=img.dtype)
+        newImg[coord: -coord, coord: -coord] = img
+
     return newImg
 
 
@@ -615,6 +642,15 @@ def findActiveSubaps(subaps, mask, threshold, returnFill=False):
     else:
         return subapCoords
 
+def computeFillFactor(mask, subapPos, subapSpacing):
+
+    fills = numpy.zeros(len(subapPos))
+    for i, (x, y) in enumerate(subapPos):
+        fills[i] = mask[x:x+subapSpacing, y:y+subapSpacing].mean()
+
+    return fills
+
+
 def binImgs(data, n):
     '''
     Bins one or more images down by the given factor
@@ -649,7 +685,7 @@ def binImgs(data, n):
 
         return binnedImg
 
-def simpleCentroid(img, threshold_frac=0, **kwargs):
+def centreOfGravity(img, threshold_frac=0, **kwargs):
     '''
     Centroids an image, or an array of images.
     Centroids over the last 2 dimensions.
@@ -746,6 +782,7 @@ def correlationCentriod(im, threshold_fac, ref):
     for frame in range(nt):
         # Correlate frame with reference image
         corr = corrConvolve(im[frame], ref[frame])
+
         # Find brightest pixel.
         index_y, index_x = numpy.unravel_index(corr.argmax(),
                                                corr.shape)
@@ -778,8 +815,8 @@ def quadCell(img, **kwargs):
     xSum = img.sum(-2)
     ySum = img.sum(-1)
 
-    xCent = xSum[...,1] - xSum[...,0]
-    yCent = ySum[...,1] - ySum[...,0]
+    xCent = xSum[..., 1] - xSum[..., 0]
+    yCent = ySum[..., 1] - ySum[..., 0]
 
     return numpy.array([xCent, yCent])
 
@@ -794,23 +831,23 @@ def zernike(j, N):
      Returns:
         ndarray: The Zernike mode
      """
-    n,m = zernIndex(j);
+    n, m = zernIndex(j)
 
-    coords = numpy.linspace(-1,1,N)
-    X,Y = numpy.meshgrid(coords,coords)
+    coords = numpy.linspace(-1, 1, N)
+    X, Y = numpy.meshgrid(coords, coords)
     R = numpy.sqrt(X**2 + Y**2)
-    theta = numpy.arctan2(Y,X)
+    theta = numpy.arctan2(Y, X)
 
-    if m==0:
-        Z = numpy.sqrt(n+1)*zernikeRadialFunc(n,0,R);
+    if m == 0:
+        Z = numpy.sqrt(n+1)*zernikeRadialFunc(n, 0, R)
     else:
-        if j%2==0: # j is even
-                Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n,m,R) * numpy.cos(m*theta)
+        if j%2 == 0: # j is even
+            Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n, m, R) * numpy.cos(m*theta)
         else:   #i is odd
-                Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n,m,R) * numpy.sin(m*theta)
+            Z = numpy.sqrt(2*(n+1))*zernikeRadialFunc(n, m, R) * numpy.sin(m*theta)
 
 
-    return Z*circle(N/2., N)
+    return Z * circle(N/2., N)
 
 
 
@@ -828,7 +865,7 @@ def zernikeRadialFunc(n, m, r):
 
 
 
-def zernIndex(j,sign=0):
+def zernIndex(j, sign=0):
     """
     returns the [n,m] list giving the radial order n and azimutal order
     of the zernike polynomial of index j
@@ -883,7 +920,6 @@ def zernikeArray(J, N):
             Zs[j-1] = zernike(j, N)
 
     return Zs
-
 
 ###########################################
 
@@ -943,6 +979,37 @@ def remapSubaps(wfsData, mask, xyOrder=1):
 
     return subaps2d
 
+def calcTiltCorrect(nPxls, wvl, telDiam):
+    """
+    Calculates the required tilt to add to avoid  the PSF being centred
+    on one pixel only
+
+    Parameters:
+        nPxls (int): Number of pixels in array
+        wvl (float): Wavelength of light to correct for in metres
+        telDiam (float): Diameter of telescope in metres
+
+    Returns:
+        ndarray: An array with a tilt to move PSF by 1 pixel
+    """
+
+    # Only required if pxl number is even
+    if not nPxls % 2:
+        # Need to correct for half a pixel angle
+        theta = float(self.FOVrad)/(2*nPxls)
+
+        # Find magnitude of tilt from this angle
+        amplitude = theta * self.telConfig.telDiam/(2*wvl) * 2 * numpy.pi
+
+        coords = numpy.linspace(-1, 1, nPxls)
+        X, Y = numpy.meshgrid(coords, coords)
+        tiltFix = -1*amplitude * (X+Y)
+    else:
+        tiltFix = numpy.zeros(nPxls)
+
+    return tiltFix
+
+
 def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
     '''
     Calculates the photon flux for a given aperture, star magnitude and wavelength band
@@ -971,3 +1038,28 @@ def photonsPerMag(mag, mask, pxlScale, wvlBand, expTime):
     photons = photonPerSec * expTime
 
     return photons
+
+
+#######################
+#Control Functions
+######################
+
+
+class DelayBuffer(list):
+    '''
+    A delay buffer.
+
+    Each time delay() is called on the buffer, the input value is stored.
+    If the buffer is larger than count, the oldest value is removed and returned.
+    If the buffer is not yet full, a zero of similar shape as the last input
+    is returned.
+    '''
+
+    def delay(self, value, count):
+        self.append(value)
+        if len(self) <= count:
+            result = value*0.0
+        else:
+            for _ in range(len(self)-count):
+                result = self.pop(0)
+        return result

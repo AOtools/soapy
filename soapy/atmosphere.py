@@ -30,8 +30,7 @@ Examples:
 
         from soapy import confParse, atmosphere
 
-        config = confParse.Configurator("sh_8x8.py")
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig
 
     Initialise the amosphere (creating or loading phase screens)::
 
@@ -105,11 +104,32 @@ class atmos:
 
         atmosConfig.normScrnStrengths = atmosConfig.scrnStrengths/(
                             atmosConfig.scrnStrengths[:self.scrnNo].sum())
+        self.atmosConfig.scrnHeights = self.atmosConfig.scrnHeights[
+                    :self.atmosConfig.scrnNo]
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *atmosConfig.normScrnStrengths)**(-3./5.) )
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
+
+        # Computes tau0, the AO time constant (Roddier 1981), at current wind speed
+        vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
+        tau0 = 0.314 * self.r0 / vBar53
+
+        # If tau0 specified
+        if atmosConfig.tau0:
+            print("Scaling wind speeds for tau0 from {0:.2f} ms to requested {1:.2f} ms...".format(tau0*1e3, atmosConfig.tau0*1e3))
+            # Scale wind speeds
+            self.windSpeeds = self.windSpeeds*tau0/atmosConfig.tau0
+            # Computes tau0 at scaled wind speeds
+            vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
+            tau0 = 0.314 * self.r0 / vBar53
+
+        ## Print turbuelnce summary
+        print("Turbulence summary @ 500 nm:")
+        print('| r0 = {0:.2f} m ({1:.2f}" seeing)'.format(self.r0, numpy.degrees(0.5e-6/self.r0)*3600.0))
+        print("| Vbar_5/3 = {0:.2f} m/s".format(vBar53))
+        print("| tau0 = {0:.2f} ms".format(tau0*1e3))
 
         self.scrnPos = {}
         self.wholeScrns = {}
@@ -321,7 +341,7 @@ class atmos:
 
         return scrns
 
-    def randomScrns(self, subHarmonics=True):
+    def randomScrns(self, subHarmonics=True, l0=0.01):
         """
         Generated random phase screens defined by the atmosphere
         object parameters.
@@ -335,7 +355,7 @@ class atmos:
         #If no MP pool, just make screen sequentialy.
         if self.mpPool == None:
             for i in xrange(self.scrnNo):
-                if subharmonics:
+                if subHarmonics:
                     scrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], self.scrnSize,
                             (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
@@ -355,136 +375,23 @@ class atmos:
                     args.append(
                             (ft_sh_phase_screen,  self.scrnStrengths[i],
                             self.scrnSize, (self.pxlScale**(-1.)),
-                            self.atmosConfig.L0[i], 0.01))
+                            self.atmosConfig.L0[i], l0))
 
             else:
                 for i in range(self.scrnNo):
-
                     args.append(
                             (ft_phase_screen,  self.scrnStrengths[i],
                             self.scrnSize, (self.pxlScale**(-1.)),
-                            self.atmosConfig.L0[i], 0.01))
+                            self.atmosConfig.L0[i], l0))
 
-            #Do the calculation using the multi-process pool, put into dict
+            # Do the calculation using the multi-process pool, put into dict
             s = self.mpPool.map(mpWrap, args)
             for i in range(self.scrnNo):
                 scrns[i] = s[i]
                 # convert to mn
                 scrns[i] *= (500./(2*numpy.pi))
 
-
         return scrns
-
-
-#Commented as not used - apr 14-04-2015
-#class Screen(object):
-#
-#    def __init__(self, scrn, subscrnSize, order=3):
-#
-#        self.xCoords = numpy.arange(scrn.shape[0])
-#        self.yCoords = numpy.arange(scrn.shape[1])
-#
-#        self.interpObj = scipy.interpolate.RectBivariateSpline(
-#                                    self.xCoords, self.yCoords, scrn, kx=order,
-#                                    ky=order
-#                                    )
-#        self._subScrnCoordsX = numpy.arange(subscrnSize)
-#        self._subScrnCoordsY = numpy.arange(subscrnSize)
-#
-#        self.shape = (subscrnSize, subscrnSize)
-#
-#        self.currentPos = (0,0)
-#
-#    def _getScrnCoords(self):
-#
-#        return (self._subScrnCoordsX+self.currentPos[0],
-#                self._subScrnCoordsY+self.currentPos[1])
-#
-#
-#    def __getitem__(self, key):
-#
-#        try:
-#            #If too many dims...raise error
-#            if len(key)>2:
-#                raise IndexError("too many indices for array")
-#
-#            #If 2 dims
-#            if len(key)==2:
-#                #parse x-params
-#                if not key[0].start:
-#                    xstart = 0
-#                else:
-#                    xstart = key[0].start
-#
-#                if not key[0].stop:
-#                    xstop = self.shape[0]
-#                else:
-#                    xstop = key[0].stop
-#
-#                if not key[0].step:
-#                    xstep = 1
-#                else:
-#                    xstep = key[0].step
-#
-#                #parse y-params
-#                if not key[1].start:
-#                    ystart = 0
-#                else:
-#                    ystart = key[1].start
-#
-#                if not key[1].stop:
-#                    ystop = self.shape[1]
-#                else:
-#                    ystop = key[1].stop
-#
-#                if not key[1].step:
-#                    ystep = 1
-#                else:
-#                    ystep = key[1].step
-#        #Only x-coords given
-#        except TypeError:
-#
-#            #parse x-params
-#            if not key.start:
-#                xstart = 0
-#            else:
-#                xstart = key.start
-#
-#            if not key.stop:
-#                xstop = self.shape[0]
-#            else:
-#                xstop = key.stop
-#
-#            if not key.step:
-#                xstep = 1
-#            else:
-#                xstep = key.step
-#
-#            #Set y-params
-#            ystart = 0
-#            ystop = self.shape[1]
-#            ystep = 1
-#
-#        xN = (xstop-xstart)/xstep
-#        yN = (ystop-ystart)/ystep
-#
-#        return self.getSlice(xstart, xstop, xN, ystart, ystop, yN)
-#
-#
-#    def getSlice(self, xstart, xstop, xsize, ystart, ystop, ysize):
-#
-#        if ((xstop-xstart)/xsize)!=1:
-#            xCoords = numpy.linspace(xstart, xstop, xsize)+self.currentPos[0]
-#        else:
-#            xCoords = self.subScrnCoords[0]
-#
-#        if ((ystop-ystart)/ysize)!=1:
-#            yCoords = numpy.linspace(ystart, ystop, ysize)+self.currentPos[1]
-#        else:
-#            yCoords = self.subScrnCoords[1]
-#
-#        return self.interpObj(xCoords, yCoords)
-#    subScrnCoords = property(_getScrnCoords)
 
 
 def pool_ft_sh_phase_screen(args):

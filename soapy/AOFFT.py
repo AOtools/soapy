@@ -51,24 +51,24 @@ class FFT(object):
     '''
     Class for performing FFTs in a variety of ways, with the same API.
 
-    Once the class has been initialised, FFTs going in the same direction and 
-    using the same padding size can be performed with re-initialising. The 
+    Once the class has been initialised, FFTs going in the same direction and
+    using the same padding size can be performed with re-initialising. The
     inputSize set is actually the padding size, any array smaller than this can
-    then be transformed. 
-    
+    then be transformed.
+
     Usually, its best to best to pass the data when performing the fft, either
-    calling the class directly (``fftobj(fftData)``) or calling the ``fft`` method of the 
-    class. If though, you're certain the array to transform is C-contiguous, 
-    and its size is the same as ``inputSize``, then you can set:: 
-        
+    calling the class directly (``fftobj(fftData)``) or calling the ``fft`` method of the
+    class. If though, you're certain the array to transform is C-contiguous,
+    and its size is the same as ``inputSize``, then you can set::
+
         fftObj.inputData = fftData
-    
+
     then::
-        
+
         outputData = fftObj()
-        
+
     where ``fftData`` is the data to be transformed. This is faster, as it avoids
-    an array copying operation, but is dangerous as the FFT may fail if the 
+    an array copying operation, but is dangerous as the FFT may fail if the
     input data is not correct.
 
 
@@ -76,7 +76,9 @@ class FFT(object):
         inputSize (tuple): The size of the input array, including any padding
         axes (tuple, optional): The axes to transform. defaults to the last.
         mode (string, optional): Which FFT library to use, can by ``'pyfftw'``, ``'scipy'`` or ``'gpu'``. Defaults to ``'pyfftw'``.
-        dtype (string, optional): The data type to transform, defaults to ``'complex64'``
+        dtype (str, optional): The data type to transform, defaults to ``'complex64'``
+        direction (str, optional): Forward or inverse FFT. Either `FORWARD` or `BACKWARD`. Default is `FORWARD`.
+        THREADS (int, optional): Number of threads to use for FFT. Defualt is 1
      '''
 
     def __init__(self,inputSize, axes=(-1,),mode="pyfftw",dtype="complex64",
@@ -183,15 +185,15 @@ class FFT(object):
                 self.size.append(inputSize[self.axes[i]])
 
 
-    def __call__(self,data=None):
+    def __call__(self, data=None):
 
         return self.fft(data)
 
 
-    def fft(self,data=None):
+    def fft(self, data=None):
         """
         Perform the fft of `data`.
-        
+
         Parameters:
             data (ndarray, optional): The data to transform. Optional as sometimes it can be faster to access ``inputData`` directly, though if and only if the data will be c-contiguous.
 
@@ -200,7 +202,7 @@ class FFT(object):
         """
         if self.FFTMODE=="pyfftw":
 
-            if data!=None:
+            if data is not None:
                 self.inputData[:] = data
             if self.direction=="FORWARD":
                 return self.fftwPlan()
@@ -209,7 +211,7 @@ class FFT(object):
 
         elif self.FFTMODE=="gpu":
 
-            if data!=None:
+            if data is not None:
                 self.inputData[:] = data
 
             inputData_dev = self.reikna_thread.to_device(self.inputData)
@@ -224,7 +226,7 @@ class FFT(object):
 
 
         elif self.FFTMODE=="scipy":
-            if data!=None:
+            if data is not None:
                  self.inputData = data
             if self.direction=="FORWARD":
                 fft = fftpack.fftn(self.inputData,
@@ -300,7 +302,7 @@ class mpFFT(object):
 
 def ftShift2d(inputData, outputData=None):
     """
-    Helper function to shift and array of 2-D FFT data
+    Helper function to shift an array of 2-D FFT data
 
     Args:
         inputData(ndarray): array of data to be shifted. Will shift final 2 axes
@@ -319,27 +321,47 @@ def ftShift2d(inputData, outputData=None):
     return outputData
 
 class Convolve(object):
-    
-    def __init__(self, shape, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",), threads=0):
-        #Initialise FFT objects
-        self.fFFT = FFT(shape, axes=(0,1), mode=mode,
-                        dtype="complex64",direction="FORWARD", 
-                        fftw_FLAGS=fftw_FLAGS, THREADS=threads) 
-        self.iFFT = FFT(shape, axes=(0,1), mode=mode,
+
+    def __init__(
+            self, shape1, shape2=None, mode="pyfftw",
+            fftw_FLAGS=("FFTW_MEASURE",), threads=0,
+            axes=(-2, -1)):
+
+        if shape2 is None:
+            shape2 = shape1
+
+        else:
+            # Check shapes are compatible
+            if (shape1[axes[0]]!=shape2[axes[0]] or
+                    shape1[axes[1]]!=shape2[axes[1]]):
+                raise ValueError(
+                        'Shapes not compatible for convolution')
+
+        # Initialise FFT objects
+        self.fFFT = FFT(shape1, axes=axes, mode=mode,
+                        dtype="complex64",direction="FORWARD",
+                        fftw_FLAGS=fftw_FLAGS, THREADS=threads)
+
+        self.iFFT1 = FFT(shape1, axes=axes, mode=mode,
                         dtype="complex64",direction="BACKWARD",
                         fftw_FLAGS=fftw_FLAGS, THREADS=threads)
 
+        self.iFFT2 = FFT(shape2, axes=axes, mode=mode,
+                        dtype="complex64",direction="BACKWARD",
+                        fftw_FLAGS=fftw_FLAGS, THREADS=threads)
+
+
+
     def __call__(self, img1, img2):
-        #backward FFT arrays
-        self.iFFT.inputData[:] = img1
-        iImg1 = self.iFFT().copy()  
-        self.iFFT.inputData[:] = img2
-        iImg2 = self.iFFT()
-    
+        # backward FFT arrays
+        self.iFFT1.inputData[:] = img1
+        iImg1 = self.iFFT1()
+        self.iFFT2.inputData[:] = img2
+        iImg2 = self.iFFT2()
+
         #Do convolution
         iImg1 *= iImg2
 
         #do forward FFT
         self.fFFT.inputData[:] = iImg1
-        return numpy.fft.ffshift(self.fFFT())
-        
+        return ftShift2d(self.fFFT())
