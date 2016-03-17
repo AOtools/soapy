@@ -69,6 +69,9 @@ class LGS(object):
 
         self.initFFTs()
 
+    def calcInitParams(self):
+        pass
+
     def initFFTs(self):
         """
         Virtual Method as many LGS implentations will require extra FFTs

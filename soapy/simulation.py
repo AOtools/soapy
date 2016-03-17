@@ -416,7 +416,7 @@ class Sim(object):
         s = 0
         for proc in xrange(len(wfsList)):
             nwfs = wfsList[proc]
-            #check if due to read out WFS
+            # check if due to read out WFS
             if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
