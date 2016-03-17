@@ -24,7 +24,8 @@ import scipy.optimize as opt
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
-class ScienceCam(object):
+
+class PSF(object):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
 
@@ -169,7 +170,8 @@ class ScienceCam(object):
 
         return self.focalPlane
 
-class singleModeFibre(ScienceCam):
+
+class singleModeFibre(PSF):
 
     def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
         scienceCam.__init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask)
@@ -191,4 +193,5 @@ class singleModeFibre(ScienceCam):
         self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.normMask))**2
 
 
-scienceCam = ScienceCam
+# Compatability with older versions
+scienceCam = ScienceCam = PSF
