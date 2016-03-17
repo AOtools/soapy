@@ -264,6 +264,7 @@ class Sim(object):
         self.sciImgs = {}
         self.sciImgNo=0
         for sci in xrange(self.config.sim.nSci):
+
             try:
                 sciObj = eval( "SCI."+self.config.scis[sci].type)
             except AttributeError:
@@ -727,7 +728,7 @@ class Sim(object):
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
                 # Record WFE residual
-                res = self.sciCams[sci].residual
+                res = self.sciCams[sci].los.residual
                 # Remove piston first
                 res -= res.sum()/self.mask.sum()
                 res *= self.mask
@@ -958,7 +959,7 @@ class Sim(object):
                         pass
 
                     try:
-                        lgsPsf[i] = self.wfss[i].LGS.psf1.copy()
+                        lgsPsf[i] = self.wfss[i].lgs.psf.copy()
                     except AttributeError:
                         lgsPsf[i] = None
                         pass
@@ -989,7 +990,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].residual.copy()*self.mask
+                        residual[i] = self.sciCams[i].los.residual.copy()*self.mask
                     except AttributeError:
                         residual[i] = None
 

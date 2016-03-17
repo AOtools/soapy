@@ -199,7 +199,7 @@ class PY_Configurator(object):
         # If so, make oversized phase scrns
         wfsPhys = False
         for wfs in range(self.sim.nGS):
-            if self.wfss[wfs].propagationMode=="physical":
+            if self.wfss[wfs].propagationMode=="Physical":
                 wfsPhys = True
                 break
         if wfsPhys:
@@ -652,8 +652,8 @@ class WfsConfig(ConfigObj):
                             Includes atmospheric effects, the
                             optical train and detector gain.   ``1.``
         ``propagationMode`` string: Mode of light propogation
-                            from GS. Can be "physical" or
-                            "geometric"\**.                     ``"geometric"``
+                            from GS. Can be "Physical" or
+                            "Geometric"\**.                     ``"Geometric"``
         ``subapFieldStop``  bool: if True, add a field stop to
                             the wfs to prevent spots wandering
                             into adjacent sub-apertures. if
@@ -810,8 +810,8 @@ class LgsConfig(ConfigObj):
         ``wavelength``       float: Wavelength of laser beam
                              in metres                           ``600e-9``
         ``propagationMode``  str: Mode of light propogation
-                             from GS. Can be "physical" or
-                             "geometric".                        ``"phsyical"``
+                             from GS. Can be "Physical" or
+                             "Geometric".                        ``"Phsyical"``
         ``height``           float: Height to use physical
                              propogation of LGS (does not
                              effect cone-effect) in metres       ``90000``
@@ -836,7 +836,6 @@ class LgsConfig(ConfigObj):
         ==================== =================================   ===========
 
     """
-
 
     requiredParams = [ ]
 
@@ -968,9 +967,15 @@ class SciConfig(ConfigObj):
                              system processor number.             ``1``
         ``fftwFlag``         str: Flag to pass to FFTW
                              when preparing plan.                 ``FFTW_MEASURE``
+         ``height``          float: Altitude of the object.
+                             0 denotes infinity.                  ``0``
+        ``propagationMode``  str: Mode of light propogation
+                             from object. Can be "Physical" or
+                             "Geometric".                       ``"Geometric"``
         ``instStrehlWithTT`` bool: Whether or not to include
                              tip/tilt in instantaneous Strehl
                              calculations.                       ``False``
+
         ==================== =================================   ===========
 
     """
@@ -986,6 +991,8 @@ class SciConfig(ConfigObj):
                         ("fftwFlag", "FFTW_MEASURE"),
                         ("fftwThreads", 1),
                         ("instStrehlWithTT", False),
+                        ("height", 0),
+                        ("propagationMode", "Geometric")
                         ]
 
     calculatedParams = [
