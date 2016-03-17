@@ -99,7 +99,8 @@ class LGS(object):
                     )
         # Check position not too far from centre. May need more phase!
         maxPos = numpy.array(
-                self.los.metaPupilPos.values()).max()*self.simConfig.pxlScale
+                list(self.los.metaPupilPos.values())).max()
+        maxPos*=self.simConfig.pxlScale
         if 2*(maxPos+self.simConfig.pupilSize/2.) > self.simConfig.simSize:
             logger.warning(
                     "LGS far off-axis - likely need to make simOversize bigger")
