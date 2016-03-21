@@ -139,7 +139,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition = (0, 0)
         sim.config.wfss[1].GSPosition = (0, 0)
-        sim.config.lgss[1].propagationMode = "Physical"
+        sim.config.wfss[1].lgs.propagationMode = "Physical"
         sim.aoinit()
 
         sim.makeIMat(forceNew=True)
@@ -156,7 +156,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition = (0, 0)
         sim.config.wfss[1].GSPosition = (0, 0)
-        sim.config.lgss[1].propagationMode = "Geometric"
+        sim.config.wfss[1].lgs.propagationMode = "Geometric"
         sim.aoinit()
 
         sim.makeIMat(forceNew=True)

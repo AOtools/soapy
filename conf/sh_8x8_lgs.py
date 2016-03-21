@@ -60,6 +60,9 @@ simConfiguration = {
 
     },
 
+"LGS":{
+
+},
 
 "DM":{
     "type"              :   ["TT",     "Piezo"],

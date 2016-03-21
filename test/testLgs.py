@@ -13,48 +13,48 @@ class TestLgs(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        lgs = LGS.LGS(config.sim, config.wfss[1], config.lgss[1], config.atmos)
+        lgs = LGS.LGS(config.sim, config.wfss[1], config.wfss[1].lgs, config.atmos)
 
 
     def testb_initGeoLgs(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
         config.loadSimParams()
-        config.lgss[1].propagationMode = "Geometric"
+        config.wfss[1].lgs.propagationMode = "Geometric"
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         lgs = LGS.LGS_Geometric(
-                config.sim, config.wfss[1], config.lgss[1], config.atmos)
+                config.sim, config.wfss[1], config.wfss[1].lgs, config.atmos)
 
     def testc_geoLgsPsf(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
         config.loadSimParams()
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
-        config.lgss[1].propagationMode = "Geometric"
+        config.wfss[1].lgs.propagationMode = "Geometric"
         lgs = LGS.LGS_Geometric(
-                config.sim, config.wfss[1], config.lgss[1], config.atmos)
+                config.sim, config.wfss[1], config.wfss[1].lgs, config.atmos)
         psf = lgs.getLgsPsf(
                 [numpy.zeros((config.sim.simSize, config.sim.simSize))])
 
     def testd_initPhysLgs(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
         config.loadSimParams()
-        config.lgss[1].propagationMode = "Physical"
+        config.wfss[1].lgs.propagationMode = "Physical"
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        lgs = LGS.LGS_Physical(config.sim, config.wfss[1], config.lgss[1], config.atmos)
+        lgs = LGS.LGS_Physical(config.sim, config.wfss[1], config.wfss[1].lgs, config.atmos)
 
     def teste_physLgsPsf(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
         config.loadSimParams()
 
-        config.lgss[1].propagationMode = "Physical"
+        config.wfss[1].lgs.propagationMode = "Physical"
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         lgs = LGS.LGS_Physical(
-                config.sim, config.wfss[1], config.lgss[1], config.atmos,
+                config.sim, config.wfss[1], config.wfss[1].lgs, config.atmos,
                 nOutPxls=10)
         psf = lgs.getLgsPsf(
                 [numpy.zeros((config.sim.simSize, config.sim.simSize))])

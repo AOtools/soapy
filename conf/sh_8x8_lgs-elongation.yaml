@@ -49,8 +49,7 @@ WFS:
         elongationDepth: 12000
         elongationLayers: 10
         launchPosition: [1, 0]
-
-
+        
 DM:
   - TT:
       nxActuators: 2
