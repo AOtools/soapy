@@ -73,7 +73,6 @@ class LineOfSight(object):
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.height!=0:
             self.radii = self.findMetaPupilSize(self.height)
-            print(self.radii)
         else:
             self.radii = None
 
@@ -176,7 +175,6 @@ class LineOfSight(object):
         '''
 
         radii={}
-        print("FIND META PUPIL SIZE")
         for i in xrange(self.atmosConfig.scrnNo):
             #Find radius of metaPupil geometrically (fraction of pupil at
             # Ground Layer)
@@ -269,8 +267,6 @@ class LineOfSight(object):
 
         logger.debug("LoS Scrn Coords - ({0}:{1}, {2}:{3})".format(
                 x1,x2,y1,y2))
-        print(pos)
-        print(GSCent)
         if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
             logger.warning("GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, \nscrnSize: {1}, phaseCoord, {8}, simSize: {2}, fact: {9}\nx1: {4},x2: {5}, y1: {6}, y2: {7}".format(
                     GSCent, scrn.shape, simSize, height, x1, x2, y1, y2, self.phaseCoord, fact))

@@ -151,7 +151,6 @@ class WFS(object):
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.config.GSHeight != 0:
             self.radii = self.los.findMetaPupilSize(self.config.GSHeight)
-            print(self.radii)
         else:
             self.radii = None
 
@@ -349,11 +348,8 @@ class WFS(object):
         # difference in angular Pos for that height layer in rads
         theta_n = GSPos - ((dh*xl)/ (H*(H+dh)))
 
-        print('Theta_N: {}'.format(theta_n))
         # metres from on-axis point of each elongation point
-        print('elongAngle:{}'.format((GSPos+theta_n)*RAD2ASEC))
         elongPos = (GSPos + theta_n) * RAD2ASEC
-        print('elongPos:{}'.format(elongPos))
         return elongPos
 
     def zeroPhaseData(self):
@@ -382,6 +378,7 @@ class WFS(object):
             # Add the effect of the defocus and possibly tilt
             self.los.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
             self.los.phase += self.elongPhaseAdditions[i]
+
             # Apply any correction
             if correction is not None:
                 self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
@@ -501,7 +498,7 @@ class WFS(object):
     def calculateSlopes(self):
         self.slopes = self.los.EField
 
-    def zeroData(self, detector=True, inter=True):
+    def zeroData(self, detector=True, FP=True):
         self.zeroPhaseData()
 
 
