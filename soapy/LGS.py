@@ -29,6 +29,7 @@ except NameError:
     xrange = range
 
 RAD2ASEC = 206265.
+ASEC2RAD = 1./RAD2ASEC
 
 class LGS(object):
     '''
@@ -169,7 +170,6 @@ class LGS_Geometric(LGS):
                 THREADS=self.config.fftwThreads,
                 fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
-
 
     def getLgsPsf(self, scrns):
         super(LGS_Geometric, self).getLgsPsf(scrns)

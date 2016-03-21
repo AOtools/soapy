@@ -44,6 +44,9 @@ CONFIG_ATTRIBUTES = [
         'N',
             ]
 
+RAD2ASEC = 206264.849159
+ASEC2RAD = 1./RAD2ASEC
+
 class ConfigurationError(Exception):
     pass
 
@@ -174,8 +177,9 @@ class PY_Configurator(object):
                                     self.lgss[gs].elongationDepth/2.])
                 H = self.wfss[gs].GSHeight
                 theta_n = (max(pos) - (dh*maxLaunch)/(H*(H+dh))*
-                        (3600.*180/numpy.pi)).max()
+                        RAD2ASEC).max()
                 pos += theta_n
+                print(pos)
             gsPos.append(abs(numpy.array(pos)))
 
         for sci in range(self.sim.nSci):
@@ -186,10 +190,15 @@ class PY_Configurator(object):
         else:
             maxGSPos = 0
 
-        self.sim.scrnSize = 2*numpy.ceil(
-                self.sim.pxlScale*self.atmos.scrnHeights.max()
-                *abs(maxGSPos)*numpy.pi/(3600.*180)
-                )+self.sim.simSize
+        print("Max Screen Ht: {}".format(self.atmos.scrnHeights.max()))
+        print("PXL OFFSET: {}".format(
+                self.sim.pxlScale * self.atmos.scrnHeights.max() * abs(maxGSPos) * ASEC2RAD))
+
+        self.sim.scrnSize = numpy.ceil(2*
+                self.sim.pxlScale * self.atmos.scrnHeights.max()
+                * abs(maxGSPos) * ASEC2RAD)+self.sim.simSize
+
+        self.sim.scrnSize = int(round(self.sim.scrnSize))
 
         # Make scrnSize even
         if self.sim.scrnSize % 2 != 0:
@@ -213,15 +222,13 @@ class PY_Configurator(object):
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
         logger.info("subScreenSize: {:d} simulation pixels".format(int(self.sim.scrnSize)))
 
-
-
-        #If outer scale is None, set all to 100m
+        # If outer scale is None, set all to 100m
         if self.atmos.L0 is None:
             self.atmos.L0 = []
             for scrn in range(self.atmos.scrnNo):
                 self.atmos.L0.append(100.)
 
-        #Check if SH WFS with 1 subap. Feild stop must be FOV
+        # Check if SH WFS with 1 subap. Feild stop must be FOV
         for wfs in self.wfss:
             if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture".format(wfs))
@@ -864,6 +871,9 @@ class LgsConfig(ConfigObj):
             self.naProfile = numpy.ones(self.elongationLayers)
         if len(self.naProfile)<self.elongationLayers:
             raise ConfigurationError("Not enough values for naProfile")
+
+        self.wavelength = float(self.wavelength)
+        self.height = float(self.height)
 
 class DmConfig(ConfigObj):
     """

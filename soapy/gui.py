@@ -96,7 +96,7 @@ CMAP={'mode': 'rgb',
             (1., (255, 26, 26, 255))]}
 
 class GUI(QtGui.QMainWindow):
-    def __init__(self, sim, useOpenGL=False):
+    def __init__(self, sim, useOpenGL=False, verbosity=None):
         self.app = QtGui.QApplication([])
         QtGui.QMainWindow.__init__(self)
 
@@ -161,6 +161,8 @@ class GUI(QtGui.QMainWindow):
         #sim.readParams()
         sim.config.calcParams()
         self.config = self.sim.config
+        if verbosity is not None:
+            self.config.sim.verbosity = verbosity
         self.initPlots()
         self.show()
         self.init()

@@ -104,8 +104,8 @@ except NameError:
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
-
-
+RAD2ASEC = 206264.849159
+ASEC2RAD = 1./RAD2ASEC
 
 class WFS(object):
     ''' A  WFS class.
@@ -151,6 +151,7 @@ class WFS(object):
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.config.GSHeight != 0:
             self.radii = self.los.findMetaPupilSize(self.config.GSHeight)
+            print(self.radii)
         else:
             self.radii = None
 
@@ -243,13 +244,17 @@ class WFS(object):
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
-                    (self.elongLayers, self.los.nOutPxls, self.los.PhaseSize))
+                    (self.elongLayers, self.los.nOutPxls, self.los.nOutPxls))
                 for i in xrange(self.elongLayers):
-                    self.elongRadii[i] = self.findMetaPupilSize(
+                    self.elongRadii[i] = self.los.findMetaPupilSize(
                                                 float(self.elongHeights[i]))
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
 
+                # self.los.metaPupilPos = self.elongPos
+
+                logger.debug(
+                        'Elong Meta Pupil Pos: {}'.format(self.los.metaPupilPos))
             # If GS at infinity cant do elongation
             elif (self.config.GSHeight==0 and
                     self.lgsConfig.elongationDepth!=0):
@@ -282,7 +287,7 @@ class WFS(object):
         # Define these to make it easier
         h = self.elongHeights[elongLayer]
         dh = h - self.config.GSHeight
-        H = self.lgsConfig.height
+        H = float(self.lgsConfig.height)
         d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telDiam/2.
         D = self.los.telDiam
         theta = (d.astype("float")/H) - self.config.GSPosition
@@ -290,8 +295,8 @@ class WFS(object):
 
         # for the focus terms....
         focalPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * ((
-            ((self.telDiam/2.)**2 + (h**2) )**0.5\
-          - ((self.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh)
+            ((self.los.telDiam/2.)**2 + (h**2) )**0.5\
+          - ((self.los.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh)
 
         # For tilt terms.....
         tiltPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * (
@@ -328,27 +333,61 @@ class WFS(object):
             elongLayer (int): which elongation layer
 
         Returns:
-            float: The effect position of that layer GS
+            float: The effective position of that layer GS on the simulation phase grid
         """
 
-        h = self.elongHeights[elongLayer]       #height of elonglayer
-        dh = h - self.config.GSHeight          #delta height from GS Height
-        H = self.config.GSHeight               #Height of GS
+        h = self.elongHeights[elongLayer]       # height of elonglayer
+        dh = h - self.config.GSHeight          # delta height from GS Height
+        H = float(self.config.GSHeight)            # Height of GS
 
-        #Position of launch in m
+        # Position of launch in m
         xl = numpy.array(self.lgsLaunchPos) * self.los.telDiam/2.
 
-        #GS Pos in radians
-        GSPos = numpy.array(self.config.GSPosition)*numpy.pi/(3600.0*180.0)
+        # GS Pos in radians
+        GSPos = numpy.array(self.config.GSPosition) * RAD2ASEC
 
-        #difference in angular Pos for that height layer in rads
+        # difference in angular Pos for that height layer in rads
         theta_n = GSPos - ((dh*xl)/ (H*(H+dh)))
 
-        return theta_n
+        print('Theta_N: {}'.format(theta_n))
+        # metres from on-axis point of each elongation point
+        print('elongAngle:{}'.format((GSPos+theta_n)*RAD2ASEC))
+        elongPos = (GSPos + theta_n) * RAD2ASEC
+        print('elongPos:{}'.format(elongPos))
+        return elongPos
 
     def zeroPhaseData(self):
         self.los.EField[:] = 0
         self.los.phase[:] = 0
+
+
+    def makeElongationFrame(self, correction=None):
+        """
+        Find the focal plane resulting from an elongated guide star, such as LGS.
+
+        Runs the phase stacking and propagation routines multiple times with different GS heights, positions and/or aberrations to simulation the effect of a number of points in an elongation guide star.
+        """
+        # Loop over the elongation layers
+        for i in xrange(self.elongLayers):
+            logger.debug('Elong layer: {}'.format(i))
+            # Reset the phase propagation routines (not the detector though)
+            self.zeroData(FP=False)
+
+            # Find the phase from that elongation layer (with different cone effect radii and potentially angular position)
+            self.los.makePhase(self.elongRadii[i], apos=self.elongPos[i])
+
+            # Make a copy of the uncorrectedPhase for plotting
+            self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
+
+            # Add the effect of the defocus and possibly tilt
+            self.los.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
+            self.los.phase += self.elongPhaseAdditions[i]
+            # Apply any correction
+            if correction is not None:
+                self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
+
+            # Add onto the focal plane with that layers intensity
+            self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
 
     def frame(self, scrns, correction=None, read=True, iMatFrame=False):
         '''
@@ -382,21 +421,13 @@ class WFS(object):
             eReadNoise = self.config.eReadNoise
             self.config.eReadNoise = 0
 
-        self.zeroData(detector=read, inter=False)
+        self.zeroData(detector=read, FP=False)
 
         self.los.frame(scrns)
 
         # If LGS elongation simulated
         if self.config.lgs and self.elong!=0:
-            for i in xrange(self.elongLayers):
-                self.zeroPhaseData()
-
-                self.los.makePhase(self.elongRadii[i], self.elongPos[i])
-                self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
-                self.los.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
-                if numpy.any(correction):
-                    self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
-                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
+            self.makeElongationFrame(correction)
 
         # If no elongation
         else:
