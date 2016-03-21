@@ -71,9 +71,9 @@ class PY_Configurator(object):
     def __init__(self, filename):
         self.filename = filename
 
-        #placeholder for WFS param objs
+        # placeholder for param objs
         self.wfss = []
-        self.lgss = []
+        # self.lgss = []
         self.scis = []
         self.dms = []
 
@@ -107,15 +107,18 @@ class PY_Configurator(object):
         logger.debug("\nLoad Telescope Params...")
         self.tel.loadParams(self.configDict["Telescope"])
 
-        for wfs in range(self.sim.nGS):
-            logger.debug("Load WFS {} Params...".format(wfs))
-            self.wfss.append(WfsConfig(wfs))
-            self.wfss[wfs].loadParams(self.configDict["WFS"])
+        for nWfs in range(self.sim.nGS):
+            logger.debug("Load LGS {} Params".format(nWfs))
+            lgs = LgsConfig(nWfs)
+            lgs.loadParams(self.configDict["LGS"])
 
-        for lgs in range(self.sim.nGS):
-            logger.debug("Load LGS {} Params".format(lgs))
-            self.lgss.append(LgsConfig(lgs))
-            self.lgss[lgs].loadParams(self.configDict["LGS"])
+            logger.debug("Load WFS {} Params...".format(nWfs))
+            self.wfss.append(WfsConfig(nWfs))
+            self.wfss[nWfs].loadParams(self.configDict["WFS"])
+            if self.wfss[nWfs].lgs:
+                self.wfss[nWfs].lgs = lgs
+            else:
+                self.wfss[nWfs].lgs = None
 
         for dm in range(self.sim.nDM):
             logger.debug("Load DM {} Params".format(dm))
@@ -126,7 +129,6 @@ class PY_Configurator(object):
             logger.debug("Load Science {} Params".format(sci))
             self.scis.append(SciConfig(sci))
             self.scis[sci].loadParams(self.configDict["Science"])
-
 
         self.calcParams()
 
@@ -142,9 +144,9 @@ class PY_Configurator(object):
         for w in self.wfss:
             if w is not None:
                 w.calcParams()
-        for l in self.lgss:
-            if l is not None:
-                l.calcParams()
+        # for l in self.lgss:
+        #     if l is not None:
+        #         l.calcParams()
         for d in self.dms:
             if d is not None:
                 d.calcParams()
@@ -158,7 +160,7 @@ class PY_Configurator(object):
         # We oversize the pupil to what we'll call the "simulation size"
         simPadRatio = (self.sim.simOversize-1)/2.
         self.sim.simPad = int(round(self.sim.pupilSize*simPadRatio))
-        self.sim.simSize = self.sim.pupilSize + 2*self.sim.simPad
+        self.sim.simSize = self.sim.pupilSize + 2 * self.sim.simPad
 
 
         # Furthest out GS or SCI target defines the sub-scrn size
@@ -167,19 +169,18 @@ class PY_Configurator(object):
             pos = self.wfss[gs].GSPosition.astype('float')
 
             # Need to add bit if the GS is an elongated off-axis LGS
-            if (hasattr(self.lgss[gs], 'elongationDepth')
-                    and self.lgss[gs].elongationDepth is not 0):
+            if (hasattr(self.wfss[gs].lgs, 'elongationDepth')
+                    and self.wfss[gs].lgs.elongationDepth is not 0):
                 # This calculation is done more explicitely in the WFS module
                 # in the ``calcElongPos`` method
                 maxLaunch = abs(numpy.array(
-                        self.lgss[gs].launchPosition)).max()*self.tel.telDiam/2.
-                dh = numpy.array([  -1*self.lgss[gs].elongationDepth/2.,
-                                    self.lgss[gs].elongationDepth/2.])
+                        self.wfss[gs].lgs.launchPosition)).max()*self.tel.telDiam/2.
+                dh = numpy.array([  -1*self.wfss[gs].lgs.elongationDepth/2.,
+                                    self.wfss[gs].lgs.elongationDepth/2.])
                 H = self.wfss[gs].GSHeight
                 theta_n = (max(pos) - (dh*maxLaunch)/(H*(H+dh))*
                         RAD2ASEC).max()
                 pos += theta_n
-                print(pos)
             gsPos.append(abs(numpy.array(pos)))
 
         for sci in range(self.sim.nSci):
@@ -189,10 +190,6 @@ class PY_Configurator(object):
             maxGSPos = numpy.array(gsPos).max()
         else:
             maxGSPos = 0
-
-        print("Max Screen Ht: {}".format(self.atmos.scrnHeights.max()))
-        print("PXL OFFSET: {}".format(
-                self.sim.pxlScale * self.atmos.scrnHeights.max() * abs(maxGSPos) * ASEC2RAD))
 
         self.sim.scrnSize = numpy.ceil(2*
                 self.sim.pxlScale * self.atmos.scrnHeights.max()
@@ -251,11 +248,11 @@ class PY_Configurator(object):
             else:
                 objs['WFS'].append(None)
 
-        for l in self.lgss:
-            if l is not None:
-                objs['LGS'].append(dict(l))
-            else:
-                objs['LGS'].append(None)
+        # for l in self.lgss:
+        #     if l is not None:
+        #         objs['LGS'].append(dict(l))
+        #     else:
+        #         objs['LGS'].append(None)
 
         for d in self.dms:
             if d is not None:
@@ -307,22 +304,23 @@ class YAML_Configurator(PY_Configurator):
             self.wfss.append(WfsConfig(None))
             self.wfss[nWfs].loadParams(wfsDict)
 
-        for nLgs in range(self.sim.nGS):
-            logger.debug("Load LGS {} Params".format(nLgs))
-            try:
-                lgsType = self.configDict['LGS'][nLgs].keys()[0]
-                lgsDict = self.configDict['LGS'][nLgs][lgsType]
-                lgsDict['type'] = lgsType
+            logger.debug("Load LGS Params")
+            lgsDict = self.wfss[nWfs].lgs
 
-                self.lgss.append(LgsConfig(None))
-                self.lgss[nLgs].loadParams(lgsDict)
-            except:
-                self.lgss.append(None)
+            if lgsDict is None:
+                self.wfss[nWfs].lgs = None
+            else:
+                self.wfss[nWfs].lgs = (LgsConfig(None))
+                self.wfss[nWfs].lgs.loadParams(lgsDict)
+
+            print("LGS:{}".format(self.wfss[nWfs].lgs))
+
 
         for nDm in range(self.sim.nDM):
             logger.debug("Load DM {} Params".format(nDm))
             dmType = self.configDict['DM'][nDm].keys()[0]
             dmDict = self.configDict['DM'][nDm][dmType]
+
             dmDict['type'] = dmType
 
             self.dms.append(DmConfig(None))
@@ -343,7 +341,7 @@ class ConfigObj(object):
     # Parameters that can be had by any configuration object
 
     def __init__(self, N=None):
-        #This is the index of some config object, i.e. WFS 1, 2, 3..N
+        # This is the index of some config object, i.e. WFS 1, 2, 3..N
         self.N = N
 
     def warnAndExit(self, param):
@@ -730,7 +728,7 @@ class WfsConfig(ConfigObj):
                         ("fftOversamp", 3),
                         ("GSHeight", 0),
                         ("subapThreshold", 0.5),
-                        ("lgs", False),
+                        ("lgs", None),
                         ("centThreshold", 0.3),
                         ("centMethod", "centreOfGravity"),
                         ("type", "ShackHartmann"),
@@ -749,7 +747,7 @@ class WfsConfig(ConfigObj):
                         'position',
                         'pxlsPerSubap2',
                         'dataStart',
-
+                        'lgs',
                         ]
 
     allowedAttrs = copy.copy(
@@ -764,6 +762,10 @@ class WfsConfig(ConfigObj):
 
         # Ensure wavelength is a float
         self.wavelength = float(self.wavelength)
+
+        # If LGS exists, calc its params too
+        # if self.lgs is not None:
+        #     self.lgs.calcParams()
 
 class TelConfig(ConfigObj):
     """
@@ -866,9 +868,11 @@ class LgsConfig(ConfigObj):
         allowedAttrs.append(p[0])
 
     def calcParams(self):
+
         # If lgs sodium layer profile is none, set it to 1s for each layer
         if not hasattr(self, "naProfile") or self.naProfile is None:
             self.naProfile = numpy.ones(self.elongationLayers)
+
         if len(self.naProfile)<self.elongationLayers:
             raise ConfigurationError("Not enough values for naProfile")
 

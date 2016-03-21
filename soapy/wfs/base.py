@@ -120,18 +120,16 @@ class WFS(object):
             simConfig (confObj): The simulation configuration object
             wfsConfig (confObj): The WFS configuration object
             atmosConfig (confObj): The atmosphere configuration object
-            lgsConfig (confObj): The Laser Guide Star configuration
             mask (ndarray, optional): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
     def __init__(
-            self, simConfig, wfsConfig, atmosConfig, lgsConfig=None,
-            mask=None):
+            self, simConfig, wfsConfig, atmosConfig, mask=None):
 
         self.simConfig = simConfig
         self.config = self.wfsConfig = wfsConfig # For compatability
         self.atmosConfig = atmosConfig
-        self.lgsConfig = lgsConfig
+        self.lgsConfig = self.config.lgs
 
         # If supplied use the mask
         if numpy.any(mask):
@@ -410,9 +408,9 @@ class WFS(object):
             self.iMat = True
             removeTT = self.config.removeTT
             self.config.removeTT = False
-            if self.config.lgs:
-                elong = self.elong
-            self.elong = 0
+            # if self.config.lgs:
+            #     elong = self.elong
+            # self.elong = 0
             photonNoise = self.config.photonNoise
             self.config.photonNoise = False
             eReadNoise = self.config.eReadNoise
@@ -455,8 +453,8 @@ class WFS(object):
         if iMatFrame:
             self.iMat=False
             self.config.removeTT = removeTT
-            if self.config.lgs:
-                self.elong = elong
+            # if self.config.lgs:
+            #     self.elong = elong
             self.config.photonNoise = photonNoise
             self.config.eReadNoise = eReadNoise
 

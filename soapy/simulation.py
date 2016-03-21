@@ -187,7 +187,7 @@ class Sim(object):
 
         self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
-        #Find if WFSs should each have own process
+        # Find if WFSs should each have own process
         if self.config.sim.wfsMP:
 
             logger.info("Setting fftwThreads to 1 as WFS MP")
@@ -197,7 +197,7 @@ class Sim(object):
         else:
             self.runWfs = self.runWfs_noMP
 
-        #init WFSs
+        # Init WFSs
         logger.info("Initialising WFSs....")
         self.wfss = {}
         self.config.sim.totalWfsData = 0
@@ -212,7 +212,7 @@ class Sim(object):
 
             self.wfss[nwfs]=wfsClass(
                     self.config.sim, self.config.wfss[nwfs],
-                    self.config.atmos, self.config.lgss[nwfs], self.mask)
+                    self.config.atmos, self.mask)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[nwfs].activeSubaps*2
@@ -718,7 +718,7 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             lgs=0
             for nwfs in xrange(self.config.sim.nGS):
-                if self.config.lgss[nwfs].lgsUplink:
+                if self.config.wfss[nwfs].lgs.lgsUplink:
                     self.lgsPsfs[lgs, i] = self.wfss[nwfs].LGS.PSF
                     lgs+=1
 
