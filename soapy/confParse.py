@@ -297,7 +297,7 @@ class YAML_Configurator(PY_Configurator):
 
         for nWfs in range(self.sim.nGS):
             logger.debug("Load WFS {} Params...".format(nWfs))
-            wfsType = self.configDict['WFS'][nWfs].keys()[0]
+            wfsType = list(self.configDict['WFS'][nWfs].keys())[0]
             wfsDict = self.configDict['WFS'][nWfs][wfsType]
             wfsDict['type'] = wfsType
 
@@ -318,7 +318,7 @@ class YAML_Configurator(PY_Configurator):
 
         for nDm in range(self.sim.nDM):
             logger.debug("Load DM {} Params".format(nDm))
-            dmType = self.configDict['DM'][nDm].keys()[0]
+            dmType = list(self.configDict['DM'][nDm].keys())[0]
             dmDict = self.configDict['DM'][nDm][dmType]
 
             dmDict['type'] = dmType
@@ -328,7 +328,7 @@ class YAML_Configurator(PY_Configurator):
 
         for nSci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(nSci))
-            sciType = self.configDict['Science'][nSci].keys()[0]
+            sciType = list(self.configDict['Science'][nSci].keys())[0]
             sciDict = self.configDict['Science'][nSci][sciType]
             sciDict['type'] = sciType
 
