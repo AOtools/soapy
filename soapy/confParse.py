@@ -32,13 +32,13 @@ import copy
 from . import logger
 
 # Check if can use yaml configuration style
-try:
-    import yaml
-    YAML = True
-except ImportError:
-    logger.info("Can't import pyyaml. Can only use old python config style")
-    traceback.print_exc()
-    YAML = False
+# try:
+import yaml
+#     YAML = True
+# except ImportError:
+#     logger.info("Can't import pyyaml. Can only use old python config style")
+#     traceback.print_exc()
+#     YAML = False
 
 # Attributes that can be contained in all configs
 CONFIG_ATTRIBUTES = [
