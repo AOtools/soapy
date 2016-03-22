@@ -40,6 +40,9 @@ try:
 except NameError:
     xrange = range
 
+RAD2ASEC = 206264.849159
+ASEC2RAD = 1./RAD2ASEC
+
 class LineOfSight(object):
     """
     A "Line of sight" through a number of turbulence layers in the atmosphere, observing ing a given direction.
@@ -52,7 +55,7 @@ class LineOfSight(object):
         outPxlScale (float, optional): The EField pixel scale required at the output (m/pxl)
         nOutPxls (int, optional): Number of pixels to return in EFIeld
         mask (ndarray, optional): Mask to apply at the *beginning* of propagation
-        metaPupilPos (list, dict, optional): A list of dictionary of the meta pupil position at each turbulence layer height. If None, works it out from GS position.
+        metaPupilPos (list, dict, optional): A list or dictionary of the meta pupil position at each turbulence layer height ub metres. If None, works it out from GS position.
     """
     def __init__(
             self, config, simConfig, atmosConfig,
@@ -162,7 +165,6 @@ class LineOfSight(object):
         self.EField = numpy.zeros([self.nOutPxls]*2, dtype=CDTYPE)
         self.metaPupil = numpy.zeros_like(self.phase)
 
-    @numba.jit(nopython=True)
     def findMetaPupilSize(self, GSHeight):
         '''
         Evaluates the sizes of the effective metePupils
@@ -176,7 +178,6 @@ class LineOfSight(object):
         '''
 
         radii={}
-
         for i in xrange(self.atmosConfig.scrnNo):
             #Find radius of metaPupil geometrically (fraction of pupil at
             # Ground Layer)
@@ -193,33 +194,31 @@ class LineOfSight(object):
 
  #############################################################
 #Phase stacking routines for a WFS frame
-    @numba.jit
-    def getMetaPupilPos(self, height, pos=None):
+    def getMetaPupilPos(self, height, apos=None):
         '''
         Finds the centre of a metapupil at a given height,
         when offset by a given angle in arsecs, in metres from the central position
 
         Parameters:
             height (float): Height of the layer in metres
-            pos (tuple, optional):  The angular position of the GS in radians.
-                                    If not set, will use the config position
+            apos (ndarray, optional):  The angular position of the GS in asec. If not set, will use the config position
 
         Returns:
             ndarray: The position of the centre of the metapupil in metres
         '''
-        #if no pos given, use system pos and convert into radians
-        if not numpy.any(pos):
-            pos = (numpy.array(self.position)
-                    *numpy.pi/(3600.0*180.0) )
+        # if no pos given, use system pos and convert into radians
+        if not numpy.any(apos):
+            pos = (numpy.array(self.position)).astype('float')
 
-        #Position of centre of GS metapupil off axis at required height
+        pos *= ASEC2RAD
+
+        # Position of centre of GS metapupil off axis at required height
         GSCent = (numpy.tan(pos) * height)
 
         return GSCent
 
-    @numba.jit
     def getMetaPupilPhase(
-            self, scrn, height, radius=None,  pos=None):
+            self, scrn, height, radius=None, apos=None, pos=None):
         '''
         Returns the phase across a metaPupil at some height and angular
         offset in arcsec. Interpolates phase to size of the pupil if cone
@@ -229,7 +228,8 @@ class LineOfSight(object):
             scrn (ndarray): An array representing the phase screen
             height (float): Height of the phase screen
             radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
-            pos (ndarray, optional): X, Y central position of the metapupil in metres. If None, then config used to calculate it.
+            apos (ndarray, optional): X, Y angular position of the guide star in asecs, otherwise will use that set in config or 'pos'
+            pos (ndarray, optional): X, Y central position of the metapupil in metres. If None, then config used to calculate it from config pos, or 'apos'.
 
         Return:
             ndarray: The meta pupil at the specified height
@@ -239,10 +239,12 @@ class LineOfSight(object):
         if radius is 0:
             return numpy.zeros((self.nOutPxls, self.nOutPxls))
 
-        if pos is None:
-            GSCent = self.getMetaPupilPos(height, pos) * self.simConfig.pxlScale
-        else:
+        if apos is not None:
+            GSCent = self.getMetaPupilPos(height, apos) * self.simConfig.pxlScale
+        elif pos is not None:
             GSCent = pos * self.simConfig.pxlScale
+        else:
+            GSCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
 
         # Find the size in metres of phase that is required
         self.phaseRadius = (self.outPxlScale * self.nOutPxls)/2.
@@ -260,18 +262,17 @@ class LineOfSight(object):
             fact = 1
 
         simSize = self.simConfig.simSize
-        x1 = scrnX/2. + GSCent[0] - fact*self.phaseCoord
-        x2 = scrnX/2. + GSCent[0] + fact*self.phaseCoord
-        y1 = scrnY/2. + GSCent[1] - fact*self.phaseCoord
-        y2 = scrnY/2. + GSCent[1] + fact*self.phaseCoord
+        x1 = scrnX/2. + GSCent[0] - fact * self.phaseCoord
+        x2 = scrnX/2. + GSCent[0] + fact * self.phaseCoord
+        y1 = scrnY/2. + GSCent[1] - fact * self.phaseCoord
+        y2 = scrnY/2. + GSCent[1] + fact * self.phaseCoord
 
         logger.debug("LoS Scrn Coords - ({0}:{1}, {2}:{3})".format(
                 x1,x2,y1,y2))
-
         if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
-            raise ValueError(
-                    "GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, scrnSize: {1}, simSize: {2}".format(
-                            GSCent, scrn.shape, simSize, height) )
+            logger.warning("GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, \nscrnSize: {1}, phaseCoord, {8}, simSize: {2}, fact: {9}\nx1: {4},x2: {5}, y1: {6}, y2: {7}".format(
+                    GSCent, scrn.shape, simSize, height, x1, x2, y1, y2, self.phaseCoord, fact))
+            raise ValueError("Requested phase exceeds phase screen size. See log warnings.")
 
         xCoords = numpy.linspace(x1, x2-1, self.nOutPxls)
         yCoords = numpy.linspace(y1, y2-1, self.nOutPxls)
@@ -290,10 +291,14 @@ class LineOfSight(object):
         self.EField[:] = 0
         self.phase[:] = 0
 
-    def makePhase(self, radii=None):
+    def makePhase(self, radii=None, apos=None):
         """
         Generates the required phase or EField. Uses difference approach depending on whether propagation is geometric or physical
         (makePhaseGeometric or makePhasePhys respectively)
+
+        Parameters:
+            radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
+            apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         """
         # Check if geometric or physical
         if self.config.propagationMode == "Physical":
@@ -301,13 +306,13 @@ class LineOfSight(object):
         else:
             return self.makePhaseGeometric(radii)
 
-    @numba.jit
-    def makePhaseGeometric(self, radii=None):
+    def makePhaseGeometric(self, radii=None, apos=None):
         '''
         Creates the total phase along line of sight offset by a given angle using a geometric ray tracing approach
 
-        Parameters
+        Parameters:
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
+            apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
         for i in range(len(self.scrns)):
@@ -339,13 +344,13 @@ class LineOfSight(object):
 
         return self.EField
 
-    @numba.jit
-    def makePhasePhys(self, radii=None):
+    def makePhasePhys(self, radii=None, apos=None):
         '''
         Finds total line of sight complex amplitude by propagating light through phase screens
 
-        Parameters
+        Parameters:
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
+            apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
         scrnNo = len(self.scrns)
@@ -460,7 +465,7 @@ class LineOfSight(object):
                     correction, numpy.empty((self.nOutPxls,)*2),
                     threads=self.simConfig.procs)
             self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
-            self.residual = self.phase/self.phs2Rad- correction
+            self.residual = self.phase/self.phs2Rad - correction
         else:
             self.residual = self.phase
 

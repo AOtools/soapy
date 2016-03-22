@@ -104,8 +104,8 @@ except NameError:
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
-
-
+RAD2ASEC = 206264.849159
+ASEC2RAD = 1./RAD2ASEC
 
 class WFS(object):
     ''' A  WFS class.
@@ -120,18 +120,16 @@ class WFS(object):
             simConfig (confObj): The simulation configuration object
             wfsConfig (confObj): The WFS configuration object
             atmosConfig (confObj): The atmosphere configuration object
-            lgsConfig (confObj): The Laser Guide Star configuration
             mask (ndarray, optional): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
     def __init__(
-            self, simConfig, wfsConfig, atmosConfig, lgsConfig=None,
-            mask=None):
+            self, simConfig, wfsConfig, atmosConfig, mask=None):
 
         self.simConfig = simConfig
         self.config = self.wfsConfig = wfsConfig # For compatability
         self.atmosConfig = atmosConfig
-        self.lgsConfig = lgsConfig
+        self.lgsConfig = self.config.lgs
 
         # If supplied use the mask
         if numpy.any(mask):
@@ -244,13 +242,17 @@ class WFS(object):
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
-                    (self.elongLayers, self.los.nOutPxls, self.los.PhaseSize))
+                    (self.elongLayers, self.los.nOutPxls, self.los.nOutPxls))
                 for i in xrange(self.elongLayers):
-                    self.elongRadii[i] = self.findMetaPupilSize(
+                    self.elongRadii[i] = self.los.findMetaPupilSize(
                                                 float(self.elongHeights[i]))
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
 
+                # self.los.metaPupilPos = self.elongPos
+
+                logger.debug(
+                        'Elong Meta Pupil Pos: {}'.format(self.los.metaPupilPos))
             # If GS at infinity cant do elongation
             elif (self.config.GSHeight==0 and
                     self.lgsConfig.elongationDepth!=0):
@@ -283,7 +285,7 @@ class WFS(object):
         # Define these to make it easier
         h = self.elongHeights[elongLayer]
         dh = h - self.config.GSHeight
-        H = self.lgsConfig.height
+        H = float(self.lgsConfig.height)
         d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telDiam/2.
         D = self.los.telDiam
         theta = (d.astype("float")/H) - self.config.GSPosition
@@ -291,8 +293,8 @@ class WFS(object):
 
         # for the focus terms....
         focalPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * ((
-            ((self.telDiam/2.)**2 + (h**2) )**0.5\
-          - ((self.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh)
+            ((self.los.telDiam/2.)**2 + (h**2) )**0.5\
+          - ((self.los.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh)
 
         # For tilt terms.....
         tiltPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * (
@@ -331,27 +333,59 @@ class WFS(object):
             elongLayer (int): which elongation layer
 
         Returns:
-            float: The effect position of that layer GS
+            float: The effective position of that layer GS on the simulation phase grid
         """
 
-        h = self.elongHeights[elongLayer]       #height of elonglayer
-        dh = h - self.config.GSHeight          #delta height from GS Height
-        H = self.config.GSHeight               #Height of GS
+        h = self.elongHeights[elongLayer]       # height of elonglayer
+        dh = h - self.config.GSHeight          # delta height from GS Height
+        H = float(self.config.GSHeight)            # Height of GS
 
-        #Position of launch in m
+        # Position of launch in m
         xl = numpy.array(self.lgsLaunchPos) * self.los.telDiam/2.
 
-        #GS Pos in radians
-        GSPos = numpy.array(self.config.GSPosition)*numpy.pi/(3600.0*180.0)
+        # GS Pos in radians
+        GSPos = numpy.array(self.config.GSPosition) * RAD2ASEC
 
-        #difference in angular Pos for that height layer in rads
+        # difference in angular Pos for that height layer in rads
         theta_n = GSPos - ((dh*xl)/ (H*(H+dh)))
 
-        return theta_n
+        # metres from on-axis point of each elongation point
+        elongPos = (GSPos + theta_n) * RAD2ASEC
+        return elongPos
 
     def zeroPhaseData(self):
         self.los.EField[:] = 0
         self.los.phase[:] = 0
+
+
+    def makeElongationFrame(self, correction=None):
+        """
+        Find the focal plane resulting from an elongated guide star, such as LGS.
+
+        Runs the phase stacking and propagation routines multiple times with different GS heights, positions and/or aberrations to simulation the effect of a number of points in an elongation guide star.
+        """
+        # Loop over the elongation layers
+        for i in xrange(self.elongLayers):
+            logger.debug('Elong layer: {}'.format(i))
+            # Reset the phase propagation routines (not the detector though)
+            self.zeroData(FP=False)
+
+            # Find the phase from that elongation layer (with different cone effect radii and potentially angular position)
+            self.los.makePhase(self.elongRadii[i], apos=self.elongPos[i])
+
+            # Make a copy of the uncorrectedPhase for plotting
+            self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
+
+            # Add the effect of the defocus and possibly tilt
+            self.los.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
+            self.los.phase += self.elongPhaseAdditions[i]
+
+            # Apply any correction
+            if correction is not None:
+                self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
+
+            # Add onto the focal plane with that layers intensity
+            self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
 
     def frame(self, scrns, correction=None, read=True, iMatFrame=False):
         '''
@@ -377,29 +411,21 @@ class WFS(object):
             self.iMat = True
             removeTT = self.config.removeTT
             self.config.removeTT = False
-            if self.config.lgs:
-                elong = self.elong
-            self.elong = 0
+            # if self.config.lgs:
+            #     elong = self.elong
+            # self.elong = 0
             photonNoise = self.config.photonNoise
             self.config.photonNoise = False
             eReadNoise = self.config.eReadNoise
             self.config.eReadNoise = 0
 
-        self.zeroData(detector=read, inter=False)
+        self.zeroData(detector=read, FP=False)
 
         self.los.frame(scrns)
 
         # If LGS elongation simulated
         if self.config.lgs and self.elong!=0:
-            for i in xrange(self.elongLayers):
-                self.zeroPhaseData()
-
-                self.los.makePhase(self.elongRadii[i], self.elongPos[i])
-                self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
-                self.los.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
-                if numpy.any(correction):
-                    self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
-                self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
+            self.makeElongationFrame(correction)
 
         # If no elongation
         else:
@@ -421,7 +447,7 @@ class WFS(object):
                 correctionPhase = aoSimLib.zoom(
                         correction, self.los.nOutPxls, order=1)
                 self.los.EField *= numpy.exp(-1j*correctionPhase*self.los.phs2Rad)
-
+                self.los.phase -= correctionPhase * self.los.phs2Rad
             self.calcFocalPlane()
 
         if read:
@@ -429,12 +455,12 @@ class WFS(object):
             self.calculateSlopes()
             self.zeroData(detector=False)
 
-        #Turn back on stuff disabled for iMat
+        # Turn back on stuff disabled for iMat
         if iMatFrame:
             self.iMat=False
             self.config.removeTT = removeTT
-            if self.config.lgs:
-                self.elong = elong
+            # if self.config.lgs:
+            #     self.elong = elong
             self.config.photonNoise = photonNoise
             self.config.eReadNoise = eReadNoise
 
@@ -476,7 +502,7 @@ class WFS(object):
     def calculateSlopes(self):
         self.slopes = self.los.EField
 
-    def zeroData(self, detector=True, inter=True):
+    def zeroData(self, detector=True, FP=True):
         self.zeroPhaseData()
 
 

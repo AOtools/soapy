@@ -86,7 +86,7 @@ if __name__=="__main__":
 
     #if gui start gui
     if args.gui:
-        simGUI = gui.GUI(sim, useOpenGL=args.gl)
+        simGUI = gui.GUI(sim, useOpenGL=args.gl, verbosity=verbosity)
 
     else:
         runCmdSim(sim, interactive=args.interactive)

@@ -203,7 +203,7 @@ class Sim(object):
         else:
             self.runWfs = self.runWfs_noMP
 
-        # init WFSs
+        # Init WFSs
         logger.info("Initialising WFSs....")
         self.wfss = {}
         self.config.sim.totalWfsData = 0
@@ -218,7 +218,7 @@ class Sim(object):
 
             self.wfss[nwfs]=wfsClass(
                     self.config.sim, self.config.wfss[nwfs],
-                    self.config.atmos, self.config.lgss[nwfs], self.mask)
+                    self.config.atmos, self.mask)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[nwfs].activeSubaps*2
@@ -422,7 +422,7 @@ class Sim(object):
         s = 0
         for proc in xrange(len(wfsList)):
             nwfs = wfsList[proc]
-            #check if due to read out WFS
+            # check if due to read out WFS
             if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
@@ -724,7 +724,7 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             lgs=0
             for nwfs in xrange(self.config.sim.nGS):
-                if self.config.lgss[nwfs].lgsUplink:
+                if self.config.wfss[nwfs].lgs.lgsUplink:
                     self.lgsPsfs[lgs, i] = self.wfss[nwfs].LGS.PSF
                     lgs+=1
 

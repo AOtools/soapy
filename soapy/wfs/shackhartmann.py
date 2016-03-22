@@ -65,10 +65,14 @@ class ShackHartmann(base.WFS):
                 self.config.nxSubaps*self.subapFOVSpacing*
                 (float(self.simConfig.simSize)/self.simConfig.pupilSize)
                 ))
-        # This the pixel scale required for the correct FOV
-        outPxlScale = (float(self.simConfig.simSize)/float(self.scaledEFieldSize)) * (self.simConfig.pxlScale**-1)
-        self.los.calcInitParams(
-                outPxlScale=outPxlScale, nOutPxls=self.scaledEFieldSize)
+
+        # If physical prop, must always be at same pixel scale
+        # If not, can use less phase points for speed
+        if self.config.propagationMode=="Physical":
+            # This the pixel scale required for the correct FOV
+            outPxlScale = (float(self.simConfig.simSize)/float(self.scaledEFieldSize)) * (self.simConfig.pxlScale**-1)
+            self.los.calcInitParams(
+                    outPxlScale=outPxlScale, nOutPxls=self.scaledEFieldSize)
 
 
         # Calculate the subaps that are actually seen behind the pupil mask
@@ -161,12 +165,13 @@ class ShackHartmann(base.WFS):
 
     def initLGS(self):
         super(ShackHartmann, self).initLGS()
-        lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
-        self.lgs = lgsObj(
-                self.simConfig, self.config, self.lgsConfig, self.atmosConfig,
-                nOutPxls=self.subapFFTPadding,
-                outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
-                )
+        if self.lgsConfig.uplink:
+            lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
+            self.lgs = lgsObj(
+                    self.simConfig, self.config, self.lgsConfig, self.atmosConfig,
+                    nOutPxls=self.subapFFTPadding,
+                    outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
+                    )
 
     def allocDataArrays(self):
         """
@@ -230,25 +235,25 @@ class ShackHartmann(base.WFS):
 
         self.staticData = None
 
-        #Make flat wavefront, and run through WFS in iMat mode to turn off features
-        phs = numpy.zeros([self.simConfig.simSize]*2).astype(DTYPE)
+        # Make flat wavefront, and run through WFS in iMat mode to turn off features
+        phs = numpy.zeros([self.simConfig.scrnSize]*2).astype(DTYPE)
         self.staticData = self.frame(
                 phs, iMatFrame=True).copy().reshape(2,self.activeSubaps)
 #######################################################################
 
 
-    def zeroData(self, detector=True, inter=True):
+    def zeroData(self, detector=True, FP=True):
         """
         Sets data structures in WFS to zero.
 
         Parameters:
             detector (bool, optional): Zero the detector? default:True
-            inter (bool, optional): Zero intermediate arrays? default: True
+            FP (bool, optional): Zero intermediate focal plane arrays? default: True
         """
 
         self.zeroPhaseData()
 
-        if inter:
+        if FP:
             self.FPSubapArrays[:] = 0
 
         if detector:
@@ -263,12 +268,20 @@ class ShackHartmann(base.WFS):
             intensity (float): The relative intensity of this frame, is used when multiple WFS frames taken for extended sources.
         '''
 
+        if self.config.propagationMode=="Geometric":
+            # Have to make phase the correct size if geometric prop
+            scaledEField = aoSimLib.zoom(self.los.phase, self.scaledEFieldSize)
+            scaledEField = numpy.exp(1j*scaledEField)
+        else:
+            scaledEField = self.EField
+
         # Apply the scaled pupil mask
-        self.EField *= self.scaledMask
+        scaledEField *= self.scaledMask
+
         # Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.)
                 - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
-        self.cropEField = self.EField[coord:-coord, coord:-coord]
+        self.cropEField = scaledEField[coord:-coord, coord:-coord]
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
@@ -286,7 +299,6 @@ class ShackHartmann(base.WFS):
         self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
                         ,:int(round(self.subapFOVSpacing))] \
                 = self.subapArrays*numpy.exp(1j*(self.tiltFix))
-
 
         if intensity==1:
             self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2

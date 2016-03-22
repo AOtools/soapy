@@ -29,6 +29,7 @@ except NameError:
     xrange = range
 
 RAD2ASEC = 206265.
+ASEC2RAD = 1./RAD2ASEC
 
 class LGS(object):
     '''
@@ -69,6 +70,9 @@ class LGS(object):
 
         self.initFFTs()
 
+    def calcInitParams(self):
+        pass
+
     def initFFTs(self):
         """
         Virtual Method as many LGS implentations will require extra FFTs
@@ -96,7 +100,8 @@ class LGS(object):
                     )
         # Check position not too far from centre. May need more phase!
         maxPos = numpy.array(
-                self.los.metaPupilPos.values()).max()*self.simConfig.pxlScale
+                list(self.los.metaPupilPos.values())).max()
+        maxPos*=self.simConfig.pxlScale
         if 2*(maxPos+self.simConfig.pupilSize/2.) > self.simConfig.simSize:
             logger.warning(
                     "LGS far off-axis - likely need to make simOversize bigger")
@@ -165,7 +170,6 @@ class LGS_Geometric(LGS):
                 THREADS=self.config.fftwThreads,
                 fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                 )
-
 
     def getLgsPsf(self, scrns):
         super(LGS_Geometric, self).getLgsPsf(scrns)
