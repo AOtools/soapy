@@ -37,6 +37,7 @@ try:
     YAML = True
 except ImportError:
     logger.info("Can't import pyyaml. Can only use old python config style")
+    traceback.print_exc()
     YAML = False
 
 # Attributes that can be contained in all configs
