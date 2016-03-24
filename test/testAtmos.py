@@ -11,20 +11,20 @@ class TestAtmos(unittest.TestCase):
         config = confParse.Configurator(os.path.join(CONFIG_PATH,"sh_8x8.py"))
         config.loadSimParams()
 
-        atmos = atmosphere.atmos(config.sim, config.atmos)
+        atmos = atmosphere.atmos(config)
 
     def test_moveAtmos(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH,"sh_8x8.py"))
         config.loadSimParams()
 
-        atmos = atmosphere.atmos(config.sim, config.atmos)
+        atmos = atmosphere.atmos(config)
         atmos.moveScrns()
 
     def test_randomAtmos(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH,"sh_8x8.py"))
         config.loadSimParams()
 
-        atmos = atmosphere.atmos(config.sim, config.atmos)
+        atmos = atmosphere.atmos(config)
         atmos.randomScrns()
 
     def test_ftScrn(self):

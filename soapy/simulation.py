@@ -185,7 +185,7 @@ class Sim(object):
         self.mask = numpy.pad(
                 self.mask, self.config.sim.simPad, mode="constant")
 
-        self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
+        self.atmos = atmosphere.atmos(self.config)
 
         # Find if WFSs should each have own process
         if self.config.sim.wfsMP:
