@@ -108,19 +108,17 @@ RAD2ASEC = 206264.849159
 ASEC2RAD = 1./RAD2ASEC
 
 class WFS(object):
-    ''' A  WFS class.
+    '''
+    A WFS class.
 
-        This is a base class which contains methods to initialise the WFS,
-        and calculate the phase across the WFSs input aperture, given the WFS
-        guide star geometry.
+    This is a base class which contains methods to initialise the WFS,
+    and calculate the phase across the WFSs input aperture, given the WFS
+    guide star geometry.
 
-        Parameters:
-
-
-            simConfig (confObj): The simulation configuration object
-            wfsConfig (confObj): The WFS configuration object
-            atmosConfig (confObj): The atmosphere configuration object
-            mask (ndarray, optional): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
+    Parameters:
+        soapyConfig (ConfigObj): The soapy configuration object
+        nWfs (int): The ID number of this WFS
+        mask (ndarray, optional): An array or size (simConfig.simSize, simConfig.simSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
     def __init__(
@@ -173,7 +171,6 @@ class WFS(object):
             self.mask = aoSimLib.circle(
                     self.simConfig.pupilSize/2., self.simConfig.simSize,
                     )
-
 
 
     def calcInitParams(self, phaseSize=None):
