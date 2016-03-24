@@ -204,13 +204,13 @@ class Sim(object):
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for nwfs in xrange(self.config.sim.nGS):
             try:
-                wfsClass = eval("wfs.{}".format(self.config.wfss[nwfs].type))
+                wfsClass = getattr(wfs, self.config.wfss[nwfs].type)
             except AttributeError:
                 raise confParse.ConfigurationError(
                         "No WFS of type {} found.".format(
                                 self.config.wfss[wfs].type))
 
-            self.wfss[nwfs]=wfsClass(
+            self.wfss[nwfs] = wfsClass(
                     self.config.sim, self.config.wfss[nwfs],
                     self.config.atmos, self.mask)
 
@@ -220,7 +220,7 @@ class Sim(object):
             logger.info("WFS {0}: {1} measurements".format(nwfs,
                      self.wfss[nwfs].activeSubaps*2))
 
-        #init DMs
+        # Init DMs
         logger.info("Initialising {0} DMs...".format(self.config.sim.nDM))
         self.dms = {}
         self.dmActCommands = {}
@@ -230,7 +230,7 @@ class Sim(object):
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
-                dmObj = eval( "DM."+self.config.dms[dm].type)
+                dmObj = getattr(DM, self.config.dms[dm].type)
             except AttributeError:
                 raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
@@ -241,16 +241,16 @@ class Sim(object):
 
             self.dmActCommands[dm] = numpy.empty( (self.config.sim.nIters,
                                                     self.dms[dm].acts) )
-            self.config.sim.totalActs+=self.dms[dm].acts
+            self.config.sim.totalActs += self.dms[dm].acts
 
             logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].acts))
         logger.info("%d total DM Actuators"%self.config.sim.totalActs)
 
 
-        #init Reconstructor
+        # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
-            reconObj = eval("RECON."+self.config.sim.reconstructor)
+            reconObj = getattr(RECON, self.config.sim.reconstructor)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
         self.recon = reconObj(  self.config.sim, self.dms,
@@ -258,34 +258,32 @@ class Sim(object):
                                 )
 
 
-        #init Science Cameras
+        # Init Science Cameras
         logger.info("Initialising {0} Science Cams...".format(self.config.sim.nSci))
         self.sciCams = {}
         self.sciImgs = {}
         self.sciImgNo=0
-        for sci in xrange(self.config.sim.nSci):
-
+        for nSci in xrange(self.config.sim.nSci):
             try:
-                sciObj = eval( "SCI."+self.config.scis[sci].type)
+                sciObj = getattr(SCI, self.config.scis[nSci].type)
             except AttributeError:
-                raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[sci].type))
-            self.sciCams[sci] = sciObj(
-                        self.config.sim, self.config.tel, self.config.atmos,
-                        self.config.scis[sci], self.mask
+                raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[nSci].type))
+            self.sciCams[nSci] = sciObj(
+                        self.config, nSci=nSci, mask=self.mask
                         )
 
-            self.sciImgs[sci] = numpy.zeros( [self.config.scis[sci].pxls]*2 )
+            self.sciImgs[nSci] = numpy.zeros( [self.config.scis[nSci].pxls]*2 )
 
 
-        #Init data storage
+        # Init data storage
         logger.info("Initialise Data Storage...")
         self.initSaveData()
 
-        #Init simulation
+        # Init simulation
         self.buffer = aoSimLib.DelayBuffer()
         self.iters=0
 
-        #Init performance tracking
+        # Init performance tracking
         self.Twfs = 0
         self.Tlgs = 0
         self.Tdm = 0

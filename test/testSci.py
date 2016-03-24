@@ -13,8 +13,8 @@ class TestSci(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        sci = SCI.ScienceCam(
-                config.sim, config.tel, config.atmos, config.scis[0], mask)
+        sci = SCI.PSF(
+                config, 0, mask)
 
     def test_sciFrame(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
@@ -22,8 +22,8 @@ class TestSci(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        sci = SCI.ScienceCam(
-                config.sim, config.tel, config.atmos, config.scis[0], mask)
+        sci = SCI.PSF(
+                config, 0, mask)
 
         sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
 
@@ -33,8 +33,8 @@ class TestSci(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        sci = SCI.ScienceCam(
-                config.sim, config.tel, config.atmos, config.scis[0], mask)
+        sci = SCI.PSF(
+                config, 0, mask)
 
         sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
 
