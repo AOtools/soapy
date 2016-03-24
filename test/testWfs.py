@@ -56,6 +56,24 @@ class TestWfs(unittest.TestCase):
 
         wfs.frame([numpy.zeros((config.sim.scrnSize,)*2)]*config.atmos.scrnNo)
 
+    def testc_initGradWfs(self):
+
+        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        config.loadSimParams()
+
+        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        wfs = WFS.Gradient(config, mask=mask)
+
+    def testd_GradWfsFrame(self):
+        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        config.loadSimParams()
+        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        wfs = WFS.Gradient(config, mask=mask)
+
+        wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
+
     # def teste_initPyrWfs(self):
     #     config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
     #     config.loadSimParams()
