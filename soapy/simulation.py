@@ -233,9 +233,9 @@ class Sim(object):
                 raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
             self.dms[dm] = dmObj(
-                        self.config.sim, self.config.dms[dm],
-                        self.wfss, self.mask
-                        )
+                    self.config, nDm=dm, wfss=self.wfss,
+                    mask=self.mask
+                    )
 
             self.dmActCommands[dm] = numpy.empty( (self.config.sim.nIters,
                                                     self.dms[dm].acts) )
@@ -251,9 +251,10 @@ class Sim(object):
             reconObj = getattr(RECON, self.config.sim.reconstructor)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
-        self.recon = reconObj(  self.config.sim, self.dms,
-                                self.wfss, self.atmos, self.runWfs
-                                )
+        self.recon = reconObj(
+                self.config, self.dms, self.wfss, self.atmos,
+                self.runWfs
+                )
 
 
         # Init Science Cameras
