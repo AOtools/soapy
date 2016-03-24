@@ -13,7 +13,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.DM(config.sim, config.dms[0], [wfs], mask)
 
 
@@ -24,7 +24,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         self.dm = DM.Piezo(config.sim, config.dms[0], [wfs], mask)
 
     def testc_iMatPizeo(self):
@@ -33,7 +33,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.Piezo(config.sim, config.dms[0], [wfs], mask)
 
         dm.makeIMat()
@@ -45,7 +45,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.GaussStack(config.sim, config.dms[0], [wfs], mask)
 
     def teste_iMatGauss(self):
@@ -55,7 +55,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.GaussStack(config.sim, config.dms[0], [wfs], mask)
         dm.makeIMat()
 
@@ -66,7 +66,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.TT(config.sim, config.dms[0], [wfs], mask)
 
     def testg_iMatTT(self):
@@ -76,7 +76,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.TT(config.sim, config.dms[0], [wfs], mask)
         dm.makeIMat()
 
@@ -88,7 +88,7 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.FastPiezo(config.sim, config.dms[0], [wfs], mask)
 
     def testg_iMatFastPiezo(self):
@@ -98,6 +98,6 @@ class TestDM(unittest.TestCase):
 
         mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, mask)
+        wfs = WFS.ShackHartmann(config, mask=mask)
         dm = DM.FastPiezo(config.sim, config.dms[0], [wfs], mask)
         dm.makeIMat()
