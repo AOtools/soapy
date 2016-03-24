@@ -189,7 +189,6 @@ class Sim(object):
 
         # Find if WFSs should each have own process
         if self.config.sim.wfsMP:
-
             logger.info("Setting fftwThreads to 1 as WFS MP")
             for nwfs in xrange(self.config.sim.nGS):
                 self.config.wfss[nwfs].fftwThreads = 1
@@ -211,8 +210,7 @@ class Sim(object):
                                 self.config.wfss[wfs].type))
 
             self.wfss[nwfs] = wfsClass(
-                    self.config.sim, self.config.wfss[nwfs],
-                    self.config.atmos, self.mask)
+                    self.config, nWfs=nwfs, mask=self.mask)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[nwfs].activeSubaps*2

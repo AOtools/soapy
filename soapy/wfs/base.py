@@ -124,11 +124,11 @@ class WFS(object):
     '''
 
     def __init__(
-            self, simConfig, wfsConfig, atmosConfig, mask=None):
+            self, soapyConfig, nWfs=0, mask=None):
 
-        self.simConfig = simConfig
-        self.config = self.wfsConfig = wfsConfig # For compatability
-        self.atmosConfig = atmosConfig
+        self.simConfig = soapyConfig.sim
+        self.config = self.wfsConfig = soapyConfig.wfss[nWfs] # For compatability
+        self.atmosConfig = soapyConfig.atmos
         self.lgsConfig = self.config.lgs
 
         # If supplied use the mask
