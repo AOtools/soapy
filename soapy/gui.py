@@ -96,7 +96,7 @@ CMAP={'mode': 'rgb',
             (1., (255, 26, 26, 255))]}
 
 class GUI(QtGui.QMainWindow):
-    def __init__(self, sim, useOpenGL=False):
+    def __init__(self, sim, useOpenGL=False, verbosity=None):
         self.app = QtGui.QApplication([])
         QtGui.QMainWindow.__init__(self)
 
@@ -161,6 +161,8 @@ class GUI(QtGui.QMainWindow):
         #sim.readParams()
         sim.config.calcParams()
         self.config = self.sim.config
+        if verbosity is not None:
+            self.config.sim.verbosity = verbosity
         self.initPlots()
         self.show()
         self.init()
@@ -211,7 +213,7 @@ class GUI(QtGui.QMainWindow):
             self.phasePlots[wfs] = self.makeImageItem(
                     self.ui.phaseLayout, self.config.sim.simSize)
 
-            if self.config.lgss[wfs].uplink == 1:
+            if ((self.config.wfss[wfs].lgs is not None) and (self.config.wfss[wfs].lgs.uplink == 1)):
                 self.lgsPlots[wfs] = self.makeImageItem(
                         self.ui.lgsLayout, self.config.sim.pupilSize)
 
@@ -249,7 +251,7 @@ class GUI(QtGui.QMainWindow):
             self.gainSpins[dm].valueChanged.connect(
                                                 partial(self.gainChanged,dm))
 
-        self.ui.progressBar.setValue( 100)
+        self.ui.progressBar.setValue(100)
         self.statsThread = StatsThread(self.sim)
 
     def update(self):
@@ -286,7 +288,7 @@ class GUI(QtGui.QMainWindow):
                     self.phasePlots[wfs].setImage(
                             wfsPhase, lut=self.LUT, levels=scaleValues)
                     self.phasePlots[wfs].getViewBox().setRange(
-                            QtCore.QRectF(0, 0, self.sim.wfss[wfs].phaseSize, self.sim.wfss[wfs].phaseSize))
+                            QtCore.QRectF(0, 0, wfsPhase.shape[0], wfsPhase.shape[1]))
 
                 if numpy.any(plotDict["lgsPsf"][wfs])!=None:
                     self.lgsPlots[wfs].setImage(
@@ -381,7 +383,7 @@ class GUI(QtGui.QMainWindow):
                                         origin="lower")
             for wfs in range(self.config.sim.nGS):
                 if self.sim.config.wfss[wfs].GSHeight>self.sim.config.atmos.scrnHeights[i] or self.sim.config.wfss[wfs].GSHeight==0:
-                    cent = (self.sim.wfss[wfs].getMetaPupilPos(
+                    cent = (self.sim.wfss[wfs].los.getMetaPupilPos(
                             self.sim.config.atmos.scrnHeights[i])
                             *self.sim.config.sim.pxlScale
                             +self.config.sim.pupilSize)
@@ -403,7 +405,7 @@ class GUI(QtGui.QMainWindow):
                     self.resultPlot.canvas.axes[i].set_xticks([])
 
             for sci in range(self.config.sim.nSci):
-                cent = self.sim.sciCams[sci].getMetaPupilPos(
+                cent = self.sim.sciCams[sci].los.getMetaPupilPos(
                         self.sim.config.atmos.scrnHeights[i])
                 cent*=self.sim.config.sim.pxlScale
                 cent+=self.config.sim.pupilSize
@@ -455,11 +457,11 @@ class GUI(QtGui.QMainWindow):
             del plt
 
         self.strehlPlts=[]
-        if self.config.sim.nSci>0:
-            self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[0],
-                    linestyle=":", color=self.colorList[self.colorNo]))
-            self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[0],
-                 color=self.colorList[self.colorNo]))
+        for sci in xrange(self.config.sim.nSci):
+            self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[sci],
+                    linestyle=":", color=self.colorList[(self.colorNo+sci) % len(self.colorList)]))
+            self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[sci],
+                 color=self.colorList[(self.colorNo+sci) % len(self.colorList)]))
         self.resultPlot.canvas.draw()
 
     def updateStats(self, itersPerSec, timeRemaining):

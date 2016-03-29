@@ -202,7 +202,7 @@ class FFT(object):
         """
         if self.FFTMODE=="pyfftw":
 
-            if data!=None:
+            if data is not None:
                 self.inputData[:] = data
             if self.direction=="FORWARD":
                 return self.fftwPlan()
@@ -211,7 +211,7 @@ class FFT(object):
 
         elif self.FFTMODE=="gpu":
 
-            if data!=None:
+            if data is not None:
                 self.inputData[:] = data
 
             inputData_dev = self.reikna_thread.to_device(self.inputData)
@@ -226,7 +226,7 @@ class FFT(object):
 
 
         elif self.FFTMODE=="scipy":
-            if data!=None:
+            if data is not None:
                  self.inputData = data
             if self.direction=="FORWARD":
                 fft = fftpack.fftn(self.inputData,

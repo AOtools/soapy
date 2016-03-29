@@ -30,8 +30,7 @@ Examples:
 
         from soapy import confParse, atmosphere
 
-        config = confParse.Configurator("sh_8x8.py")
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig
 
     Initialise the amosphere (creating or loading phase screens)::
 
@@ -104,6 +103,8 @@ class atmos:
 
         atmosConfig.normScrnStrengths = atmosConfig.scrnStrengths/(
                             atmosConfig.scrnStrengths[:self.scrnNo].sum())
+        self.atmosConfig.scrnHeights = self.atmosConfig.scrnHeights[
+                    :self.atmosConfig.scrnNo]
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *atmosConfig.normScrnStrengths)**(-3./5.) )
@@ -227,8 +228,8 @@ class atmos:
                                         numpy.arange(self.wholeScrnSize),
                                         numpy.arange(self.wholeScrnSize),
                                         self.wholeScrns[i])#, copy=True)
-            self.xCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][0]
-            self.yCoords[i] = numpy.arange(self.scrnSize) + self.scrnPos[i][1]
+            self.xCoords[i] = numpy.arange(self.scrnSize).astype('float') + self.scrnPos[i][0]
+            self.yCoords[i] = numpy.arange(self.scrnSize).astype('float') + self.scrnPos[i][1]
 
 
     def saveScrns(self, DIR):
@@ -275,7 +276,7 @@ class atmos:
                                                 int(-self.scrnPos[i][0]),axis=0)
                 self.scrnPos[i][0] = 0
                 #and update the coords...
-                self.xCoords[i] = numpy.arange(self.scrnSize)
+                self.xCoords[i] = numpy.arange(self.scrnSize).astype('float')
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
@@ -287,7 +288,7 @@ class atmos:
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                             int(self.wholeScrnSize-self.scrnPos[i][0]-self.scrnSize),axis=0)
                 self.scrnPos[i][0] = self.wholeScrnSize-self.scrnSize
-                self.xCoords[i] = numpy.arange(self.scrnSize)+self.scrnPos[i][0]
+                self.xCoords[i] = numpy.arange(self.scrnSize).astype('float')+self.scrnPos[i][0]
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
@@ -298,7 +299,7 @@ class atmos:
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                                 int(-self.scrnPos[i][1]),axis=1)
                 self.scrnPos[i][1] = 0
-                self.yCoords[i] = numpy.arange(self.scrnSize)
+                self.yCoords[i] = numpy.arange(self.scrnSize).astype('float')
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
@@ -310,7 +311,7 @@ class atmos:
                     int(self.wholeScrnSize-self.scrnPos[i][1]-self.scrnSize),
                                                                 axis=1)
                 self.scrnPos[i][1] = self.wholeScrnSize-self.scrnSize
-                self.yCoords[i] = numpy.arange(self.scrnSize)+self.scrnPos[i][1]
+                self.yCoords[i] = numpy.arange(self.scrnSize).astype('float')+self.scrnPos[i][1]
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
@@ -319,10 +320,10 @@ class atmos:
 
             scrns[i] = self.interpScrns[i](self.xCoords[i],self.yCoords[i])
 
-            #Move window coordinates.
-            self.scrnPos[i] = self.scrnPos[i]+self.windV[i]
-            self.xCoords[i] += self.windV[i][0]
-            self.yCoords[i] += self.windV[i][1]
+            # Move window coordinates.
+            self.scrnPos[i] = self.scrnPos[i] + self.windV[i]
+            self.xCoords[i] += self.windV[i][0].astype('float')
+            self.yCoords[i] += self.windV[i][1].astype('float')
 
             #remove piston from phase screens
             scrns[i] -= scrns[i].mean()

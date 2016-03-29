@@ -1,0 +1,80 @@
+# Example configuration file for AO system with single, on-axis LGS.
+# LGS features realistic uplink propagation, so a NGS TT sensor also present
+
+simName: sh_8x8_lgsUp
+pupilSize: 128
+nGS: 2
+nDM: 2
+nSci: 1
+nIters: 5000
+loopTime: 0.0025
+reconstructor: MVM_SeparateDMs
+
+verbosity: 2
+
+saveCMat: False
+saveSlopes: True
+saveDmCommands: False
+saveLgsPsf: False
+saveSciPsf: True
+
+Atmosphere:
+  scrnNo:  4
+  scrnHeights: [0,5000,10000,15000]
+  scrnStrengths: [0.5,0.3,0.1,0.1]
+  windDirs: [0,45,90,135]
+  windSpeeds: [10,10,15,20]
+  wholeScrnSize: 2048
+  r0: 0.16
+
+Telescope:
+  telDiam: 8
+  obsDiam: 1.1
+  mask: circle
+
+WFS:
+  - ShackHartmann:
+      GSPosition: [0,0]
+      GSHeight: 0
+      GSMag: 8
+      nxSubaps: 2
+      pxlsPerSubap: 10
+      subapFOV: 2.0
+      wavelength: 600e-9
+
+  - ShackHartmann:
+      GSPosition: [0, 0]
+      GSHeight: 90000
+      GSMag: 8
+      nxSubaps: 8
+      pxlsPerSubap: 10
+      subapFOV: 5.0
+      wavelength: 600e-9
+      removeTT: True
+      lgs:
+        propagationMode: Geometric
+        uplink: True
+        pupilDiam: 0.3
+        wavelength: 600e-9
+        height:   90e3
+
+DM:
+  - TT:
+      nxActuators: 2
+      wfs: 0
+      iMatValue: 1
+      gain: 0.6
+
+  - Piezo:
+      nxActuators: 9
+      svdConditioning: 0.07
+      gain: 0.6
+      iMatValue: 0.2
+      wfs: 1
+
+Science:
+  - PSF:
+      position: [0,0]
+      FOV: 1.0
+      wavelength: 1.65e-6
+      pxls: 64

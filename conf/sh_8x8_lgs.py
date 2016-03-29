@@ -12,13 +12,13 @@ simConfiguration = {
 "Sim":{
     "simName"       :  "sh_8x8_lgs",
     "logfile"       :   "sh_8x8_lgs.log",
-    "pupilSize"     :   128, 
+    "pupilSize"     :   128,
     "nGS"           :   2,
     "nDM"           :   2,
     "nSci"          :   1,
     "nIters"        :   5000,
     "loopTime"      :   1/400.0,
-    "reconstructor" :   "MVM_SeparateDMs", 
+    "reconstructor" :   "MVM_SeparateDMs",
 
     "verbosity"     :   2,
 
@@ -54,7 +54,7 @@ simConfiguration = {
     "subapFOV"      :   [3., 2.5],
     "fftOversamp"   :   [3, 3],
     "wavelength"    :   [600e-9, 589e-9],
-    "lgs"           :   [False, False],
+    "lgs"           :   [None, None],
     "centMethod"    :   ["brightestPxl", "brightestPxl"],
     "removeTT"      :   [False, True],
 
@@ -62,7 +62,7 @@ simConfiguration = {
 
 "LGS":{
 
-    },
+},
 
 "DM":{
     "type"              :   ["TT",     "Piezo"],
@@ -82,6 +82,3 @@ simConfiguration = {
     "fftOversamp"   :   [2],
     }
 }
-
-
-

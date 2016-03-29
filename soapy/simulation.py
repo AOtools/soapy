@@ -132,8 +132,7 @@ class Sim(object):
         if configFile:
             self.configFile = configFile
 
-        self.config = confParse.Configurator(self.configFile)
-        self.config.loadSimParams()
+        self.config = confParse.loadSoapyConfig(self.configFile)
         logger.statusMessage(
                 0, 1,"Loaded configuration file successfully!" )
 
@@ -157,7 +156,7 @@ class Sim(object):
         Initialises and passes relevant data to sim objects. This does important pre-run tasks, such as creating or loading phase screens, determining WFS geometry, setting propagation modes and pre-allocating data arrays used later in the simulation.
         '''
 
-        #Read params if they haven't been read before
+        # Read params if they haven't been read before
         try:
             self.config.sim.pupilSize
         except:
@@ -167,8 +166,7 @@ class Sim(object):
         logger.setLoggingFile(self.config.sim.logfile)
         logger.info("Starting Sim: {}".format(self.getTimeStamp()))
 
-        #calculate some params from read ones
-        #calculated
+        # Calculate some params from read ones
         self.config.calcParams()
 
         #Init Pupil Mask
@@ -189,7 +187,7 @@ class Sim(object):
 
         self.atmos = atmosphere.atmos(self.config.sim, self.config.atmos)
 
-        #Find if WFSs should each have own process
+        # Find if WFSs should each have own process
         if self.config.sim.wfsMP:
 
             logger.info("Setting fftwThreads to 1 as WFS MP")
@@ -199,7 +197,7 @@ class Sim(object):
         else:
             self.runWfs = self.runWfs_noMP
 
-        #init WFSs
+        # Init WFSs
         logger.info("Initialising WFSs....")
         self.wfss = {}
         self.config.sim.totalWfsData = 0
@@ -214,7 +212,7 @@ class Sim(object):
 
             self.wfss[nwfs]=wfsClass(
                     self.config.sim, self.config.wfss[nwfs],
-                    self.config.atmos, self.config.lgss[nwfs], self.mask)
+                    self.config.atmos, self.mask)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[nwfs].activeSubaps*2
@@ -223,9 +221,7 @@ class Sim(object):
                      self.wfss[nwfs].activeSubaps*2))
 
         #init DMs
-        logger.info("Initialising DMs...")
-
-
+        logger.info("Initialising {0} DMs...".format(self.config.sim.nDM))
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
@@ -263,12 +259,17 @@ class Sim(object):
 
 
         #init Science Cameras
-        logger.info("Initialising Science Cams...")
+        logger.info("Initialising {0} Science Cams...".format(self.config.sim.nSci))
         self.sciCams = {}
         self.sciImgs = {}
         self.sciImgNo=0
         for sci in xrange(self.config.sim.nSci):
-            self.sciCams[sci] = SCI.scienceCam(
+
+            try:
+                sciObj = eval( "SCI."+self.config.scis[sci].type)
+            except AttributeError:
+                raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[sci].type))
+            self.sciCams[sci] = sciObj(
                         self.config.sim, self.config.tel, self.config.atmos,
                         self.config.scis[sci], self.mask
                         )
@@ -281,7 +282,7 @@ class Sim(object):
         self.initSaveData()
 
         #Init simulation
-        self.delay = aoSimLib.FixedLengthBuffer(self.config.sim.loopDelay)
+        self.buffer = aoSimLib.DelayBuffer()
         self.iters=0
 
         #Init performance tracking
@@ -415,7 +416,7 @@ class Sim(object):
         s = 0
         for proc in xrange(len(wfsList)):
             nwfs = wfsList[proc]
-            #check if due to read out WFS
+            # check if due to read out WFS
             if loopIter:
                 read=False
                 if (int(float(self.config.sim.loopTime*loopIter)
@@ -524,7 +525,7 @@ class Sim(object):
             self.dmCommands[:] = self.recon.reconstruct(self.slopes)
 
         # Delay the dmCommands if loopDelay is configured
-        self.dmCommands = self.delay(self.dmCommands)
+        self.dmCommands = self.buffer.delay(self.dmCommands, self.config.sim.loopDelay)
 
         # Get dmShape from closed loop DMs
         self.closedCorrection += self.runDM(
@@ -717,7 +718,7 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             lgs=0
             for nwfs in xrange(self.config.sim.nGS):
-                if self.config.lgss[nwfs].lgsUplink:
+                if self.config.wfss[nwfs].lgs.lgsUplink:
                     self.lgsPsfs[lgs, i] = self.wfss[nwfs].LGS.PSF
                     lgs+=1
 
@@ -727,7 +728,7 @@ class Sim(object):
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
                 # Record WFE residual
-                res = self.sciCams[sci].residual
+                res = self.sciCams[sci].los.residual
                 # Remove piston first
                 res -= res.sum()/self.mask.sum()
                 res *= self.mask
@@ -958,7 +959,7 @@ class Sim(object):
                         pass
 
                     try:
-                        lgsPsf[i] = self.wfss[i].LGS.psf1.copy()
+                        lgsPsf[i] = self.wfss[i].lgs.psf.copy()
                     except AttributeError:
                         lgsPsf[i] = None
                         pass
@@ -989,7 +990,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].residual.copy()*self.mask
+                        residual[i] = self.sciCams[i].los.residual.copy()*self.mask
                     except AttributeError:
                         residual[i] = None
 

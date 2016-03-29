@@ -12,14 +12,14 @@ simConfiguration = {
 "Sim":{
     "simName"       :  "sh_8x8_lgs",
     "logfile"       :   "sh_8x8_lgs.log",
-    "pupilSize"     :   128, 
+    "pupilSize"     :   128,
     "nGS"           :   1,
     "nDM"           :   2,
     "nSci"          :   1,
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
     "gain"          :   0.6,
-    "reconstructor" :   "MVM", 
+    "reconstructor" :   "MVM",
 
     "verbosity"     :   2,
 
@@ -64,7 +64,7 @@ simConfiguration = {
     "uplink"            :   [False],
     "height"            :   [90e3],
     "elongationDepth"   :  [8e3],
-    "elongationLayers"  : [8],
+    "elongationLayers"  :   [8],
     "launchPosition"    :   [(0,0)],
     },
 
@@ -88,6 +88,3 @@ simConfiguration = {
 
 
 }
-
-
-
