@@ -35,7 +35,7 @@ class Gradient(base.WFS):
         self.findActiveSubaps()
 
         # Normalise gradient measurement to 1 radian
-        self.subapDiam = self.telDiam/self.wfsConfig.nxSubaps
+        self.subapDiam = self.telConfig.telDiam/self.wfsConfig.nxSubaps
 
         amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
         # NEEDS FIXED - USEFUL FOR ONE SCENARIO (apr)
@@ -88,11 +88,11 @@ class Gradient(base.WFS):
         '''
 
         # Apply the scaled pupil mask
-        self.wfsPhase *= self.mask
+        self.los.phase *= self.mask
 
         # Now cut out only the phase across the pupilSize
         coord = self.simConfig.simPad
-        self.pupilPhase = self.wfsPhase[coord:-coord, coord:-coord]
+        self.pupilPhase = self.los.phase[coord:-coord, coord:-coord]
 
         #create an array of individual subap phase
         for i, (x,y) in enumerate(self.subapCoords):

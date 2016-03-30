@@ -45,13 +45,15 @@ class LGS(object):
     '''
 
     def __init__(
-            self, simConfig, wfsConfig, lgsConfig, atmosConfig,
-            nOutPxls=None, outPxlScale=None):
+            self, wfsConfig, soapyConfig, nOutPxls=None, outPxlScale=None):
 
-        self.simConfig = simConfig
+        # The LGS WFS config
         self.wfsConfig = wfsConfig
-        self.config = lgsConfig
-        self.atmosConfig = atmosConfig
+        self.config = wfsConfig.lgs
+
+        self.soapyConfig = soapyConfig
+        self.simConfig = soapyConfig.sim
+        self.atmosConfig = soapyConfig.atmos
 
         self.outPxlScale = outPxlScale
         self.nOutPxls = nOutPxls
@@ -85,7 +87,7 @@ class LGS(object):
         """
         # Init the line of sight object for light propation through turbulence
         self.los = lineofsight.LineOfSight(
-                    self.config, self.simConfig, self.atmosConfig,
+                    self.config, self.soapyConfig,
                     propagationDirection="up", nOutPxls=self.losNOutPxls,
                     mask=self.losMask, outPxlScale=self.losOutPxlScale,
                     )
