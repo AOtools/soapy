@@ -5,6 +5,7 @@ The Shack Hartmann WFS accelerated using numba cuda
 import numpy
 from numba import cuda
 
+from .. import AOFFT, aoSimLib, LGS, logger
 from . import shackhartmann
 from .. import gpulib
 
@@ -46,6 +47,7 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
             self.scaledEField_gpu = cuda.to_device(self.los.EField)
 
         scaledEField = self.scaledEField_gpu.copy_to_host()
+
         # Copied from shackhartmann CPU verision
         ########################################
         # Apply the scaled pupil mask
@@ -66,7 +68,7 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
                                     int(y):
                                     int(y+self.subapFOVSpacing)]
 
-        #do the fft to all subaps at the same time
+        # do the fft to all subaps at the same time
         # and convert into intensity
         self.FFT.inputData[:] = 0
         self.FFT.inputData[:,:int(round(self.subapFOVSpacing))

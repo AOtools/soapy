@@ -23,8 +23,8 @@ def zoomToEField(data, zoomArray, threadsPerBlock=None):
     tpb = (threadsPerBlock, )*2
     # blocks per grid
     bpg = (
-            numpy.ceil(float(zoomArray.shape[0])/threadsPerBlock),
-            numpy.ceil(float(zoomArray.shape[1])/threadsPerBlock)
+            int(numpy.ceil(float(zoomArray.shape[0])/threadsPerBlock)),
+            int(numpy.ceil(float(zoomArray.shape[1])/threadsPerBlock))
             )
 
     zoomToEField_kernel[tpb, bpg](data, zoomArray)
@@ -59,3 +59,25 @@ def zoomToEField_kernel(data, zoomArray):
     phsVal = a1 + yGrad*(y-y1)
 
     zoomArray[i,j] = math.cos(phsVal) + 1j * math.sin(phsVal)
+
+def maskCrop2Subaps(subapArrays, eField, simPad, nxSubaps, subapCoords):
+    if threadsPerBlock is None:
+        threadsPerBlock = CUDA_TPB
+
+    tpb = (threadsPerBlock, )*3
+    # blocks per grid
+    bpg = (
+            int(numpy.ceil(float(subapArrays.shape[0])/threadsPerBlock)),
+            int(numpy.ceil(float(subapArrays.shape[1])/threadsPerBlock)),
+            int(numpy.ceil(float(subapArrays.shape[2])/threadsPerBlock))
+            )
+
+    maskCrop2Subaps_kernel[tpb, bpg](subap, eField, simPad, nxSubaps)
+
+    return subapArray
+
+def maskCrop2Subaps_kernel(subapArrays, eField, simPad, nxSubaps, subapCoords):
+    i, j, k = cuda.grid(3)
+
+    # Get coords on input eField
+    x = simPad + nxSubaps*
