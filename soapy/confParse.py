@@ -313,9 +313,6 @@ class YAML_Configurator(PY_Configurator):
                 self.wfss[nWfs].lgs = (LgsConfig(None))
                 self.wfss[nWfs].lgs.loadParams(lgsDict)
 
-            print("LGS:{}".format(self.wfss[nWfs].lgs))
-
-
         for nDm in range(self.sim.nDM):
             logger.debug("Load DM {} Params".format(nDm))
             dmType = list(self.configDict['DM'][nDm].keys())[0]
@@ -427,6 +424,9 @@ class ConfigObj(object):
             self.__dict__[name] = value
         else:
             raise ConfigurationError("'{}' Attribute not a configuration parameter".format(name))
+
+    def __repr__(self):
+        return str(dict(self))
 
 class SimConfig(ConfigObj):
     """
