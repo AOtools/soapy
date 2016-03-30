@@ -124,6 +124,7 @@ class WFS(object):
     def __init__(
             self, soapyConfig, nWfs=0, mask=None):
 
+        self.soapyConfig = soapyConfig
         self.config = self.wfsConfig = soapyConfig.wfss[nWfs] # For compatability
         self.simConfig = soapyConfig.sim
         self.telConfig = soapyConfig.tel
@@ -188,7 +189,7 @@ class WFS(object):
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
         self.los = lineofsight.LineOfSight(
-                self.config, self.simConfig, self.atmosConfig,
+                self.config, self.soapyConfig,
                 propagationDirection="down")
 
     def initLGS(self):
@@ -206,9 +207,7 @@ class WFS(object):
         # or geometric propagation.
         if self.lgsConfig.uplink:
             lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
-            self.lgs = lgsObj(
-                    self.simConfig, self.config, self.lgsConfig,
-                    self.atmosConfig)
+            self.lgs = lgsObj(self.config, self.soapyConfig)
         else:
             self.lgs = None
 

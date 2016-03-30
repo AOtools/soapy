@@ -29,6 +29,7 @@ class PSF(object):
 
     def __init__(self, soapyConfig, nSci=0, mask=None):
 
+        self.soapyConfig = soapyConfig
         self.simConfig = soapyConfig.sim
         self.telConfig = soapyConfig.tel
         self.config = self.sciConfig = soapyConfig.scis[nSci] # For compatability
@@ -49,7 +50,7 @@ class PSF(object):
 
         # Init line of sight - Get the phase at the right size for the FOV
         self.los = lineofsight.LineOfSight(
-                self.config, self.simConfig, self.atmosConfig,
+                self.config, self.soapyConfig,
                 propagationDirection="down")
 
         # Make a default circular mask of the pupil size if not provided

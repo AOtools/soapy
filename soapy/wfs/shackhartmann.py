@@ -167,7 +167,7 @@ class ShackHartmann(base.WFS):
             lgsObj = getattr(
                     LGS, "LGS_{}".format(self.lgsConfig.propagationMode))
             self.lgs = lgsObj(
-                    self.simConfig, self.config, self.lgsConfig, self.atmosConfig,
+                    self.config, self.soapyConfig,
                     nOutPxls=self.subapFFTPadding,
                     outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
                     )

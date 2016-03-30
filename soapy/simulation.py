@@ -590,7 +590,7 @@ class Sim(object):
         print("\n\nTime moving atmosphere: %0.2f"%self.Tatmos)
         print("Time making IMats and CMats: %0.2f"%self.Timat)
         print("Time in WFS: %0.2f"%self.Twfs)
-        print ("\t of which time spent in LGS: %0.2f"%self.Tlgs)
+        print ("\t of which time spent in : %0.2f"%self.Tlgs)
         print("Time in Reconstruction: %0.2f"%self.recon.Trecon)
         print("Time in DM: %0.2f"%self.Tdm)
         print("Time making science image: %0.2f"%self.Tsci)
