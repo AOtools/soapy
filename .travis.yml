@@ -1,43 +1,34 @@
 language: python
 sudo: false
-
 branches:
-    only:
-        - master
-        - lineOfSightObj
-        - numba
+  only:
+  - master
+  - lineOfSightObj
+  - numba
 python:
-  - 2.7
-  - 3.5
-
+- 2.7
+- 3.5
 addons:
   apt:
     packages:
-      - libfftw3-dev
-
-# Setup anaconda
+    - libfftw3-dev
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda2/bin:$PATH
-  - ls
-  - conda update --yes conda
-  # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
-  #  - sudo rm -rf /dev/shm
-  #- sudo ln -s /run/shm /dev/shm
-# Install packages
+- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+- chmod +x miniconda.sh
+- ./miniconda.sh -b
+- export PATH=/home/travis/miniconda2/bin:$PATH
+- ls
+- conda update --yes conda
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose astropy numba
-  - python setup.py install
-  - pip install pyfftw
-  - pip install codecov
-
-# Use if anything needs to be done before tests are run
-# before_script:
-#     cd test
+- conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose astropy
+  numba
+- python setup.py install
+- pip install pyfftw
+- pip install codecov
 script:
-    - nosetests --verbosity=3 --with-coverage --cover-package=soapy test/
-
+- nosetests --verbosity=3 --with-coverage --cover-package=soapy test/
 after_success:
-  - codecov
+- codecov
+notifications:
+  slack:
+    secure: W2egnr70ShnIIhYi38CAOWaY8QMCkRB6T43UqqBjuHsoXiU9Sx92VNuFFwAoXjNhLn5T7zax1Q2sSwUP9WrYNC+jbjaZlGI3EY2j3/POCRd4wASZEkW1nD7TsITCVZxnTbBOU6nF69YhyTCx69R/tjbViYqbzcwMlEVb8CN7v6vtpS27eeaK9eUAmkcoXtxlQKdtMjyoPt/aq6ep/+KQPVPJSvk4de0/eq70HfHi1QKGq2aaWlgxsLO4XrVCf6WDadRIYrpfIHZE13+iyT0LNadYp+0+xLEcyy8NbcYwdMzQnDG43967qhDYauGxjKqn408Ocv4O0c2jUBqcPC+KcgRlYWTzqMpDBSiZ4smRX8Gw/jq+xWQHy43XWnbz+yRHjJ/5ztxg1KtUiFJEULbSi5Iusi7SRnnZ4u9OjGuS43qDn2Nw6espvoFrtD1zw95wPvvyN3CNalfdjC1Z04/v1O9/EA3VV7Ov6GjXPgTQu1zOhCv8mWyTOCzo+L2vhS8Y12jSOU3swnStfj9O0TKs/HQrzBoMFSLAyodiLNsRyajlYEJmEOtiyyNf/vaJLQp2yERQdkI+UqV2i8btpWkOPmKd/am8V38yTR08FRkBdS9BkQ8cBlncmPRwz7HrCxcTOw7rfOr2/OMNnZZH1xx0Li7IPFxY4cqWCR3VAH2vDmA=
