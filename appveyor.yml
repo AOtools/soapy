@@ -34,3 +34,9 @@ install:
 
 test_script:
   - nosetests --verbosity=3 test/
+
+notifications:
+  - provider: Slack
+    auth_token:
+      secure: 5vJXGvK/N3QwoJETf9FLT5FkGoGgxmjpTLfxvV/3+jD/oOmSbWly9LUpoivTdNeEP4ZS6Jo5B/QBiwdeOaxteg==
+    channel: general
