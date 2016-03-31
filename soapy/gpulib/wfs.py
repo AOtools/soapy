@@ -60,7 +60,7 @@ def zoomToEField_kernel(data, zoomArray):
 
     zoomArray[i,j] = math.cos(phsVal) + 1j * math.sin(phsVal)
 
-def maskCrop2Subaps(subapArrays, eField, simPad, nxSubaps, subapCoords):
+def maskCrop2Subaps(subapArrays, eField, mask, simPad, subapCoords, threadsPerBlock=None):
     if threadsPerBlock is None:
         threadsPerBlock = CUDA_TPB
 
@@ -72,12 +72,29 @@ def maskCrop2Subaps(subapArrays, eField, simPad, nxSubaps, subapCoords):
             int(numpy.ceil(float(subapArrays.shape[2])/threadsPerBlock))
             )
 
-    maskCrop2Subaps_kernel[tpb, bpg](subap, eField, simPad, nxSubaps)
+    maskCrop2Subaps_kernel[tpb, bpg](subapArrays, eField, mask, simPad, subapCoords)
 
-    return subapArray
+    return subapArrays
 
-def maskCrop2Subaps_kernel(subapArrays, eField, simPad, nxSubaps, subapCoords):
+@cuda.jit
+def maskCrop2Subaps_kernel(subapArrays, eField, mask, simPad, subapCoords):
+    # These are subapIndex, x subap pixel, y subap pixel
     i, j, k = cuda.grid(3)
 
-    # Get coords on input eField
-    x = simPad + nxSubaps*
+    # Get coords of subap vertex on input eField
+    x = subapCoords[i, 0] + simPad
+    y = subapCoords[i, 1] + simPad
+
+    # Get coord of specific subap point
+    x += j
+    y += k
+
+    # Turn to ints for indexing
+    x = int(x)
+    y = int(y)
+
+    # Put value in if mask says its a valid point
+    if mask[x, y] == 1:
+        subapArrays[i, j, k] = eField[x, y]
+    else:
+        subapArrays[i, j, k] = 0

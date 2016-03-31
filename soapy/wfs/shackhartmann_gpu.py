@@ -26,6 +26,13 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
         self.scaledPhase_gpu = cuda.device_array((self.scaledEFieldSize,)*2, dtype=DTYPE)
         self.scaledEField_gpu = cuda.device_array((self.scaledEFieldSize,)*2, dtype=CDTYPE)
 
+        # Data that must be transferred to the GPU
+        self.scaledMask_gpu = cuda.to_device(self.scaledMask)
+        self.scaledSubapCoords = numpy.round(
+                self.subapCoords * self.subapFOVSpacing/self.PPSpacing
+                ).astype('int32')
+        self.subapCoords = cuda.to_device(self.scaledSubapCoords)
+
     def calcFocalPlane(self, intensity=1):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
@@ -48,17 +55,25 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
 
         scaledEField = self.scaledEField_gpu.copy_to_host()
 
+        self.subapArrays_gpu = gpulib.wfs.maskCrop2Subaps(
+                self.subapArrays_gpu, self.scaledEField_gpu,
+                self.scaledMask_gpu, self.simConfig.simPad, self.subapCoords)
+
+
         # Copied from shackhartmann CPU verision
         ########################################
-        # Apply the scaled pupil mask
-        scaledEField *= self.scaledMask
+        print(self.subapArrays_gpu)
+        # self.subapArrays = self.subapArrays_gpu.copy_to_host()
 
-        # Now cut out only the eField across the pupilSize
+        # Apply the scaled pupil mask
+        # scaledEField *= self.scaledMask
+        #
+        # # Now cut out only the eField across the pupilSize
         coord = round(int(((self.scaledEFieldSize/2.)
                 - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
         self.cropEField = scaledEField[coord:-coord, coord:-coord]
 
-        #create an array of individual subap EFields
+        # create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
             x,y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)

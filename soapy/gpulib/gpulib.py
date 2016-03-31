@@ -135,24 +135,3 @@ def phs2EField_kernel(phase, EField):
     i, j = cuda.grid(2)
 
     EField[i, j] = math.exp(phs[i, j])
-
-def makeSubapArrays(EField, subapArrays, nxSubaps, offset=(0,0)):
-
-    if threadsPerBlock is None:
-        threadsPerBlock = CUDA_TPB
-
-    tpb = (threadsPerBlock, )*3
-    # blocks per grid
-    bpg = (
-            numpy.ceil(float(subapArrays.shape[0])/tpb),
-            numpy.ceil(float(subapArrays.shape[1])/tpb),
-            numpy.ceil(float(subapArrays.shape[2])/tpb)
-            )
-
-    makeSubapArrays_kernel(EField, subapArrays, nxSubaps, offset)
-
-    return subapArrays
-
-def makeSubapArrays_kernel(EField, subapArrays, offset):
-
-    i, j, k = cuda.grid(3)
