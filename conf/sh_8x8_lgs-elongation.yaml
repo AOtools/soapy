@@ -33,38 +33,41 @@ Telescope:
   mask: circle
 
 WFS:
-  - ShackHartmann:
-      GSPosition: [0, 0]
-      GSHeight: 90000
-      GSMag: 8
-      nxSubaps: 8
-      pxlsPerSubap: 10
-      subapFOV: 5.0
+  0:
+    type: ShackHartmann
+    GSPosition: [0, 0]
+    GSHeight: 90000
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 5.0
+    wavelength: 600e-9
+    lgs:
+      uplink: False
+      pupilDiam: 0.3
       wavelength: 600e-9
-      lgs:
-        uplink: False
-        pupilDiam: 0.3
-        wavelength: 600e-9
-        height:   90000
-        elongationDepth: 12000
-        elongationLayers: 10
-        launchPosition: [1, 0]
-        
-DM:
-  - TT:
-      nxActuators: 2
-      iMatValue: 1
-      gain: 0.6
+      height:   90000
+      elongationDepth: 12000
+      elongationLayers: 10
+      launchPosition: [1, 0]
 
-  - Piezo:
-      nxActuators: 9
-      svdConditioning: 0.07
-      gain: 0.6
-      iMatValue: 0.2
+DM:
+  0:
+    type: TT
+    nxActuators: 2
+    iMatValue: 1
+    gain: 0.6
+
+  1:
+    type: Piezo
+    nxActuators: 9
+    svdConditioning: 0.07
+    gain: 0.6
+    iMatValue: 0.2
 
 Science:
-  - PSF:
-      position: [0,0]
-      FOV: 1.5
-      wavelength: 1.65e-6
-      pxls: 64
+  0:
+    position: [0,0]
+    FOV: 1.5
+    wavelength: 1.65e-6
+    pxls: 64
