@@ -54,10 +54,10 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
             self.scaledEField_gpu = cuda.to_device(self.los.EField)
 
         scaledEField = self.scaledEField_gpu.copy_to_host()
-
-        self.subapArrays_gpu = gpulib.wfs.maskCrop2Subaps(
-                self.subapArrays_gpu, self.scaledEField_gpu,
-                self.scaledMask_gpu, self.simConfig.simPad, self.subapCoords)
+        #
+        # self.subapArrays_gpu = gpulib.wfs.maskCrop2Subaps(
+        #         self.subapArrays_gpu, self.scaledEField_gpu,
+        #         self.scaledMask_gpu, self.simConfig.simPad, self.subapCoords)
 
 
         # Copied from shackhartmann CPU verision
