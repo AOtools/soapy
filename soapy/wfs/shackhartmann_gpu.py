@@ -31,7 +31,7 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
         self.scaledSubapCoords = numpy.round(
                 self.subapCoords * self.subapFOVSpacing/self.PPSpacing
                 ).astype('int32')
-        self.subapCoords = cuda.to_device(self.scaledSubapCoords)
+        self.subapCoords_gpu = cuda.to_device(self.scaledSubapCoords)
 
     def calcFocalPlane(self, intensity=1):
         '''
@@ -53,35 +53,37 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
             # If physical prop, correct size already. Put on GPU
             self.scaledEField_gpu = cuda.to_device(self.los.EField)
 
-        scaledEField = self.scaledEField_gpu.copy_to_host()
-        #
-        # self.subapArrays_gpu = gpulib.wfs.maskCrop2Subaps(
-        #         self.subapArrays_gpu, self.scaledEField_gpu,
-        #         self.scaledMask_gpu, self.simConfig.simPad, self.subapCoords)
+        # scaledEField = self.scaledEField_gpu.copy_to_host()
+        
+        self.subapArrays_gpu = gpulib.wfs.maskCrop2Subaps(
+                 self.subapArrays_gpu, self.scaledEField_gpu,
+                 self.scaledMask_gpu, self.simConfig.simPad, 
+                 self.subapCoords_gpu)
 
+        self.subapArrays = self.subapArrays_gpu.copy_to_host()
 
         # Copied from shackhartmann CPU verision
         ########################################
-        print(self.subapArrays_gpu)
+        # print(self.subapArrays_gpu)
         # self.subapArrays = self.subapArrays_gpu.copy_to_host()
 
         # Apply the scaled pupil mask
         # scaledEField *= self.scaledMask
         #
         # # Now cut out only the eField across the pupilSize
-        coord = round(int(((self.scaledEFieldSize/2.)
-                - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
-        self.cropEField = scaledEField[coord:-coord, coord:-coord]
+        #coord = round(int(((self.scaledEFieldSize/2.)
+        #        - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
+        #self.cropEField = scaledEField[coord:-coord, coord:-coord]
 
-        # create an array of individual subap EFields
-        for i in xrange(self.activeSubaps):
-            x,y = numpy.round(self.subapCoords[i] *
-                                     self.subapFOVSpacing/self.PPSpacing)
-            self.subapArrays[i] = self.cropEField[
-                                    int(x):
-                                    int(x+self.subapFOVSpacing) ,
-                                    int(y):
-                                    int(y+self.subapFOVSpacing)]
+        ## create an array of individual subap EFields
+        #for i in xrange(self.activeSubaps):
+        #    x,y = numpy.round(self.subapCoords[i] *
+        #                             self.subapFOVSpacing/self.PPSpacing)
+        #    self.subapArrays[i] = self.cropEField[
+        #                            int(x):
+        #                            int(x+self.subapFOVSpacing) ,
+        #                            int(y):
+        #                            int(y+self.subapFOVSpacing)]
 
         # do the fft to all subaps at the same time
         # and convert into intensity
