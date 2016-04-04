@@ -59,8 +59,8 @@ DM:
 
 
 Science:
-  - 0:
-      position: [0, 0]
-      FOV: 2.0
-      wavelength: 1.65e-6
-      pxls: 128
+  0:
+    position: [0, 0]
+    FOV: 2.0
+    wavelength: 1.65e-6
+    pxls: 128
