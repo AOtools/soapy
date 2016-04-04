@@ -1,5 +1,6 @@
 from numba import cuda
 import numba
+import numpy
 import math
 # Cuda threads per block
 CUDA_TPB = 16
@@ -135,6 +136,31 @@ def phs2EField_kernel(phase, EField):
     i, j = cuda.grid(2)
 
     EField[i, j] = math.exp(phs[i, j])
-#
-# def absSquared(inputData, outputData):
-#
+
+def absSquared3d(inputData, outputData=None, threadsPerBlock=None):
+
+    if threadsPerBlock is None:
+        threadsPerBlock = CUDA_TPB
+
+    tpb = (threadsPerBlock,)*3
+    # blocks per grid
+    bpg = (
+            int(numpy.ceil(float(inputData.shape[0])/threadsPerBlock)),
+            int(numpy.ceil(float(inputData.shape[1])/threadsPerBlock)),
+            int(numpy.ceil(float(inputData.shape[2])/threadsPerBlock))
+            )
+
+    if outputData == None:
+        outputData = inputData
+
+    absSquared3d_kernel[tpb, bpg](inputData, outputData)
+
+    return outputData
+
+@cuda.jit
+def absSquared3d_kernel(inputData, outputData):
+    i, j, k = cuda.grid(3)
+    if i<inputData.shape[0] and j<inputData.shape[1] and k<inputdata.shape[2]:     
+        outputData[i, j, k] = inputData[i, j, k].real**2 + inputData[i, j, k].imag**2
+
+

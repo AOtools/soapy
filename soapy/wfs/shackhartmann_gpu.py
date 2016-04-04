@@ -42,7 +42,8 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
         self.ftplan_gpu = Plan.many(
                 self.fftShape, CUFFT_C2C,
                 batch=self.activeSubaps)
-
+    
+            
 
     def calcFocalPlane(self, intensity=1):
         '''
@@ -78,9 +79,10 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
 
         # Do the FFT with numba accelerate
         self.ftplan_gpu.forward(self.subapArrays_gpu, self.FPSubapArrays_gpu)
-
-        fpSubaps = self.FPSubapArrays_gpu.copy_to_host()
-        self.FPSubapArrays =  AOFFT.ftShift2d(abs(fpSubaps**2))
+        #gpulib.absSquared3d(self.FPSubapArrays_gpu)
+        
+        fpSubaps = abs(self.FPSubapArrays_gpu.copy_to_host())**2
+        self.FPSubapArrays = AOFFT.ftShift2d(fpSubaps)
 
         # if intensity==1:
         #     self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
