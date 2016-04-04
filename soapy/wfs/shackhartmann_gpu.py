@@ -4,7 +4,7 @@ The Shack Hartmann WFS accelerated using numba cuda
 
 import numpy
 from numba import cuda
-
+from accelerate.cuda.fft.binding import Plan, CUFFT_C2C
 from .. import AOFFT, aoSimLib, LGS, logger
 from . import shackhartmann
 from .. import gpulib
@@ -17,9 +17,9 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
     def allocDataArrays(self):
         super(ShackHartmannGPU, self).allocDataArrays()
 
-        self.subapArrays_gpu = cuda.to_device(self.subapArrays)
+        self.subapArrays_gpu = cuda.to_device(self.FPSubapArrays.copy().astype(CDTYPE))
         self.binnedFPSubapArrays_gpu = cuda.to_device(self.binnedFPSubapArrays)
-        self.FPSubapArrays_gpu = cuda.to_device(self.FPSubapArrays)
+        self.FPSubapArrays_gpu = cuda.to_device(self.FPSubapArrays.astype('complex64'))
         self.wfsDetectorPlane_gpu = cuda.to_device(self.wfsDetectorPlane)
 
         self.losPhase_gpu = cuda.device_array(self.los.phase.shape, dtype=DTYPE)
@@ -31,7 +31,18 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
         self.scaledSubapCoords = numpy.round(
                 self.subapCoords * self.subapFOVSpacing/self.PPSpacing
                 ).astype('int32')
-        self.subapCoords_gpu = cuda.to_device(self.scaledSubapCoords)
+        scaledSimOffset = int(round(self.simConfig.simPad * self.subapFOVSpacing/self.PPSpacing))
+        self.scaledSubapCoords += scaledSimOffset
+        self.scaledSubapCoords_gpu = cuda.to_device(self.scaledSubapCoords)
+
+        self.tiltfixEField = numpy.exp(1j*self.tiltFix)
+        self.tiltfixEField_gpu = cuda.to_device(self.tiltfixEField)
+
+        self.fftShape = ((self.subapFFTPadding,)*2)
+        self.ftplan_gpu = Plan.many(
+                self.fftShape, CUFFT_C2C,
+                batch=self.activeSubaps)
+
 
     def calcFocalPlane(self, intensity=1):
         '''
@@ -46,7 +57,7 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
             # Put phase on GPU
             self.losPhase_gpu = cuda.to_device(self.los.phase.astype(DTYPE))
             # Scale to required size and make complex amp
-            scaledPhase = gpulib.wfs.zoomToEField(
+            self.scaledEField_gpu = gpulib.wfs.zoomToEField(
                     self.losPhase_gpu, self.scaledEField_gpu)
 
         else:
@@ -54,47 +65,26 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
             self.scaledEField_gpu = cuda.to_device(self.los.EField)
 
         # scaledEField = self.scaledEField_gpu.copy_to_host()
-        
+
         self.subapArrays_gpu = gpulib.wfs.maskCrop2Subaps(
                  self.subapArrays_gpu, self.scaledEField_gpu,
-                 self.scaledMask_gpu, self.simConfig.simPad, 
-                 self.subapCoords_gpu)
+                 self.scaledMask_gpu, self.subapFOVSpacing,
+                 self.scaledSubapCoords_gpu, self.tiltfixEField_gpu)
 
+        # self.scaledEField = self.scaledEField_gpu.copy_to_host()
+        # self.scaledMask = self.scaledMask_gpu.copy_to_host()
+        # self.scaledSubapCoords = self.scaledSubapCoords_gpu.copy_to_host()
         self.subapArrays = self.subapArrays_gpu.copy_to_host()
 
-        # Copied from shackhartmann CPU verision
-        ########################################
-        # print(self.subapArrays_gpu)
-        # self.subapArrays = self.subapArrays_gpu.copy_to_host()
+        # Do the FFT with numba accelerate
+        self.ftplan_gpu.forward(self.subapArrays_gpu, self.FPSubapArrays_gpu)
 
-        # Apply the scaled pupil mask
-        # scaledEField *= self.scaledMask
-        #
-        # # Now cut out only the eField across the pupilSize
-        #coord = round(int(((self.scaledEFieldSize/2.)
-        #        - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
-        #self.cropEField = scaledEField[coord:-coord, coord:-coord]
+        fpSubaps = self.FPSubapArrays_gpu.copy_to_host()
+        self.FPSubapArrays =  AOFFT.ftShift2d(abs(fpSubaps**2))
 
-        ## create an array of individual subap EFields
-        #for i in xrange(self.activeSubaps):
-        #    x,y = numpy.round(self.subapCoords[i] *
-        #                             self.subapFOVSpacing/self.PPSpacing)
-        #    self.subapArrays[i] = self.cropEField[
-        #                            int(x):
-        #                            int(x+self.subapFOVSpacing) ,
-        #                            int(y):
-        #                            int(y+self.subapFOVSpacing)]
-
-        # do the fft to all subaps at the same time
-        # and convert into intensity
-        self.FFT.inputData[:] = 0
-        self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
-                        ,:int(round(self.subapFOVSpacing))] \
-                = self.subapArrays*numpy.exp(1j*(self.tiltFix))
-
-        if intensity==1:
-            self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
-        else:
-            self.FPSubapArrays += intensity*numpy.abs(
-                    AOFFT.ftShift2d(self.FFT()))**2
+        # if intensity==1:
+        #     self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
+        # else:
+        #     self.FPSubapArrays += intensity*numpy.abs(
+        #             AOFFT.ftShift2d(self.FFT()))**2
         #######################################

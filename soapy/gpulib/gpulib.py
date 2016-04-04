@@ -135,3 +135,6 @@ def phs2EField_kernel(phase, EField):
     i, j = cuda.grid(2)
 
     EField[i, j] = math.exp(phs[i, j])
+#
+# def absSquared(inputData, outputData):
+#

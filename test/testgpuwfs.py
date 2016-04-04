@@ -21,15 +21,23 @@ class testGpuWfs(unittest.TestCase):
             for y in range(4):
                 subapCoords[x*4 + y] = x*32, y*32
 
-        # Populate the arrays formed by this procedure on the CPU
-        subapArrays_cpu = numpy.zeros((16, 32, 32)).astype('complex128')
-        EField_cpu = EField.copy()
-        EField_cpu*=mask
-        EField_crop = EField_cpu[PAD:-PAD, PAD:-PAD]
+        # CPU version #######################
+        # Apply the scaled pupil mask
+        EField *= mask
 
-        for i, coords in enumerate(subapCoords):
-            x, y = coords
-            subapArrays_cpu[i] = EField_crop[x: x+32, y: y+32]
+        # Now cut out only the eField across the pupilSize
+        cropEField = EField[PAD:-PAD, PAD:-PAD]
+
+        # Create an array of individual subap EFields
+        subapArrays_cpu = numpy.zeros((16, 32, 32)).astype('complex128')
+        for i, coord in enumerate(subapCoords):
+            x, y = coord
+            subapArrays_cpu[i] = cropEField[
+                                    int(x):
+                                    int(x+32) ,
+                                    int(y):
+                                    int(y+32)]
+        #################################
 
         # Now do the same for the GPU...
         subapArrays_gpu = cuda.device_array_like(subapArrays_cpu)
