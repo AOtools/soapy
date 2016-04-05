@@ -27,7 +27,7 @@ Examples::
 import numpy
 from scipy.interpolate import interp2d
 from numba import cuda
-from . import aoSimLib, logger, opticalPropagationLib
+from . import aoSimLib, logger, opticalPropagationLib, gpulib
 
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
@@ -469,35 +469,123 @@ class LineOfSight(object):
 
 
 class LineOfSightGPU(LineOfSight):
+
+    def allocDataArrays(self):
+        super(LineOfSightGPU, self).allocDataArrays()
+        scrnArrSize = (
+                        self.atmosConfig.scrnNo, self.simConfig.scrnSize, 
+                        self.simConfig.scrnSize)
+        self.scrns_gpu = cuda.device_array(scrnArrSize, dtype=DTYPE)
+
+        self.phase_gpu = cuda.device_array_like(self.phase)
+
     def makePhaseGeometric(self, radii=None, apos=None):
-    '''
-    Creates the total phase along line of sight offset by a given angle using a geometric ray tracing approach. Uses GPU acceleration for some operations.
+        '''
+        Creates the total phase along line of sight offset by a given angle using a geometric ray tracing approach. Uses GPU acceleration for some operations.
 
-    Parameters:
-        radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
-        apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
-    '''
-   # If screens a dict, turn to array
-    if isinstance(self.scrns, dict):
-        self.scrns = numpy.array(self.scrns.values())
-    elif isinstance(self.scrns, list):
-        self.scrns = numpy.array(scrns)
+        Parameters:
+            radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
+            apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
+        '''
+        # If screens a dict, turn to array
+        if isinstance(self.scrns, dict):
+            self.scrns = numpy.array(self.scrns.values())
+        elif isinstance(self.scrns, list):
+            self.scrns = numpy.array(self.scrns)
 
-    # Copy screens to the GPU
-    self.scrns_gpu = cuda.to_device(self.scrns)
-    self.phaseBuf_gpu = cuda.device_array_like(self.phase)
-    
-    for i in range(len(self.scrns)):
-        logger.debug("Layer: {}".format(i))
-        if radii is None:
-            radius = None
+        # Copy screens to the GPU
+        self.scrns_gpu.copy_to_device(self.scrns)
+        
+        for i in range(len(self.scrns)):
+            logger.debug("Layer: {}".format(i))
+            if radii is None:
+                radius = None
+            else:
+                radius = radii[i]
+
+            if self.metaPupilPos is None:
+                pos = None
+            else:
+                pos = self.metaPupilPos[i]
+        
+            # Add the meta pupil phase to the phase buffer
+            self.getMetaPupilPhase(
+                    self.scrns_gpu[i], self.atmosConfig.scrnHeights[i],
+                    pos=pos, radius=radius)
+
+        self.phase[:] = self.phase_gpu.copy_to_host()
+        # Convert phase to radians
+        self.phase *= self.phs2Rad
+
+        # Change sign if propagating up
+        if self.propagationDirection=='up':
+            self.phase *= -1
+
+        self.EField[:] = numpy.exp(1j*self.phase)
+
+        return self.EField
+
+    def getMetaPupilPhase(
+            self, scrn, height, radius=None,  apos=None, pos=None):
+        '''
+        Returns the phase across a metaPupil at some height and angular
+        offset in arcsec. Interpolates phase to size of the pupil if cone
+        effect is required
+
+        Parameters:
+            scrn (ndarray): An array representing the phase screen
+            height (float): Height of the phase screen
+            radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
+            apos (ndarray, optional): X, Y angular position of the guide star in asecs, otherwise will use that set in config or 'pos'
+            pos (ndarray, optional): X, Y central position of the metapupil in metres. If None, then config used to calculate it from config pos, or 'apos'.
+
+        Return:
+            ndarray: The meta pupil at the specified height
+        '''
+
+        # If the radius is 0, then 0 phase is returned
+        if radius==0:
+            return None
+
+        if apos is not None:
+            GSCent = self.getMetaPupilPos(height, apos) * self.simConfig.pxlScale
+        elif pos is not None:
+            GSCent = pos * self.simConfig.pxlScale
         else:
-            radius = radii[i]
+            GSCent = self.getMetaPupilPos(height) * self.simConfig.pxlScale
 
-        if self.metaPupilPos is None:
-            pos = None
+        # Find the size in metres of phase that is required
+        self.phaseRadius = (self.outPxlScale * self.nOutPxls)/2.
+        # And a corresponding coordinate on the phase screen
+        self.phaseCoord = int(round(self.phaseRadius * self.simConfig.pxlScale))
+
+        logger.debug('phaseCoord:{}'.format(self.phaseCoord))
+        # The sizes of the phase screen
+        scrnX, scrnY = scrn.shape
+
+        # If the GS is not at infinity, take into account cone effect
+        if radius!=None:
+            fact = float(2*radius)/self.simConfig.pupilSize
         else:
-            pos = self.metaPupilPos[i]
-    
-        # Add the meta pupil phase to the phase buffer
-        self.getMetaPupilPhase(self.scrns_gpu[i])
+            fact = 1
+
+        simSize = self.simConfig.simSize
+        x1 = scrnX/2. + GSCent[0] - fact * self.phaseCoord
+        x2 = scrnX/2. + GSCent[0] + fact * self.phaseCoord
+        y1 = scrnY/2. + GSCent[1] - fact * self.phaseCoord
+        y2 = scrnY/2. + GSCent[1] + fact * self.phaseCoord
+
+        logger.debug("LoS Scrn Coords - ({0}:{1}, {2}:{3})".format(
+                x1,x2,y1,y2))
+        if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
+            logger.warning("GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, \nscrnSize: {1}, phaseCoord, {8}, simSize: {2}, fact: {9}\nx1: {4},x2: {5}, y1: {6}, y2: {7}".format(
+                    GSCent, scrn.shape, simSize, height, x1, x2, y1, y2, self.phaseCoord, fact))
+            raise ValueError("Requested phase exceeds phase screen size. See log warnings.")
+
+        gpulib.bilinterp2d_regular(
+                scrn, x1, x2, self.nOutPxls, y1, y2, self.nOutPxls,
+                self.phase_gpu) 
+
+######################################################
+
+

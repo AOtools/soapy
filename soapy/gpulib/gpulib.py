@@ -60,6 +60,64 @@ def linterp2d_kernel(data, xCoords, yCoords, interpArray):
     yGrad = a2 - a1
     interpArray[i,j] = a1 + yGrad*(y-y1)
 
+def bilinterp2d_regular(
+        data, xMin, xMax, xSize, yMin, yMax, ySize, interpArray, threadsPerBlock=None):
+    """
+    2-D interpolation on a regular grid using purely python - 
+    fast if compiled with numba
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        xCoords (ndarray): A 1-D array of x-coordinates
+        yCoords (ndarray): A 2-D array of y-coordinates
+        interpArray (ndarray): The array to place the calculation
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+    if threadsPerBlock is None:
+        threadsPerBlock = CUDA_TPB
+
+    tpb = (threadsPerBlock, )*2
+    # blocks per grid
+    bpg = (
+            int(numpy.ceil(interpArray.shape[0]/threadsPerBlock)),
+            int(numpy.ceil(interpArray.shape[1]/threadsPerBlock))
+            )
+    bilinterp2d_regular_kernel[tpb, bpg](data, xMin, xMax, xSize, yMin, yMax, ySize, interpArray)
+
+    return interpArray
+
+@cuda.jit
+def bilinterp2d_regular_kernel(
+        data, xMin, xMax, xSize, yMin, yMax, ySize, interpArray):
+    """
+    2-D interpolation using purely python - fast if compiled with numba
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        xCoords (ndarray): A 1-D array of x-coordinates
+        yCoords (ndarray): A 2-D array of y-coordinates
+        interpArray (ndarray): The array to place the calculation
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+    # Thread id in a 2D grid
+    i, j = cuda.grid(2)
+
+    x = xMin + i*float(xMax - xMin)/(xSize - 1)
+    x1 = numba.int32(x)
+
+    y = yMin + j*float(yMax - yMin)/(ySize - 1)
+    y1 = numba.int32(y)
+
+    xGrad1 = data[x1+1, y1] - data[x1, y1]
+    a1 = data[x1, y1] + xGrad1*(x-x1)
+
+    xGrad2 = data[x1+1, y1+1] - data[x1, y1+1]
+    a2 = data[x1, y1+1] + xGrad2*(x-x1)
+
+    yGrad = a2 - a1
+    interpArray[i,j] += a1 + yGrad*(y-y1)
+
+
 def zoom(data, zoomArray, threadsPerBlock=None):
     """
     2-D zoom interpolation using purely python - fast if compiled with numba.

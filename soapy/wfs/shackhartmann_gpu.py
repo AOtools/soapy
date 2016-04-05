@@ -5,7 +5,7 @@ The Shack Hartmann WFS accelerated using numba cuda
 import numpy
 from numba import cuda
 from accelerate.cuda.fft.binding import Plan, CUFFT_C2C
-from .. import AOFFT, aoSimLib, LGS, logger
+from .. import AOFFT, aoSimLib, LGS, logger, lineofsight
 from . import shackhartmann
 from .. import gpulib
 
@@ -14,6 +14,15 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 class ShackHartmannGPU(shackhartmann.ShackHartmann):
+    def initLos(self):
+        """
+        Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
+        """
+        self.los = lineofsight.LineOfSightGPU(
+                self.config, self.soapyConfig,
+                propagationDirection="down")
+
+
     def allocDataArrays(self):
         super(ShackHartmannGPU, self).allocDataArrays()
 
