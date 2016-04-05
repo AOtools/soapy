@@ -26,7 +26,7 @@ Examples::
 
 import numpy
 from scipy.interpolate import interp2d
-
+from numba import cuda
 from . import aoSimLib, logger, opticalPropagationLib
 
 DTYPE = numpy.float32
@@ -465,3 +465,39 @@ class LineOfSight(object):
             self.residual = self.phase
 
         return self.residual
+
+
+
+class LineOfSightGPU(LineOfSight):
+    def makePhaseGeometric(self, radii=None, apos=None):
+    '''
+    Creates the total phase along line of sight offset by a given angle using a geometric ray tracing approach. Uses GPU acceleration for some operations.
+
+    Parameters:
+        radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
+        apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
+    '''
+   # If screens a dict, turn to array
+    if isinstance(self.scrns, dict):
+        self.scrns = numpy.array(self.scrns.values())
+    elif isinstance(self.scrns, list):
+        self.scrns = numpy.array(scrns)
+
+    # Copy screens to the GPU
+    self.scrns_gpu = cuda.to_device(self.scrns)
+    self.phaseBuf_gpu = cuda.device_array_like(self.phase)
+    
+    for i in range(len(self.scrns)):
+        logger.debug("Layer: {}".format(i))
+        if radii is None:
+            radius = None
+        else:
+            radius = radii[i]
+
+        if self.metaPupilPos is None:
+            pos = None
+        else:
+            pos = self.metaPupilPos[i]
+    
+        # Add the meta pupil phase to the phase buffer
+        self.getMetaPupilPhase(self.scrns_gpu[i])

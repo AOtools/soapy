@@ -18,6 +18,7 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
         super(ShackHartmannGPU, self).allocDataArrays()
 
         self.subapArrays_gpu = cuda.to_device(self.FPSubapArrays.copy().astype(CDTYPE))
+        self.ftSubapArrays_gpu = cuda.device_array_like(self.subapArrays_gpu)
         self.binnedFPSubapArrays_gpu = cuda.to_device(self.binnedFPSubapArrays)
         self.FPSubapArrays_gpu = cuda.to_device(self.FPSubapArrays)
         self.wfsDetectorPlane_gpu = cuda.to_device(self.wfsDetectorPlane)
@@ -71,9 +72,9 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
                  self.scaledSubapCoords_gpu, self.tiltfixEField_gpu)
 
         # Do the FFT with numba accelerate
-        self.ftplan_gpu.forward(self.subapArrays_gpu, self.subapArrays_gpu)
+        self.ftplan_gpu.forward(self.subapArrays_gpu, self.ftSubapArrays_gpu)
         gpulib.absSquared3d(
-                self.subapArrays_gpu, outputData=self.FPSubapArrays_gpu)
+                self.ftSubapArrays_gpu, outputData=self.FPSubapArrays_gpu)
         self.FPSubapArrays[:] = self.FPSubapArrays_gpu.copy_to_host()
         self.FPSubapArrays = AOFFT.ftShift2d(self.FPSubapArrays)
 
