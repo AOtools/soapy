@@ -137,7 +137,7 @@ def phs2EField_kernel(phase, EField):
 
     EField[i, j] = math.exp(phs[i, j])
 
-def absSquared3d(inputData, outputData=None, threadsPerBlock=None):
+def absSquared3d(inputData, outputData, threadsPerBlock=None):
 
     if threadsPerBlock is None:
         threadsPerBlock = CUDA_TPB
@@ -150,9 +150,6 @@ def absSquared3d(inputData, outputData=None, threadsPerBlock=None):
             int(numpy.ceil(float(inputData.shape[2])/threadsPerBlock))
             )
 
-    if outputData == None:
-        outputData = inputData
-
     absSquared3d_kernel[tpb, bpg](inputData, outputData)
 
     return outputData
@@ -160,7 +157,4 @@ def absSquared3d(inputData, outputData=None, threadsPerBlock=None):
 @cuda.jit
 def absSquared3d_kernel(inputData, outputData):
     i, j, k = cuda.grid(3)
-    if i<inputData.shape[0] and j<inputData.shape[1] and k<inputdata.shape[2]:     
-        outputData[i, j, k] = inputData[i, j, k].real**2 + inputData[i, j, k].imag**2
-
-
+    outputData[i, j, k] = inputData[i, j, k].real**2 + inputData[i, j, k].imag**2

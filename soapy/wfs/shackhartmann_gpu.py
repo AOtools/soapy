@@ -19,7 +19,7 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
 
         self.subapArrays_gpu = cuda.to_device(self.FPSubapArrays.copy().astype(CDTYPE))
         self.binnedFPSubapArrays_gpu = cuda.to_device(self.binnedFPSubapArrays)
-        self.FPSubapArrays_gpu = cuda.to_device(self.FPSubapArrays.astype('complex64'))
+        self.FPSubapArrays_gpu = cuda.to_device(self.FPSubapArrays)
         self.wfsDetectorPlane_gpu = cuda.to_device(self.wfsDetectorPlane)
 
         self.losPhase_gpu = cuda.device_array(self.los.phase.shape, dtype=DTYPE)
@@ -42,8 +42,8 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
         self.ftplan_gpu = Plan.many(
                 self.fftShape, CUFFT_C2C,
                 batch=self.activeSubaps)
-    
-            
+
+
 
     def calcFocalPlane(self, intensity=1):
         '''
@@ -65,24 +65,17 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
             # If physical prop, correct size already. Put on GPU
             self.scaledEField_gpu = cuda.to_device(self.los.EField)
 
-        # scaledEField = self.scaledEField_gpu.copy_to_host()
-
         self.subapArrays_gpu = gpulib.wfs.maskCrop2Subaps(
                  self.subapArrays_gpu, self.scaledEField_gpu,
                  self.scaledMask_gpu, self.subapFOVSpacing,
                  self.scaledSubapCoords_gpu, self.tiltfixEField_gpu)
 
-        # self.scaledEField = self.scaledEField_gpu.copy_to_host()
-        # self.scaledMask = self.scaledMask_gpu.copy_to_host()
-        # self.scaledSubapCoords = self.scaledSubapCoords_gpu.copy_to_host()
-        self.subapArrays = self.subapArrays_gpu.copy_to_host()
-
         # Do the FFT with numba accelerate
-        self.ftplan_gpu.forward(self.subapArrays_gpu, self.FPSubapArrays_gpu)
-        #gpulib.absSquared3d(self.FPSubapArrays_gpu)
-        
-        fpSubaps = abs(self.FPSubapArrays_gpu.copy_to_host())**2
-        self.FPSubapArrays = AOFFT.ftShift2d(fpSubaps)
+        self.ftplan_gpu.forward(self.subapArrays_gpu, self.subapArrays_gpu)
+        gpulib.absSquared3d(
+                self.subapArrays_gpu, outputData=self.FPSubapArrays_gpu)
+        self.FPSubapArrays[:] = self.FPSubapArrays_gpu.copy_to_host()
+        self.FPSubapArrays = AOFFT.ftShift2d(self.FPSubapArrays)
 
         # if intensity==1:
         #     self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
