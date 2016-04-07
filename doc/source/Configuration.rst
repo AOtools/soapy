@@ -3,9 +3,8 @@
 Configuration
 *************
 
-Configuration of the system is handled by the ``confParse`` module, that reads the simulation parameters from a given configuration file. This file should be a YAML file, which contains groups for each simulation sub-module. Where a sub-module may consist of multiple components i.e. Wave-front sensors, each WFS must be specified seperately, with an integer index, for example:
+Configuration of the system is handled by the ``confParse`` module, that reads the simulation parameters from a given configuration file. This file should be a YAML file, which contains groups for each simulation sub-module. Where a sub-module may consist of multiple components i.e. Wave-front sensors, each WFS must be specified seperately, with an integer index, for example::
 
-.. code-block:: yaml
 		WFS:
 			0:
 				GSMag: 0
