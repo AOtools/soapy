@@ -494,8 +494,12 @@ class LineOfSightGPU(LineOfSight):
             self.scrns = numpy.array(self.scrns)
 
         # Copy screens to the GPU
-        self.scrns_gpu.copy_to_device(self.scrns)
-        
+        print(self.scrns.max())
+        self.scrns_gpu.copy_to_device(self.scrns.astype(self.scrns_gpu.dtype))
+        # Check screen value
+        print(self.scrns_gpu.copy_to_host().max())
+
+
         for i in range(len(self.scrns)):
             logger.debug("Layer: {}".format(i))
             if radii is None:
@@ -581,7 +585,9 @@ class LineOfSightGPU(LineOfSight):
             logger.warning("GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, \nscrnSize: {1}, phaseCoord, {8}, simSize: {2}, fact: {9}\nx1: {4},x2: {5}, y1: {6}, y2: {7}".format(
                     GSCent, scrn.shape, simSize, height, x1, x2, y1, y2, self.phaseCoord, fact))
             raise ValueError("Requested phase exceeds phase screen size. See log warnings.")
-
+        
+        print("scrn Max:{}".format(scrn.copy_to_host().max()))
+        print("phase Max: {}".format(self.phase_gpu.copy_to_host().max()))
         gpulib.bilinterp2d_regular(
                 scrn, x1, x2, self.nOutPxls, y1, y2, self.nOutPxls,
                 self.phase_gpu) 
