@@ -16,7 +16,7 @@ Examples::
     config = confParse.loadSoapyConfig('conf/sh_8x8.py')
 
     # Can make a 'LineOfSight' for WFSs
-    los = lineofsight.LineOfSight(config.wfss[0], config.sim, config.atmos)
+    los = lineofsight.LineOfSight(config.wfss[0], config)
 
     # Get resulting complex amplitude through line of sight
     EField = los.frame(some_phase_screens)

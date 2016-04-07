@@ -33,7 +33,7 @@ Example:
 
     Initialise the wave-front sensor::
 
-        wfs = WFS.WFS(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        wfs = WFS.WFS(config, 0 mask)
 
     Set the WFS scrns (these should be made in advance, perhaps by the :py:mod:`soapy.atmosphere` module). Then run the WFS::
 
@@ -50,7 +50,7 @@ A Shack-Hartmann WFS is also included in the module, this contains further metho
 Example:
     Using the config objects from above...::
 
-        shWfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        shWfs = WFS.ShackHartmann(config, 0, mask)
 
     As we are using a full WFS with focal plane making methods, the WFS base classes ``frame`` method can be used to take a frame from the WFS::
 
