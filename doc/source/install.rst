@@ -17,7 +17,7 @@ Once the code is downloaded (and unzipped) or cloned, navigate to the resulting 
     python soapy <options> <configfile>
 
 
-If you wish to have it available elsewhere on your system, either set the relavant ``PATH`` and ``PYTHONPATH`` variables to ``<soapy dir>/bin`` and ``<soapy dir>/soapy`` respectively, or run the install script with::
+If you wish to have it available elsewhere on your system, either set the relavant ``PATH`` and ``PYTHONPATH`` variables to ``<soapy dir>/bin`` and ``<soapy dir>/`` respectively, or run the install script with::
 
     python setup.py install
 
