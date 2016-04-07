@@ -423,7 +423,7 @@ class ConfigObj(object):
 
 class SimConfig(ConfigObj):
     """
-    Configuration parameters relavent for the entire simulation. These should be held in the ``Sim`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+    Configuration parameters relavent for the entire simulation. These should be held at the beginning of the parameter file with no indendation.
 
     Required:
         =============   ===================
@@ -543,7 +543,7 @@ class SimConfig(ConfigObj):
 
 class AtmosConfig(ConfigObj):
     """
-    Configuration parameters characterising the atmosphere. These should be held in the ``Atmosphere`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+    Configuration parameters characterising the atmosphere. These should be held in the ``Atmosphere`` group in the parameter file.
 
     Required:
         ==================      ===================
@@ -619,7 +619,7 @@ class AtmosConfig(ConfigObj):
 
 class WfsConfig(ConfigObj):
     """
-    Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
+    Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` group in the parameter file. Each WFS is specified by first specifying an index, then the WFS parameters. Any entries above ``sim.nGS`` will be ignored.
 
     Required:
         ==================      ===================
@@ -762,7 +762,7 @@ class WfsConfig(ConfigObj):
 
 class TelConfig(ConfigObj):
     """
-        Configuration parameters characterising the Telescope. These should be held in the ``Tel`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+        Configuration parameters characterising the Telescope. These should be held in the ``Telescope`` group in the parameter file.
 
     Required:
         =============   ===================
@@ -799,7 +799,7 @@ class TelConfig(ConfigObj):
 
 class LgsConfig(ConfigObj):
     """
-        Configuration parameters characterising the Laser Guide Stars. These should be held in the ``LGS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
+        Configuration parameters characterising the Laser Guide Stars. These should be held in the ``LGS`` sub-group of the WFS parameter group.
 
 
     Optional:
@@ -874,7 +874,7 @@ class LgsConfig(ConfigObj):
 
 class DmConfig(ConfigObj):
     """
-    Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a DM. Any entries above ``sim.nDM`` will be ignored.
+    Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-group of the parameter file. Each DM is specified seperately, by first specifying an index, then the DM parameters. Any entries above ``sim.nGS`` will be ignored.
 
     Required:
         ===================     ===============================================
@@ -944,7 +944,7 @@ class DmConfig(ConfigObj):
 
 class SciConfig(ConfigObj):
     """
-    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a science camera. Any entries above ``sim.nSci`` will be ignored.
+    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` of the parameter file. Each Science target is created seperately with an integer index. Any entries above ``sim.nSci`` will be ignored.
 
     Required:
         ==================      ============================================
