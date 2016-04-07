@@ -30,11 +30,11 @@ Examples:
 
         from soapy import confParse, atmosphere
 
-        config = confParse.loadSoapyConfig
+        config = confParse.loadSoapyConfig("configfile.yaml")
 
     Initialise the amosphere (creating or loading phase screens)::
 
-        atmosphere = atmosphere.atmos(config.sim, config.atmos)
+        atmosphere = atmosphere.atmos(config)
 
     Run the atmosphere for 10 time steps::
 

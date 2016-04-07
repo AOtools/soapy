@@ -978,7 +978,7 @@ class SciConfig(ConfigObj):
                              0 denotes infinity.                  ``0``
         ``propagationMode``  str: Mode of light propogation
                              from object. Can be "Physical" or
-                             "Geometric".                       ``"Geometric"``
+                             "Geometric".                        ``"Geometric"``
         ``instStrehlWithTT`` bool: Whether or not to include
                              tip/tilt in instantaneous Strehl
                              calculations.                       ``False``

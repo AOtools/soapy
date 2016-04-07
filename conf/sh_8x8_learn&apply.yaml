@@ -1,0 +1,100 @@
+
+
+simName: 8x8_learn&apply
+pupilSize: 64
+nGS: 5
+nDM: 1
+nSci: 1
+nIters:   1000
+loopTime: 0.004
+reconstructor: LearnAndApply
+learnIters: 5000
+learnAtmos: random
+
+verbosity: 2
+
+saveCMat: False
+saveSlopes: True
+saveSciPsf: True
+
+Atmosphere:
+  scrnNo: 4
+  scrnHeights: [0, 5000, 10000, 15000]
+  scrnStrengths: [0.5, 0.3, 0.1, 0.1]
+  windDirs: [0, 45, 90, 135]
+  windSpeeds: [10, 10, 15, 20]
+  wholeScrnSize: 2048
+  r0: 0.16
+
+Telescope:
+  telDiam: 8
+  obsDiam: 1.1
+  mask: circle
+
+WFS:
+  0:
+    GSPosition: [0, 0]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 4.
+    subapOversamp: 3
+    wavelength: 600e-9
+
+  1:
+    GSPosition: [-10, -10]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 4.
+    subapOversamp: 3
+    wavelength: 600e-9
+
+  2:
+    GSPosition: [-10, 10]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 4.
+    subapOversamp: 3
+    wavelength: 600e-9
+
+  3:
+    GSPosition: [10, -10]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 4.
+    subapOversamp: 3
+    wavelength: 600e-9
+
+  4:
+    GSPosition: [10, 10]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 4.
+    subapOversamp: 3
+    wavelength: 600e-9
+
+DM:
+  0:
+    type: Piezo
+    closed: True
+    nxActuators: 9
+    svdConditioning: 0.05
+    gain: 0.7
+    iMatValue: 500
+    wfs: 0
+
+Science:
+  0:
+    position: [0, 0]
+    FOV: 2.0
+    wavelength: 1.65e-6
+    pxls: 128
