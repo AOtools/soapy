@@ -33,6 +33,7 @@ from . import logger
 
 # Check if can use yaml configuration style
 try:
+
     import yaml
     YAML = True
 except ImportError:
@@ -1012,6 +1013,7 @@ class SciConfig(ConfigObj):
     def calcParams(self):
         # Set some parameters to correct type
         self.position = numpy.array(self.position)
+        self.wavelength = float(self.wavelength)
 
 
 def loadSoapyConfig(configfile):
@@ -1021,7 +1023,10 @@ def loadSoapyConfig(configfile):
 
     # If YAML use yaml configurator
     if file_ext=='yml' or file_ext=='yaml':
-        config = YAML_Configurator(configfile)
+        if YAML:
+            config = YAML_Configurator(configfile)
+        else:
+            raise ImportError("Requires pyyaml for YAML config file")
 
     # Otherwise, try and execute as python
     else:
