@@ -8,7 +8,7 @@ Installation
 ============
 Once all the requirements outlined below are met, you are ready to install Soapy. Download the source from `github <https://github.com/andrewpaulreeves/soapy>`_, either as a zip file, or clone the git repository with::
 
-    git clone https://github.com/andrewpaulreeves/soapy.git
+    git clone https://github.com/soapy/soapy.git
 
 If downloading the code as a zip, you can choose which version to use with the drop down box on the left of the page, entitled ``branch:master``. Whilst I try not to, the master branch will occasionally be broken so you might want to get the latest stable version by clicking "tags" in the dropdown list, and selecting the most recent version number.
 
@@ -17,7 +17,7 @@ Once the code is downloaded (and unzipped) or cloned, navigate to the resulting 
     python soapy <options> <configfile>
 
 
-If you wish to have it available elsewhere on your system, either set the relavant ``PATH`` and ``PYTHONPATH`` variables to ``<soapy dir>/bin`` and ``<soapy dir>/soapy`` respectively, or run the install script with::
+If you wish to have it available elsewhere on your system, either set the relavant ``PATH`` and ``PYTHONPATH`` variables to ``<soapy dir>/bin`` and ``<soapy dir>/`` respectively, or run the install script with::
 
     python setup.py install
 
