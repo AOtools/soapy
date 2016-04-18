@@ -128,11 +128,11 @@ class atmos(object):
             vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * self.config.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
             tau0 = 0.314 * self.r0 / vBar53
 
-        ## Print turbuelnce summary
-        print("Turbulence summary @ 500 nm:")
-        print('| r0 = {0:.2f} m ({1:.2f}" seeing)'.format(self.r0, numpy.degrees(0.5e-6/self.r0)*3600.0))
-        print("| Vbar_5/3 = {0:.2f} m/s".format(vBar53))
-        print("| tau0 = {0:.2f} ms".format(tau0*1e3))
+        ## Print turbulence summary
+        logger.info("Turbulence summary @ 500 nm:")
+        logger.info('| r0 = {0:.2f} m ({1:.2f}" seeing)'.format(self.r0, numpy.degrees(0.5e-6/self.r0)*3600.0))
+        logger.info("| Vbar_5/3 = {0:.2f} m/s".format(vBar53))
+        logger.info("| tau0 = {0:.2f} ms".format(tau0*1e3))
 
         self.scrnPos = {}
         self.wholeScrns = {}
