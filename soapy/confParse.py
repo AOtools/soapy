@@ -33,6 +33,7 @@ from . import logger
 
 # Check if can use yaml configuration style
 try:
+
     import yaml
     YAML = True
 except ImportError:
@@ -297,9 +298,7 @@ class YAML_Configurator(PY_Configurator):
 
         for nWfs in range(self.sim.nGS):
             logger.debug("Load WFS {} Params...".format(nWfs))
-            wfsType = list(self.configDict['WFS'][nWfs].keys())[0]
-            wfsDict = self.configDict['WFS'][nWfs][wfsType]
-            wfsDict['type'] = wfsType
+            wfsDict = self.configDict['WFS'][nWfs]
 
             self.wfss.append(WfsConfig(None))
             self.wfss[nWfs].loadParams(wfsDict)
@@ -315,19 +314,14 @@ class YAML_Configurator(PY_Configurator):
 
         for nDm in range(self.sim.nDM):
             logger.debug("Load DM {} Params".format(nDm))
-            dmType = list(self.configDict['DM'][nDm].keys())[0]
-            dmDict = self.configDict['DM'][nDm][dmType]
-
-            dmDict['type'] = dmType
+            dmDict = self.configDict['DM'][nDm]
 
             self.dms.append(DmConfig(None))
             self.dms[nDm].loadParams(dmDict)
 
         for nSci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(nSci))
-            sciType = list(self.configDict['Science'][nSci].keys())[0]
-            sciDict = self.configDict['Science'][nSci][sciType]
-            sciDict['type'] = sciType
+            sciDict = self.configDict['Science'][nSci]
 
             self.scis.append(SciConfig(None))
             self.scis[nSci].loadParams(sciDict)
@@ -430,7 +424,7 @@ class ConfigObj(object):
 
 class SimConfig(ConfigObj):
     """
-    Configuration parameters relavent for the entire simulation. These should be held in the ``Sim`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+    Configuration parameters relavent for the entire simulation. These should be held at the beginning of the parameter file with no indendation.
 
     Required:
         =============   ===================
@@ -550,7 +544,7 @@ class SimConfig(ConfigObj):
 
 class AtmosConfig(ConfigObj):
     """
-    Configuration parameters characterising the atmosphere. These should be held in the ``Atmosphere`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+    Configuration parameters characterising the atmosphere. These should be held in the ``Atmosphere`` group in the parameter file.
 
     Required:
         ==================      ===================
@@ -626,7 +620,7 @@ class AtmosConfig(ConfigObj):
 
 class WfsConfig(ConfigObj):
     """
-    Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
+    Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` group in the parameter file. Each WFS is specified by first specifying an index, then the WFS parameters. Any entries above ``sim.nGS`` will be ignored.
 
     Required:
         ==================      ===================
@@ -769,7 +763,7 @@ class WfsConfig(ConfigObj):
 
 class TelConfig(ConfigObj):
     """
-        Configuration parameters characterising the Telescope. These should be held in the ``Tel`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+        Configuration parameters characterising the Telescope. These should be held in the ``Telescope`` group in the parameter file.
 
     Required:
         =============   ===================
@@ -806,7 +800,7 @@ class TelConfig(ConfigObj):
 
 class LgsConfig(ConfigObj):
     """
-        Configuration parameters characterising the Laser Guide Stars. These should be held in the ``LGS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
+        Configuration parameters characterising the Laser Guide Stars. These should be held in the ``LGS`` sub-group of the WFS parameter group.
 
 
     Optional:
@@ -881,7 +875,7 @@ class LgsConfig(ConfigObj):
 
 class DmConfig(ConfigObj):
     """
-    Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a DM. Any entries above ``sim.nDM`` will be ignored.
+    Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-group of the parameter file. Each DM is specified seperately, by first specifying an index, then the DM parameters. Any entries above ``sim.nGS`` will be ignored.
 
     Required:
         ===================     ===============================================
@@ -913,7 +907,7 @@ class DmConfig(ConfigObj):
                              to the pupil in degrees             ``0``
         ``interpOrder``      Order of interpolation for dm,
                              including piezo actuators and
-                             rotation.                           ``1``
+                             rotation.                           ``2``
         ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the
                              inter-actuator spacing.             ``0.5``
@@ -951,7 +945,7 @@ class DmConfig(ConfigObj):
 
 class SciConfig(ConfigObj):
     """
-    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a science camera. Any entries above ``sim.nSci`` will be ignored.
+    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` of the parameter file. Each Science target is created seperately with an integer index. Any entries above ``sim.nSci`` will be ignored.
 
     Required:
         ==================      ============================================
@@ -985,7 +979,7 @@ class SciConfig(ConfigObj):
                              0 denotes infinity.                  ``0``
         ``propagationMode``  str: Mode of light propogation
                              from object. Can be "Physical" or
-                             "Geometric".                       ``"Geometric"``
+                             "Geometric".                        ``"Geometric"``
         ``instStrehlWithTT`` bool: Whether or not to include
                              tip/tilt in instantaneous Strehl
                              calculations.                       ``False``
@@ -1019,6 +1013,7 @@ class SciConfig(ConfigObj):
     def calcParams(self):
         # Set some parameters to correct type
         self.position = numpy.array(self.position)
+        self.wavelength = float(self.wavelength)
 
 
 def loadSoapyConfig(configfile):
@@ -1028,7 +1023,10 @@ def loadSoapyConfig(configfile):
 
     # If YAML use yaml configurator
     if file_ext=='yml' or file_ext=='yaml':
-        config = YAML_Configurator(configfile)
+        if YAML:
+            config = YAML_Configurator(configfile)
+        else:
+            raise ImportError("Requires pyyaml for YAML config file")
 
     # Otherwise, try and execute as python
     else:

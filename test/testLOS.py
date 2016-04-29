@@ -11,14 +11,14 @@ class TestLOS(unittest.TestCase):
         config.loadSimParams()
 
         # mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
-        los = lineofsight.LineOfSight(config.wfss[0], config.sim, config.atmos)
+        los = lineofsight.LineOfSight(config.wfss[0], config)
 
     def test_runLOS(self):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
         config.loadSimParams()
 
         # mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
-        los = lineofsight.LineOfSight(config.wfss[0], config.sim, config.atmos)
+        los = lineofsight.LineOfSight(config.wfss[0], config)
 
         testPhase = numpy.arange(config.sim.simSize**2).reshape(
                 (config.sim.simSize,)*2)

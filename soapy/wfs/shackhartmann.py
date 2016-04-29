@@ -164,9 +164,10 @@ class ShackHartmann(base.WFS):
     def initLGS(self):
         super(ShackHartmann, self).initLGS()
         if self.lgsConfig.uplink:
-            lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
+            lgsObj = getattr(
+                    LGS, "LGS_{}".format(self.lgsConfig.propagationMode))
             self.lgs = lgsObj(
-                    self.simConfig, self.config, self.lgsConfig, self.atmosConfig,
+                    self.config, self.soapyConfig,
                     nOutPxls=self.subapFFTPadding,
                     outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
                     )
@@ -433,11 +434,11 @@ class ShackHartmann(base.WFS):
                     x:x+self.wfsConfig.pxlsPerSubap,
                     y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
 
-        slopes = eval("centroiders."+self.wfsConfig.centMethod)(
+        slopes = getattr(centroiders, self.wfsConfig.centMethod)(
                 self.centSubapArrays,
                 threshold=self.wfsConfig.centThreshold,
                 ref=self.referenceImage
-                     )
+                )
 
 
         # shift slopes relative to subap centre and remove static offsets

@@ -16,7 +16,7 @@ Examples::
     config = confParse.loadSoapyConfig('conf/sh_8x8.py')
 
     # Can make a 'LineOfSight' for WFSs
-    los = lineofsight.LineOfSight(config.wfss[0], config.sim, config.atmos)
+    los = lineofsight.LineOfSight(config.wfss[0], config)
 
     # Get resulting complex amplitude through line of sight
     EField = los.frame(some_phase_screens)
@@ -47,8 +47,7 @@ class LineOfSight(object):
 
     Parameters:
         config: The soapy config for the line of sight
-        simConfig: The soapy simulation config
-        atmosConfig: The soapy atmosphere config
+        simConfig: The soapy simulation config object
         propagationDirection (str, optional): Direction of light propagation, either `"up"` or `"down"`
         outPxlScale (float, optional): The EField pixel scale required at the output (m/pxl)
         nOutPxls (int, optional): Number of pixels to return in EFIeld
@@ -56,13 +55,13 @@ class LineOfSight(object):
         metaPupilPos (list, dict, optional): A list or dictionary of the meta pupil position at each turbulence layer height ub metres. If None, works it out from GS position.
     """
     def __init__(
-            self, config, simConfig, atmosConfig,
+            self, config, soapyConfig,
             propagationDirection="down", outPxlScale=None,
             nOutPxls=None, mask=None, metaPupilPos=None):
 
         self.config = config
-        self.simConfig = simConfig
-        self.atmosConfig = atmosConfig
+        self.simConfig = soapyConfig.sim
+        self.atmosConfig = soapyConfig.atmos
 
         self.mask = mask
 

@@ -32,32 +32,35 @@ Telescope:
   mask: circle
 
 WFS:
-  - ShackHartmann:
-      GSPosition: [0, 0]
-      GSHeight: 0
-      GSMag: 8
-      nxSubaps: 8
-      pxlsPerSubap: 10
-      subapFOV: 2.5
-      wavelength: 600e-9
+  0:
+    type: ShackHartmann
+    GSPosition: [0, 0]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 2.5
+    wavelength: 600e-9
 
 DM:
-  - TT:
-      closed: True
-      iMatValue: 2e3
-      gain: 0.6
+  0:
+    type: TT
+    closed: True
+    iMatValue: 2e3
+    gain: 0.6
 
-  - Piezo:
-      closed: True
-      nxActuators: 9
-      svdConditioning: 0.05
-      gain: 0.7
-      iMatValue: 500
+  1:
+    type: Piezo
+    closed: True
+    nxActuators: 9
+    svdConditioning: 0.05
+    gain: 0.7
+    iMatValue: 500
 
 
 Science:
-  - PSF:
-      position: [0, 0]
-      FOV: 2.0
-      wavelength: 1.65e-6
-      pxls: 128
+  0:
+    position: [0, 0]
+    FOV: 2.0
+    wavelength: 1.65e-6
+    pxls: 128

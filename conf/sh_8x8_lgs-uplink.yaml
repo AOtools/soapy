@@ -33,48 +33,53 @@ Telescope:
   mask: circle
 
 WFS:
-  - ShackHartmann:
-      GSPosition: [0,0]
-      GSHeight: 0
-      GSMag: 8
-      nxSubaps: 2
-      pxlsPerSubap: 10
-      subapFOV: 2.0
-      wavelength: 600e-9
+  0:
+    type: ShackHartmann
+    GSPosition: [0,0]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 2
+    pxlsPerSubap: 10
+    subapFOV: 2.0
+    wavelength: 600e-9
 
-  - ShackHartmann:
-      GSPosition: [0, 0]
-      GSHeight: 90000
-      GSMag: 8
-      nxSubaps: 8
-      pxlsPerSubap: 10
-      subapFOV: 5.0
+  1:
+    type: ShackHartmann
+    GSPosition: [0, 0]
+    GSHeight: 90000
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 5.0
+    wavelength: 600e-9
+    removeTT: True
+    lgs:
+      propagationMode: Geometric
+      uplink: True
+      pupilDiam: 0.3
       wavelength: 600e-9
-      removeTT: True
-      lgs:
-        propagationMode: Geometric
-        uplink: True
-        pupilDiam: 0.3
-        wavelength: 600e-9
-        height:   90e3
+      height:   90e3
 
 DM:
-  - TT:
-      nxActuators: 2
-      wfs: 0
-      iMatValue: 1
-      gain: 0.6
+  0:
+    type: TT
+    nxActuators: 2
+    wfs: 0
+    iMatValue: 1
+    gain: 0.6
 
-  - Piezo:
-      nxActuators: 9
-      svdConditioning: 0.07
-      gain: 0.6
-      iMatValue: 0.2
-      wfs: 1
+  1:
+    type: Piezo
+    nxActuators: 9
+    svdConditioning: 0.07
+    gain: 0.6
+    iMatValue: 0.2
+    wfs: 1
 
 Science:
-  - PSF:
-      position: [0,0]
-      FOV: 1.0
-      wavelength: 1.65e-6
-      pxls: 64
+  0:
+    type: PSF
+    position: [0,0]
+    FOV: 1.0
+    wavelength: 1.65e-6
+    pxls: 64

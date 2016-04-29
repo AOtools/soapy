@@ -33,7 +33,7 @@ Example:
 
     Initialise the wave-front sensor::
 
-        wfs = WFS.WFS(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        wfs = WFS.WFS(config, 0 mask)
 
     Set the WFS scrns (these should be made in advance, perhaps by the :py:mod:`soapy.atmosphere` module). Then run the WFS::
 
@@ -50,7 +50,7 @@ A Shack-Hartmann WFS is also included in the module, this contains further metho
 Example:
     Using the config objects from above...::
 
-        shWfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        shWfs = WFS.ShackHartmann(config, 0, mask)
 
     As we are using a full WFS with focal plane making methods, the WFS base classes ``frame`` method can be used to take a frame from the WFS::
 
@@ -108,27 +108,27 @@ RAD2ASEC = 206264.849159
 ASEC2RAD = 1./RAD2ASEC
 
 class WFS(object):
-    ''' A  WFS class.
+    '''
+    A WFS class.
 
-        This is a base class which contains methods to initialise the WFS,
-        and calculate the phase across the WFSs input aperture, given the WFS
-        guide star geometry.
+    This is a base class which contains methods to initialise the WFS,
+    and calculate the phase across the WFSs input aperture, given the WFS
+    guide star geometry.
 
-        Parameters:
-
-
-            simConfig (confObj): The simulation configuration object
-            wfsConfig (confObj): The WFS configuration object
-            atmosConfig (confObj): The atmosphere configuration object
-            mask (ndarray, optional): An array or size (simConfig.pupilSize, simConfig.pupilSize) which is 1 at the telescope aperture and 0 else-where.
+    Parameters:
+        soapyConfig (ConfigObj): The soapy configuration object
+        nWfs (int): The ID number of this WFS
+        mask (ndarray, optional): An array or size (simConfig.simSize, simConfig.simSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
     def __init__(
-            self, simConfig, wfsConfig, atmosConfig, mask=None):
+            self, soapyConfig, nWfs=0, mask=None):
 
-        self.simConfig = simConfig
-        self.config = self.wfsConfig = wfsConfig # For compatability
-        self.atmosConfig = atmosConfig
+        self.soapyConfig = soapyConfig
+        self.config = self.wfsConfig = soapyConfig.wfss[nWfs] # For compatability
+        self.simConfig = soapyConfig.sim
+        self.telConfig = soapyConfig.tel
+        self.atmosConfig = soapyConfig.atmos
         self.lgsConfig = self.config.lgs
 
         # If supplied use the mask
@@ -175,7 +175,6 @@ class WFS(object):
                     )
 
 
-
     def calcInitParams(self, phaseSize=None):
         self.los.calcInitParams(nOutPxls=phaseSize)
 
@@ -190,7 +189,7 @@ class WFS(object):
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
         self.los = lineofsight.LineOfSight(
-                self.config, self.simConfig, self.atmosConfig,
+                self.config, self.soapyConfig,
                 propagationDirection="down")
 
     def initLGS(self):
@@ -208,9 +207,7 @@ class WFS(object):
         # or geometric propagation.
         if self.lgsConfig.uplink:
             lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
-            self.lgs = lgsObj(
-                    self.simConfig, self.config, self.lgsConfig,
-                    self.atmosConfig)
+            self.lgs = lgsObj(self.config, self.soapyConfig)
         else:
             self.lgs = None
 
