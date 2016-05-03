@@ -58,19 +58,32 @@ class DM(object):
     The base DM class
 
     This class is intended to be inherited by other DM classes which describe
-    real DMs. It provides methods to create
+    real DMs. It provides methods to create DM shapes and then interaction matrices, given a specific WFS or WFSs.
 
+    Parameters:
+        soapyConfig (ConfigObj): The soapy configuration object
+        nDm (int): The ID number of this DM
+        wfss (list, optional): A list of Soapy WFS object with which to record the interaction matrix
+        mask (ndarray, optional): An array or size (simConfig.simSize, simConfig.simSize) which is 1 at the telescope aperture and 0 else-where. If None then a circle is generated.
     """
 
-    def __init__ (self, simConfig, dmConfig, wfss, mask):
+    def __init__ (self, soapyConfig, nDm=0, wfss=None, mask=None):
 
-        self.simConfig = simConfig
-        self.dmConfig = dmConfig
+        self.simConfig = soapyConfig.sim
+        self.dmConfig = soapyConfig.dms[nDm]
         self.wfss = wfss
-        self.mask = mask
-        self.acts = self.getActiveActs()
         self.wvl = wfss[0].config.wavelength
 
+        # If supplied use the mask
+        if numpy.any(mask):
+            self.mask = mask
+        # Else we'll just make a circle
+        else:
+            self.mask = aoSimLib.circle(
+                    self.simConfig.pupilSize/2., self.simConfig.simSize,
+                    )
+
+        self.acts = self.getActiveActs()
         self.actCoeffs = numpy.zeros( (self.acts) )
 
         # Sort out which WFS(s) observes the DM (for iMat making)

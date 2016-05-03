@@ -30,11 +30,11 @@ Examples:
 
         from soapy import confParse, atmosphere
 
-        config = confParse.loadSoapyConfig
+        config = confParse.loadSoapyConfig("configfile.yaml")
 
     Initialise the amosphere (creating or loading phase screens)::
 
-        atmosphere = atmosphere.atmos(config.sim, config.atmos)
+        atmosphere = atmosphere.atmos(config)
 
     Run the atmosphere for 10 time steps::
 
@@ -73,63 +73,69 @@ try:
 except NameError:
     xrange = range
 
-class atmos:
+class atmos(object):
     '''
     Class to simulate atmosphere above an AO system.
 
-    On initialisation of the object, new phase screens can be created, or others loaded from ``.fits`` file. The atmosphere is created with parameters given in ``simConfig`` and ``atmosConfig``. These are soapy configuration objects, which can be created by the :ref:``confParse`` module, or could be created manually. If created manually, check the :ref: ``confParse`` section to see which attributes the configuration objects must contain.
+    On initialisation of the object, new phase screens can be created, or others loaded from ``.fits`` file. The atmosphere is created with parameters given in ``ConfigObj.sim`` and ``ConfigObj.atmos``. These are soapy configuration objects, which can be created by the :ref:``confParse`` module, or could be created manually. If created manually, check the :ref: ``confParse`` section to see which attributes the configuration objects must contain.
 
     If loaded from file, the screens should have a header with the parameter ``R0`` specifying the r0 fried parameter of the screen in pixels.
 
     The method ``moveScrns`` can be called on each iteration of the AO system to move the scrns forward by one time step. The size of this is defined by parameters given in
 
     The method ``randomScrns`` returns a set of random phase screens with the smame statistics as the ``atmos`` object.
-    '''
-    def __init__(self, simConfig, atmosConfig, mpPool=None):
 
-        self.scrnSize = simConfig.scrnSize
-        self.windDirs = atmosConfig.windDirs
-        self.windSpeeds = atmosConfig.windSpeeds
-        self.pxlScale = simConfig.pxlScale
-        self.wholeScrnSize = atmosConfig.wholeScrnSize
-        self.scrnNo = atmosConfig.scrnNo
-        self.r0 = atmosConfig.r0
-        self.looptime = simConfig.loopTime
+    Parameters:
+        soapyConfig(ConfigObj): The Soapy config object
+    '''
+
+    def __init__(self, soapyConfig, mpPool=None):
+
+        self.simConfig = soapyConfig.sim
+        self.config =  soapyConfig.atmos
 
         self.mpPool = mpPool
-        self.atmosConfig = atmosConfig
 
-        atmosConfig.scrnStrengths = numpy.array(atmosConfig.scrnStrengths,
+        self.scrnSize = self.simConfig.scrnSize
+        self.windDirs = self.config.windDirs
+        self.windSpeeds = self.config.windSpeeds
+        self.pxlScale = self.simConfig.pxlScale
+        self.wholeScrnSize = self.config.wholeScrnSize
+        self.scrnNo = self.config.scrnNo
+        self.r0 = self.config.r0
+        self.looptime = self.simConfig.loopTime
+
+        self.config.scrnStrengths = numpy.array(self.config.scrnStrengths,
                 dtype="float32")
 
-        atmosConfig.normScrnStrengths = atmosConfig.scrnStrengths/(
-                            atmosConfig.scrnStrengths[:self.scrnNo].sum())
-        self.atmosConfig.scrnHeights = self.atmosConfig.scrnHeights[
-                    :self.atmosConfig.scrnNo]
+        self.config.normScrnStrengths = self.config.scrnStrengths/(
+                            self.config.scrnStrengths[:self.scrnNo].sum())
+        self.config.scrnHeights = self.config.scrnHeights[
+                    :self.config.scrnNo]
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
-                                *atmosConfig.normScrnStrengths)**(-3./5.) )
+                                *self.config.normScrnStrengths)**(-3./5.) )
         # #Assume r0 calculated for 550nm.
         # self.wvl = 550e-9
 
         # Computes tau0, the AO time constant (Roddier 1981), at current wind speed
-        vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
+        vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * self.config.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
         tau0 = 0.314 * self.r0 / vBar53
 
         # If tau0 specified
-        if atmosConfig.tau0:
-            print("Scaling wind speeds for tau0 from {0:.2f} ms to requested {1:.2f} ms...".format(tau0*1e3, atmosConfig.tau0*1e3))
+        if self.config.tau0:
+            print("Scaling wind speeds for tau0 from {0:.2f} ms to requested {1:.2f} ms...".format(tau0*1e3, self.config.tau0*1e3))
             # Scale wind speeds
-            self.windSpeeds = self.windSpeeds*tau0/atmosConfig.tau0
+            self.windSpeeds = self.windSpeeds*tau0/self.config.tau0
             # Computes tau0 at scaled wind speeds
-            vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * atmosConfig.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
+            vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * self.config.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
             tau0 = 0.314 * self.r0 / vBar53
 
-        ## Print turbuelnce summary
-        print("Turbulence summary @ 500 nm:")
-        print('| r0 = {0:.2f} m ({1:.2f}" seeing)'.format(self.r0, numpy.degrees(0.5e-6/self.r0)*3600.0))
-        print("| Vbar_5/3 = {0:.2f} m/s".format(vBar53))
-        print("| tau0 = {0:.2f} ms".format(tau0*1e3))
+        ## Print turbulence summary
+        logger.info("Turbulence summary @ 500 nm:")
+        logger.info('| r0 = {0:.2f} m ({1:.2f}" seeing)'.format(self.r0, numpy.degrees(0.5e-6/self.r0)*3600.0))
+        logger.info("| Vbar_5/3 = {0:.2f} m/s".format(vBar53))
+        logger.info("| tau0 = {0:.2f} ms".format(tau0*1e3))
 
         self.scrnPos = {}
         self.wholeScrns = {}
@@ -143,21 +149,21 @@ class atmos:
         self.wholeScrnR0 = 1.
 
         # If required, generate some new Kolmogorov phase screens
-        if not atmosConfig.scrnNames:
+        if not self.config.scrnNames:
             logger.info("Generating Phase Screens")
             for i in xrange(self.scrnNo):
 
                 logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
-                if atmosConfig.subHarmonics:
+                if self.config.subHarmonics:
                     self.wholeScrns[i] = ft_sh_phase_screen(
                             self.wholeScrnR0,
                             self.wholeScrnSize, 1./self.pxlScale,
-                            atmosConfig.L0[i], 0.01)
+                            self.config.L0[i], 0.01)
                 else:
                     self.wholeScrns[i] = ft_phase_screen(
                             self.wholeScrnR0,
                             self.wholeScrnSize, 1./self.pxlScale,
-                            atmosConfig.L0[i], 0.01)
+                            self.config.L0[i], 0.01)
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
@@ -166,7 +172,7 @@ class atmos:
             logger.info("Loading Phase Screens")
 
             for i in xrange(self.scrnNo):
-                fitsHDU = fits.open(atmosConfig.scrnNames[i])[0]
+                fitsHDU = fits.open(self.config.scrnNames[i])[0]
                 self.wholeScrns[i] = fitsHDU.data.astype("float32")
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
@@ -260,8 +266,8 @@ class atmos:
         """
 
         # If random screens are required:
-        if self.atmosConfig.randomScrns:
-            return self.randomScrns(subHarmonics=self.atmosConfig.subHarmonics)
+        if self.config.randomScrns:
+            return self.randomScrns(subHarmonics=self.config.subHarmonics)
 
         # Other wise proceed with translating large phase screens
         scrns={}
@@ -330,11 +336,11 @@ class atmos:
             scrns[i] -= scrns[i].mean()
 
             # Calculate the r0 of each screen
-            self.atmosConfig.normScrnStrengths = (
-                    self.atmosConfig.scrnStrengths/
-                        self.atmosConfig.scrnStrengths[:self.scrnNo].sum())
+            self.config.normScrnStrengths = (
+                    self.config.scrnStrengths/
+                        self.config.scrnStrengths[:self.scrnNo].sum())
             self.scrnStrengths = ( ((self.r0**(-5./3.))
-                        *self.atmosConfig.normScrnStrengths)**(-3./5.))
+                        *self.config.normScrnStrengths)**(-3./5.))
             # Finally, scale for r0 and turn to nm
             scrns[i] *= (self.scrnStrengths[i]/self.wholeScrnR0)**(-5./6.)
             scrns[i] *= (500/(2*numpy.pi))
@@ -358,12 +364,12 @@ class atmos:
                 if subHarmonics:
                     scrns[i] = ft_sh_phase_screen(
                             self.scrnStrengths[i], self.scrnSize,
-                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
+                            (self.pxlScale**(-1.)), self.config.L0[i],
                             0.01)
                 else:
                     scrns[i] = ft_phase_screen(
                             self.scrnStrengths[i], self.scrnSize,
-                            (self.pxlScale**(-1.)), self.atmosConfig.L0[i],
+                            (self.pxlScale**(-1.)), self.config.L0[i],
                             0.01)
                 # convert to nm
                 scrns[i] *= (500./(2*numpy.pi))

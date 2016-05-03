@@ -10,7 +10,7 @@ environment:
       MINICONDA: C:\Miniconda35-x64
       PYFFTW: pyFFTW-0.10.1-cp35-none-win_amd64.whl
       PYFFTW_URL: https://pypi.python.org/packages/3.5/p/pyFFTW/pyFFTW-0.10.1-cp35-none-win_amd64.whl
-  
+
 branches:
   only:
     - master
@@ -24,13 +24,19 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy nose astropy numba"
+  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy nose astropy numba pyyaml"
   - activate test-environment
   - pip install coverage
   - pip install codecov
   - "curl -O %PYFFTW_URL% -o %PYFFTW%"
   - dir
   - "pip install %PYFFTW%"
-  
+
 test_script:
   - nosetests --verbosity=3 test/
+
+notifications:
+  - provider: Slack
+    auth_token:
+      secure: 5vJXGvK/N3QwoJETf9FLT5FkGoGgxmjpTLfxvV/3+jD/oOmSbWly9LUpoivTdNeEP4ZS6Jo5B/QBiwdeOaxteg==
+    channel: general

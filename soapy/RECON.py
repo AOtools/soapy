@@ -41,11 +41,12 @@ except NameError:
     xrange = range
 
 class Reconstructor(object):
-    def __init__( self, simConfig, dms, wfss, atmos, runWfsFunc=None):
+    def __init__(self, soapyConfig, dms, wfss, atmos, runWfsFunc=None):
+
 
         self.dms = dms
         self.wfss = wfss
-        self.simConfig = simConfig
+        self.simConfig = soapyConfig.sim
         self.atmos = atmos
 
         self.dmActs = []
@@ -163,7 +164,7 @@ class Reconstructor(object):
             filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
 
             iMat = fits.open(filenameIMat)[0].data
-            
+
             # See if influence functions are also there...
             try:
                 iMatShapes = fits.open(filenameShapes)[0].data
@@ -172,10 +173,10 @@ class Reconstructor(object):
                     logger.warning(
                             "loaded DM shapes are not same size as current sim."
                             )
-                    raise IOError 
+                    raise IOError
                 self.dms[dm].iMatShapes = iMatShapes
 
-            # If not, assume doesn't need them. 
+            # If not, assume doesn't need them.
             # May raise an error elsewhere though
             except IOError:
                 logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")

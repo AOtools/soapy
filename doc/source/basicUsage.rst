@@ -24,12 +24,12 @@ Each parameter that can be set is described in the :ref:`configuration` section.
 Creating Phase Screens
 ----------------------
 
-For most applications of Soapy, some randomly generated phase screens are required. These can either be created just before the simulation begins, during the initialisation phase, or some existing screens can be specified for the simulation to use. To generate new phase screens with the parameters specified in ``Atmosphere`` each time the simulation is run, set the ``Atmosphere`` parameter, ``newScreens`` to ``True``. 
+For most applications of Soapy, some randomly generated phase screens are required. These can either be created just before the simulation begins, during the initialisation phase, or some existing screens can be specified for the simulation to use. To generate new phase screens with the parameters specified in ``Atmosphere`` each time the simulation is run, set the ``Atmosphere`` parameter, ``newScreens`` to ``True``.
 
 .. image:: imgs/phaseScreen.png
         :align: center
 
-If instead you wish to used existing phase screens, provide the path to, and filename of each sreen in the ``screenNames`` parameter as a list. Screens specified to be loaded must be saved as FITS files, where each file contains a single, 2 dimensional phase screen. The simulation will largely trust that the screen parameters are valid, so other parameters in the ``Atmosphere`` group, such as the ``wholeScreenSize``, ``r0`` and ``L0`` may be discounted. If you would like the simulation to be able to scale your phase screens such that they adhere to the ``r0`` and ``screenStrength`` values set in the configuration file, then the FITS file header must contain a parameter ``R0`` which is expressed in units of phase pixels.
+If instead you wish to used existing phase screens, provide the path to, and filename of each screen in the ``screenNames`` parameter as a list. Screens specified to be loaded must be saved as FITS files, where each file contains a single, 2 dimensional phase screen. The simulation will largely trust that the screen parameters are valid, so other parameters in the ``Atmosphere`` group, such as the ``wholeScreenSize``, ``r0`` and ``L0`` may be discounted. If you would like the simulation to be able to scale your phase screens such that they adhere to the ``r0`` and ``screenStrength`` values set in the configuration file, then the FITS file header must contain a parameter ``R0`` which is expressed in units of phase pixels.
 
 Running the Simulation
 ----------------------
@@ -46,7 +46,7 @@ When running Soapy configurations for the first time it can be a good idea to ru
 
 If soapy has been installed, or the ``bin`` directory is in the bash PATH, the GUI is started from the command line with the command::
 
-    soapy -g path/to/configFile.py
+    soapy -g path/to/configFile.yaml
 
 The ``soapy`` script can do a few other things as well, use ``soapy --help`` to see all other available options.
 
@@ -54,9 +54,9 @@ Once the GUI has loaded it will begin the initialisation of the simulation. This
 
 The next step in most systems will be to record an interaction matrix, where the effect of each DM influence on the WFS(s) is recorded, and used to calculate a command matrix. From the GUI, this is achieved by clicking the "makeIMat" button. Interaction matrices, command matrices and DM influence functions can be saved in the ``simName`` directory and the simulation checks to see if there are valid ones in that directory it can load instead of making them again. If you would like to force a new interaction matrix to be made, perhaps because you've changed parameters which may effect the new interaction matrix, tick the "Force new?" box.
 
-Once this is complete, you can now click "Run!" to run the simulation. You will now see the atmospheric phase moving across the WFS(s), and the resulting measurements on the WFS. This will be recorded, and transformed to DM commands measurements via the reconstructor, and finally, the science phase will be corrected and a better PSF achieved. The loop gain for each DM can be altered using the spin boxes in the top right of the GUI. 
+Once this is complete, you can now click "Run!" to run the simulation. You will now see the atmospheric phase moving across the WFS(s), and the resulting measurements on the WFS. This will be recorded, and transformed to DM commands measurements via the reconstructor, and finally, the science phase will be corrected and a better PSF achieved. The loop gain for each DM can be altered using the spin boxes in the top right of the GUI.
 
-Using the GUI significantly slows down the simulation operation, but this can be aleviated by limiting the simulation update rate using the top spin box.  
+Using the GUI significantly slows down the simulation operation, but this can be aleviated by limiting the simulation update rate using the top spin box.
 
 The console in the bottom left of the GUI can be used to either change parameters of the simulation or visualise other data sources. It is a complete python console, provided by the IPython library. To load a new config file into the GUI, go the file>Load Configuration File. You will then have to click "AO Init" to begin initialisation.
 
@@ -65,18 +65,18 @@ Command Line and Scripting
 
 To run the simulation from the command line, either use ::
 
-    soapy -i /path/to/configFile.py
+    soapy -i /path/to/configFile.yaml
 
 which will initialise the simulation before dropping you into an interaction ipython prompt, or simply start or python interpretter of choice and run ::
 
     import soapy                                #Imports python library
-    sim = soapy.Sim("/path/to/configFile.py")   #Loads the configuration file
+    sim = soapy.Sim("/path/to/configFile.yaml")   #Loads the configuration file
     sim.aoinit()                                #Initialises all AO simulated objects
 
 The above code would also be used in scripts to run the simulation.
 
 To measure the interaction matrix run::
-    
+
     sim.makeIMat()
 
 or::
@@ -94,10 +94,10 @@ You should now see a rolling counter of the frame number and current Strehl rati
 Retrieving Simulation Data
 --------------------------
 
-After a simulation run has completed, the resulting data must be retrieved for analysis. The data stored by Soapy depends on the parameters set in the ``sim`` group in the configuration file. Once a ``aoloop`` has completed, the data will be saved into the ``simName`` directory, in a further, time-stamped directory for that particular run. Whithin the simulation, the data is stored in numpy array structures which can be accessed either after the run has completed or during the run (if it is run in the, or in a python thread on the command line). 
+After a simulation run has completed, the resulting data must be retrieved for analysis. The data stored by Soapy depends on the parameters set in the ``sim`` group in the configuration file. Once a ``aoloop`` has completed, the data will be saved into the ``simName`` directory, in a further, time-stamped directory for that particular run. Whithin the simulation, the data is stored in numpy array structures which can be accessed either after the run has completed or during the run (if it is run in the, or in a python thread on the command line).
 
 The strehl ratio of each science target is always stored. Internally, it is kept in the arrays::
-    
+
     sim.instStrehl
 
 and::

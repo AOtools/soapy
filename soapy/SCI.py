@@ -27,12 +27,13 @@ CDTYPE = numpy.complex64
 
 class PSF(object):
 
-    def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
+    def __init__(self, soapyConfig, nSci=0, mask=None):
 
-        self.simConfig = simConfig
-        self.telConfig = telConfig
-        self.config = self.sciConfig = sciConfig # For compatability
-        self.atmosConfig = atmosConfig
+        self.soapyConfig = soapyConfig
+        self.simConfig = soapyConfig.sim
+        self.telConfig = soapyConfig.tel
+        self.config = self.sciConfig = soapyConfig.scis[nSci] # For compatability
+        self.atmosConfig = soapyConfig.atmos
         self.mask = mask
         self.FOVrad = self.config.FOV * numpy.pi / (180. * 3600)
 
@@ -49,13 +50,20 @@ class PSF(object):
 
         # Init line of sight - Get the phase at the right size for the FOV
         self.los = lineofsight.LineOfSight(
-                self.config, self.simConfig, self.atmosConfig,
+                self.config, self.soapyConfig,
                 propagationDirection="down")
 
-        mask = self.mask[
-                self.simConfig.simPad:-self.simConfig.simPad,
-                self.simConfig.simPad:-self.simConfig.simPad
-                ]
+        # Make a default circular mask of the pupil size if not provided
+        if mask is None:
+            mask = aoSimLib.circle(
+                    self.simConfig.pupilSize/2., self.simConfig.pupilSize)
+        else:
+            # If the provided mask is the simSize, must crop down to pupilSize
+            if mask.shape == (self.simConfig.simSize,)*2:
+                mask = self.mask[
+                        self.simConfig.simPad:-self.simConfig.simPad,
+                        self.simConfig.simPad:-self.simConfig.simPad
+                        ]
 
         self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
                                       ).astype("int32")
@@ -73,8 +81,8 @@ class PSF(object):
         self.FFT = AOFFT.FFT(
                 inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1),
                 mode="pyfftw", dtype="complex64",
-                fftw_FLAGS=(sciConfig.fftwFlag, "FFTW_DESTROY_INPUT"),
-                THREADS=sciConfig.fftwThreads)
+                fftw_FLAGS=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
+                THREADS=self.config.fftwThreads)
 
         # Convert phase in nm to radians at science wavelength
         self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
