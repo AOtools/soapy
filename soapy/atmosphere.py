@@ -105,8 +105,7 @@ class atmos(object):
         self.r0 = self.config.r0
         self.looptime = self.simConfig.loopTime
 
-        self.config.scrnStrengths = numpy.array(self.config.scrnStrengths,
-                dtype="float32")
+        self.config.scrnStrengths = numpy.array(self.config.scrnStrengths, dtype="float32")
 
         self.config.normScrnStrengths = self.config.scrnStrengths/(
                             self.config.scrnStrengths[:self.scrnNo].sum())
