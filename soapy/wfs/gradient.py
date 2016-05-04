@@ -25,7 +25,8 @@ except NameError:
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
-
+RAD2ASEC = 206264.849159
+ASEC2RAD = 1./RAD2ASEC
 
 class Gradient(base.WFS):
 
@@ -37,13 +38,21 @@ class Gradient(base.WFS):
         # Normalise gradient measurement to 1 radian
         self.subapDiam = self.telConfig.telDiam/self.wfsConfig.nxSubaps
 
-        amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
+        # amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
         # NEEDS FIXED - USEFUL FOR ONE SCENARIO (apr)
 
-        # Arrays to be used for gradient calculation
-        coord = numpy.linspace(-amp, amp, self.subapSpacing)
-        self.xGrad, self.yGrad = numpy.meshgrid(coord, coord)
+        # Amp in m of 1 arcsecond tilt for single sub-aperture
+        amp = self.subapDiam * 1. * ASEC2RAD
+        
+        # amp of 1" tilt in rads of the light
+        amp *= ( (2 * numpy.pi) / self.config.wavelength)
 
+        # Arrays to be used for gradient calculation
+        coord = numpy.linspace(-amp/2., amp/2., self.subapSpacing)
+        self.xGrad_1, self.yGrad_1 = numpy.meshgrid(coord, coord)
+        
+        self.xGrad = self.xGrad_1/((self.xGrad_1**2).sum())
+        self.yGrad = self.yGrad_1/((self.yGrad_1**2).sum())
 
     def findActiveSubaps(self):
         '''
