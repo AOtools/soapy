@@ -25,6 +25,8 @@ except NameError:
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
+RAD2ASEC = 206264.849159
+ASEC2RAD = 1./RAD2ASEC
 
 
 class Gradient(base.WFS):
@@ -37,12 +39,28 @@ class Gradient(base.WFS):
         # Normalise gradient measurement to 1 radian
         self.subapDiam = self.telConfig.telDiam/self.wfsConfig.nxSubaps
 
-        amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
+        # amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
         # NEEDS FIXED - USEFUL FOR ONE SCENARIO (apr)
-
+        
+        coord = numpy.pi/(206265*180.)*self.soapyConfig.tel.telDiam
+        coord *= 1e9
+        coord *= ((2*numpy.pi)/self.config.wavelength) * 1e-9
+        amp = coord / self.config.nxSubaps
+        
+        # amp = self.subapDiam*numpy.pi*ASEC2RAD/(self.config.wavelength)
+        
         # Arrays to be used for gradient calculation
-        coord = numpy.linspace(-amp, amp, self.subapSpacing)
-        self.xGrad, self.yGrad = numpy.meshgrid(coord, coord)
+        coord = numpy.linspace(-amp/2., amp/2., self.subapSpacing)
+        
+        self.xGrad1, self.yGrad1 = numpy.meshgrid(coord, coord)
+                
+        self.xGrad = self.xGrad1 * (1./(numpy.sum(self.xGrad1**2.)))
+        self.yGrad = self.yGrad1 * (1./(numpy.sum(self.yGrad1**2.)))
+        
+        print self.xGrad.mean()
+        
+        # self.xGrad -= self.xGrad.mean()
+        # self.yGrad -= self.yGrad.mean()
 
 
     def findActiveSubaps(self):
@@ -94,15 +112,15 @@ class Gradient(base.WFS):
         coord = self.simConfig.simPad
         self.pupilPhase = self.los.phase[coord:-coord, coord:-coord]
 
-        #create an array of individual subap phase
-        for i, (x,y) in enumerate(self.subapCoords):
+        # Create an array of individual subap phase
+        for i, (x, y) in enumerate(self.subapCoords):
             self.subapArrays[i] = self.pupilPhase[
                     x: x+self.subapSpacing, y: y+self.subapSpacing]
 
 
     def makeDetectorPlane(self):
         '''
-        Creates a 'detector' image suitable
+        Creates a 'detector' image suitable for plotting
         '''
         self.wfsDetectorPlane = numpy.zeros((self.wfsConfig.nxSubaps,)*2)
 
