@@ -3,8 +3,8 @@ sudo: false
 branches:
   only:
   - master
-  - lineOfSightObj
   - numba
+  
 python:
 - 2.7
 - 3.5
