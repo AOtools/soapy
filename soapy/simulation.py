@@ -169,7 +169,7 @@ class Sim(object):
         # Calculate some params from read ones
         self.config.calcParams()
 
-        #Init Pupil Mask
+        # Init Pupil Mask
         logger.info("Creating mask...")
         if self.config.tel.mask == "circle":
             self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
@@ -179,11 +179,22 @@ class Sim(object):
                         self.config.tel.obsDiam*self.config.sim.pxlScale/2.,
                         self.config.sim.pupilSize
                         )
+        elif isinstance(self.config.tel.mask, str):
+            maskHDUList = fits.open(self.config.tel.mask)
+            self.mask = maskHDUList[0].data.copy()
+            maskHDUList.close()
+            logger.info('load mask "{}", of size: {}'.format(self.config.tel.mask, self.mask.shape))
+            
         else:
             self.mask = self.config.tel.mask.copy()
 
-        self.mask = numpy.pad(
-                self.mask, self.config.sim.simPad, mode="constant")
+        if (not numpy.array_equal(self.mask.shape, (self.config.sim.pupilSize,)*2) 
+                and not numpy.array_equal(self.mask.shape, (self.config.sim.simSize,)*2) ):
+            raise ValueError("Mask Shape {} not compatible. Should be either `pupilSize` or `simSize`".format(self.mask.shape))
+
+        if self.mask.shape != (self.config.sim.simSize, )*2:
+            self.mask = numpy.pad(
+                    self.mask, self.config.sim.simPad, mode="constant")
 
         self.atmos = atmosphere.atmos(self.config)
 
