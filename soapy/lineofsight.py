@@ -188,9 +188,8 @@ class LineOfSight(object):
         return radii
 
 
- #############################################################
-#Phase stacking routines for a WFS frame
-
+    #############################################################
+    # Phase stacking routines for a WFS frame
     def getMetaPupilPos(self, height, apos=None):
         '''
         Finds the centre of a metapupil at a given height,

@@ -27,7 +27,10 @@ DTYPE = numpy.float32
 
 RAD2ASEC = 206264.849159
 ASEC2RAD = 1./RAD2ASEC
+<<<<<<< HEAD
 
+=======
+>>>>>>> soapy/master
 
 class Gradient(base.WFS):
 
@@ -37,8 +40,9 @@ class Gradient(base.WFS):
         self.findActiveSubaps()
 
         # Normalise gradient measurement to 1 radian
-        self.subapDiam = self.telConfig.telDiam/self.wfsConfig.nxSubaps
+        self.subapDiam = float(self.telConfig.telDiam) / self.wfsConfig.nxSubaps
 
+<<<<<<< HEAD
         # amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
         # NEEDS FIXED - USEFUL FOR ONE SCENARIO (apr)
         
@@ -62,6 +66,26 @@ class Gradient(base.WFS):
         # self.xGrad -= self.xGrad.mean()
         # self.yGrad -= self.yGrad.mean()
 
+=======
+        # Amp in m of 1 arcsecond tilt for single sub-aperture
+        amp = self.telConfig.telDiam * 1. * ASEC2RAD
+        
+        # amp of 1" tilt in rads of the light
+        amp *= ((2 * numpy.pi) / self.config.wavelength)
+
+        # Arrays to be used for gradient calculation
+        telCoord = numpy.linspace(0, amp, self.soapyConfig.sim.pupilSize)
+        subapCoord = telCoord[:self.subapSpacing]
+        
+        # Remove piston
+        subapCoord -= subapCoord.mean()
+        subapCoord *= -1
+        
+        self.xGrad_1, self.yGrad_1 = numpy.meshgrid(subapCoord, subapCoord)
+        
+        self.xGrad = self.xGrad_1/((self.xGrad_1**2).sum())
+        self.yGrad = self.yGrad_1/((self.yGrad_1**2).sum())
+>>>>>>> soapy/master
 
     def findActiveSubaps(self):
         '''
@@ -89,12 +113,11 @@ class Gradient(base.WFS):
 
         super(Gradient, self).allocDataArrays()
 
-        self.subapArrays=numpy.zeros(
+        self.subapArrays = numpy.zeros(
                 (self.activeSubaps, self.subapSpacing, self.subapSpacing),
                 dtype=DTYPE)
 
         self.slopes = numpy.zeros(2 * self.activeSubaps)
-
 
 
     def calcFocalPlane(self, intensity=1):
@@ -125,7 +148,7 @@ class Gradient(base.WFS):
         self.wfsDetectorPlane = numpy.zeros((self.wfsConfig.nxSubaps,)*2)
 
         coords = (self.subapCoords/self.subapSpacing).astype('int')
-        self.wfsDetectorPlane[coords[:,0], coords[:,1]] = self.subapArrays.mean((1,2))
+        self.wfsDetectorPlane[coords[:, 0], coords[:, 1]] = self.subapArrays.mean((1, 2))
 
     def calculateSlopes(self):
         '''

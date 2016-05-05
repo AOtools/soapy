@@ -169,8 +169,9 @@ class atmos(object):
             logger.info("Loading Phase Screens")
 
             for i in xrange(self.scrnNo):
-                fitsHDU = fits.open(self.config.scrnNames[i])[0]
-                self.wholeScrns[i] = fitsHDU.data.astype("float32")
+                fitsHDU = fits.open(self.config.scrnNames[i])
+                scrnHDU = fitsHDU[0]
+                self.wholeScrns[i] = scrnHDU.data.astype("float32")
 
                 scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
@@ -178,7 +179,7 @@ class atmos(object):
                 # Theyre r0 must be in pixels! label: "R0"
                 # If so, we can scale them to the desired r0
                 try:
-                    r0 = float(fitsHDU.header["R0"])
+                    r0 = float(scrnHDU.header["R0"])
                     r0_metres = r0/self.pxlScale
                     self.wholeScrns[i] *=(
                                  (self.wholeScrnR0/r0_metres)**(-5./6.)
@@ -186,14 +187,18 @@ class atmos(object):
 
                 except KeyError:
                     logger.warning("no r0 info found in screen header - will assume its ok as it is")
-
+                    
+            # close fits HDU now we're done with it
+            fitsHDU.close()
+                   
             if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
                 logger.warning("Requested phase screen has different size to that input in config file....loading anyway")
 
             self.wholeScrnSize = self.wholeScrns[i].shape[0]
             if self.wholeScrnSize < self.scrnSize:
                 raise Exception("required scrn size larger than phase screen")
-
+            
+            
         # However we made the phase screen, turn it into meters for ease of
         # use
 #        for s in range(self.scrnNo):
@@ -248,9 +253,11 @@ class atmos(object):
         for scrn in range(self.scrnNo):
             logger.info("Write Sreen {}....".format(scrn))
             hdu = fits.PrimaryHDU(self.wholeScrns[scrn])
-            hdu.header["R0"] = "{:.2f}".format(
-                    self.scrnStrengths[scrn]*self.pxlScale)
-            hdu.writeto(DIR+"/scrn{}.fits".format(scrn))
+            hdu.header["R0"] = self.wholeScrnR0 * self.pxlScale
+            hdulist = fits.HDUList([hdu])
+            hdulist.writeto(DIR+"/scrn{}.fits".format(scrn))
+            hdulist.close()
+
             logger.info("Done!")
 
 
