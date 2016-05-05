@@ -39,14 +39,20 @@ class Gradient(base.WFS):
         self.subapDiam = float(self.telConfig.telDiam) / self.wfsConfig.nxSubaps
 
         # Amp in m of 1 arcsecond tilt for single sub-aperture
-        amp = self.subapDiam * 1. * ASEC2RAD
+        amp = self.telConfig.telDiam * 1. * ASEC2RAD
         
         # amp of 1" tilt in rads of the light
         amp *= ((2 * numpy.pi) / self.config.wavelength)
 
         # Arrays to be used for gradient calculation
-        coord = numpy.linspace(-amp/2., amp/2., self.subapSpacing)
-        self.xGrad_1, self.yGrad_1 = numpy.meshgrid(coord, coord)
+        telCoord = numpy.linspace(0, amp, self.soapyConfig.sim.pupilSize)
+        subapCoord = telCoord[:self.subapSpacing]
+        
+        # Remove piston
+        subapCoord -= subapCoord.mean()
+        subapCoord *= -1
+        
+        self.xGrad_1, self.yGrad_1 = numpy.meshgrid(subapCoord, subapCoord)
         
         self.xGrad = self.xGrad_1/((self.xGrad_1**2).sum())
         self.yGrad = self.yGrad_1/((self.yGrad_1**2).sum())
