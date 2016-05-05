@@ -629,9 +629,6 @@ class WfsConfig(ConfigObj):
         ``GSPosition``          tuple: position of GS on-sky in arc-secs
         ``wavelength``          float: wavelength of GS light in metres
         ``nxSubaps``            int: number of SH sub-apertures
-        ``pxlsPerSubap``        int: number of pixels per sub-apertures
-        ``subapFOV``            float: Field of View of sub-aperture in
-                                arc-secs
         ==================      ===================
 
     Optional:
@@ -701,6 +698,10 @@ class WfsConfig(ConfigObj):
                             system processor number.           ``1``
         ``fftwFlag``        str: Flag to pass to FFTW
                             when preparing plan.               ``FFTW_PATIENT``
+        ``pxlsPerSubap``    int: number of pixels per
+                            sub-apertures                      ``10``
+        ``subapFOV``        float: Field of View of
+                            sub-aperture in arc-secs           ``5``
         =================== ================================== ===========
 
 
@@ -709,8 +710,6 @@ class WfsConfig(ConfigObj):
     requiredParams = [ "GSPosition",
                         "wavelength",
                         "nxSubaps",
-                        "pxlsPerSubap",
-                        "subapFOV",
                         ]
     optionalParams = [  ("propagationMode", "Geometric"),
                         ("fftwThreads", 1),
@@ -734,6 +733,8 @@ class WfsConfig(ConfigObj):
                         ("GSMag", 0.0),
                         ("wvlBandWidth", 100.),
                         ("extendedObject", None),
+                        ("pxlsPerSubap", 10),
+                        ("subapFOV", 5),
                         ]
 
         # Parameters which may be Set at some point and are allowed

@@ -105,15 +105,15 @@ class Gradient(base.WFS):
         coord = self.simConfig.simPad
         self.pupilPhase = self.los.phase[coord:-coord, coord:-coord]
 
-        #create an array of individual subap phase
-        for i, (x,y) in enumerate(self.subapCoords):
+        # Create an array of individual subap phase
+        for i, (x, y) in enumerate(self.subapCoords):
             self.subapArrays[i] = self.pupilPhase[
                     x: x+self.subapSpacing, y: y+self.subapSpacing]
 
 
     def makeDetectorPlane(self):
         '''
-        Creates a 'detector' image suitable
+        Creates a 'detector' image suitable for plotting
         '''
         self.wfsDetectorPlane = numpy.zeros((self.wfsConfig.nxSubaps,)*2)
 
