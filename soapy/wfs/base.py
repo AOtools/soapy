@@ -80,7 +80,6 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 
 import numpy
 import numpy.random
-from scipy.interpolate import interp2d
 try:
     from astropy.io import fits
 except ImportError:
