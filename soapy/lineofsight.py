@@ -171,12 +171,13 @@ class LineOfSight(object):
             GSHeight (float): The height of the GS in metres
 
         Returns:
-            dict : A dictionary containing the radii of a meta-pupil at each screen height
+            dict : A dictionary containing the radii of a meta-pupil at each screen height in phase pixels
         '''
 
         radii = {}
         for i in xrange(self.atmosConfig.scrnNo):
-            radii[i] = self.calcMetaPupilSize(self.atmosConfig.scrnHeights[i], GSHeight)
+            radii[i] = self.simConfig.pxlScale * self.calcMetaPupilSize(
+                        self.atmosConfig.scrnHeights[i], GSHeight)
 
         return radii
 
@@ -190,7 +191,7 @@ class LineOfSight(object):
             GSHeight (float): Altitude of guide star
         
         Returns:
-            float: Radius of metapupil
+            float: Radius of metapupil in metres
           
         """
         # If GS at infinity, radius is telescope radius
@@ -203,7 +204,7 @@ class LineOfSight(object):
         
         # Find radius of metaPupil geometrically (fraction of pupil at
         # Ground Layer)
-        radius = (self.simConfig.pupilSize/2.) * (1-(float(scrnHeight)/GSHeight))
+        radius = (self.soapyConfig.tel.telDiam/2.) * (1-(float(scrnHeight)/GSHeight))
 
 
         

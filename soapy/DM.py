@@ -173,7 +173,7 @@ class DM(object):
                 # Send the DM shape off to the relavent WFS. put result in iMat
                 iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
                        -1*self.wfss[nWfs].frame(
-                                phs, correction=self.dmShape))/self.dmConfig.iMatValue
+                                phs, correction=self.dmShape, iMatFrame=True))/self.dmConfig.iMatValue
 
                 if callback != None:
                     callback()
