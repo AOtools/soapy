@@ -72,7 +72,7 @@ class LineOfSight(object):
 
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.height!=0:
-            self.radii = self.findMetaPupilSize(self.height)
+            self.radii = self.findMetaPupilSizes(self.height)
         else:
             self.radii = None
 
@@ -176,7 +176,7 @@ class LineOfSight(object):
 
         radii = {}
         for i in xrange(self.atmosConfig.scrnNo):
-            radii[i] = self.calcMetaPupilSize(self.atmosConfig.scrnHeight[i], GSHeight)
+            radii[i] = self.calcMetaPupilSize(self.atmosConfig.scrnHeights[i], GSHeight)
 
         return radii
 
