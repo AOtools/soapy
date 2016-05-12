@@ -147,7 +147,7 @@ class WFS(object):
         self.calcInitParams()
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.config.GSHeight != 0:
-            self.radii = self.los.findMetaPupilSize(self.config.GSHeight)
+            self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
         else:
             self.radii = None
 
@@ -239,7 +239,7 @@ class WFS(object):
                 self.elongPhaseAdditions = numpy.zeros(
                     (self.elongLayers, self.los.nOutPxls, self.los.nOutPxls))
                 for i in xrange(self.elongLayers):
-                    self.elongRadii[i] = self.los.findMetaPupilSize(
+                    self.elongRadii[i] = self.los.findMetaPupilSizes(
                                                 float(self.elongHeights[i]))
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
