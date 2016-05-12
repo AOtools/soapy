@@ -473,18 +473,16 @@ class Sim(object):
             ndArray: the combined DM shape
         """
         t = time.time()
-        self.dmShape[:] = 0
+        self.dmShapes = []
 
         for dm in xrange(self.config.sim.nDM):
-            if self.config.dms[dm].closed==closed:
-                self.dmShape += self.dms[dm].dmFrame(
+            if self.config.dms[dm].closed == closed:
+                self.dmShapes.append(self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
-                                    self.dmAct1[dm]+self.dms[dm].acts],
-                                                    closed
-                                                    )
+                                    self.dmAct1[dm]+self.dms[dm].acts], closed))
 
-        self.Tdm += time.time()-t
-        return self.dmShape
+        self.Tdm += time.time() - t
+        return self.dmShapes
 
     def runSciCams(self, dmShape=None):
         """
@@ -493,13 +491,13 @@ class Sim(object):
         Calculates the image recorded by all science cameras in the system for the current phase over the telescope one frame. If a dmShape is present (which it usually will be in AO!) this correction is applied to the science phase before the image is calculated.
 
         Args:
-            dmShape (ndarray, optional): An array of the combined system DM shape to correct the science path. If not given science cameras are in open loop.
+            correction (list or ndarray, optional): An array of the combined system DM shape to correct the science path. If not given science cameras are in open loop.
         """
         t = time.time()
 
         self.sciImgNo +=1
-        for sci in xrange( self.config.sim.nSci ):
-            self.sciImgs[sci] += self.sciCams[sci].frame(self.scrns,dmShape)
+        for sci in xrange(self.config.sim.nSci):
+            self.sciImgs[sci] += self.sciCams[sci].frame(self.scrns, dmShape)
 
             # Normalise long exposure psf
             #self.sciImgs[sci] /= self.sciImgs[sci].sum()
@@ -521,10 +519,6 @@ class Sim(object):
         self.scrns = self.atmos.moveScrns()
         self.Tatmos = time.time()-t
 
-        # Reset correction
-        self.closedCorrection[:] = 0
-        self.openCorrection[:] = 0
-
         # Run Loop...
         ########################################
 
@@ -536,20 +530,21 @@ class Sim(object):
         self.dmCommands = self.buffer.delay(self.dmCommands, self.config.sim.loopDelay)
 
         # Get dmShape from closed loop DMs
-        self.closedCorrection += self.runDM(
+        self.closedCorrection = self.runDM(
                 self.dmCommands, closed=True)
 
         # Run WFS, with closed loop DM shape applied
         self.slopes = self.runWfs(  dmShape=self.closedCorrection,
                                     loopIter=self.iters)
 
-        # Get DM shape for open loop DMs, add to closed loop DM shape
-        self.openCorrection += self.runDM(  self.dmCommands,
+        # Get DM shape for open loop DMs
+        self.openCorrection = self.runDM( self.dmCommands,
                                             closed=False)
 
         # Pass whole combined DM shapes to science target
-        self.runSciCams(
-                    self.openCorrection+self.closedCorrection)
+        self.combinedCorrection = self.openCorrection + self.closedCorrection
+
+        self.runSciCams(self.combinedCorrection)
 
         # Save Data
         self.storeData(self.iters)
@@ -574,9 +569,9 @@ class Sim(object):
         self.go = True
 
         #Circular buffers to hold loop iteration correction data
-        self.slopes = numpy.zeros( ( self.config.sim.totalWfsData) )
-        self.closedCorrection = numpy.zeros(self.dmShape.shape)
-        self.openCorrection = self.closedCorrection.copy()
+        self.slopes = numpy.zeros((self.config.sim.totalWfsData))
+        self.closedCorrection = []
+        self.openCorrection = []
         self.dmCommands = numpy.zeros( self.config.sim.totalActs )
 
         try:
@@ -980,7 +975,7 @@ class Sim(object):
                 dmShape = {}
                 for i in xrange(self.config.sim.nDM):
                     try:
-                        dmShape[i] = self.dms[i].dmShape.copy()*self.mask
+                        dmShape[i] = self.dms[i].dmShape.copy()#*self.mask
                     except AttributeError:
                         dmShape[i] = None
 

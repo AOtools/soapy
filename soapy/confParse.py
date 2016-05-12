@@ -220,17 +220,23 @@ class PY_Configurator(object):
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
         logger.info("subScreenSize: {:d} simulation pixels".format(int(self.sim.scrnSize)))
 
-        # If outer scale is None, set all to 100m
+        # If outer scale is None, set all to really big number. Will introduce bugs when we make
+        # telescopes with diameter >1000000s of kilometres
         if self.atmos.L0 is None:
             self.atmos.L0 = []
             for scrn in range(self.atmos.scrnNo):
-                self.atmos.L0.append(100.)
+                self.atmos.L0.append(10e9)
 
         # Check if SH WFS with 1 subap. Feild stop must be FOV
         for wfs in self.wfss:
             if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture".format(wfs))
                 wfs.subapFieldStop = True
+
+        # If dm diameter is None, set to telescope diameter
+        for dm in self.dms:
+            if dm.diameter is None:
+                dm.diameter = self.tel.telDiam
 
 
     def __iter__(self):
@@ -912,6 +918,11 @@ class DmConfig(ConfigObj):
         ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the
                              inter-actuator spacing.             ``0.5``
+        ``altitude``         float: Altitude to which DM is 
+                             optically conjugated.               ``0``
+        ``diameter``         float: Diameter covered by DM in 
+                             metres. If ``None`` if telescope 
+                             diameter.                           ``None`` 
         ==================== =================================   ===========
     """
 
@@ -930,6 +941,8 @@ class DmConfig(ConfigObj):
                     ("rotation", 0),
                     ("interpOrder", 2),
                     ("gaussWidth", 0.5),
+                    ("altitude", 0.),
+                    ("diameter", None)
                     ]
 
     calculatedParams = [

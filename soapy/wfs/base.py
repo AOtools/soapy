@@ -375,7 +375,7 @@ class WFS(object):
 
             # Apply any correction
             if correction is not None:
-                self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
+                self.los.performCorrection(correction)
 
             # Add onto the focal plane with that layers intensity
             self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
@@ -404,9 +404,6 @@ class WFS(object):
             self.iMat = True
             removeTT = self.config.removeTT
             self.config.removeTT = False
-            # if self.config.lgs:
-            #     elong = self.elong
-            # self.elong = 0
             photonNoise = self.config.photonNoise
             self.config.photonNoise = False
             eReadNoise = self.config.eReadNoise
@@ -433,11 +430,9 @@ class WFS(object):
                 self.los.makePhase(self.radii)
 
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
-            if numpy.any(correction):
-                correctionPhase = aoSimLib.zoom(
-                        correction, self.los.nOutPxls, order=1)
-                self.los.EField *= numpy.exp(-1j*correctionPhase*self.los.phs2Rad)
-                self.los.phase -= correctionPhase * self.los.phs2Rad
+            if correction is not None:
+                self.los.performCorrection(correction)
+                
             self.calcFocalPlane()
 
         if read:
@@ -449,8 +444,6 @@ class WFS(object):
         if iMatFrame:
             self.iMat=False
             self.config.removeTT = removeTT
-            # if self.config.lgs:
-            #     self.elong = elong
             self.config.photonNoise = photonNoise
             self.config.eReadNoise = eReadNoise
 
@@ -480,7 +473,7 @@ class WFS(object):
                 0, self.config.eReadNoise, self.wfsDetectorPlane.shape
                 )
 
-    def calcFocalPlane(self):
+    def calcFocalPlane(self, intensity=None):
         pass
 
     def makeDetectorPlane(self):

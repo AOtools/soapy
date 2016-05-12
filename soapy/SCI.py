@@ -166,7 +166,6 @@ class PSF(object):
         Returns:
             ndarray: Resulting science PSF
         """
-
         self.los.frame(scrns, correction=correction)
 
         self.calcFocalPlane()
