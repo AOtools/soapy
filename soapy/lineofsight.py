@@ -485,7 +485,7 @@ class LineOfSight(object):
            
             self.phase = self.residual * self.phs2Rad
 
-    def frame(self, scrns, correction=None):
+    def frame(self, scrns=None, correction=None):
         '''
         Runs one frame through a line of sight
 
@@ -502,14 +502,17 @@ class LineOfSight(object):
             ndarray: WFS Measurements
         '''
 
-        #If scrns is not dict or list, assume array and put in list
-        t = type(scrns)
-        if t != dict and t != list:
-            scrns = [scrns]
-        self.scrns = scrns
-
         self.zeroData()
-        self.makePhase(self.radii)
+
+        if scrns is not None:
+        
+            #If scrns is not dict or list, assume array and put in list
+            t = type(scrns)
+            if t != dict and t != list:
+                scrns = [scrns]
+            self.scrns = scrns
+
+            self.makePhase(self.radii)
         
         if correction is not None:
             self.performCorrection(correction)
