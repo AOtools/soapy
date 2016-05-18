@@ -284,7 +284,7 @@ class ShackHartmann(base.WFS):
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
-            x,y = numpy.round(self.subapCoords[i] *
+            x, y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
             self.subapArrays[i] = self.cropEField[
                                     int(x):
