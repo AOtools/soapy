@@ -1,4 +1,18 @@
-#0.10
+#0.12.0
+- Shift lots of light propagation code to a separate `LineOfSight` object, which is shared by WFSs, LGSs and Science targets
+- Add optional YAML configuration style. This will now be the main supported configuration method
+- Added ability to conjugate DMs at a finite altitude
+- Re-worked API to objects so they only need the simulation config file 
+- Fix "Gradient" WFS so slopes outputted in arcseconds
+- Other fixes and small features
+
+#0.11.0
+-  Begun restructuring of components as files were getting very large. Now components will be kept in sub-modules. Done WFS module.
+- Re-worked correlation WFSing - now there is an "ExtendedSH" WFS, which can take an extended object, that is convolved with the sub-aperture PSF to form a wide-field WFSer. A correlation centroiding technique is used to get centroids (thanks to @matthewtownson!)
+- Added options of integer frame loop delay (thanks to @jwoillez!)
+- Can set tau_0 parameters in atmosphere. Atmosphere also prints out atmosphere summary on init. (thanks to @jwoillez)
+
+#0.10.0
 - Phase is now internally passed around in nano-metres
 - Added both WFS photon and read noise. Still needs comparisons to verify though
 - Added a DM which is interpolated on each frame - better for larger systems
