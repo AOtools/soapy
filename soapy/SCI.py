@@ -17,9 +17,9 @@
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-from . import aoSimLib, AOFFT, logger, lineofsight
-from scipy.interpolate import interp2d
 import scipy.optimize as opt
+
+from . import aoSimLib, AOFFT, logger, lineofsight
 
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
