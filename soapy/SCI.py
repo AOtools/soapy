@@ -37,9 +37,9 @@ class PSF(object):
         self.mask = mask
         self.FOVrad = self.config.FOV * numpy.pi / (180. * 3600)
 
-        self.FOVPxlNo = numpy.round(
+        self.FOVPxlNo = int(numpy.round(
             self.telConfig.telDiam * self.FOVrad
-            / self.config.wavelength)
+            / self.config.wavelength))
 
         self.padFOVPxlNo = int(round(
             self.FOVPxlNo * float(self.simConfig.simSize)
