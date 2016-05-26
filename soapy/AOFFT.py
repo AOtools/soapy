@@ -313,10 +313,12 @@ def ftShift2d(inputData, outputData=None):
 
     shape = inputData.shape
 
-    outputData[..., :shape[-2]*0.5, :shape[-1]*0.5] = inputData[..., :shape[-2]*0.5, :shape[-1]*0.5][...,::-1,::-1]
-    outputData[..., shape[-2]*0.5:, :shape[-1]*0.5] = inputData[..., shape[-2]*0.5:, :shape[-1]*0.5][...,::-1,::-1]
-    outputData[..., :shape[-2]*0.5, shape[-1]*0.5:] = inputData[..., :shape[-2]*0.5, shape[-1]*0.5:][...,::-1,::-1]
-    outputData[..., shape[-2]*0.5:, shape[-1]*0.5:] = inputData[..., shape[-2]*0.5:, shape[-1]*0.5:][...,::-1,::-1]
+    shape_1 = int(round(shape[-2]*0.5))
+    shape_2 = int(round(shape[-1]*0.5))
+    outputData[..., :shape_1, :shape_2] = inputData[..., :shape_1, :shape_2][...,::-1,::-1]
+    outputData[..., shape_1:, :shape_2] = inputData[..., shape_1:, :shape_2][...,::-1,::-1]
+    outputData[..., :shape_1, shape_2:] = inputData[..., :shape_1, shape_2:][...,::-1,::-1]
+    outputData[..., shape_1:, shape_2:] = inputData[..., shape_1:, shape_2:][...,::-1,::-1]
 
     return outputData
 
