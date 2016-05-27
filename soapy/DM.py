@@ -38,7 +38,8 @@ Adding New DMs
 ==============
 
 New DMs are easy to add into the simulation. At its simplest, the :py:class:`DM`
-class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided, which creates the independent influence function the DM can make. The
+class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided, 
+which creates the independent influence function the DM can make. The
 base class deals with the rest, including making interaction matrices and loop
 operation.
 """
@@ -58,7 +59,8 @@ class DM(object):
     The base DM class
 
     This class is intended to be inherited by other DM classes which describe
-    real DMs. It provides methods to create DM shapes and then interaction matrices, given a specific WFS or WFSs.
+    real DMs. It provides methods to create DM shapes and then interaction matrices, 
+    given a specific WFS or WFSs.
 
     Parameters:
         soapyConfig (ConfigObj): The soapy configuration object
@@ -68,7 +70,8 @@ class DM(object):
     """
 
     def __init__ (self, soapyConfig, nDm=0, wfss=None, mask=None):
-
+        
+        self.soapyConfig = soapyConfig
         self.simConfig = soapyConfig.sim
         self.dmConfig = soapyConfig.dms[nDm]
         self.wfss = wfss
@@ -137,7 +140,7 @@ class DM(object):
         if self.dmConfig.rotation:
             self.iMatShapes = rotate(
                     self.iMatShapes, self.dmConfig.rotation,
-                    order=self.dmConfig.interpOrder, axes=(-2,-1)
+                    order=self.dmConfig.interpOrder, axes=(-2, -1)
                     )
             rotShape = self.iMatShapes.shape
             self.iMatShapes = self.iMatShapes[:,
@@ -148,10 +151,13 @@ class DM(object):
                     ]
 
         iMat = numpy.zeros(
-                (self.acts, self.totalWfsMeasurements) )
+                (self.acts, self.totalWfsMeasurements))
 
         # A vector of DM commands to use when making the iMat
         actCommands = numpy.zeros(self.acts)
+ 
+        # Blank phase to use whilst making iMat
+        phs = numpy.zeros((self.simConfig.simSize, self.simConfig.simSize))
         for i in xrange(self.acts):
             subap = 0
 
@@ -166,11 +172,10 @@ class DM(object):
 
                 # Send the DM shape off to the relavent WFS. put result in iMat
                 iMat[i, subap: subap + (2*self.wfss[nWfs].activeSubaps)] = (
-                       self.wfss[nWfs].frame(
-                                self.dmShape, iMatFrame=True
-                       ))/self.dmConfig.iMatValue
+                       -1*self.wfss[nWfs].frame(
+                                None, correction=self.dmShape, iMatFrame=True))/self.dmConfig.iMatValue
 
-                if callback!=None:
+                if callback != None:
                     callback()
 
                 logger.statusMessage(i, self.acts,
@@ -208,21 +213,27 @@ class DM(object):
 
         else:
             self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-                + ( (1.-self.dmConfig.gain) * self.actCoeffs)
+                + ( (1. - self.dmConfig.gain) * self.actCoeffs)
 
         self.dmShape = self.makeDMFrame(self.actCoeffs)
         # Remove any piston term from DM
         self.dmShape -= self.dmShape.mean()
-
+        
         return self.dmShape
-
-        # except AttributeError:
-        #     raise AttributeError("DM Missing influence functions. Have you made an interaction matrix?")
-
 
     def makeDMFrame(self, actCoeffs):
 
         dmShape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
+        
+        # If DM not telescope diameter, must adjust pixel scale
+        if self.dmConfig.diameter != self.soapyConfig.tel.telDiam:
+            scaledDMSize = (dmShape.shape[0] 
+                    * float(self.dmConfig.diameter)/self.soapyConfig.tel.telDiam)
+            dmShape = aoSimLib.zoom(dmShape, scaledDMSize, order=1)
+            
+        # Turn into phase pbject with altitude
+        dmShape = Phase(dmShape, altitude=self.dmConfig.altitude)
+            
         return dmShape
 
 class Zernike(DM):
@@ -237,12 +248,12 @@ class Zernike(DM):
         '''
 
         shapes = aoSimLib.zernikeArray(
-                        int(self.acts+1),int(self.simConfig.pupilSize))[1:]
+                int(self.acts + 1), int(self.simConfig.pupilSize))[1:]
 
 
         pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
-                shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
+                shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
                 ).astype("float32")
 
 class Piezo(DM):
@@ -296,7 +307,7 @@ class Piezo(DM):
 
         #Create a "dmSize" - the pupilSize but with 1 extra actuator on each
         #side
-        dmSize =  self.simConfig.pupilSize + 2*numpy.round(self.spcing)
+        dmSize =  self.simConfig.pupilSize + 2 * numpy.round(self.spcing)
 
         shapes = numpy.zeros((self.acts, dmSize, dmSize), dtype="float32")
 
@@ -337,8 +348,6 @@ class GaussStack(Piezo):
     not realistic, it provides a known influence function which can be useful
     for some analysis.
     """
-
-
     def makeIMatShapes(self):
         """
         Generates the influence functions for the GaussStack DM.
@@ -364,8 +373,6 @@ class GaussStack(Piezo):
         self.iMatShapes = numpy.pad(
                 self.iMatShapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
                 )
-
-
 
 class TT(DM):
     """
@@ -438,3 +445,14 @@ class FastPiezo(Piezo):
                     ).astype("float32")
 
         return self.dmShape
+
+class Phase(numpy.ndarray):
+    def __new__(cls, input_array, altitude=0):
+        obj = numpy.asarray(input_array).view(cls)
+        obj.altitude = altitude
+        return obj
+        
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        self.info = getattr(obj, 'info', None)
+ 

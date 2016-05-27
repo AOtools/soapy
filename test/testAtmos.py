@@ -53,8 +53,9 @@ class TestAtmos(unittest.TestCase):
         atmos.saveScrns('testscrns')
         try:
             # change config to load scrns
+            config.atmos.scrnNames = []
             for i in range(config.atmos.scrnNo):
-                config.atmos.scrnNames = ['testscrns/scrn{}.fits'.format(i)]
+                config.atmos.scrnNames.append('testscrns/scrn{}.fits'.format(i))
                 
             atmos2 = atmosphere.atmos(config)
             

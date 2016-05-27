@@ -19,12 +19,10 @@
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
-
+# Useful things to have in top namespace
 from .simulation import Sim
+from .confParse import loadSoapyConfig
+from .atmosphere import makePhaseScreens
 
 # Compatability with older API
 from . import wfs as WFS
@@ -34,3 +32,9 @@ try:
     from . import gui
 except ImportError:
     pass
+
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
+
