@@ -626,8 +626,8 @@ def findActiveSubaps(subaps, mask, threshold, returnFill=False):
     for x in range(subaps):
         for y in range(subaps):
             subap = mask[
-                    numpy.round(x*xSpacing): numpy.round((x+1)*xSpacing),
-                    numpy.round(y*ySpacing): numpy.round((y+1)*ySpacing)
+                    int(numpy.round(x*xSpacing)): int(numpy.round((x+1)*xSpacing)),
+                    int(numpy.round(y*ySpacing)): int(numpy.round((y+1)*ySpacing))
                     ]
 
             if subap.mean() >= threshold:
@@ -646,7 +646,11 @@ def computeFillFactor(mask, subapPos, subapSpacing):
 
     fills = numpy.zeros(len(subapPos))
     for i, (x, y) in enumerate(subapPos):
-        fills[i] = mask[x:x+subapSpacing, y:y+subapSpacing].mean()
+        x1 = int(round(x))
+        x2 = int(round(x + subapSpacing))
+        y1 = int(round(y))
+        y2 = int(round(y + subapSpacing))
+        fills[i] = mask[x1:x2, y1:y2].mean()
 
     return fills
 
