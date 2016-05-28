@@ -54,7 +54,7 @@ def brightestPxl(img, threshold, **kwargs):
         ndarray: Array of centroid values
     """
 
-    nPxls = threshold*img.shape[-1]*img.shape[-2]
+    nPxls = int(round(threshold*img.shape[-1]*img.shape[-2]))
 
     if len(img.shape)==2:
         pxlValue = numpy.sort(img.flatten())[-nPxls]

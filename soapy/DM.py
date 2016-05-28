@@ -282,11 +282,11 @@ class Piezo(DM):
 
         for x in xrange(xActs):
             for y in xrange(xActs):
-                if self.mask[
-                        x*self.spcing+self.simConfig.simPad:
-                        (x+1)*self.spcing+self.simConfig.simPad,
-                        y*self.spcing+self.simConfig.simPad:
-                        (y+1)*self.spcing+self.simConfig.simPad].sum() > 0:
+                x1 = int(round(x*self.spcing+self.simConfig.simPad))
+                x2 = int(round((x+1)*self.spcing+self.simConfig.simPad))
+                y1 = int(round(y*self.spcing+self.simConfig.simPad))
+                y2 = int(round((y+1)*self.spcing+self.simConfig.simPad))
+                if self.mask[x1: x2, y1: y2].sum() > 0:
                     activeActs.append([x,y])
         self.activeActs = numpy.array(activeActs)
         self.xActs = xActs
@@ -307,9 +307,9 @@ class Piezo(DM):
 
         #Create a "dmSize" - the pupilSize but with 1 extra actuator on each
         #side
-        dmSize =  self.simConfig.pupilSize + 2 * numpy.round(self.spcing)
+        dmSize =  int(self.simConfig.pupilSize + 2 * numpy.round(self.spcing))
 
-        shapes = numpy.zeros((self.acts, dmSize, dmSize), dtype="float32")
+        shapes = numpy.zeros((int(self.acts), dmSize, dmSize), dtype="float32")
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]

@@ -153,8 +153,8 @@ class LGS_Geometric(LGS):
 
         # The number of points required to get the correct FOV after the FFT
         fov_rad = self.fov / RAD2ASEC
-        self.nFovPxls = (fov_rad * self.config.pupilDiam
-                / self.config.wavelength)
+        self.nFovPxls = int(round(fov_rad * self.config.pupilDiam
+                / self.config.wavelength))
 
         # The mask to apply before geometric FFTing
         self.mask = aoSimLib.circle(self.nFovPxls/2., self.nFovPxls)
