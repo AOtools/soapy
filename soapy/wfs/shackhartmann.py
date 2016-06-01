@@ -43,8 +43,8 @@ class ShackHartmann(base.WFS):
 
         # Spacing on the "FOV Plane" - the number of elements required
         # for the correct subap FOV (from way FFT "phase" to "image" works)
-        self.subapFOVSpacing = numpy.round(
-                self.subapDiam * self.subapFOVrad/ self.config.wavelength)
+        self.subapFOVSpacing = int(round(
+                self.subapDiam * self.subapFOVrad/ self.config.wavelength))
 
         # make twice as big to double subap FOV
         if self.config.subapFieldStop==True:
@@ -278,13 +278,13 @@ class ShackHartmann(base.WFS):
         scaledEField *= self.scaledMask
 
         # Now cut out only the eField across the pupilSize
-        coord = round(int(((self.scaledEFieldSize/2.)
-                - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.)))
+        coord = int(round(int(((self.scaledEFieldSize/2.)
+                - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.))))
         self.cropEField = scaledEField[coord:-coord, coord:-coord]
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
-            x,y = numpy.round(self.subapCoords[i] *
+            x, y = numpy.round(self.subapCoords[i] *
                                      self.subapFOVSpacing/self.PPSpacing)
             self.subapArrays[i] = self.cropEField[
                                     int(x):

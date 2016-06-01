@@ -128,8 +128,10 @@ class ExtendedSH(shackhartmann.ShackHartmann):
             y = int(y)
             self.centSubapArrays[i] = self.wfsDetectorPlane[x:x+self.wfsConfig.pxlsPerSubap,
                                                     y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
+        # If a reference image is supplied, use it for correlation centroiding
         if self.referenceImage is not None:
             self.makeCorrelationImgs()
+        # Else: Just centroid on the extended image
         else:
             self.corrSubapArrays = self.FPSubapArrays
 

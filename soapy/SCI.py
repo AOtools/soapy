@@ -17,9 +17,9 @@
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-from . import aoSimLib, AOFFT, logger, lineofsight
-from scipy.interpolate import interp2d
 import scipy.optimize as opt
+
+from . import aoSimLib, AOFFT, logger, lineofsight
 
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
@@ -37,9 +37,9 @@ class PSF(object):
         self.mask = mask
         self.FOVrad = self.config.FOV * numpy.pi / (180. * 3600)
 
-        self.FOVPxlNo = numpy.round(
+        self.FOVPxlNo = int(numpy.round(
             self.telConfig.telDiam * self.FOVrad
-            / self.config.wavelength)
+            / self.config.wavelength))
 
         self.padFOVPxlNo = int(round(
             self.FOVPxlNo * float(self.simConfig.simSize)
@@ -166,7 +166,6 @@ class PSF(object):
         Returns:
             ndarray: Resulting science PSF
         """
-
         self.los.frame(scrns, correction=correction)
 
         self.calcFocalPlane()

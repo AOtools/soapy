@@ -147,7 +147,7 @@ class WFS(object):
         self.calcInitParams()
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.config.GSHeight != 0:
-            self.radii = self.los.findMetaPupilSize(self.config.GSHeight)
+            self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
         else:
             self.radii = None
 
@@ -239,7 +239,7 @@ class WFS(object):
                 self.elongPhaseAdditions = numpy.zeros(
                     (self.elongLayers, self.los.nOutPxls, self.los.nOutPxls))
                 for i in xrange(self.elongLayers):
-                    self.elongRadii[i] = self.los.findMetaPupilSize(
+                    self.elongRadii[i] = self.los.findMetaPupilSizes(
                                                 float(self.elongHeights[i]))
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
@@ -375,7 +375,7 @@ class WFS(object):
 
             # Apply any correction
             if correction is not None:
-                self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
+                self.los.performCorrection(correction)
 
             # Add onto the focal plane with that layers intensity
             self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
@@ -404,9 +404,6 @@ class WFS(object):
             self.iMat = True
             removeTT = self.config.removeTT
             self.config.removeTT = False
-            # if self.config.lgs:
-            #     elong = self.elong
-            # self.elong = 0
             photonNoise = self.config.photonNoise
             self.config.photonNoise = False
             eReadNoise = self.config.eReadNoise
@@ -423,21 +420,19 @@ class WFS(object):
         # If no elongation
         else:
             # If imat frame, dont want to make it off-axis
-            if iMatFrame:
-                try:
-                    iMatPhase = aoSimLib.zoom(scrns, self.los.nOutPxls, order=1)
-                    self.los.EField[:] = numpy.exp(1j*iMatPhase*self.los.phs2Rad)
-                except ValueError:
-                    raise ValueError("If iMat Frame, scrn must be ``simSize``")
-            else:
-                self.los.makePhase(self.radii)
+            # if iMatFrame:
+            #     try:
+            #         iMatPhase = aoSimLib.zoom(scrns, self.los.nOutPxls, order=1)
+            #         self.los.EField[:] = numpy.exp(1j*iMatPhase*self.los.phs2Rad)
+            #     except ValueError:
+            #         raise ValueError("If iMat Frame, scrn must be ``simSize``")
+            # else:
+            self.los.makePhase(self.radii)
 
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
-            if numpy.any(correction):
-                correctionPhase = aoSimLib.zoom(
-                        correction, self.los.nOutPxls, order=1)
-                self.los.EField *= numpy.exp(-1j*correctionPhase*self.los.phs2Rad)
-                self.los.phase -= correctionPhase * self.los.phs2Rad
+            if correction is not None:
+                self.los.performCorrection(correction)
+                
             self.calcFocalPlane()
 
         if read:
@@ -449,8 +444,6 @@ class WFS(object):
         if iMatFrame:
             self.iMat=False
             self.config.removeTT = removeTT
-            # if self.config.lgs:
-            #     self.elong = elong
             self.config.photonNoise = photonNoise
             self.config.eReadNoise = eReadNoise
 
@@ -480,7 +473,7 @@ class WFS(object):
                 0, self.config.eReadNoise, self.wfsDetectorPlane.shape
                 )
 
-    def calcFocalPlane(self):
+    def calcFocalPlane(self, intensity=None):
         pass
 
     def makeDetectorPlane(self):

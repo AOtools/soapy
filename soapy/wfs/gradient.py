@@ -107,8 +107,11 @@ class Gradient(base.WFS):
 
         # Create an array of individual subap phase
         for i, (x, y) in enumerate(self.subapCoords):
-            self.subapArrays[i] = self.pupilPhase[
-                    x: x+self.subapSpacing, y: y+self.subapSpacing]
+            x1 = int(round(x))
+            x2 = int(round(x + self.subapSpacing))
+            y1 = int(round(y))
+            y2 = int(round(y + self.subapSpacing))
+            self.subapArrays[i] = self.pupilPhase[x1: x2, y1: y2]
 
 
     def makeDetectorPlane(self):

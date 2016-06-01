@@ -62,6 +62,7 @@ class LineOfSight(object):
         self.config = config
         self.simConfig = soapyConfig.sim
         self.atmosConfig = soapyConfig.atmos
+        self.soapyConfig = soapyConfig
 
         self.mask = mask
 
@@ -71,7 +72,7 @@ class LineOfSight(object):
 
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.height!=0:
-            self.radii = self.findMetaPupilSize(self.height)
+            self.radii = self.findMetaPupilSizes(self.height)
         else:
             self.radii = None
 
@@ -161,7 +162,7 @@ class LineOfSight(object):
         self.EField = numpy.zeros([self.nOutPxls]*2, dtype=CDTYPE)
 
 
-    def findMetaPupilSize(self, GSHeight):
+    def findMetaPupilSizes(self, GSHeight):
         '''
         Evaluates the sizes of the effective metePupils
         at each screen height - if a GS of finite height is used.
@@ -170,24 +171,45 @@ class LineOfSight(object):
             GSHeight (float): The height of the GS in metres
 
         Returns:
-            dict : A dictionary containing the radii of a meta-pupil at each screen height
+            dict : A dictionary containing the radii of a meta-pupil at each screen height in phase pixels
         '''
 
-        radii={}
+        radii = {}
         for i in xrange(self.atmosConfig.scrnNo):
-            #Find radius of metaPupil geometrically (fraction of pupil at
-            # Ground Layer)
-            radius = (self.simConfig.pupilSize/2.) * (
-                    1-(float(self.atmosConfig.scrnHeights[i])/GSHeight))
-            radii[i]= radius
-
-            #If scrn is above LGS, radius is 0
-            if self.atmosConfig.scrnHeights[i]>=GSHeight:
-                radii[i]=0
+            radii[i] = self.simConfig.pxlScale * self.calcMetaPupilSize(
+                        self.atmosConfig.scrnHeights[i], GSHeight)
 
         return radii
 
 
+    def calcMetaPupilSize(self, scrnHeight, GSHeight):
+        """
+        Calculates the radius of a meta pupil at a altitude layer, of a GS at a give altitude
+        
+        Parameters:
+            scrnHeight (float): Altitude of meta-pupil
+            GSHeight (float): Altitude of guide star
+        
+        Returns:
+            float: Radius of metapupil in metres
+          
+        """
+        # If GS at infinity, radius is telescope radius
+        if self.height == 0:
+            return self.soapyConfig.tel.telDiam/2.
+        
+        # If scrn is above LGS, radius is 0
+        if scrnHeight >= GSHeight:
+            return 0
+        
+        # Find radius of metaPupil geometrically (fraction of pupil at
+        # Ground Layer)
+        radius = (self.soapyConfig.tel.telDiam/2.) * (1-(float(scrnHeight)/GSHeight))
+
+
+        
+        return radius
+        
     #############################################################
     # Phase stacking routines for a WFS frame
     def getMetaPupilPos(self, height, apos=None):
@@ -232,7 +254,7 @@ class LineOfSight(object):
         '''
 
         # If the radius is 0, then 0 phase is returned
-        if radius==0:
+        if radius == 0:
             return numpy.zeros((simSize, simSize))
 
         if apos is not None:
@@ -252,7 +274,7 @@ class LineOfSight(object):
         scrnX, scrnY = scrn.shape
 
         # If the GS is not at infinity, take into account cone effect
-        if radius!=None:
+        if radius != None:
             fact = float(2*radius)/self.simConfig.pupilSize
         else:
             fact = 1
@@ -334,7 +356,7 @@ class LineOfSight(object):
         self.phase *= self.phs2Rad
 
         # Change sign if propagating up
-        if self.propagationDirection=='up':
+        if self.propagationDirection == 'up':
             self.phase *= -1
 
         self.EField[:] = numpy.exp(1j*self.phase)
@@ -404,7 +426,7 @@ class LineOfSight(object):
             phase *= self.phs2Rad
 
             # Change sign if propagating up
-            if self.propagationDirection=='up':
+            if self.propagationDirection == 'up':
                 self.phase *= -1
 
             # Get propagation distance for this layer
@@ -430,7 +452,40 @@ class LineOfSight(object):
 
         return self.EField
 
-    def frame(self, scrns, correction=None):
+    def performCorrection(self, correction):
+        """
+        Corrects the aberrated line of sight with some given correction phase
+        
+        Parameters:
+            correction (list or ndarray): either 2-d array describing correction, or list of correction arrays
+        """
+        # If just an arary, put in list
+        if isinstance(correction, numpy.ndarray):
+            correction = [correction]
+        
+        for corr in correction:
+            # If correction is a standard ndarray, assume at ground
+            if hasattr(corr, "altitude"):
+                altitude = corr.altitude
+            else:
+                altitude = 0
+                   
+            # Cut out the bit of the correction we need
+            metaPupilRadius = self.calcMetaPupilSize(
+                        altitude, self.height) * self.simConfig.pxlScale
+            corr = self.getMetaPupilPhase(corr, altitude, radius=metaPupilRadius)
+            
+            # Correct EField
+            self.EField *= numpy.exp(-1j * corr * self.phs2Rad)
+            
+            # self.phase -= corr * self.phs2Rad
+            
+            # Also correct phase in case its required
+            self.residual = self.phase/self.phs2Rad - corr
+           
+            self.phase = self.residual * self.phs2Rad
+
+    def frame(self, scrns=None, correction=None):
         '''
         Runs one frame through a line of sight
 
@@ -447,20 +502,20 @@ class LineOfSight(object):
             ndarray: WFS Measurements
         '''
 
-        #If scrns is not dict or list, assume array and put in list
-        t = type(scrns)
-        if t != dict and t != list:
-            scrns = [scrns]
-        self.scrns = scrns
-
         self.zeroData()
-        self.makePhase(self.radii)
 
-        if numpy.any(correction):
-            correction = aoSimLib.zoom(correction, self.nOutPxls)
-            self.EField *= numpy.exp(-1j*correction*self.phs2Rad)
-            self.residual = self.phase/self.phs2Rad - correction
-        else:
-            self.residual = self.phase
+        if scrns is not None:
+        
+            #If scrns is not dict or list, assume array and put in list
+            t = type(scrns)
+            if t != dict and t != list:
+                scrns = [scrns]
+            self.scrns = scrns
+
+            self.makePhase(self.radii)
+        
+        self.residual = self.phase        
+        if correction is not None:
+            self.performCorrection(correction)
 
         return self.residual
