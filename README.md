@@ -48,7 +48,6 @@ Soapy doesn't have too many requirements in terms of external libraries, though 
     pyqtgraph (http://www.pyqtgraph.org)
     matplotlib
     ipython
-    
 
 If your starting with python from scratch, there a couple of options. For Ubuntu linux (14.04+) users, all these packages can be installed via apt-get:
     
