@@ -281,10 +281,10 @@ class Piezo(DM):
 
         for x in xrange(xActs):
             for y in xrange(xActs):
-                x1 = int(round(x*self.spcing+self.simConfig.simPad))
-                x2 = int(round((x+1)*self.spcing+self.simConfig.simPad))
-                y1 = int(round(y*self.spcing+self.simConfig.simPad))
-                y2 = int(round((y+1)*self.spcing+self.simConfig.simPad))
+                x1 = int(x*self.spcing+self.simConfig.simPad)
+                x2 = int((x+1)*self.spcing+self.simConfig.simPad)
+                y1 = int(y*self.spcing+self.simConfig.simPad)
+                y2 = int((y+1)*self.spcing+self.simConfig.simPad)
                 if self.mask[x1: x2, y1: y2].sum() > 0:
                     activeActs.append([x,y])
         self.activeActs = numpy.array(activeActs)
