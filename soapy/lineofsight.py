@@ -515,9 +515,8 @@ class LineOfSight(object):
 
             self.makePhase(self.radii)
         
+        self.residual = self.phase        
         if correction is not None:
             self.performCorrection(correction)
-        else:
-            self.residual = self.phase
 
         return self.residual
