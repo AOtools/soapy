@@ -126,7 +126,7 @@ class LineOfSight(object):
             nOutPxls (int): Size of output array in pixels
         """
         # Convert phase deviation to radians at wfs wavelength.
-        # (in nm remember...?)
+        # (currently in nm remember...?)
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength * 10**9)
 
         self.telDiam = float(self.simConfig.pupilSize) / self.simConfig.pxlScale
