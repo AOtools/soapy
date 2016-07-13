@@ -46,7 +46,8 @@ operation.
 import numpy
 from scipy.ndimage.interpolation import rotate
 
-from . import aoSimLib, logger
+from . import logger
+from .aotools import interp, circle
 
 
 try:
@@ -82,7 +83,7 @@ class DM(object):
             self.mask = mask
         # Else we'll just make a circle
         else:
-            self.mask = aoSimLib.circle(
+            self.mask = circle.circle(
                     self.simConfig.pupilSize/2., self.simConfig.simSize,
                     )
 
@@ -228,7 +229,7 @@ class DM(object):
         if self.dmConfig.diameter != self.soapyConfig.tel.telDiam:
             scaledDMSize = (dmShape.shape[0] 
                     * float(self.dmConfig.diameter)/self.soapyConfig.tel.telDiam)
-            dmShape = aoSimLib.zoom(dmShape, scaledDMSize, order=1)
+            dmShape = interp.zoom(dmShape, scaledDMSize, order=1)
             
         # Turn into phase pbject with altitude
         dmShape = Phase(dmShape, altitude=self.dmConfig.altitude)
@@ -246,7 +247,7 @@ class Zernike(DM):
         interaction Matrix. In this case, this is a number of Zernike Polynomials
         '''
 
-        shapes = aoSimLib.zernikeArray(
+        shapes = circle.zernikeArray(
                 int(self.acts + 1), int(self.simConfig.pupilSize))[1:]
 
 
@@ -321,7 +322,7 @@ class Piezo(DM):
             shape[x,y] = 1
 
             #Interpolate up to the padded DM size
-            shapes[i] = aoSimLib.zoom_rbs(shape,
+            shapes[i] = interp.zoom_rbs(shape,
                     (dmSize, dmSize), order=self.dmConfig.interpOrder)
 
             shapes[i] -= shapes[i].mean()
@@ -363,7 +364,7 @@ class GaussStack(Piezo):
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]*actSpacing
-            shapes[i] = aoSimLib.gaussian2d(
+            shapes[i] = circle.gaussian2d(
                     self.simConfig.pupilSize, width, cent = (x,y))
 
         self.iMatShapes = shapes
@@ -425,7 +426,7 @@ class FastPiezo(Piezo):
         actGrid = numpy.pad(self.actGrid, ((1,1), (1,1)), mode="constant")
 
         # Interpolate to previously determined "dmSize"
-        dmShape = aoSimLib.zoom_rbs(
+        dmShape = interp.zoom_rbs(
                 actGrid, self.dmSize, order=self.dmConfig.interpOrder)
 
 
