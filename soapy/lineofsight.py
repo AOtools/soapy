@@ -27,7 +27,8 @@ Examples::
 import numpy
 from scipy.interpolate import interp2d
 
-from . import aoSimLib, logger, opticalPropagationLib
+from . import aoSimLib, logger
+from .aotools import opticalpropagation
 
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
@@ -400,7 +401,7 @@ class LineOfSight(object):
         if ht!=scrnAlts[0]:
             logger.debug("propagate to first phase screen")
             z = abs(scrnAlts[0] - ht)
-            self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(
+            self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
                         self.EFieldBuf, self.config.wavelength,
                         self.outPxlScale, self.outPxlScale, z)
 
@@ -442,7 +443,7 @@ class LineOfSight(object):
             self.EFieldBuf *= numpy.exp(1j*phase)
 
             # Do ASP for last layer to next
-            self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(
+            self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
                         self.EFieldBuf, self.config.wavelength,
                         self.outPxlScale, self.outPxlScale, z)
 
