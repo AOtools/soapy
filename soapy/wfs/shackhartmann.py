@@ -11,8 +11,7 @@ except ImportError:
 
 from .. import AOFFT, aoSimLib, LGS, logger
 from . import base
-from ..tools import centroiders
-from ..opticalPropagationLib import angularSpectrum
+from ..aotools import centroiders
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
