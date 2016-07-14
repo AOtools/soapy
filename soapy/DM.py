@@ -49,7 +49,6 @@ from scipy.ndimage.interpolation import rotate
 from . import logger
 from .aotools import interp, circle
 
-
 try:
     xrange
 except NameError:
