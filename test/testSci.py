@@ -40,6 +40,25 @@ class TestSci(unittest.TestCase):
 
         self.assertTrue(numpy.allclose(sci.instStrehl, 1.))
 
+    def test_fibreInit(self):
+
+        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        config.loadSimParams()
+
+        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        sci = SCI.singleModeFibre(
+                config, 0, mask)
+
+    def test_fibreFrame(self):
+        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        config.loadSimParams()
+
+        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        sci = SCI.singleModeFibre(
+                config, 0, mask)
+
 
 if __name__=="__main__":
     unittest.main()
