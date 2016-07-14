@@ -27,8 +27,8 @@ Examples::
 import numpy
 from scipy.interpolate import interp2d
 
-from . import aoSimLib, logger
-from .aotools import opticalpropagation
+from . import logger
+from .aotools import opticalpropagation, interp
 
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
@@ -146,7 +146,7 @@ class LineOfSight(object):
             self.nOutPxls = nOutPxls
 
         if self.mask is not None:
-            self.outMask = aoSimLib.zoom(
+            self.outMask = interp.zoom(
                     self.mask, self.nOutPxls).round()
 
 
