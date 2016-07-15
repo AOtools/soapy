@@ -12,7 +12,7 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, aoSimLib, logger
+from .. import AOFFT, logger
 from . import shackhartmann
 from ..aotools import centroiders
 

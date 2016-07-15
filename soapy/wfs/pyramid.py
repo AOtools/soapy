@@ -9,8 +9,9 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, aoSimLib, LGS, logger
+from .. import AOFFT, LGS, logger
 from . import base
+from ..aotools import interp
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -43,7 +44,7 @@ class Pyramid(base.WFS):
                                     self.FOVrad/self.wfsConfig.wavelength)
 
         self.detectorPxls = 2*self.wfsConfig.pxlsPerSubap
-        self.scaledMask = aoSimLib.zoom(self.mask, self.FOVPxlNo)
+        self.scaledMask = interp.zoom(self.mask, self.FOVPxlNo)
 
         self.activeSubaps = self.wfsConfig.pxlsPerSubap**2
 
@@ -121,7 +122,7 @@ class Pyramid(base.WFS):
                 self.simConfig.simPad:-self.simConfig.simPad
                 ]
         self.pupilEField *= numpy.exp(1j*self.tiltFix)
-        self.scaledEField = aoSimLib.zoom(
+        self.scaledEField = interp.zoom(
                 self.pupilEField, self.FOVPxlNo)*self.scaledMask
 
         # Go to the focus
@@ -163,7 +164,7 @@ class Pyramid(base.WFS):
     def makeDetectorPlane(self):
 
         #Bin down to requried pixels
-        self.wfsDetectorPlane[:] += aoSimLib.binImgs(
+        self.wfsDetectorPlane[:] += interp.binImgs(
                         self.paddedDetectorPlane,
                         self.wfsConfig.fftOversamp
                         )
