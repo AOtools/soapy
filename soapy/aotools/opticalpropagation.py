@@ -8,51 +8,57 @@ of optical proagation
 import numpy
 from . import fft
 
-def angularSpectrum(Uin, wvl, d1, d2, z):
+def angularSpectrum(inputComplexAmp, wvl, inputSpacing, outputSpacing, z):
     """
-    Fresnel propagation using an angular spectrum propagation method.
+    Propogates light complex amplitude using an angular spectrum algorithm
 
     Parameters:
-        Uin (ndarray): A 2-d, complex, input array of complex amplitude
-        wvl (float): Wavelength of propagated light in metres
-        d1 (float): spacing of input plane
-        d2 (float): desired output array spacing
-        z (float): metres to propagate along optical axis
+        inputComplexAmp (ndarray): Complex array of input complex amplitude
+        wvl (float): Wavelength of light to propagate
+        inputSpacing (float): The spacing between points on the input array in metres
+        outputSpacing (float): The desired spacing between points on the output array in metres
+        z (float): Distance to propagate in metres
 
     Returns:
-        ndarray: Complex ampltitude after propagation
+        ndarray: propagated complex amplitude
     """
-    N = Uin.shape[0] #Assumes Uin is square.
+    
+    # If propagation distance is 0, don't bother 
+    if z==0:
+        return inputComplexAmp
+
+    N = inputComplexAmp.shape[0] #Assumes Uin is square.
     k = 2*numpy.pi/wvl     #optical wavevector
 
-    (x1,y1) = numpy.meshgrid(d1*numpy.arange(-N/2,N/2),
-                             d1*numpy.arange(-N/2,N/2))
+    (x1,y1) = numpy.meshgrid(inputSpacing*numpy.arange(-N/2,N/2),
+                             inputSpacing*numpy.arange(-N/2,N/2))
     r1sq = (x1**2 + y1**2) + 1e-10
 
     #Spatial Frequencies (of source plane)
-    df1 = 1. / (N*d1)
+    df1 = 1. / (N*inputSpacing)
     fX,fY = numpy.meshgrid(df1*numpy.arange(-N/2,N/2),
                            df1*numpy.arange(-N/2,N/2))
     fsq = fX**2 + fY**2
 
     #Scaling Param
-    m = float(d2)/d1
+    mag = float(outputSpacing)/inputSpacing
 
     #Observation Plane Co-ords
-    x2,y2 = numpy.meshgrid( d2*numpy.arange(-N/2,N/2),
-                            d2*numpy.arange(-N/2,N/2) )
+    x2,y2 = numpy.meshgrid( outputSpacing*numpy.arange(-N/2,N/2),
+                            outputSpacing*numpy.arange(-N/2,N/2) )
     r2sq = x2**2 + y2**2
 
     #Quadratic phase factors
-    Q1 = numpy.exp( 1j * k/2. * (1-m)/z * r1sq)
+    Q1 = numpy.exp( 1j * k/2. * (1-mag)/z * r1sq)
 
-    Q2 = numpy.exp(-1j * numpy.pi**2 * 2 * z/m/k*fsq)
+    Q2 = numpy.exp(-1j * numpy.pi**2 * 2 * z/mag/k*fsq)
 
-    Q3 = numpy.exp(1j * k/2. * (m-1)/(m*z) * r2sq)
+    Q3 = numpy.exp(1j * k/2. * (mag-1)/(mag*z) * r2sq)
 
     #Compute propagated field
-    Uout = Q3 * fft.ift2( Q2 * fft.ft2(Q1 * Uin/m,d1), df1)
-    return Uout
+    outputComplexAmp = Q3 * fft.ift2( 
+                    Q2 * fft.ft2(Q1 * inputComplexAmp/mag,inputSpacing), df1)
+    return outputComplexAmp
 
 
 def oneStepFresnel(Uin, wvl, d1, z):
