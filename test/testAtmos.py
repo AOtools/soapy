@@ -1,4 +1,4 @@
-from soapy import confParse, aoSimLib, atmosphere
+from soapy import confParse, atmosphere
 import unittest
 import numpy
 import os
