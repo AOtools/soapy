@@ -1,4 +1,4 @@
-from soapy import confParse, aoSimLib, atmosphere
+from soapy import confParse, atmosphere
 import unittest
 import numpy
 import os
@@ -28,13 +28,6 @@ class TestAtmos(unittest.TestCase):
 
         atmos = atmosphere.atmos(config)
         atmos.randomScrns()
-
-    def test_ftScrn(self):
-
-        scrn = atmosphere.ft_phase_screen(0.2, 512, 4.2/128, 30., 0.01)
-
-    def test_ftShScrn(self):
-        scrn = atmosphere.ft_sh_phase_screen(0.2, 512, 4.2/128, 30., 0.01)
 
     def test_saveloadScrn(self):
         # test the saving and loading phase screens
