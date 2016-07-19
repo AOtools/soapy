@@ -27,7 +27,8 @@ Examples::
 import numpy
 from scipy.interpolate import interp2d
 
-from . import aoSimLib, logger, opticalPropagationLib
+from . import logger
+from .aotools import opticalpropagation, interp
 
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
@@ -126,7 +127,7 @@ class LineOfSight(object):
             nOutPxls (int): Size of output array in pixels
         """
         # Convert phase deviation to radians at wfs wavelength.
-        # (in nm remember...?)
+        # (currently in nm remember...?)
         self.phs2Rad = 2*numpy.pi/(self.config.wavelength * 10**9)
 
         self.telDiam = float(self.simConfig.pupilSize) / self.simConfig.pxlScale
@@ -145,7 +146,7 @@ class LineOfSight(object):
             self.nOutPxls = nOutPxls
 
         if self.mask is not None:
-            self.outMask = aoSimLib.zoom(
+            self.outMask = interp.zoom(
                     self.mask, self.nOutPxls).round()
 
 
@@ -400,7 +401,7 @@ class LineOfSight(object):
         if ht!=scrnAlts[0]:
             logger.debug("propagate to first phase screen")
             z = abs(scrnAlts[0] - ht)
-            self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(
+            self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
                         self.EFieldBuf, self.config.wavelength,
                         self.outPxlScale, self.outPxlScale, z)
 
@@ -442,7 +443,7 @@ class LineOfSight(object):
             self.EFieldBuf *= numpy.exp(1j*phase)
 
             # Do ASP for last layer to next
-            self.EFieldBuf[:] = opticalPropagationLib.angularSpectrum(
+            self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
                         self.EFieldBuf, self.config.wavelength,
                         self.outPxlScale, self.outPxlScale, z)
 

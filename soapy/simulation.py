@@ -60,13 +60,8 @@ Examples:
 '''
 
 #sim imports
-from . import atmosphere, logger
-from . import wfs
-from . import DM
-from . import RECON
-from . import SCI
-from . import confParse
-from . import aoSimLib
+from . import atmosphere, logger, wfs, DM, RECON, SCI, confParse, aotools
+from .aotools import circle
 
 #standard python imports
 import numpy
@@ -172,10 +167,10 @@ class Sim(object):
         # Init Pupil Mask
         logger.info("Creating mask...")
         if self.config.tel.mask == "circle":
-            self.mask = aoSimLib.circle(self.config.sim.pupilSize/2.,
+            self.mask = circle.circle(self.config.sim.pupilSize/2.,
                                         self.config.sim.pupilSize)
             if self.config.tel.obsDiam!=None:
-                self.mask -= aoSimLib.circle(
+                self.mask -= circle.circle(
                         self.config.tel.obsDiam*self.config.sim.pxlScale/2.,
                         self.config.sim.pupilSize
                         )
@@ -290,7 +285,7 @@ class Sim(object):
         self.initSaveData()
 
         # Init simulation
-        self.buffer = aoSimLib.DelayBuffer()
+        self.buffer = DelayBuffer()
         self.iters=0
 
         # Init performance tracking
@@ -1041,6 +1036,29 @@ def multiWfs(scrns, wfsObj, dmShape, read, queue):
     res = [slopes, wfsObj.wfsDetectorPlane, wfsObj.uncorrectedPhase, lgsPsf]
 
     queue.put(res)
+
+
+#######################
+#Control Functions
+######################
+class DelayBuffer(list):
+    '''
+    A delay buffer.
+
+    Each time delay() is called on the buffer, the input value is stored.
+    If the buffer is larger than count, the oldest value is removed and returned.
+    If the buffer is not yet full, a zero of similar shape as the last input
+    is returned.
+    '''
+
+    def delay(self, value, count):
+        self.append(value)
+        if len(self) <= count:
+            result = value*0.0
+        else:
+            for _ in range(len(self)-count):
+                result = self.pop(0)
+        return result
 
 
 if __name__ == "__main__":

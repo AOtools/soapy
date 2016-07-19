@@ -16,7 +16,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
-from .import aoSimLib, AOFFT, logger, lineofsight
+from . import AOFFT, logger, lineofsight
+from .aotools import circle, interp
 
 import scipy.optimize
 from scipy.interpolate import interp2d
@@ -157,7 +158,7 @@ class LGS_Geometric(LGS):
                 / self.config.wavelength))
 
         # The mask to apply before geometric FFTing
-        self.mask = aoSimLib.circle(self.nFovPxls/2., self.nFovPxls)
+        self.mask = circle.circle(self.nFovPxls/2., self.nFovPxls)
 
         self.losNOutPxls = self.lgsPupilPxls
         self.losOutPxlScale = self.config.pupilDiam/self.lgsPupilPxls
@@ -181,7 +182,7 @@ class LGS_Geometric(LGS):
         # lgsEField = self.los.EField[coord: -coord, coord: -coord]
 
         # Scale to the desired size for LGS FOV
-        lgsEField = aoSimLib.zoom(self.EField, self.nFovPxls)*self.mask
+        lgsEField = interp.zoom(self.EField, self.nFovPxls)*self.mask
 
         self.FFT.inputData[:self.nFovPxls, :self.nFovPxls] = lgsEField
         self.psf = abs(AOFFT.ftShift2d(self.FFT())**2)
@@ -207,7 +208,7 @@ class LGS_Physical(LGS):
         Calculate some useful paramters to be used later
         """
 
-        self.mask = aoSimLib.circle(
+        self.mask = circle.circle(
                 0.5*self.config.pupilDiam*self.simConfig.pxlScale,
                 self.simConfig.simSize)
 
@@ -235,7 +236,7 @@ class LGS_Physical(LGS):
 
         # The mask to apply before physical propagation
         self.lgsPupilPxls = int(round(self.config.pupilDiam/self.outPxlScale_m))
-        self.mask = aoSimLib.circle(self.lgsPupilPxls/2., 3*self.nOutPxls)
+        self.mask = circle.circle(self.lgsPupilPxls/2., 3*self.nOutPxls)
         self.losMask = self.mask
 
         self.losOutPxlScale = self.outPxlScale_m
