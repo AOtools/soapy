@@ -6,29 +6,7 @@ of optical proagation
 '''
 
 import numpy
-from . import aoSimLib
-
-def ft2(g, delta, padFactor=1):
-    padFactor = int(padFactor)
-    G = numpy.fft.fftshift(
-            numpy.fft.fft2(
-                    numpy.fft.fftshift(g),
-                    s=(padFactor*g.shape[0],padFactor*g.shape[1])
-                            )
-                             ) * delta**2
-    return G
-
-def ift2(G, delta_f, padFactor=1):
-    N = G.shape[0]
-    g = numpy.fft.ifftshift(
-            numpy.fft.ifft2(
-                    numpy.fft.ifftshift(G),
-                    s=( padFactor*G.shape[0], padFactor*G.shape[1])
-                            )
-                            ) * (N * delta_f)*2
-
-    return g
-
+from . import fft
 
 def angularSpectrum(inputComplexAmp, wvl, inputSpacing, outputSpacing, z):
     """
@@ -40,6 +18,9 @@ def angularSpectrum(inputComplexAmp, wvl, inputSpacing, outputSpacing, z):
         inputSpacing (float): The spacing between points on the input array in metres
         outputSpacing (float): The desired spacing between points on the output array in metres
         z (float): Distance to propagate in metres
+
+    Returns:
+        ndarray: propagated complex amplitude
     """
     
     # If propagation distance is 0, don't bother 
@@ -75,14 +56,25 @@ def angularSpectrum(inputComplexAmp, wvl, inputSpacing, outputSpacing, z):
     Q3 = numpy.exp(1j * k/2. * (mag-1)/(mag*z) * r2sq)
 
     #Compute propagated field
-    outputComplexAmp = Q3 * ift2( 
-                    Q2 * ft2(Q1 * inputComplexAmp/mag,inputSpacing), df1)
+    outputComplexAmp = Q3 * fft.ift2( 
+                    Q2 * fft.ft2(Q1 * inputComplexAmp/mag,inputSpacing), df1)
     return outputComplexAmp
 
 
-def oneStepFresnel(inputComplexAmp,wvl,d1,z):
+def oneStepFresnel(Uin, wvl, d1, z):
+    """
+    Fresnel propagation using a one step Fresnel propagation method.
 
-    N = inputComplexAmp.shape[0]    #Assume square grid
+    Parameters:
+        Uin (ndarray): A 2-d, complex, input array of complex amplitude
+        wvl (float): Wavelength of propagated light in metres
+        d1 (float): spacing of input plane
+        z (float): metres to propagate along optical axis
+
+    Returns:
+        ndarray: Complex ampltitude after propagation
+    """
+    N = Uin.shape[0]    #Assume square grid
     k = 2*numpy.pi/wvl  #optical wavevector
 
     #Source plane coordinates
@@ -96,36 +88,50 @@ def oneStepFresnel(inputComplexAmp,wvl,d1,z):
     #evaluate Fresnel-Kirchoff integral
     A = 1/(1j*wvl*z)
     B = numpy.exp( 1j * k/(2*z) * (x2**2 + y2**2))
-    C = ft2(inputComplexAmp *numpy.exp(1j * k/(2*z) * (x1**2+y1**2)), d1)
+    C = fft.ft2(Uin *numpy.exp(1j * k/(2*z) * (x1**2+y1**2)), d1)
 
-    outputComplexAmp = A*B*C
+    Uout = A*B*C
 
-    return outputComplexAmp
+    return Uout
 
-def twoStepFresnel(inputComplexAmp, wvl, inputSpacing, outputSpacing, Dz):
-    N = inputComplexAmp.shape[0] #Number of grid points
+def twoStepFresnel(Uin, wvl, d1, d2, z):
+    """
+    Fresnel propagation using a two step Fresnel propagation method.
+
+    Parameters:
+        Uin (ndarray): A 2-d, complex, input array of complex amplitude
+        wvl (float): Wavelength of propagated light in metres
+        d1 (float): spacing of input plane
+        d2 (float): desired output array spacing
+        z (float): metres to propagate along optical axis
+
+    Returns:
+        ndarray: Complex ampltitude after propagation
+    """
+
+    N = Uin.shape[0] #Number of grid points
     k = 2*numpy.pi/wvl #optical wavevector
 
     #source plane coordinates
-    x1,y1 = numpy.meshgrid( numpy.arange(-N/2,N/2) * d1,
+    x1, y1 = numpy.meshgrid( numpy.arange(-N/2,N/2) * d1,
                             numpy.arange(-N/2.,N/2.) * d1 )
 
     #magnification
     m = float(d2)/d1
 
     #intermediate plane
-    Dz1  = Dz / (1-m) #propagation distance
+    Dz1  = z / (1-m) #propagation distance
     d1a = wvl * abs(Dz1) / (N*d1) #coordinates
-    x1a,y1a = numpy.meshgrid( numpy.arange( -N/2.,N/2.) * d1a,
+    x1a, y1a = numpy.meshgrid( numpy.arange( -N/2.,N/2.) * d1a,
                               numpy.arange( -N/2.,N/2.) * d1a )
 
     #Evaluate Fresnel-Kirchhoff integral
     A = 1./(1j * wvl * Dz1)
     B = numpy.exp(1j * k/(2*Dz1) * (x1a**2 + y1a**2) )
-    C = ft2(inputComplexAmp * numpy.exp(1j * k/(2*Dz1) * (x1**2 + y1**2)), d1)
+    C = fft.ft2(Uin * numpy.exp(1j * k/(2*Dz1) * (x1**2 + y1**2)), d1)
     Uitm = A*B*C
     #Observation plane
-    Dz2 = Dz - Dz1
+    Dz2 = z - Dz1
 
     #coordinates
     x2,y2 = numpy.meshgrid( numpy.arange(-N/2., N/2.) * d2,
@@ -134,19 +140,28 @@ def twoStepFresnel(inputComplexAmp, wvl, inputSpacing, outputSpacing, Dz):
     #Evaluate the Fresnel diffraction integral
     A = 1. / (1j * wvl * Dz2)
     B = numpy.exp( 1j * k/(2 * Dz2) * (x2**2 + y2**2) )
-    C = ft2(Uitm * numpy.exp( 1j * k/(2*Dz2) * (x1a**2 + y1a**2)), d1a)
-    outputComplexAmp = A*B*C
+    C = fft.ft2(Uitm * numpy.exp( 1j * k/(2*Dz2) * (x1a**2 + y1a**2)), d1a)
+    Uout = A*B*C
 
-    return outputComplexAmp
+    return Uout
 
-def lensAgainst(inputComplexAmp, wvl, d1, f):
+def lensAgainst(Uin, wvl, d1, f):
     '''
     Propagates from the pupil plane to the focal
     plane for an object placed against (and just before)
-    a lens
+    a lens.
+
+    Parameters:
+        Uin (ndarray): Input complex amplitude
+        wvl (float): Wavelength of light in metres
+        d1 (float): spacing of input plane
+        f (float): Focal length of lens
+
+    Returns:
+        ndarray: Output complex amplitude
     '''
 
-    N = inputComplexAmp.shape[0] #Assume square grid
+    N = Uin.shape[0] #Assume square grid
     k = 2*numpy.pi/wvl  #Optical Wavevector
 
     #Observation plane coordinates
@@ -158,7 +173,6 @@ def lensAgainst(inputComplexAmp, wvl, d1, f):
 
     #Evaluate the Fresnel-Kirchoff integral but with the quadratic
     #phase factor inside cancelled by the phase of the lens
-    outputComplexAmp = numpy.exp( 1j*k/(2*f) * (x2**2 + y2**2) )/ (1j*wvl*f) * ft2( inputComplexAmp, d1)
+    Uout = numpy.exp( 1j*k/(2*f) * (x2**2 + y2**2) )/ (1j*wvl*f) * fft.ft2( Uin, d1)
 
-    return outputComplexAmp
-
+    return Uout

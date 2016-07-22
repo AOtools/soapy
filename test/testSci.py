@@ -1,4 +1,5 @@
-from soapy import confParse, SCI, aoSimLib
+from soapy import confParse, SCI
+from soapy.aotools import circle
 import unittest
 import numpy
 import os
@@ -11,7 +12,7 @@ class TestSci(unittest.TestCase):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
         config.loadSimParams()
 
-        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         sci = SCI.PSF(
                 config, 0, mask)
@@ -20,7 +21,7 @@ class TestSci(unittest.TestCase):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
         config.loadSimParams()
 
-        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         sci = SCI.PSF(
                 config, 0, mask)
@@ -31,7 +32,7 @@ class TestSci(unittest.TestCase):
         config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
         config.loadSimParams()
 
-        mask = aoSimLib.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         sci = SCI.PSF(
                 config, 0, mask)
@@ -39,6 +40,25 @@ class TestSci(unittest.TestCase):
         sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
 
         self.assertTrue(numpy.allclose(sci.instStrehl, 1.))
+
+    def test_fibreInit(self):
+
+        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        config.loadSimParams()
+
+        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        sci = SCI.singleModeFibre(
+                config, 0, mask)
+
+    def test_fibreFrame(self):
+        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        config.loadSimParams()
+
+        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+        sci = SCI.singleModeFibre(
+                config, 0, mask)
 
 
 if __name__=="__main__":

@@ -9,10 +9,9 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, aoSimLib, LGS, logger
+from .. import AOFFT, LGS, logger
 from . import base
-from ..tools import centroiders
-from ..opticalPropagationLib import angularSpectrum
+from ..aotools import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -66,7 +65,7 @@ class Gradient(base.WFS):
                 self.simConfig.simPad : -self.simConfig.simPad,
                 self.simConfig.simPad : -self.simConfig.simPad
                 ]
-        self.subapCoords, self.subapFillFactor = aoSimLib.findActiveSubaps(
+        self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, pupilMask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
