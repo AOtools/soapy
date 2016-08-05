@@ -19,8 +19,8 @@
 import numpy
 import scipy.optimize as opt
 
-from . import aoSimLib, AOFFT, logger, lineofsight
-
+from . import AOFFT, logger, lineofsight
+from .aotools import circle, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -55,7 +55,7 @@ class PSF(object):
 
         # Make a default circular mask of the pupil size if not provided
         if mask is None:
-            mask = aoSimLib.circle(
+            mask = circle.circle(
                     self.simConfig.pupilSize/2., self.simConfig.pupilSize)
         else:
             # If the provided mask is the simSize, must crop down to pupilSize
@@ -65,7 +65,7 @@ class PSF(object):
                         self.simConfig.simPad:-self.simConfig.simPad
                         ]
 
-        self.scaledMask = numpy.round(aoSimLib.zoom(mask, self.FOVPxlNo)
+        self.scaledMask = numpy.round(interp.zoom(mask, self.FOVPxlNo)
                                       ).astype("int32")
 
         # Init FFT object
@@ -127,7 +127,7 @@ class PSF(object):
         self.EField *= self.mask
 
         # Scaled the padded phase to the right size for the requried FOV
-        self.EField_fov = aoSimLib.zoom(self.EField, self.padFOVPxlNo)
+        self.EField_fov = interp.zoom(self.EField, self.padFOVPxlNo)
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
@@ -138,7 +138,7 @@ class PSF(object):
         focalPlane_efield = AOFFT.ftShift2d(self.FFT())
 
         # Bin down to the required number of pixels
-        self.focalPlane_efield = aoSimLib.binImgs(
+        self.focalPlane_efield = interp.binImgs(
             focalPlane_efield, self.config.fftOversamp)
 
         self.focalPlane = numpy.abs(self.focalPlane_efield.copy())**2
@@ -180,8 +180,9 @@ class PSF(object):
 
 class singleModeFibre(PSF):
 
-    def __init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask):
-        scienceCam.__init__(self, simConfig, telConfig, atmosConfig, sciConfig, mask)
+    def __init__(self, soapyConfig, nSci=0, mask=None):
+        scienceCam.__init__(self, soapyConfig, nSci, mask)
+
         self.normMask = self.mask / numpy.sqrt(numpy.sum(numpy.abs(self.mask)**2))
         self.fibreSize = opt.minimize_scalar(self.refCouplingLoss, bracket=[1.0, self.simConfig.simSize]).x
         self.refStrehl = 1.0 - self.refCouplingLoss(self.fibreSize)
@@ -189,8 +190,8 @@ class singleModeFibre(PSF):
         print("Coupling efficiency: {0:.3f}".format(self.refStrehl))
 
     def fibreEfield(self, size):
-        fibre_efield = aoSimLib.gaussian2d((self.simConfig.simSize, self.simConfig.simSize), (size, size))
-        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(aoSimLib.gaussian2d((self.simConfig.simSize*3, self.simConfig.simSize*3), (size, size)))**2))
+        fibre_efield = circle.gaussian2d((self.simConfig.simSize, self.simConfig.simSize), (size, size))
+        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(circle.gaussian2d((self.simConfig.simSize*3, self.simConfig.simSize*3), (size, size)))**2))
         return fibre_efield
 
     def refCouplingLoss(self, size):
