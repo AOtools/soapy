@@ -846,7 +846,7 @@ class Sim(object):
         header["TELESCOP"] = "SOAPY"
         header["RUNID"] = self.config.sim.simName
         header["LOOP"] = True
-        header["TIME"] = self.timeStamp
+        header["DATE-OBS"] = self.time.strftime("%Y-%m-%dT%H:%M:%S")
 
         # Tel Params
         header["TELDIAM"] = self.config.tel.telDiam
@@ -908,7 +908,8 @@ class Sim(object):
             string: nicely formatted timestamp of current time.
         """
 
-        return datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.time = datetime.datetime.now()
+        return self.time.strftime("%Y-%m-%d-%H-%M-%S")
 
 
     def printOutput(self, iter, strehl=False):
