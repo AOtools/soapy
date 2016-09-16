@@ -278,15 +278,15 @@ class atmos(object):
 
         for i in self.wholeScrns:
 
-            #Deals with what happens when the window on the screen
-            #reaches the edge - rolls it round and starts again.
-            #X direction
+            # Deals with what happens when the window on the screen
+            # reaches the edge - rolls it round and starts again.
+            # X direction
             if (self.scrnPos[i][0] + self.scrnSize) >= self.wholeScrnSize:
                 logger.debug("pos > scrnSize: rolling phase screen X")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                                 int(-self.scrnPos[i][0]),axis=0)
                 self.scrnPos[i][0] = 0
-                #and update the coords...
+                # and update the coords...
                 self.xCoords[i] = numpy.arange(self.scrnSize).astype('float')
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
@@ -304,7 +304,7 @@ class atmos(object):
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
                                             self.wholeScrns[i])
-            #Y direction
+            # Y direction
             if (self.scrnPos[i][1] + self.scrnSize) >= self.wholeScrnSize:
                 logger.debug("pos > scrnSize: rolling Phase Screen Y")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
@@ -328,15 +328,14 @@ class atmos(object):
                                             numpy.arange(self.wholeScrnSize),
                                             self.wholeScrns[i])
 
-
-            scrns[i] = self.interpScrns[i](self.xCoords[i],self.yCoords[i])
+            scrns[i] = self.interpScrns[i](self.xCoords[i], self.yCoords[i])
 
             # Move window coordinates.
             self.scrnPos[i] = self.scrnPos[i] + self.windV[i]
             self.xCoords[i] += self.windV[i][0].astype('float')
             self.yCoords[i] += self.windV[i][1].astype('float')
 
-            #remove piston from phase screens
+            # remove piston from phase screens
             scrns[i] -= scrns[i].mean()
 
             # Calculate the r0 of each screen
