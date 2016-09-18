@@ -204,12 +204,14 @@ class Reconstructor(object):
                 logger.info("Load Interaction Matrices failed - will create new one.")
                 self.makeIMat(callback=callback,
                          progressCallback=progressCallback)
-                self.saveIMat()
+                if self.simConfig.simName is not None:
+                    self.saveIMat()
                 logger.info("Interaction Matrices Done")
 
         else:
             self.makeIMat(callback=callback, progressCallback=progressCallback)
-            self.saveIMat()
+            if self.simConfig.simName is not None:
+                    self.saveIMat()
             logger.info("Interaction Matrices Done")
 
         if loadCMat:
@@ -221,12 +223,14 @@ class Reconstructor(object):
                 logger.warning("Load Command Matrix failed - will create new one")
 
                 self.calcCMat(callback, progressCallback)
-                self.saveCMat()
+                if self.simConfig.simName is not None:
+                    self.saveCMat()
                 logger.info("Command Matrix Generated!")
         else:
             logger.info("Creating Command Matrix")
             self.calcCMat(callback, progressCallback)
-            self.saveCMat()
+            if self.simConfig.simName is not None:
+                    self.saveCMat()
             logger.info("Command Matrix Generated!")
 
 
