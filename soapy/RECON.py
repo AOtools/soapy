@@ -89,15 +89,6 @@ class Reconstructor(object):
                 filename, self.controlMatrix,
                 header=self.simConfig.saveHeader, clobber=True)
 
-        # cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        # cMatHDU.header["DMNO"] = self.simConfig.nDM
-        # cMatHDU.header["DMACTS"] = "%s" % list(self.dmActs)
-        # cMatHDU.header["DMTYPE"] = "%s" % list(self.dmTypes)
-        # cMatHDU.header["DMCOND"] = "%s" % list(self.dmConds)
-
-        # cMatHDU.writeto(filename, clobber=True)
-        # commented as will be included in new global sim header. apr 6/7/15
-
     def loadCMat(self):
 
         filename = self.simConfig.simName+"/cMat.fits"
@@ -218,6 +209,7 @@ class Reconstructor(object):
 
         else:
             self.makeIMat(callback=callback, progressCallback=progressCallback)
+            self.saveIMat()
             logger.info("Interaction Matrices Done")
 
         if loadCMat:
@@ -234,6 +226,7 @@ class Reconstructor(object):
         else:
             logger.info("Creating Command Matrix")
             self.calcCMat(callback, progressCallback)
+            self.saveCMat()
             logger.info("Command Matrix Generated!")
 
 
