@@ -149,7 +149,8 @@ class Reconstructor(object):
                 pass
 
     def loadIMat(self):
-
+        acts = 0
+        self.iMat = numpy.empty_like(self.controlMatrix.T)
         for dm in xrange(self.simConfig.nDM):
             logger.statusMessage(
                     dm,  self.simConfig.nDM-1, "Load DM Interaction Matrix")
@@ -184,6 +185,10 @@ class Reconstructor(object):
 
             else:
                 self.dms[dm].iMat = iMat
+                self.iMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
+                acts += self.dms[dm].acts
+
+
 
     def makeIMat(self, callback, progressCallback):
 
