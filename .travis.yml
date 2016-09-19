@@ -20,7 +20,7 @@ before_install:
 - ls
 - conda update --yes conda
 install:
-- conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose astropy
+- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose astropy
   numba
 - python setup.py install
 - pip install pyfftw
