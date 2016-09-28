@@ -978,6 +978,9 @@ class SciConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
+        ``pxlScale``         float: Pixel scale of science 
+                             camera, in arcseconds. If set, 
+                             overwrites ``FOV``.                 ``None``
         ``type``             string: Type of science camera
                              This must the name of a class
                              in the ``SCI`` module.              ``PSF``
@@ -1008,7 +1011,8 @@ class SciConfig(ConfigObj):
                         "wavelength",
                         "pxls",
                         ]
-    optionalParams = [  ("type", "PSF"),
+    optionalParams = [  ("pxlScale", None),
+                        ("type", "PSF"),
                         ("fftOversamp", 2),
                         ("fftwFlag", "FFTW_MEASURE"),
                         ("fftwThreads", 1),
@@ -1028,7 +1032,9 @@ class SciConfig(ConfigObj):
         # Set some parameters to correct type
         self.position = numpy.array(self.position)
         self.wavelength = float(self.wavelength)
-
+        if self.pxlScale is not None:
+            logger.debug("Overriding sci FOV with pxlscale")
+            self.FOV = self.pxlScale * self.pxls
 
 def loadSoapyConfig(configfile):
 
