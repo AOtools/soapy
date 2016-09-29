@@ -21,7 +21,6 @@ before_install:
 - conda update --yes conda
 install:
 - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose astropy
-  numba
 - python setup.py install
 - pip install pyfftw
 - pip install codecov
