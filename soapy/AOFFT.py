@@ -367,3 +367,42 @@ class Convolve(object):
         #do forward FFT
         self.fFFT.inputData[:] = iImg1
         return ftShift2d(self.fFFT())
+
+
+
+def convolve(
+        img1, img2, mode="pyfftw", fftw_FLAGS=("FFTW_MEASURE",),
+        threads=0):
+    '''
+    Convolves two, 2-dimensional arrays
+    Uses the AOFFT library to do fast convolution of 2, 2-dimensional numpy ndarrays. The FFT mode, and some parameters can be set in the arguments.
+    Parameters:
+        img1 (ndarray): 1st array to be convolved
+        img2 (ndarray): 2nd array to be convolved
+        mode (string, optional): The fft mode used, defaults to fftw
+        fftw_FLAGS (tuple, optional): flags for fftw, defaults to ("FFTW_MEASURE",)
+        threads (int, optional): Number of threads used if mode is fftw
+    Returns:
+        ndarray : The convolved 2-dimensional array
+    '''
+    #Check arrays are same size
+    if img1.shape!=img2.shape:
+        raise ValueError("Arrays must have same dimensions")
+
+    #Initialise FFT objects
+    fFFT = FFT(img1.shape, axes=(0,1), mode=mode, dtype="complex64",
+                direction="FORWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)
+    iFFT = FFT(img1.shape, axes=(0,1), mode=mode, dtype="complex64",
+                  direction="BACKWARD", fftw_FLAGS=fftw_FLAGS, THREADS=threads)
+    #backward FFT arrays
+    iFFT.inputData[:] = img1
+    iImg1 = iFFT().copy()
+    iFFT.inputData[:] = img2
+    iImg2 = iFFT()
+
+    #Do convolution
+    iImg1 *= iImg2
+
+    #do forward FFT
+    fFFT.inputData[:] = iImg1
+    return numpy.fft.fftshift(fFFT().real)
