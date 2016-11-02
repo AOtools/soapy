@@ -207,9 +207,9 @@ class atmos(object):
         # Set the initial starting point of the screen,
         # If windspeed is negative, starts from the
         # far-end of the screen to avoid rolling straight away
-        windDirs= numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
-        windV=(self.windSpeeds * numpy.array([numpy.cos(windDirs),
-                                              numpy.sin(windDirs)])).T #This is velocity in metres per second
+        windDirs = numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
+        windV = (self.windSpeeds * numpy.array([numpy.cos(windDirs),
+                                                numpy.sin(windDirs)])).T #This is velocity in metres per second
         windV *= self.looptime   #Now metres per looptime
         windV *= self.pxlScale   #Now pxls per looptime.....ideal!
         self.windV = windV
@@ -338,7 +338,7 @@ class atmos(object):
             # remove piston from phase screens
             scrns[i] -= scrns[i].mean()
 
-            # Calculate the r0 of each screen
+            # Calculate the required r0 of each screen from config
             self.config.normScrnStrengths = (
                     self.config.scrnStrengths/
                         self.config.scrnStrengths[:self.scrnNo].sum())
