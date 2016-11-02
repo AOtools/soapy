@@ -21,7 +21,16 @@ The GUI for the Soapy adaptive optics simulation
 """
 
 import os
-os.environ["QT_API"]="pyqt"
+# os.environ["QT_API"]="pyqt"
+try:
+    from PyQt5 import QtGui, QtWidgets, QtCore
+    PYQT_VERSION = 5
+except (ImportError ,RuntimeError):
+    from PyQt4 import QtGui, QtCore
+    QtWidgets = QtGui
+    PYQT_VERSION = 4
+
+# Attempt to import PyQt5, if not try PyQt4
 
 # Do this so uses new Jupyter console if available
 try:
@@ -33,12 +42,14 @@ except ImportError:
 
 from IPython.lib import guisupport
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+if PYQT_VERSION == 5:
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+elif PYQT_VERSION == 4:
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+
 from matplotlib.figure import Figure
 
-
-from PyQt4 import QtGui,QtCore
-import pyqtgraph
+from . import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
 # set default colourmaps available
@@ -61,7 +72,12 @@ pyqtgraph.graphicsItems.GradientEditorItem.Gradients = pyqtgraph.pgcollections.O
                         (1.0, (251, 252, 191))], 'mode':'rgb'})
         ])
 
-from .AOGUIui import Ui_MainWindow
+
+if PYQT_VERSION == 5:
+    from .aogui_ui5 import Ui_MainWindow
+elif PYQT_VERSION == 4:
+    from .aogui_ui4 import Ui_MainWindow
+
 from . import logger
 
 import sys
@@ -70,11 +86,16 @@ import time
 import json
 import traceback
 from functools import partial
-#Python2/3 queue compatibility
+#Python2/3  compatibility
 try:
     import queue
 except ImportError:
     import Queue as queue
+try:
+    xrange
+except NameError:
+    xrange = range
+
 
 from argparse import ArgumentParser
 import pylab
@@ -95,10 +116,10 @@ CMAP={'mode': 'rgb',
             (0.5, (255, 255, 255, 255)),
             (1., (255, 26, 26, 255))]}
 
-class GUI(QtGui.QMainWindow):
+class GUI(QtWidgets.QMainWindow):
     def __init__(self, sim, useOpenGL=False, verbosity=None):
-        self.app = QtGui.QApplication([])
-        QtGui.QMainWindow.__init__(self)
+        self.app = QtWidgets.QApplication([])
+        QtWidgets.QMainWindow.__init__(self)
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

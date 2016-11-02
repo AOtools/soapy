@@ -23,7 +23,8 @@ setup(
                 'soapy.aotools.interp',
                 'soapy.aotools.phasescreen',
                 'soapy.aotools.wfs',
-                'soapy.aotools.fft'
+                'soapy.aotools.fft',
+                'soapy.pyqtgraph'
                 ],
     scripts=['bin/soapy'],
     description='A tomographic astronomical adaptive optics simulation with realistic laser guide star propagation.',
