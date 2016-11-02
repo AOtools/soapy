@@ -244,7 +244,8 @@ class atmos(object):
     def saveScrns(self, DIR):
         """
         Saves the currently loaded phase screens to file,
-        saving the r0 value in the fits header (in units of pixels).
+        saving the r0 value in the fits header (in units of pixels). 
+        Saved phase data is in radians @500nm
 
         Args:
             DIR (string): The directory to save the screens
@@ -264,6 +265,8 @@ class atmos(object):
     def moveScrns(self):
         """
         Moves the phase screens one time-step, defined by the atmosphere object parameters.
+        
+        Returned phase is in units of nana-meters
 
         Returns:
             dict : a dictionary containing the new set of phase screens
@@ -353,6 +356,8 @@ class atmos(object):
     def randomScrns(self, subHarmonics=True, l0=0.01):
         """
         Generated random phase screens defined by the atmosphere object parameters.
+
+        Returned phase is in units of nana-meters
 
         Returns:
             dict : a dictionary containing the new set of phase screens
