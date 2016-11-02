@@ -164,6 +164,12 @@ class WFS(object):
 # Initialisation routines
 
     def setMask(self, mask):
+        """
+        Sets the pupil mask as seen by the WFS.
+
+        This method can be called during a simulation
+        """
+
         # If supplied use the mask
         if numpy.any(mask):
             self.mask = mask
