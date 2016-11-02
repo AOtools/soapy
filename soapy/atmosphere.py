@@ -207,9 +207,9 @@ class atmos(object):
         # Set the initial starting point of the screen,
         # If windspeed is negative, starts from the
         # far-end of the screen to avoid rolling straight away
-        windDirs= numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
-        windV=(self.windSpeeds * numpy.array([numpy.cos(windDirs),
-                                              numpy.sin(windDirs)])).T #This is velocity in metres per second
+        windDirs = numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
+        windV = (self.windSpeeds * numpy.array([numpy.cos(windDirs),
+                                                numpy.sin(windDirs)])).T #This is velocity in metres per second
         windV *= self.looptime   #Now metres per looptime
         windV *= self.pxlScale   #Now pxls per looptime.....ideal!
         self.windV = windV
@@ -244,7 +244,8 @@ class atmos(object):
     def saveScrns(self, DIR):
         """
         Saves the currently loaded phase screens to file,
-        saving the r0 value in the fits header (in units of pixels).
+        saving the r0 value in the fits header (in units of pixels). 
+        Saved phase data is in radians @500nm
 
         Args:
             DIR (string): The directory to save the screens
@@ -264,6 +265,8 @@ class atmos(object):
     def moveScrns(self):
         """
         Moves the phase screens one time-step, defined by the atmosphere object parameters.
+        
+        Returned phase is in units of nana-meters
 
         Returns:
             dict : a dictionary containing the new set of phase screens
@@ -338,7 +341,7 @@ class atmos(object):
             # remove piston from phase screens
             scrns[i] -= scrns[i].mean()
 
-            # Calculate the r0 of each screen
+            # Calculate the required r0 of each screen from config
             self.config.normScrnStrengths = (
                     self.config.scrnStrengths/
                         self.config.scrnStrengths[:self.scrnNo].sum())
@@ -353,6 +356,8 @@ class atmos(object):
     def randomScrns(self, subHarmonics=True, l0=0.01):
         """
         Generated random phase screens defined by the atmosphere object parameters.
+
+        Returned phase is in units of nana-meters
 
         Returns:
             dict : a dictionary containing the new set of phase screens

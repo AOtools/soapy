@@ -1035,6 +1035,8 @@ class SciConfig(ConfigObj):
         if self.pxlScale is not None:
             logger.debug("Overriding sci FOV with pxlscale")
             self.FOV = self.pxlScale * self.pxls
+        else:
+            self.pxlScale = float(self.FOV)/self.pxls
 
 def loadSoapyConfig(configfile):
 
