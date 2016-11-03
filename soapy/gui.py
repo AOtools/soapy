@@ -118,8 +118,10 @@ CMAP={'mode': 'rgb',
 
 class GUI(QtWidgets.QMainWindow):
     def __init__(self, sim, useOpenGL=False, verbosity=None):
-        self.app = QtWidgets.QApplication([])
         QtWidgets.QMainWindow.__init__(self)
+
+        # get current application instance
+        self.app = QtCore.QCoreApplication.instance()
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -189,7 +191,6 @@ class GUI(QtWidgets.QMainWindow):
         self.init()
 
         self.console.write("Running %s\n"%self.sim.configFile)
-        sys.exit(self.app.exec_())
 
     def moveEvent(self, event):
         """
@@ -600,7 +601,7 @@ class GUI(QtWidgets.QMainWindow):
 ###############################################
 
 #Tidy up before closing the gui
-
+    #
     # def closeEvent(self, event):
     #     del(self.app)
 
@@ -801,6 +802,20 @@ class PlotWidget(QtGui.QWidget):
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)
 
+
+def start_gui(simulation, useOpenGL=False, verbosity=1):
+    app = QtWidgets.QApplication([])
+
+    gui = GUI(simulation, useOpenGL=useOpenGL, verbosity=verbosity)
+
+    app.exec_()
+    del(gui.initThread)
+    del(gui.iMatThread)
+    del(gui.loopThread)
+    del(gui.console)
+    del(gui)
+    # sys.exit()
+
 if __name__ == "__main__":
 
     parser = ArgumentParser()
@@ -815,3 +830,4 @@ if __name__ == "__main__":
 
 
     G = GUI(confFile,useOpenGL=args.gl)
+

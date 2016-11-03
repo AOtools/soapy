@@ -4,6 +4,8 @@ A Shack Hartmann WFS for use with extended reference sources, such as solar AO, 
 """
 
 import numpy
+import scipy.signal
+
 try:
     from astropy.io import fits
 except ImportError:
@@ -220,7 +222,7 @@ class ExtendedSH(shackhartmann.ShackHartmann):
                 extendedObject = fits.getdata(extendedObject)
 
             if extendedObject.shape!=(self.subapFFTPadding,)*2:
-                raise ValueError("Shape of extended object must be ({}, {}). This is `pxlsPersubap * fftOversamp`")
+                raise ValueError("Shape of extended object must be ({}, {}). This is `pxlsPersubap * fftOversamp`".format(self.subapFFTPadding, self.subapFFTPadding))
 
             self._extendedObject = extendedObject
         else:
