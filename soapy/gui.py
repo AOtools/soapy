@@ -206,6 +206,8 @@ class GUI(QtWidgets.QMainWindow):
 
         if PYQT_VERSION == 5:
             fname = fname[0]
+        
+        fname = str(fname)
 
         if fname is not "":
             self.sim.readParams(fname)
