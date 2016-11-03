@@ -202,12 +202,15 @@ class GUI(QtWidgets.QMainWindow):
 #Load Param file methods
     def readParamFile(self):
 
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',
-                '/home')
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
 
-        self.sim.readParams(fname)
-        self.config = self.sim.config
-        self.initPlots()
+        if PYQT_VERSION == 5:
+            fname = fname[0]
+
+        if fname is not "":
+            self.sim.readParams(fname)
+            self.config = self.sim.config
+            self.initPlots()
 
 ################################################################
 #Plot Methods
