@@ -76,6 +76,8 @@ class ExtendedSH(shackhartmann.ShackHartmann):
                     threads=self.wfsConfig.fftwThreads, axes=(-2, -1)
                     )
 
+        self.corrSubapArrays = numpy.zeros(self.centSubapArrays.shape, dtype=DTYPE)
+
     def makeDetectorPlane(self):
         """
         If an extended object is supplied, convolve with spots to make
@@ -108,12 +110,21 @@ class ExtendedSH(shackhartmann.ShackHartmann):
 
         # Now do convolution
         # Get inverse FT of subaps
-        iCentSubapArrays = self.corrFFT(self.centSubapArrays)
+        # iCentSubapArrays = self.corrFFT(self.centSubapArrays)
+        #
+        # # Multiply by inverse of reference image FFT (made when set in property)
+        # # Do FFT to get correlation
+        # self.corrSubapArrays = self.corrIFFT(
+        #         iCentSubapArrays*self.iReferenceImage).real
 
-        # Multiply by inverse of reference image FFT (made when set in property)
-        # Do FFT to get correlation
-        self.corrSubapArrays = self.corrIFFT(
-                iCentSubapArrays*self.iReferenceImage).real
+        # for i, subap in enumerate(self.centSubapArrays):
+        #     self.corrSubapArrays[i] = scipy.signal.fftconvolve(subap, self.referenceImage[i], mode='same')
+        PAD = 512
+        iSubaps = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(self.centSubapArrays, axes=(1,2)), axes=(1,2), s=(PAD, PAD)), axes=(1,2))
+        iRefs = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(self.referenceImage, axes=(1,2)), axes=(1,2), s=(PAD, PAD)), axes=(1,2))
+
+        self.corrSubapArrays = numpy.fft.fftshift(numpy.fft.ifft2(numpy.fft.fftshift(iSubaps * iRefs, axes=(1,2)), axes=(1,2)), axes=(1,2)).real
+
 
     def calculateSlopes(self):
         '''
