@@ -119,7 +119,11 @@ class ExtendedSH(shackhartmann.ShackHartmann):
 
         # for i, subap in enumerate(self.centSubapArrays):
         #     self.corrSubapArrays[i] = scipy.signal.fftconvolve(subap, self.referenceImage[i], mode='same')
-        PAD = 512
+
+        if self.config.correlatopn_fft_pad is None:
+            PAD = self.corrSubapArrays.shape[-1]
+        else:
+            self.config.correlatopn_fft_pad = 512
         iSubaps = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(self.centSubapArrays, axes=(1,2)), axes=(1,2), s=(PAD, PAD)), axes=(1,2))
         iRefs = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(self.referenceImage, axes=(1,2)), axes=(1,2), s=(PAD, PAD)), axes=(1,2))
 

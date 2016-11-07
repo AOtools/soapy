@@ -638,77 +638,78 @@ class WfsConfig(ConfigObj):
         ==================      ===================
 
     Optional:
-        =================== ================================== ===========
-        **Parameter**       **Description**                    **Default**
-        ------------------- ---------------------------------- -----------
-        ``type``            string: Which WFS object to load
-                            from WFS.py?                        ``ShackHartmann``
-        ``GSMag``           float: Apparent magnitude of the
-                            guide star                         ``0``
-        ``photonNoise``     bool: Include photon (shot) noise. ``False``
-        ``eReadNoise``      float: Electrons of read noise     ``0``
-        ``throughput``      float: Throughput of the entire
-                            optical and electronic system
-                            from guide star photons to
-                            recorded WFS detector counts.
-                            Includes atmospheric effects, the
-                            optical train and detector gain.   ``1.``
-        ``propagationMode`` string: Mode of light propogation
-                            from GS. Can be "Physical" or
-                            "Geometric"\**.                     ``"Geometric"``
-        ``subapFieldStop``  bool: if True, add a field stop to
-                            the wfs to prevent spots wandering
-                            into adjacent sub-apertures. if
-                            False, oversample subap FOV by a
-                            factor of 2 to allow into adjacent
-                            subaps.                             ``False``
-        ``removeTT``        bool: if True, remove TT signal
-                            from WFS slopes before
-                            reconstruction.\**                  ``False``
-        ``fftOversamp``     int: Multiplied by the number of
-                            of phase points required for FOV
-                            to increase fidelity from FFT.      ``3``
-        ``GSHeight``        float: Height of GS beacon. ``0``
-                            if at infinity.                     ``0``
-        ``subapThreshold``  float: How full should subap be
-                            to be used for wavefront sensing?   ``0.5``
-        ``lgs``             bool: is WFS an LGS?                ``False``
-        ``centMethod``      string: Method used for
-                            Centroiding. Can be
-                            ``centreOfGravity``,
-                            ``brightestPxl``, or
-                            ``correlation``.\**                 ``centreOfGravity``
-        ``referenceImage``  array: Reference images used in
-                            the correlation centroider. Full
-                            image plane image, each subap has
-                            a separate reference image          ``None``
-        ``angleEquivNoise`` float: width of gaussian noise
-                            added to slopes measurements
-                            in arc-secs                         ``0``
-        ``centThreshold``   float: Centroiding threshold as
-                            a fraction of the max subap
-                            value.\**                           ``0.1``
-        ``exposureTime``    float: Exposure time of the WFS
-                            camera - must be higher than
-                            loopTime. If None, will be
-                            set to loopTime.                    ``None``
-        ``wvlBandWidth``    float: Width of wavelength
-                            band sent to WFS in nm              ``100``
-        ``extendedObject``  ndarray or str: The object used
-                            as extended source for WFS, of
-                            size 2*fftOversamp*pxlsPerSubap.
-                            The FOV of the object should be
-                            twice the FOV of the sub-aperture.  ``None``
-        ``fftwThreads``     int: number of threads for fftw
-                            to use. If ``0``, will use
-                            system processor number.           ``1``
-        ``fftwFlag``        str: Flag to pass to FFTW
-                            when preparing plan.               ``FFTW_PATIENT``
-        ``pxlsPerSubap``    int: number of pixels per
-                            sub-apertures                      ``10``
-        ``subapFOV``        float: Field of View of
-                            sub-aperture in arc-secs           ``5``
-        =================== ================================== ===========
+        =====================   ================================== ===========
+        **Parameter**            **Description**                    **Default**
+        ---------------------   ---------------------------------- -----------
+        ``type``                string: Which WFS object to load
+                                from WFS.py?                        ``ShackHartmann``
+        ``GSMag``               float: Apparent magnitude of the
+                                guide star                         ``0``
+        ``photonNoise``         bool: Include photon (shot) noise. ``False``
+        ``eReadNoise``          float: Electrons of read noise     ``0``
+        ``throughput``          float: Throughput of the entire
+                                optical and electronic system
+                                from guide star photons to
+                                recorded WFS detector counts.
+                                Includes atmospheric effects, the
+                                optical train and detector gain.   ``1.``
+        ``propagationMode``     string: Mode of light propogation
+                                from GS. Can be "Physical" or
+                                "Geometric"\**.                     ``"Geometric"``
+        ``subapFieldStop``      bool: if True, add a field stop to
+                                the wfs to prevent spots wandering
+                                into adjacent sub-apertures. if
+                                False, oversample subap FOV by a
+                                factor of 2 to allow into adjacent
+                                subaps.                             ``False``
+        ``removeTT``            bool: if True, remove TT signal
+                                from WFS slopes before
+                                reconstruction.\**                  ``False``
+        ``fftOversamp``         int: Multiplied by the number of
+                                of phase points required for FOV
+                                to increase fidelity from FFT.      ``3``
+        ``GSHeight``            float: Height of GS beacon. ``0``
+                                if at infinity.                     ``0``
+        ``subapThreshold``      float: How full should subap be
+                                to be used for wavefront sensing?   ``0.5``
+        ``lgs``                 bool: is WFS an LGS?                ``False``
+        ``centMethod``          string: Method used for
+                                Centroiding. Can be
+                                ``centreOfGravity``,
+                                ``brightestPxl``, or
+                                ``correlation``.\**                 ``centreOfGravity``
+        ``referenceImage``      array: Reference images used in
+                                the correlation centroider. Full
+                                image plane image, each subap has
+                                a separate reference image          ``None``
+        ``angleEquivNoise``     float: width of gaussian noise
+                                added to slopes measurements
+                                in arc-secs                         ``0``
+        ``centThreshold``       float: Centroiding threshold as
+                                a fraction of the max subap
+                                value.\**                           ``0.1``
+        ``exposureTime``        float: Exposure time of the WFS
+                                camera - must be higher than
+                                loopTime. If None, will be
+                                set to loopTime.                    ``None``
+        ``wvlBandWidth``        float: Width of wavelength
+                                band sent to WFS in nm              ``100``
+        ``extendedObject``      ndarray or str: The object used
+                                as extended source for WFS, of
+                                size 2*fftOversamp*pxlsPerSubap.
+                                The FOV of the object should be
+                                twice the FOV of the sub-aperture.  ``None``
+        ``fftwThreads``         int: number of threads for fftw
+                                to use. If ``0``, will use
+                                system processor number.           ``1``
+        ``fftwFlag``            str: Flag to pass to FFTW
+                                when preparing plan.               ``FFTW_PATIENT``
+        ``pxlsPerSubap``        int: number of pixels per
+                                sub-apertures                      ``10``
+        ``subapFOV``            float: Field of View of
+                                sub-aperture in arc-secs           ``5``
+        ``correlationFFTPad``   int: Padding for correlation WFS    ``None``
+        =====================   ================================== ===========
 
 
         """
@@ -741,6 +742,7 @@ class WfsConfig(ConfigObj):
                         ("extendedObject", None),
                         ("pxlsPerSubap", 10),
                         ("subapFOV", 5),
+                        ("correlationFFTPad", None)
                         ]
 
         # Parameters which may be Set at some point and are allowed
