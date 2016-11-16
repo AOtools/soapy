@@ -120,14 +120,20 @@ class ExtendedSH(shackhartmann.ShackHartmann):
         # for i, subap in enumerate(self.centSubapArrays):
         #     self.corrSubapArrays[i] = scipy.signal.fftconvolve(subap, self.referenceImage[i], mode='same')
 
-        if self.config.correlatopn_fft_pad is None:
-            PAD = self.corrSubapArrays.shape[-1]
+        if self.config.correlationFFTPad is None:
+            subap_pad = self.centSubapArrays
+            ref_pad = self.referenceImage
         else:
-            self.config.correlatopn_fft_pad = 512
-        iSubaps = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(self.centSubapArrays, axes=(1,2)), axes=(1,2), s=(PAD, PAD)), axes=(1,2))
-        iRefs = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(self.referenceImage, axes=(1,2)), axes=(1,2), s=(PAD, PAD)), axes=(1,2))
+            PAD = round(0.5*(self.config.correlationFFTPad - self.config.pxlsPerSubap))
+            subap_pad = numpy.pad(
+                    self.centSubapArrays, mode='constant',
+                    pad_width=((0,0), (PAD, PAD), (PAD, PAD)))
+            ref_pad = numpy.pad(
+                    self.referenceImage, mode='constant',
+                    pad_width=((0,0), (PAD, PAD), (PAD, PAD)))
 
-        self.corrSubapArrays = numpy.fft.fftshift(numpy.fft.ifft2(numpy.fft.fftshift(iSubaps * iRefs, axes=(1,2)), axes=(1,2)), axes=(1,2)).real
+        self.corrSubapArrays = numpy.fft.fftshift(numpy.fft.ifft2(
+                numpy.fft.fft2(subap_pad, axes=(1,2)) * numpy.fft.fft2(ref_pad, axes=(1,2)))).real
 
 
     def calculateSlopes(self):
