@@ -33,6 +33,7 @@ from . import logger
 
 # Check if can use yaml configuration style
 try:
+
     import yaml
     YAML = True
 except ImportError:
@@ -219,17 +220,23 @@ class PY_Configurator(object):
         logger.info("Pixel Scale: {0:.2f} pxls/m".format(self.sim.pxlScale))
         logger.info("subScreenSize: {:d} simulation pixels".format(int(self.sim.scrnSize)))
 
-        # If outer scale is None, set all to 100m
+        # If outer scale is None, set all to really big number. Will introduce bugs when we make
+        # telescopes with diameter >1000000s of kilometres
         if self.atmos.L0 is None:
             self.atmos.L0 = []
             for scrn in range(self.atmos.scrnNo):
-                self.atmos.L0.append(100.)
+                self.atmos.L0.append(10e9)
 
         # Check if SH WFS with 1 subap. Feild stop must be FOV
         for wfs in self.wfss:
             if wfs.nxSubaps==1 and wfs.subapFieldStop==False:
                 logger.warning("Setting WFS:{} to have field stop at sub-ap FOV as it only has 1 sub-aperture".format(wfs))
                 wfs.subapFieldStop = True
+
+        # If dm diameter is None, set to telescope diameter
+        for dm in self.dms:
+            if dm.diameter is None:
+                dm.diameter = self.tel.telDiam
 
 
     def __iter__(self):
@@ -423,7 +430,7 @@ class ConfigObj(object):
 
 class SimConfig(ConfigObj):
     """
-    Configuration parameters relavent for the entire simulation. These should be held in the ``Sim`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+    Configuration parameters relavent for the entire simulation. These should be held at the beginning of the parameter file with no indendation.
 
     Required:
         =============   ===================
@@ -543,7 +550,7 @@ class SimConfig(ConfigObj):
 
 class AtmosConfig(ConfigObj):
     """
-    Configuration parameters characterising the atmosphere. These should be held in the ``Atmosphere`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+    Configuration parameters characterising the atmosphere. These should be held in the ``Atmosphere`` group in the parameter file.
 
     Required:
         ==================      ===================
@@ -619,7 +626,7 @@ class AtmosConfig(ConfigObj):
 
 class WfsConfig(ConfigObj):
     """
-    Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
+    Configuration parameters characterising Wave-front Sensors. These should be held in the ``WFS`` group in the parameter file. Each WFS is specified by first specifying an index, then the WFS parameters. Any entries above ``sim.nGS`` will be ignored.
 
     Required:
         ==================      ===================
@@ -628,79 +635,81 @@ class WfsConfig(ConfigObj):
         ``GSPosition``          tuple: position of GS on-sky in arc-secs
         ``wavelength``          float: wavelength of GS light in metres
         ``nxSubaps``            int: number of SH sub-apertures
-        ``pxlsPerSubap``        int: number of pixels per sub-apertures
-        ``subapFOV``            float: Field of View of sub-aperture in
-                                arc-secs
         ==================      ===================
 
     Optional:
-        =================== ================================== ===========
-        **Parameter**       **Description**                    **Default**
-        ------------------- ---------------------------------- -----------
-        ``type``            string: Which WFS object to load
-                            from WFS.py?                        ``ShackHartmann``
-        ``GSMag``           float: Apparent magnitude of the
-                            guide star                         ``0``
-        ``photonNoise``     bool: Include photon (shot) noise. ``False``
-        ``eReadNoise``      float: Electrons of read noise     ``0``
-        ``throughput``      float: Throughput of the entire
-                            optical and electronic system
-                            from guide star photons to
-                            recorded WFS detector counts.
-                            Includes atmospheric effects, the
-                            optical train and detector gain.   ``1.``
-        ``propagationMode`` string: Mode of light propogation
-                            from GS. Can be "Physical" or
-                            "Geometric"\**.                     ``"Geometric"``
-        ``subapFieldStop``  bool: if True, add a field stop to
-                            the wfs to prevent spots wandering
-                            into adjacent sub-apertures. if
-                            False, oversample subap FOV by a
-                            factor of 2 to allow into adjacent
-                            subaps.                             ``False``
-        ``removeTT``        bool: if True, remove TT signal
-                            from WFS slopes before
-                            reconstruction.\**                  ``False``
-        ``fftOversamp``     int: Multiplied by the number of
-                            of phase points required for FOV
-                            to increase fidelity from FFT.      ``3``
-        ``GSHeight``        float: Height of GS beacon. ``0``
-                            if at infinity.                     ``0``
-        ``subapThreshold``  float: How full should subap be
-                            to be used for wavefront sensing?   ``0.5``
-        ``lgs``             bool: is WFS an LGS?                ``False``
-        ``centMethod``      string: Method used for
-                            Centroiding. Can be
-                            ``centreOfGravity``,
-                            ``brightestPxl``, or
-                            ``correlation``.\**                 ``centreOfGravity``
-        ``referenceImage``  array: Reference images used in
-                            the correlation centroider. Full
-                            image plane image, each subap has
-                            a separate reference image          ``None``
-        ``angleEquivNoise`` float: width of gaussian noise
-                            added to slopes measurements
-                            in arc-secs                         ``0``
-        ``centThreshold``   float: Centroiding threshold as
-                            a fraction of the max subap
-                            value.\**                           ``0.1``
-        ``exposureTime``    float: Exposure time of the WFS
-                            camera - must be higher than
-                            loopTime. If None, will be
-                            set to loopTime.                    ``None``
-        ``wvlBandWidth``    float: Width of wavelength
-                            band sent to WFS in nm              ``100``
-        ``extendedObject``  ndarray or str: The object used
-                            as extended source for WFS, of
-                            size 2*fftOversamp*pxlsPerSubap.
-                            The FOV of the object should be
-                            twice the FOV of the sub-aperture.  ``None``
-        ``fftwThreads``     int: number of threads for fftw
-                            to use. If ``0``, will use
-                            system processor number.           ``1``
-        ``fftwFlag``        str: Flag to pass to FFTW
-                            when preparing plan.               ``FFTW_PATIENT``
-        =================== ================================== ===========
+        =====================   ================================== ===========
+        **Parameter**            **Description**                    **Default**
+        ---------------------   ---------------------------------- -----------
+        ``type``                string: Which WFS object to load
+                                from WFS.py?                        ``ShackHartmann``
+        ``GSMag``               float: Apparent magnitude of the
+                                guide star                         ``0``
+        ``photonNoise``         bool: Include photon (shot) noise. ``False``
+        ``eReadNoise``          float: Electrons of read noise     ``0``
+        ``throughput``          float: Throughput of the entire
+                                optical and electronic system
+                                from guide star photons to
+                                recorded WFS detector counts.
+                                Includes atmospheric effects, the
+                                optical train and detector gain.   ``1.``
+        ``propagationMode``     string: Mode of light propogation
+                                from GS. Can be "Physical" or
+                                "Geometric"\**.                     ``"Geometric"``
+        ``subapFieldStop``      bool: if True, add a field stop to
+                                the wfs to prevent spots wandering
+                                into adjacent sub-apertures. if
+                                False, oversample subap FOV by a
+                                factor of 2 to allow into adjacent
+                                subaps.                             ``False``
+        ``removeTT``            bool: if True, remove TT signal
+                                from WFS slopes before
+                                reconstruction.\**                  ``False``
+        ``fftOversamp``         int: Multiplied by the number of
+                                of phase points required for FOV
+                                to increase fidelity from FFT.      ``3``
+        ``GSHeight``            float: Height of GS beacon. ``0``
+                                if at infinity.                     ``0``
+        ``subapThreshold``      float: How full should subap be
+                                to be used for wavefront sensing?   ``0.5``
+        ``lgs``                 bool: is WFS an LGS?                ``False``
+        ``centMethod``          string: Method used for
+                                Centroiding. Can be
+                                ``centreOfGravity``,
+                                ``brightestPxl``, or
+                                ``correlation``.\**                 ``centreOfGravity``
+        ``referenceImage``      array: Reference images used in
+                                the correlation centroider. Full
+                                image plane image, each subap has
+                                a separate reference image          ``None``
+        ``angleEquivNoise``     float: width of gaussian noise
+                                added to slopes measurements
+                                in arc-secs                         ``0``
+        ``centThreshold``       float: Centroiding threshold as
+                                a fraction of the max subap
+                                value.\**                           ``0.1``
+        ``exposureTime``        float: Exposure time of the WFS
+                                camera - must be higher than
+                                loopTime. If None, will be
+                                set to loopTime.                    ``None``
+        ``wvlBandWidth``        float: Width of wavelength
+                                band sent to WFS in nm              ``100``
+        ``extendedObject``      ndarray or str: The object used
+                                as extended source for WFS, of
+                                size 2*fftOversamp*pxlsPerSubap.
+                                The FOV of the object should be
+                                twice the FOV of the sub-aperture.  ``None``
+        ``fftwThreads``         int: number of threads for fftw
+                                to use. If ``0``, will use
+                                system processor number.           ``1``
+        ``fftwFlag``            str: Flag to pass to FFTW
+                                when preparing plan.               ``FFTW_PATIENT``
+        ``pxlsPerSubap``        int: number of pixels per
+                                sub-apertures                      ``10``
+        ``subapFOV``            float: Field of View of
+                                sub-aperture in arc-secs           ``5``
+        ``correlationFFTPad``   int: Padding for correlation WFS    ``None``
+        =====================   ================================== ===========
 
 
         """
@@ -708,8 +717,6 @@ class WfsConfig(ConfigObj):
     requiredParams = [ "GSPosition",
                         "wavelength",
                         "nxSubaps",
-                        "pxlsPerSubap",
-                        "subapFOV",
                         ]
     optionalParams = [  ("propagationMode", "Geometric"),
                         ("fftwThreads", 1),
@@ -733,6 +740,9 @@ class WfsConfig(ConfigObj):
                         ("GSMag", 0.0),
                         ("wvlBandWidth", 100.),
                         ("extendedObject", None),
+                        ("pxlsPerSubap", 10),
+                        ("subapFOV", 5),
+                        ("correlationFFTPad", None)
                         ]
 
         # Parameters which may be Set at some point and are allowed
@@ -762,7 +772,7 @@ class WfsConfig(ConfigObj):
 
 class TelConfig(ConfigObj):
     """
-        Configuration parameters characterising the Telescope. These should be held in the ``Tel`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file.
+        Configuration parameters characterising the Telescope. These should be held in the ``Telescope`` group in the parameter file.
 
     Required:
         =============   ===================
@@ -799,7 +809,7 @@ class TelConfig(ConfigObj):
 
 class LgsConfig(ConfigObj):
     """
-        Configuration parameters characterising the Laser Guide Stars. These should be held in the ``LGS`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a WFS. Any entries above ``sim.nGS`` will be ignored.
+        Configuration parameters characterising the Laser Guide Stars. These should be held in the ``LGS`` sub-group of the WFS parameter group.
 
 
     Optional:
@@ -874,7 +884,7 @@ class LgsConfig(ConfigObj):
 
 class DmConfig(ConfigObj):
     """
-    Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a DM. Any entries above ``sim.nDM`` will be ignored.
+    Configuration parameters characterising Deformable Mirrors. These should be held in the ``DM`` sub-group of the parameter file. Each DM is specified seperately, by first specifying an index, then the DM parameters. Any entries above ``sim.nGS`` will be ignored.
 
     Required:
         ===================     ===============================================
@@ -906,10 +916,15 @@ class DmConfig(ConfigObj):
                              to the pupil in degrees             ``0``
         ``interpOrder``      Order of interpolation for dm,
                              including piezo actuators and
-                             rotation.                           ``1``
+                             rotation.                           ``2``
         ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the
                              inter-actuator spacing.             ``0.5``
+        ``altitude``         float: Altitude to which DM is 
+                             optically conjugated.               ``0``
+        ``diameter``         float: Diameter covered by DM in 
+                             metres. If ``None`` if telescope 
+                             diameter.                           ``None`` 
         ==================== =================================   ===========
     """
 
@@ -928,6 +943,8 @@ class DmConfig(ConfigObj):
                     ("rotation", 0),
                     ("interpOrder", 2),
                     ("gaussWidth", 0.5),
+                    ("altitude", 0.),
+                    ("diameter", None)
                     ]
 
     calculatedParams = [
@@ -944,7 +961,7 @@ class DmConfig(ConfigObj):
 
 class SciConfig(ConfigObj):
     """
-    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` sub-dictionary of the ``simConfiguration`` dictionary in the parameter file. Each parameter must be in the form of a list, where each entry corresponds to a science camera. Any entries above ``sim.nSci`` will be ignored.
+    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` of the parameter file. Each Science target is created seperately with an integer index. Any entries above ``sim.nSci`` will be ignored.
 
     Required:
         ==================      ============================================
@@ -963,6 +980,9 @@ class SciConfig(ConfigObj):
         ==================== =================================   ===========
         **Parameter**        **Description**                     **Default**
         -------------------- ---------------------------------   -----------
+        ``pxlScale``         float: Pixel scale of science 
+                             camera, in arcseconds. If set, 
+                             overwrites ``FOV``.                 ``None``
         ``type``             string: Type of science camera
                              This must the name of a class
                              in the ``SCI`` module.              ``PSF``
@@ -978,7 +998,7 @@ class SciConfig(ConfigObj):
                              0 denotes infinity.                  ``0``
         ``propagationMode``  str: Mode of light propogation
                              from object. Can be "Physical" or
-                             "Geometric".                       ``"Geometric"``
+                             "Geometric".                        ``"Geometric"``
         ``instStrehlWithTT`` bool: Whether or not to include
                              tip/tilt in instantaneous Strehl
                              calculations.                       ``False``
@@ -993,7 +1013,8 @@ class SciConfig(ConfigObj):
                         "wavelength",
                         "pxls",
                         ]
-    optionalParams = [  ("type", "PSF"),
+    optionalParams = [  ("pxlScale", None),
+                        ("type", "PSF"),
                         ("fftOversamp", 2),
                         ("fftwFlag", "FFTW_MEASURE"),
                         ("fftwThreads", 1),
@@ -1012,7 +1033,12 @@ class SciConfig(ConfigObj):
     def calcParams(self):
         # Set some parameters to correct type
         self.position = numpy.array(self.position)
-
+        self.wavelength = float(self.wavelength)
+        if self.pxlScale is not None:
+            logger.debug("Overriding sci FOV with pxlscale")
+            self.FOV = self.pxlScale * self.pxls
+        else:
+            self.pxlScale = float(self.FOV)/self.pxls
 
 def loadSoapyConfig(configfile):
 
@@ -1021,7 +1047,10 @@ def loadSoapyConfig(configfile):
 
     # If YAML use yaml configurator
     if file_ext=='yml' or file_ext=='yaml':
-        config = YAML_Configurator(configfile)
+        if YAML:
+            config = YAML_Configurator(configfile)
+        else:
+            raise ImportError("Requires pyyaml for YAML config file")
 
     # Otherwise, try and execute as python
     else:

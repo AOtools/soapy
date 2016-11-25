@@ -1,0 +1,90 @@
+simName: sh_8x8
+pupilSize: 64
+nGS: 3
+nDM: 2
+nSci: 1
+nIters: 5000
+loopTime: 0.0025
+reconstructor: "MVM"
+
+verbosity: 2
+
+saveCMat: False
+saveSlopes: True
+saveDmCommands:   False
+saveLgsPsf: False
+saveSciPsf: True
+
+
+Atmosphere:
+  scrnNo: 2
+  scrnHeights: [0, 10000]
+  scrnStrengths: [0.5, 0.5]
+  windDirs: [0, 90]
+  windSpeeds: [10, 10]
+  wholeScrnSize: 2048
+  r0: 0.16
+
+
+Telescope:
+  telDiam: 4.2
+  obsDiam: 1.
+  mask: circle
+
+# WFSs in equalateral triange, with asterism radius 25"
+WFS:
+  0:
+    type: ShackHartmann
+    GSPosition: [0, 25]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 2.5
+    wavelength: 600e-9
+    
+  1:
+    type: ShackHartmann
+    GSPosition: [-21.5, -12.5]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 2.5
+    wavelength: 600e-9
+  2:
+    type: ShackHartmann
+    GSPosition: [21.5, -12.5]
+    GSHeight: 0
+    GSMag: 8
+    nxSubaps: 8
+    pxlsPerSubap: 10
+    subapFOV: 2.5
+    wavelength: 600e-9
+
+DM:
+  0:
+    type: Piezo
+    closed: True
+    nxActuators: 9
+    svdConditioning: 0.05
+    iMatValue: 500
+    gain: 0.7
+
+  1:
+    type: Piezo
+    closed: True
+    nxActuators: 9
+    svdConditioning: 0.05
+    gain: 0.7
+    iMatValue: 500
+    altitude: 10000
+    diameter: 10
+
+
+Science:
+  0:
+    position: [0, 0]
+    FOV: 2.0
+    wavelength: 1.65e-6
+    pxls: 128

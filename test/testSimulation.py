@@ -3,6 +3,8 @@ import unittest
 import soapy
 
 import numpy
+from astropy.io import fits
+
 import os
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../conf/")
 
@@ -165,6 +167,36 @@ class TestSimpleSCAO(unittest.TestCase):
 
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
+
+def testMaskLoad():
+    
+    sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+    sim.config.sim.simName = None
+    sim.config.sim.logfile = None
+
+    sim.aoinit()
+
+    # save mask
+    mask = sim.mask.copy()
+    if os.path.isfile('testmask.fits'):
+        os.remove('testmask.fits')
+    
+    hdu = fits.PrimaryHDU(sim.mask)
+    hdulist = fits.HDUList([hdu])
+    hdulist.writeto('testmask.fits')
+    hdulist.close()
+    
+    try:
+        # attempt to load it
+        sim.config.tel.mask = 'testmask.fits'
+        sim.aoinit()
+
+        # check its good
+        assert numpy.array_equal(sim.mask, mask)
+    except:
+        raise
+    finally:
+        os.remove('testmask.fits') 
 
 if __name__ == '__main__':
     unittest.main()

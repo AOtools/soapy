@@ -5,7 +5,7 @@ The Shack Hartmann WFS accelerated using numba cuda
 import numpy
 from numba import cuda
 from accelerate.cuda.fft.binding import Plan, CUFFT_C2C
-from .. import AOFFT, aoSimLib, LGS, logger, lineofsight
+from .. import AOFFT, LGS, logger, lineofsight
 from . import shackhartmann
 from .. import gpulib
 

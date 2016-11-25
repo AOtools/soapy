@@ -9,10 +9,9 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, aoSimLib, LGS, logger
+from .. import AOFFT, LGS, logger
 from . import base
-from ..tools import centroiders
-from ..opticalPropagationLib import angularSpectrum
+from ..aotools import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -25,7 +24,8 @@ except NameError:
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
-
+RAD2ASEC = 206264.849159
+ASEC2RAD = 1./RAD2ASEC
 
 class Gradient(base.WFS):
 
@@ -35,15 +35,26 @@ class Gradient(base.WFS):
         self.findActiveSubaps()
 
         # Normalise gradient measurement to 1 radian
-        self.subapDiam = self.telConfig.telDiam/self.wfsConfig.nxSubaps
+        self.subapDiam = float(self.telConfig.telDiam) / self.wfsConfig.nxSubaps
 
-        amp = 2.6e-8 * self.subapDiam/self.wfsConfig.wavelength
-        # NEEDS FIXED - USEFUL FOR ONE SCENARIO (apr)
+        # Amp in m of 1 arcsecond tilt for single sub-aperture
+        amp = self.telConfig.telDiam * 1. * ASEC2RAD
+        
+        # amp of 1" tilt in rads of the light
+        amp *= ((2 * numpy.pi) / self.config.wavelength)
 
         # Arrays to be used for gradient calculation
-        coord = numpy.linspace(-amp, amp, self.subapSpacing)
-        self.xGrad, self.yGrad = numpy.meshgrid(coord, coord)
-
+        telCoord = numpy.linspace(0, amp, self.soapyConfig.sim.pupilSize)
+        subapCoord = telCoord[:self.subapSpacing]
+        
+        # Remove piston
+        subapCoord -= subapCoord.mean()
+        subapCoord *= -1
+        
+        self.xGrad_1, self.yGrad_1 = numpy.meshgrid(subapCoord, subapCoord)
+        
+        self.xGrad = self.xGrad_1/((self.xGrad_1**2).sum())
+        self.yGrad = self.yGrad_1/((self.yGrad_1**2).sum())
 
     def findActiveSubaps(self):
         '''
@@ -54,7 +65,7 @@ class Gradient(base.WFS):
                 self.simConfig.simPad : -self.simConfig.simPad,
                 self.simConfig.simPad : -self.simConfig.simPad
                 ]
-        self.subapCoords, self.subapFillFactor = aoSimLib.findActiveSubaps(
+        self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, pupilMask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
@@ -71,12 +82,11 @@ class Gradient(base.WFS):
 
         super(Gradient, self).allocDataArrays()
 
-        self.subapArrays=numpy.zeros(
+        self.subapArrays = numpy.zeros(
                 (self.activeSubaps, self.subapSpacing, self.subapSpacing),
                 dtype=DTYPE)
 
         self.slopes = numpy.zeros(2 * self.activeSubaps)
-
 
 
     def calcFocalPlane(self, intensity=1):
@@ -94,20 +104,23 @@ class Gradient(base.WFS):
         coord = self.simConfig.simPad
         self.pupilPhase = self.los.phase[coord:-coord, coord:-coord]
 
-        #create an array of individual subap phase
-        for i, (x,y) in enumerate(self.subapCoords):
-            self.subapArrays[i] = self.pupilPhase[
-                    x: x+self.subapSpacing, y: y+self.subapSpacing]
+        # Create an array of individual subap phase
+        for i, (x, y) in enumerate(self.subapCoords):
+            x1 = int(round(x))
+            x2 = int(round(x + self.subapSpacing))
+            y1 = int(round(y))
+            y2 = int(round(y + self.subapSpacing))
+            self.subapArrays[i] = self.pupilPhase[x1: x2, y1: y2]
 
 
     def makeDetectorPlane(self):
         '''
-        Creates a 'detector' image suitable
+        Creates a 'detector' image suitable for plotting
         '''
         self.wfsDetectorPlane = numpy.zeros((self.wfsConfig.nxSubaps,)*2)
 
         coords = (self.subapCoords/self.subapSpacing).astype('int')
-        self.wfsDetectorPlane[coords[:,0], coords[:,1]] = self.subapArrays.mean((1,2))
+        self.wfsDetectorPlane[coords[:, 0], coords[:, 1]] = self.subapArrays.mean((1, 2))
 
     def calculateSlopes(self):
         '''

@@ -5,7 +5,7 @@ Wave-front Sensors
 ==========
 WFS Module
 ==========
-.. automodule:: soapy.wfs
+.. automodule:: soapy.wfs.base
 
 Base WFS Class
 ==============

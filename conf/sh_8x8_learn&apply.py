@@ -11,13 +11,13 @@ simConfiguration = {
 
 "Sim":{
     "simName"    :  "8x8_learn&apply",
-    "pupilSize"     :   64, 
+    "pupilSize"     :   64,
     "nGS"           :   5,
     "nDM"           :   1,
     "nSci"          :   1,
     "nIters"        :   1000,
     "loopTime"      :   1/250.0,
-    "reconstructor" :   "LearnAndApply", 
+    "reconstructor" :   "LearnAndApply",
     "learnIters"    :   5000,
     "learnAtmos"    :   "random",
 
@@ -49,7 +49,7 @@ simConfiguration = {
 "WFS":{
     "GSPosition"    :   [(0,0), (-10,-10), (-10, 10), (10,-10), (10,10)   ],
     "GSHeight"      :   [0,     0,          0,       0,      0      ],
-    "GSMag"         :   [8,     8,          8,       8,      8      ]
+    "GSMag"         :   [8,     8,          8,       8,      8      ],
     "nxSubaps"      :   [8,     8,          8,       8,      8      ],
     "pxlsPerSubap"  :   [10,    10,         10,      10,    10,     ],
     "subapFOV"      :   [4.0,   4.,         4.,     4.,     4.,     ],
@@ -83,6 +83,3 @@ simConfiguration = {
 
 
 }
-
-
-

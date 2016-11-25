@@ -33,7 +33,7 @@ Example:
 
     Initialise the wave-front sensor::
 
-        wfs = WFS.WFS(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        wfs = WFS.WFS(config, 0 mask)
 
     Set the WFS scrns (these should be made in advance, perhaps by the :py:mod:`soapy.atmosphere` module). Then run the WFS::
 
@@ -50,7 +50,7 @@ A Shack-Hartmann WFS is also included in the module, this contains further metho
 Example:
     Using the config objects from above...::
 
-        shWfs = WFS.ShackHartmann(config.sim, config.wfss[0], config.atmos, config.lgss[0], mask)
+        shWfs = WFS.ShackHartmann(config, 0, mask)
 
     As we are using a full WFS with focal plane making methods, the WFS base classes ``frame`` method can be used to take a frame from the WFS::
 
@@ -80,7 +80,6 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 
 import numpy
 import numpy.random
-from scipy.interpolate import interp2d
 try:
     from astropy.io import fits
 except ImportError:
@@ -89,9 +88,8 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, aoSimLib, LGS, logger, lineofsight
-from ..tools import centroiders
-from ..opticalPropagationLib import angularSpectrum
+from .. import AOFFT, LGS, logger, lineofsight
+from ..aotools import centroiders, circle
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -136,7 +134,7 @@ class WFS(object):
             self.mask = mask
         # Else we'll just make a circle
         else:
-            self.mask = aoSimLib.circle(
+            self.mask = circle.circle(
                     self.simConfig.pupilSize/2., self.simConfig.simSize,
                     )
 
@@ -148,7 +146,7 @@ class WFS(object):
         self.calcInitParams()
         # If GS not at infinity, find meta-pupil radii for each layer
         if self.config.GSHeight != 0:
-            self.radii = self.los.findMetaPupilSize(self.config.GSHeight)
+            self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
         else:
             self.radii = None
 
@@ -165,11 +163,17 @@ class WFS(object):
 # Initialisation routines
 
     def setMask(self, mask):
+        """
+        Sets the pupil mask as seen by the WFS.
+
+        This method can be called during a simulation
+        """
+
         # If supplied use the mask
         if numpy.any(mask):
             self.mask = mask
         else:
-            self.mask = aoSimLib.circle(
+            self.mask = circle.circle(
                     self.simConfig.pupilSize/2., self.simConfig.simSize,
                     )
 
@@ -229,7 +233,7 @@ class WFS(object):
                     )
 
                 # Calculate the zernikes to add
-                self.elongZs = aoSimLib.zernikeArray([2,3,4], self.simConfig.pupilSize)
+                self.elongZs = circle.zernikeArray([2,3,4], self.simConfig.pupilSize)
 
                 # Calculate the radii of the metapupii at for different elong
                 # Layer heights
@@ -239,7 +243,7 @@ class WFS(object):
                 self.elongPhaseAdditions = numpy.zeros(
                     (self.elongLayers, self.los.nOutPxls, self.los.nOutPxls))
                 for i in xrange(self.elongLayers):
-                    self.elongRadii[i] = self.los.findMetaPupilSize(
+                    self.elongRadii[i] = self.los.findMetaPupilSizes(
                                                 float(self.elongHeights[i]))
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
@@ -313,7 +317,7 @@ class WFS(object):
         pad = ((self.simConfig.simPad,)*2, (self.simConfig.simPad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
 
-        phaseAddition = aoSimLib.zoom(phaseAddition, self.los.nOutPxls)
+        phaseAddition = interp.zoom(phaseAddition, self.los.nOutPxls)
 
         return phaseAddition
 
@@ -375,7 +379,7 @@ class WFS(object):
 
             # Apply any correction
             if correction is not None:
-                self.los.EField *= numpy.exp(-1j*correction*self.los.phs2Rad)
+                self.los.performCorrection(correction)
 
             # Add onto the focal plane with that layers intensity
             self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
@@ -404,9 +408,6 @@ class WFS(object):
             self.iMat = True
             removeTT = self.config.removeTT
             self.config.removeTT = False
-            # if self.config.lgs:
-            #     elong = self.elong
-            # self.elong = 0
             photonNoise = self.config.photonNoise
             self.config.photonNoise = False
             eReadNoise = self.config.eReadNoise
@@ -423,21 +424,19 @@ class WFS(object):
         # If no elongation
         else:
             # If imat frame, dont want to make it off-axis
-            if iMatFrame:
-                try:
-                    iMatPhase = aoSimLib.zoom(scrns, self.los.nOutPxls, order=1)
-                    self.los.EField[:] = numpy.exp(1j*iMatPhase*self.los.phs2Rad)
-                except ValueError:
-                    raise ValueError("If iMat Frame, scrn must be ``simSize``")
-            else:
-                self.los.makePhase(self.radii)
+            # if iMatFrame:
+            #     try:
+            #         iMatPhase = interp.zoom(scrns, self.los.nOutPxls, order=1)
+            #         self.los.EField[:] = numpy.exp(1j*iMatPhase*self.los.phs2Rad)
+            #     except ValueError:
+            #         raise ValueError("If iMat Frame, scrn must be ``simSize``")
+            # else:
+            self.los.makePhase(self.radii)
 
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
-            if numpy.any(correction):
-                correctionPhase = aoSimLib.zoom(
-                        correction, self.los.nOutPxls, order=1)
-                self.los.EField *= numpy.exp(-1j*correctionPhase*self.los.phs2Rad)
-                self.los.phase -= correctionPhase * self.los.phs2Rad
+            if correction is not None:
+                self.los.performCorrection(correction)
+                
             self.calcFocalPlane()
 
         if read:
@@ -449,8 +448,6 @@ class WFS(object):
         if iMatFrame:
             self.iMat=False
             self.config.removeTT = removeTT
-            # if self.config.lgs:
-            #     self.elong = elong
             self.config.photonNoise = photonNoise
             self.config.eReadNoise = eReadNoise
 
@@ -480,7 +477,7 @@ class WFS(object):
                 0, self.config.eReadNoise, self.wfsDetectorPlane.shape
                 )
 
-    def calcFocalPlane(self):
+    def calcFocalPlane(self, intensity=None):
         pass
 
     def makeDetectorPlane(self):
