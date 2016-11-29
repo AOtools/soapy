@@ -3,7 +3,7 @@ import numba
 import numpy
 import math
 # Cuda threads per block
-CUDA_TPB = 16
+CUDA_TPB = 32
 
 def linterp2d(data, xCoords, yCoords, interpArray, threadsPerBlock=None):
     """

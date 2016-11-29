@@ -14,13 +14,13 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 class ShackHartmannGPU(shackhartmann.ShackHartmann):
-    def initLos(self):
-        """
-        Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
-        """
-        self.los = lineofsight.LineOfSightGPU(
-                self.config, self.soapyConfig,
-                propagationDirection="down")
+    # def initLos(self):
+    #     """
+    #     Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
+    #     """
+    #     self.los = lineofsight.LineOfSightGPU(
+    #             self.config, self.soapyConfig,
+    #             propagationDirection="down")
 
 
     def allocDataArrays(self):
@@ -48,12 +48,14 @@ class ShackHartmannGPU(shackhartmann.ShackHartmann):
         self.tiltfixEField = numpy.exp(1j*self.tiltFix)
         self.tiltfixEField_gpu = cuda.to_device(self.tiltfixEField)
 
+        self.tiltfixEField_gpu.to_host()
+
         self.fftShape = ((self.subapFFTPadding,)*2)
         self.ftplan_gpu = Plan.many(
                 self.fftShape, CUFFT_C2C,
                 batch=self.activeSubaps)
 
-
+        self.tiltfixEField_gpu.to_host()
 
     def calcFocalPlane(self, intensity=1):
         '''

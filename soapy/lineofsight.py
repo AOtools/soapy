@@ -642,8 +642,8 @@ class LineOfSightGPU(LineOfSight):
                     GSCent, scrn.shape, simSize, height, x1, x2, y1, y2, self.phaseCoord, fact))
             raise ValueError("Requested phase exceeds phase screen size. See log warnings.")
         
-        print("scrn Max:{}".format(scrn.copy_to_host().max()))
-        print("phase Max: {}".format(self.phase_gpu.copy_to_host().max()))
+        # print("scrn Max:{}".format(scrn.copy_to_host().max()))
+        # print("phase Max: {}".format(self.phase_gpu.copy_to_host().max()))
         gpulib.bilinterp2d_regular(
                 scrn, x1, x2, self.nOutPxls, y1, y2, self.nOutPxls,
                 self.phase_gpu) 
