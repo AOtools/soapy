@@ -4,6 +4,8 @@ A Shack Hartmann WFS for use with extended reference sources, such as solar AO, 
 """
 
 import numpy
+import scipy.signal
+
 try:
     from astropy.io import fits
 except ImportError:
@@ -74,6 +76,8 @@ class ExtendedSH(shackhartmann.ShackHartmann):
                     threads=self.wfsConfig.fftwThreads, axes=(-2, -1)
                     )
 
+        self.corrSubapArrays = numpy.zeros(self.centSubapArrays.shape, dtype=DTYPE)
+
     def makeDetectorPlane(self):
         """
         If an extended object is supplied, convolve with spots to make
@@ -106,12 +110,31 @@ class ExtendedSH(shackhartmann.ShackHartmann):
 
         # Now do convolution
         # Get inverse FT of subaps
-        iCentSubapArrays = self.corrFFT(self.centSubapArrays)
+        # iCentSubapArrays = self.corrFFT(self.centSubapArrays)
+        #
+        # # Multiply by inverse of reference image FFT (made when set in property)
+        # # Do FFT to get correlation
+        # self.corrSubapArrays = self.corrIFFT(
+        #         iCentSubapArrays*self.iReferenceImage).real
 
-        # Multiply by inverse of reference image FFT (made when set in property)
-        # Do FFT to get correlation
-        self.corrSubapArrays = self.corrIFFT(
-                iCentSubapArrays*self.iReferenceImage).real
+        # for i, subap in enumerate(self.centSubapArrays):
+        #     self.corrSubapArrays[i] = scipy.signal.fftconvolve(subap, self.referenceImage[i], mode='same')
+
+        if self.config.correlationFFTPad is None:
+            subap_pad = self.centSubapArrays
+            ref_pad = self.referenceImage
+        else:
+            PAD = round(0.5*(self.config.correlationFFTPad - self.config.pxlsPerSubap))
+            subap_pad = numpy.pad(
+                    self.centSubapArrays, mode='constant',
+                    pad_width=((0,0), (PAD, PAD), (PAD, PAD)))
+            ref_pad = numpy.pad(
+                    self.referenceImage, mode='constant',
+                    pad_width=((0,0), (PAD, PAD), (PAD, PAD)))
+
+        self.corrSubapArrays = numpy.fft.fftshift(numpy.fft.ifft2(
+                numpy.fft.fft2(subap_pad, axes=(1,2)) * numpy.fft.fft2(ref_pad, axes=(1,2)))).real
+
 
     def calculateSlopes(self):
         '''
@@ -220,7 +243,7 @@ class ExtendedSH(shackhartmann.ShackHartmann):
                 extendedObject = fits.getdata(extendedObject)
 
             if extendedObject.shape!=(self.subapFFTPadding,)*2:
-                raise ValueError("Shape of extended object must be ({}, {}). This is `pxlsPersubap * fftOversamp`")
+                raise ValueError("Shape of extended object must be ({}, {}). This is `pxlsPersubap * fftOversamp`".format(self.subapFFTPadding, self.subapFFTPadding))
 
             self._extendedObject = extendedObject
         else:
