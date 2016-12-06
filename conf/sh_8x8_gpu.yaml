@@ -3,7 +3,7 @@ pupilSize: 128
 nGS: 1
 nDM: 2
 nSci: 1
-nIters: 5000
+nIters: 500
 loopTime: 0.0025
 reconstructor: "MVM"
 
@@ -36,10 +36,10 @@ WFS:
     type: ShackHartmannGPU
     GSPosition: [0, 0]
     GSHeight: 0
-    GSMag: 8
+    GSMag: 0
     nxSubaps: 8
     pxlsPerSubap: 10
-    subapFOV: 2.5
+    subapFOV: 3.
     wavelength: 600e-9
 
 DM:
@@ -53,7 +53,7 @@ DM:
     type: Piezo
     closed: True
     nxActuators: 9
-    svdConditioning: 0.05
+    svdConditioning: 0.005
     gain: 0.7
     iMatValue: 500
 
