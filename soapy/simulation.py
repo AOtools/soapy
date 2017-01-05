@@ -166,22 +166,7 @@ class Sim(object):
 
         # Init Pupil Mask
         logger.info("Creating mask...")
-        if self.config.tel.mask == "circle":
-            self.mask = circle.circle(self.config.sim.pupilSize/2.,
-                                        self.config.sim.pupilSize)
-            if self.config.tel.obsDiam!=None:
-                self.mask -= circle.circle(
-                        self.config.tel.obsDiam*self.config.sim.pxlScale/2.,
-                        self.config.sim.pupilSize
-                        )
-        elif isinstance(self.config.tel.mask, str):
-            maskHDUList = fits.open(self.config.tel.mask)
-            self.mask = maskHDUList[0].data.copy()
-            maskHDUList.close()
-            logger.info('load mask "{}", of size: {}'.format(self.config.tel.mask, self.mask.shape))
-            
-        else:
-            self.mask = self.config.tel.mask.copy()
+        self.mask = make_mask(self.config)
 
         if (not numpy.array_equal(self.mask.shape, (self.config.sim.pupilSize,)*2) 
                 and not numpy.array_equal(self.mask.shape, (self.config.sim.simSize,)*2) ):
@@ -1011,6 +996,27 @@ class Sim(object):
                 self.guiLock.unlock()
 
                 self.waitingPlot = False
+
+
+def make_mask(config):
+    if config.tel.mask == "circle":
+        mask = circle.circle(config.sim.pupilSize / 2.,
+                                  config.sim.pupilSize)
+        if config.tel.obsDiam != None:
+            mask -= circle.circle(
+                config.tel.obsDiam * config.sim.pxlScale / 2.,
+                config.sim.pupilSize
+            )
+    elif isinstance(config.tel.mask, str):
+        maskHDUList = fits.open(config.tel.mask)
+        mask = maskHDUList[0].data.copy()
+        maskHDUList.close()
+        logger.info('load mask "{}", of size: {}'.format(config.tel.mask, mask.shape))
+
+    else:
+        mask = config.tel.mask.copy()
+
+    return mask
 
 
 # Functions used by MP stuff
