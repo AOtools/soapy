@@ -1017,8 +1017,9 @@ def make_mask(config):
         maskHDUList.close()
         logger.info('load mask "{}", of size: {}'.format(config.tel.mask, mask.shape))
 
-        # interpolate mask to pupilSize
-        mask = numpy.round(interp.zoom(mask, config.sim.pupilSize))
+        if not numpy.array_equal(mask.shape, (config.sim.pupilSize,) * 2):
+            # interpolate mask to pupilSize if not that size already
+            mask = numpy.round(interp.zoom(mask, config.sim.pupilSize))
 
     else:
         mask = config.tel.mask.copy()
