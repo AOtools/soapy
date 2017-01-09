@@ -61,7 +61,7 @@ Examples:
 
 #sim imports
 from . import atmosphere, logger, wfs, DM, RECON, SCI, confParse, aotools
-from .aotools import circle
+from .aotools import circle, interp
 
 #standard python imports
 import numpy
@@ -1017,13 +1017,16 @@ def make_mask(config):
         maskHDUList.close()
         logger.info('load mask "{}", of size: {}'.format(config.tel.mask, mask.shape))
 
+        # interpolate mask to pupilSize
+        mask = numpy.round(interp.zoom(mask, config.sim.pupilSize))
+
     else:
         mask = config.tel.mask.copy()
 
     # Check its size is compatible. If its the pupil size, pad to sim size
     if (not numpy.array_equal(mask.shape, (config.sim.pupilSize,)*2)
             and not numpy.array_equal(mask.shape, (config.sim.simSize,)*2) ):
-        raise ValueError("Mask Shape {} not compatible. Should be either `pupilSize` or `simSize`".format(self.mask.shape))
+        raise ValueError("Mask Shape {} not compatible. Should be either `pupilSize` or `simSize`".format(mask.shape))
 
     if mask.shape != (config.sim.simSize, )*2:
         mask = numpy.pad(
