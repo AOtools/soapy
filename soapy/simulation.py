@@ -168,13 +168,7 @@ class Sim(object):
         logger.info("Creating mask...")
         self.mask = make_mask(self.config)
 
-        if (not numpy.array_equal(self.mask.shape, (self.config.sim.pupilSize,)*2) 
-                and not numpy.array_equal(self.mask.shape, (self.config.sim.simSize,)*2) ):
-            raise ValueError("Mask Shape {} not compatible. Should be either `pupilSize` or `simSize`".format(self.mask.shape))
 
-        if self.mask.shape != (self.config.sim.simSize, )*2:
-            self.mask = numpy.pad(
-                    self.mask, self.config.sim.simPad, mode="constant")
 
         self.atmos = atmosphere.atmos(self.config)
 
@@ -999,14 +993,24 @@ class Sim(object):
 
 
 def make_mask(config):
+    """
+    Generates a Soapy pupil mask
+
+    Parameters:
+        config (SoapyConfig): Config object describing Soapy simulation
+
+    Returns:
+        ndarray: 2-d pupil mask
+    """
     if config.tel.mask == "circle":
         mask = circle.circle(config.sim.pupilSize / 2.,
-                                  config.sim.pupilSize)
+                                  config.sim.simSize)
         if config.tel.obsDiam != None:
             mask -= circle.circle(
                 config.tel.obsDiam * config.sim.pxlScale / 2.,
-                config.sim.pupilSize
+                config.sim.simSize
             )
+
     elif isinstance(config.tel.mask, str):
         maskHDUList = fits.open(config.tel.mask)
         mask = maskHDUList[0].data.copy()
@@ -1015,6 +1019,15 @@ def make_mask(config):
 
     else:
         mask = config.tel.mask.copy()
+
+    # Check its size is compatible. If its the pupil size, pad to sim size
+    if (not numpy.array_equal(mask.shape, (config.sim.pupilSize,)*2)
+            and not numpy.array_equal(mask.shape, (config.sim.simSize,)*2) ):
+        raise ValueError("Mask Shape {} not compatible. Should be either `pupilSize` or `simSize`".format(self.mask.shape))
+
+    if mask.shape != (config.sim.simSize, )*2:
+        mask = numpy.pad(
+                mask, config.sim.simPad, mode="constant")
 
     return mask
 
