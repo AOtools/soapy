@@ -19,7 +19,7 @@
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
 # Useful things to have in top namespace
-from .simulation import Sim
+from .simulation import Sim, make_mask
 from .confParse import loadSoapyConfig
 from .atmosphere import makePhaseScreens
 
@@ -36,4 +36,3 @@ except ImportError:
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
-

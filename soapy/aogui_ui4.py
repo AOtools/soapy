@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui/AoGui.ui'
 #
-# Created: Fri Oct  2 09:47:17 2015
-#      by: PyQt4 UI code generator 4.11.3
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -38,7 +37,6 @@ class Ui_MainWindow(object):
         self.layoutWidget = QtGui.QWidget(self.splitter_4)
         self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
         self.horizontalLayout_6 = QtGui.QHBoxLayout(self.layoutWidget)
-        self.horizontalLayout_6.setMargin(0)
         self.horizontalLayout_6.setObjectName(_fromUtf8("horizontalLayout_6"))
         self.verticalLayout = QtGui.QVBoxLayout()
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
@@ -94,7 +92,6 @@ class Ui_MainWindow(object):
         self.layoutWidget1 = QtGui.QWidget(self.splitter)
         self.layoutWidget1.setObjectName(_fromUtf8("layoutWidget1"))
         self.verticalLayout_12 = QtGui.QVBoxLayout(self.layoutWidget1)
-        self.verticalLayout_12.setMargin(0)
         self.verticalLayout_12.setObjectName(_fromUtf8("verticalLayout_12"))
         self.LgsPsfLabel = QtGui.QLabel(self.layoutWidget1)
         self.LgsPsfLabel.setObjectName(_fromUtf8("LgsPsfLabel"))
@@ -105,7 +102,6 @@ class Ui_MainWindow(object):
         self.layoutWidget2 = QtGui.QWidget(self.splitter)
         self.layoutWidget2.setObjectName(_fromUtf8("layoutWidget2"))
         self.verticalLayout_5 = QtGui.QVBoxLayout(self.layoutWidget2)
-        self.verticalLayout_5.setMargin(0)
         self.verticalLayout_5.setObjectName(_fromUtf8("verticalLayout_5"))
         self.label_6 = QtGui.QLabel(self.layoutWidget2)
         self.label_6.setObjectName(_fromUtf8("label_6"))
@@ -116,12 +112,10 @@ class Ui_MainWindow(object):
         self.horizontalLayoutWidget_2 = QtGui.QWidget(self.splitter)
         self.horizontalLayoutWidget_2.setObjectName(_fromUtf8("horizontalLayoutWidget_2"))
         self.plotLayout = QtGui.QHBoxLayout(self.horizontalLayoutWidget_2)
-        self.plotLayout.setMargin(0)
         self.plotLayout.setObjectName(_fromUtf8("plotLayout"))
         self.layoutWidget3 = QtGui.QWidget(self.splitter_2)
         self.layoutWidget3.setObjectName(_fromUtf8("layoutWidget3"))
         self.verticalLayout_11 = QtGui.QVBoxLayout(self.layoutWidget3)
-        self.verticalLayout_11.setMargin(0)
         self.verticalLayout_11.setObjectName(_fromUtf8("verticalLayout_11"))
         self.verticalLayout_3 = QtGui.QVBoxLayout()
         self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
@@ -149,7 +143,6 @@ class Ui_MainWindow(object):
         self.layoutWidget4 = QtGui.QWidget(self.splitter_2)
         self.layoutWidget4.setObjectName(_fromUtf8("layoutWidget4"))
         self.verticalLayout_8 = QtGui.QVBoxLayout(self.layoutWidget4)
-        self.verticalLayout_8.setMargin(0)
         self.verticalLayout_8.setObjectName(_fromUtf8("verticalLayout_8"))
         self.label_4 = QtGui.QLabel(self.layoutWidget4)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
@@ -206,12 +199,10 @@ class Ui_MainWindow(object):
         self.horizontalLayoutWidget = QtGui.QWidget(self.splitter_3)
         self.horizontalLayoutWidget.setObjectName(_fromUtf8("horizontalLayoutWidget"))
         self.consoleLayout = QtGui.QHBoxLayout(self.horizontalLayoutWidget)
-        self.consoleLayout.setMargin(0)
         self.consoleLayout.setObjectName(_fromUtf8("consoleLayout"))
         self.layoutWidget5 = QtGui.QWidget(self.splitter_3)
         self.layoutWidget5.setObjectName(_fromUtf8("layoutWidget5"))
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.layoutWidget5)
-        self.horizontalLayout_2.setMargin(0)
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
         self.verticalLayout_10 = QtGui.QVBoxLayout()
         self.verticalLayout_10.setObjectName(_fromUtf8("verticalLayout_10"))
@@ -251,10 +242,8 @@ class Ui_MainWindow(object):
         self.layoutWidget6 = QtGui.QWidget(self.splitter_3)
         self.layoutWidget6.setObjectName(_fromUtf8("layoutWidget6"))
         self.horizontalLayout = QtGui.QHBoxLayout(self.layoutWidget6)
-        self.horizontalLayout.setMargin(0)
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.verticalLayout_9 = QtGui.QVBoxLayout()
-        self.verticalLayout_9.setSpacing(-1)
         self.verticalLayout_9.setObjectName(_fromUtf8("verticalLayout_9"))
         self.initButton = QtGui.QPushButton(self.layoutWidget6)
         self.initButton.setObjectName(_fromUtf8("initButton"))
@@ -311,7 +300,7 @@ class Ui_MainWindow(object):
         self.menuBar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
-        QtCore.QObject.connect(self.actionClose_2, QtCore.SIGNAL(_fromUtf8("activated()")), MainWindow.close)
+        QtCore.QObject.connect(self.actionClose_2, QtCore.SIGNAL(_fromUtf8("triggered()")), MainWindow.close)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
