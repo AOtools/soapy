@@ -1,6 +1,9 @@
 #0.13.0 (10th January 2017)
 - Use "aotools" packages instead of "AOSimLib" (aotools packaged with Soapy)
 - Move pupil mask loading and formatting to seperate function in Simulation
+- Update GUI to use PyQt5 if available (still bugs need ironed out of this implementation)
+- Can set a SH WFS `pxlScale`, which overrides the FOV parameter
+- Improve extended SH WFS implementation
 - fix bug in infinite phase screen covariance calculation
 - Bug fixes
 - Docs updates
