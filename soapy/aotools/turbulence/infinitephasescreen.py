@@ -181,7 +181,7 @@ class PhaseScreen(object):
         # Different inversion methods, not sure which is best
         cf = linalg.cho_factor(self.cov_zz)
         inv_cov_zz = linalg.cho_solve(cf, numpy.identity(self.cov_zz.shape[0]))
-        # inv_cov_zz = numpy.linalg.pinv(self.cov_zz)#, 0.001)    
+        # inv_cov_zz = numpy.linalg.pinv(self.cov_zz)
         
         self.A_mat_forwards = self.cov_xz_forwards.dot(inv_cov_zz)
         self.A_mat_backwards = self.cov_xz_backwards.dot(inv_cov_zz) 
@@ -536,7 +536,7 @@ def phaseCovariance(r, r0, L0):
     
     A = (L0/r0)**(5./3) 
     
-    B1 = (2**(1./6)) * gamma(11./6)/(pi**(8./3))
+    B1 = (2**(-5./6)) * gamma(11./6)/(pi**(8./3))
     B2 = ((24./5) * gamma(6./5))**(5./6)
     
     C = (((2 * pi * r)/L0) ** (5./6)) * kv(5./6, (2 * pi * r)/L0)
