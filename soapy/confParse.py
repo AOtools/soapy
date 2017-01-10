@@ -1009,11 +1009,11 @@ class SciConfig(ConfigObj):
 
 
     requiredParams = [  "position",
-                        "FOV",
                         "wavelength",
                         "pxls",
                         ]
     optionalParams = [  ("pxlScale", None),
+                        ("FOV", None),
                         ("type", "PSF"),
                         ("fftOversamp", 2),
                         ("fftwFlag", "FFTW_MEASURE"),
@@ -1034,8 +1034,13 @@ class SciConfig(ConfigObj):
         # Set some parameters to correct type
         self.position = numpy.array(self.position)
         self.wavelength = float(self.wavelength)
-        if self.pxlScale is not None:
-            logger.debug("Overriding sci FOV with pxlscale")
+
+
+        if (self.pxlScale is None) and (self.FOV is None):
+            raise ConfigurationError("Must supply either FOV or pxlScale for SCI")
+
+        if (self.pxlScale is not None) and ((self.pxlScale * self.pxls) != self.FOV):
+            logger.warning("Overriding sci FOV with pxlscale")
             self.FOV = self.pxlScale * self.pxls
         else:
             self.pxlScale = float(self.FOV)/self.pxls
