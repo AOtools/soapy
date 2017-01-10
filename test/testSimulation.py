@@ -193,7 +193,9 @@ def testMaskLoad():
         sim.aoinit()
 
         # check its good
-        assert numpy.array_equal(sim.mask, mask)
+        p = sim.config.sim.simPad
+        pad_mask = numpy.pad(mask, mode="constant", pad_width=((p,p),(p,p)))
+        assert numpy.array_equal(sim.mask, pad_mask)
     except:
         raise
     finally:
