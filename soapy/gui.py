@@ -20,8 +20,8 @@
 The GUI for the Soapy adaptive optics simulation
 """
 
-import os
-# os.environ["QT_API"]="pyqt"
+import sys
+
 try:
     from PyQt5 import QtGui, QtWidgets, QtCore
     PYQT_VERSION = 5
@@ -115,6 +115,13 @@ CMAP={'mode': 'rgb',
  'ticks': [ (0., (14, 66, 255, 255)),
             (0.5, (255, 255, 255, 255)),
             (1., (255, 26, 26, 255))]}
+
+
+# Must overwrite sys.excepthook to aviod crash on exception
+def execpthook(etype, value, tb):
+    traceback.print_exception(etype, value, tb)
+
+sys.excepthook = execpthook
 
 class GUI(QtWidgets.QMainWindow):
     def __init__(self, sim, useOpenGL=False, verbosity=None):
