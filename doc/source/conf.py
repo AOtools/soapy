@@ -32,7 +32,7 @@ MOCK_MODULES = ['pyfftw', 'ipython','pyfits', 'PyQt4','IPython.qt.console.rich_i
                     'matplotlib.backends.backend_qt4agg','sip', 'pyqtgraph','pylab', 'OpenGL',
                     'matplotlib.figure',
                     'IPython.qt.console.rich_ipython_widget', 
-                    'scipy.ndimage','scipy.optimize', 'scipy.lib.blas.fblas','scipy.fftpack','scipy.interpolate','scipy',
+                    'scipy.ndimage','scipy.optimize', 'scipy.lib.blas.fblas','scipy.fftpack','scipy.interpolate','scipy.signal', 'scipy',
                     'numpy', 'numpy.linalg', 'numpy.random', 'scipy.ndimage.interpolation',
                     ]
 
