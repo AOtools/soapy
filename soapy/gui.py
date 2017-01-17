@@ -103,7 +103,7 @@ import os
 try:
     from OpenGL import GL
 except ImportError:
-    pass
+    GL = False
 
 
 guiFile_path = os.path.abspath(os.path.realpath(__file__)+"/..")
