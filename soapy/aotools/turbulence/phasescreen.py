@@ -138,7 +138,7 @@ def ft_phase_screen(r0, N, delta, L0, l0, FFT=None):
     PSD_phi  = (0.023*r0**(-5./3.) * numpy.exp(-1*((f/fm)**2)) /
                 ( ( (f**2) + (f0**2) )**(11./6) ) )
 
-    PSD_phi[(N/2),(N/2)] = 0
+    PSD_phi[int(N/2),int(N/2)] = 0
 
     cn = ( (numpy.random.normal(size=(N,N)) + 1j* numpy.random.normal(size=(N,N)) )
                 * numpy.sqrt(PSD_phi)*del_f )
