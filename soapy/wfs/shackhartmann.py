@@ -92,7 +92,7 @@ class ShackHartmann(base.WFS):
                 self.wfsConfig.nxSubaps, mask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
-        self.activeSubaps = self.subapCoords.shape[0]
+        self.activeSubaps = int(self.subapCoords.shape[0])
         self.detectorSubapCoords = numpy.round(
                 self.subapCoords*(
                         self.detectorPxls/float(self.simConfig.pupilSize) ) )
