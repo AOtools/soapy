@@ -453,8 +453,10 @@ class WFS(object):
             self.config.eReadNoise = eReadNoise
 
         # Check that slopes aint `nan`s. Set to 0 if so
+        # if numpy.any(numpy.isnan(self.slopes)):
+        #     self.slopes[:] = 0
         if numpy.any(numpy.isnan(self.slopes)):
-            self.slopes[:] = 0
+            numpy.nan_to_num(self.slopes)
 
         return self.slopes
 
