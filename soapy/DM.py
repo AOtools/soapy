@@ -131,83 +131,11 @@ class DM(object):
         """
         return self.dmConfig.nxActuators
 
-    def makeIMat(self, callback=None):
-        '''
-        Makes DM Interation Matrix
-
-        Initially, the DM influence functions are created using the method
-        ``makeIMatShapes'', then if a rotation is specified these are rotated.
-        Each of the influence functions is passed to the specified ``WFS'' and
-        wfs measurements recorded.
-
-        Parameters:
-            callback (function): Function to be called on each WFS run
-
-        Returns:
-            ndarray: 2-dimensional interaction matrix
-        '''
-
-
-        # Imat value is in microns
-        # self.iMatShapes *= (self.dmConfig.iMatValue)
-
-        if self.dmConfig.rotation:
-            self.iMatShapes = rotate(
-                    self.iMatShapes, self.dmConfig.rotation,
-                    order=self.dmConfig.interpOrder, axes=(-2, -1)
-                    )
-            rotShape = self.iMatShapes.shape
-            self.iMatShapes = self.iMatShapes[:,
-                    rotShape[1]/2. - self.simConfig.simSize/2.:
-                    rotShape[1]/2. + self.simConfig.simSize/2.,
-                    rotShape[2]/2. - self.simConfig.simSize/2.:
-                    rotShape[2]/2. + self.simConfig.simSize/2.
-                    ]
-
-        iMat = numpy.zeros(
-                (self.n_acts, self.totalWfsMeasurements))
-
-        # A vector of DM commands to use when making the iMat
-        actCommands = numpy.zeros(self.n_acts)
- 
-        # Blank phase to use whilst making iMat
-        phs = numpy.zeros((self.simConfig.simSize, self.simConfig.simSize))
-        for i in xrange(self.n_acts):
-            subap = 0
-
-            # Set vector of iMat commands to 0...
-            actCommands[:] = 0
-            # Except the one we want to make an iMat for!
-            actCommands[i] = self.dmConfig.iMatValue
-            # Now get a DM shape for that command
-            self.dmShape = self.makeDMFrame(actCommands)
-            for nWfs in range(len(self.wfss)):
-                logger.debug("subap: {}".format(subap))
-
-                # Send the DM shape off to the relavent WFS. put result in iMat
-                wfs_phs = self.wfss[nWfs].los.frame(self.dmShape)
-
-                iMat[i, subap: subap + (2*self.wfss[nWfs].n_subaps)] = (
-                       -1*self.wfss[nWfs].frame(wfs_phs))/self.dmConfig.iMatValue
-
-                if callback != None:
-                    callback()
-
-                logger.statusMessage(i, self.n_acts,
-                        "Generating {} Actuator DM iMat".format(self.n_acts))
-
-                subap += 2*self.wfss[nWfs].n_subaps
-
-        self.iMat = iMat
-        return iMat
-
     def dmFrame(self, dmCommands):
         '''
-        Uses interaction matrix to calculate the final DM shape.
+        Uses DM commands to calculate the final DM shape.
 
-        Given the supplied DM commands, this method will apply a gain and add
-        to the previous DM commands. This works differently for open or closed
-        loop DMs. Multiplies each of the DM influence functions by the
+        Multiplies each of the DM influence functions by the
         corresponding DM command, then sums to create the final DM shape.
         Lastly, the mean value is subtracted to avoid piston terms building up.
 
@@ -218,17 +146,6 @@ class DM(object):
         Returns:
             ndarray: A 2-d array with the DM shape
         '''
-        # try:
-        # self.newActCoeffs = dmCommands
-
-        # If loop is closed, only add residual measurements onto old
-        # actuator values
-        # if closed:
-        #     self.actCoeffs += self.dmConfig.gain*self.newActCoeffs
-        #
-        # else:
-        #     self.actCoeffs = (self.dmConfig.gain * self.newActCoeffs)\
-        #         + ( (1. - self.dmConfig.gain) * self.actCoeffs)
 
         self.dmShape = self.makeDMFrame(dmCommands)
         # Remove any piston term from DM

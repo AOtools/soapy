@@ -453,7 +453,7 @@ class Sim(object):
             if self.config.dms[dm].closed == closed:
                 self.dmShapes.append(self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
-                                    self.dmAct1[dm]+self.dms[dm].n_acts], closed))
+                                    self.dmAct1[dm]+self.dms[dm].n_acts]))
 
         self.Tdm += time.time() - t
         return self.dmShapes
@@ -522,10 +522,6 @@ class Sim(object):
 
         # Save Data
         self.storeData(self.iters)
-
-
-        # logger.statusMessage(i, self.config.sim.nIters,
-        #                    "AO Loop")
 
         self.printOutput(self.iters, strehl=True)
 
