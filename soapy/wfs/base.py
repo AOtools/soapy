@@ -385,7 +385,7 @@ class WFS(object):
             # Add onto the focal plane with that layers intensity
             self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
 
-    def frame(self, scrns, correction=None, read=True, iMatFrame=False):
+    def frame(self, scrns, phase_correction=None, read=True, iMatFrame=False):
         '''
         Runs one WFS frame
 
@@ -420,7 +420,7 @@ class WFS(object):
 
         # If LGS elongation simulated
         if self.config.lgs and self.elong!=0:
-            self.makeElongationFrame(correction)
+            self.makeElongationFrame(phase_correction)
 
         # If no elongation
         else:
@@ -435,8 +435,8 @@ class WFS(object):
             self.los.makePhase(self.radii)
 
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
-            if correction is not None:
-                self.los.performCorrection(correction)
+            if phase_correction is not None:
+                self.los.performCorrection(phase_correction)
                 
             self.calcFocalPlane()
 
