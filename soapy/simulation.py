@@ -570,9 +570,11 @@ class Sim(object):
         print("Time in Reconstruction: %0.2f"%self.recon.Trecon)
         print("Time in DM: %0.2f"%self.Tdm)
         print("Time making science image: %0.2f"%self.Tsci)
+        print("\n")
+        if self.longStrehl is not None:
+            for sci_n in range(self.config.sim.nSci):
+                print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
 
-        # if self.longStrehl:
-#    print("\n\nLong Exposure Strehl Rate: %0.2f"%self.longStrehl[-1])
 
     def initSaveData(self):
         '''
