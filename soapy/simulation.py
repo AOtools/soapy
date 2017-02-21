@@ -60,7 +60,7 @@ Examples:
 '''
 
 #sim imports
-from . import atmosphere, logger, wfs, DM, RECON, SCI, confParse, aotools
+from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, aotools
 from .aotools import circle, interp
 
 #standard python imports
@@ -218,22 +218,22 @@ class Sim(object):
                 raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
             self.dms[dm] = dmObj(
-                    self.config, nDm=dm, wfss=self.wfss,
+                    self.config, n_dm=dm, wfss=self.wfss,
                     mask=self.mask
                     )
 
             self.dmActCommands[dm] = numpy.empty( (self.config.sim.nIters,
-                                                    self.dms[dm].acts) )
-            self.config.sim.totalActs += self.dms[dm].acts
+                                                    self.dms[dm].n_acts) )
+            self.config.sim.totalActs += self.dms[dm].n_acts
 
-            logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].acts))
+            logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].n_acts))
         logger.info("%d total DM Actuators"%self.config.sim.totalActs)
 
 
         # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
-            reconObj = getattr(RECON, self.config.sim.reconstructor)
+            reconObj = getattr(reconstruction, self.config.sim.reconstructor)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
         self.recon = reconObj(
@@ -453,7 +453,7 @@ class Sim(object):
             if self.config.dms[dm].closed == closed:
                 self.dmShapes.append(self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
-                                    self.dmAct1[dm]+self.dms[dm].acts], closed))
+                                    self.dmAct1[dm]+self.dms[dm].n_acts], closed))
 
         self.Tdm += time.time() - t
         return self.dmShapes
