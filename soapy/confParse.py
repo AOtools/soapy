@@ -924,7 +924,10 @@ class DmConfig(ConfigObj):
                              optically conjugated.               ``0``
         ``diameter``         float: Diameter covered by DM in 
                              metres. If ``None`` if telescope 
-                             diameter.                           ``None`` 
+                             diameter.                           ``None``
+        ``gauss_width``      float: Width of gaussian influence
+                             functions in units of actuator
+                              spacing.                           ``1``
         ==================== =================================   ===========
     """
 
@@ -944,7 +947,8 @@ class DmConfig(ConfigObj):
                     ("interpOrder", 2),
                     ("gaussWidth", 0.5),
                     ("altitude", 0.),
-                    ("diameter", None)
+                    ("diameter", None),
+                    ("gauss_width", 0.7),
                     ]
 
     calculatedParams = [
