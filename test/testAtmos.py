@@ -10,21 +10,18 @@ class TestAtmos(unittest.TestCase):
 
     def test_initAtmos(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH,"sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH,"sh_8x8.yaml"))
 
         atmos = atmosphere.atmos(config)
 
     def test_moveAtmos(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH,"sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH,"sh_8x8.yaml"))
 
         atmos = atmosphere.atmos(config)
         atmos.moveScrns()
 
     def test_randomAtmos(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH,"sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH,"sh_8x8.yaml"))
 
         atmos = atmosphere.atmos(config)
         atmos.randomScrns()
@@ -32,8 +29,7 @@ class TestAtmos(unittest.TestCase):
     def test_saveloadScrn(self):
         # test the saving and loading phase screens
         
-        config = confParse.Configurator(os.path.join(CONFIG_PATH,"sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH,"sh_8x8.yaml"))
         config.atmos.wholeScrnSize = 512
 
         atmos = atmosphere.atmos(config)

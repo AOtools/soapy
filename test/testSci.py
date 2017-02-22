@@ -9,8 +9,7 @@ class TestSci(unittest.TestCase):
 
     def test_sciInit(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -18,8 +17,7 @@ class TestSci(unittest.TestCase):
                 config, 0, mask)
 
     def test_sciFrame(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -29,8 +27,7 @@ class TestSci(unittest.TestCase):
         sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
 
     def test_sciStrehl(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -43,8 +40,7 @@ class TestSci(unittest.TestCase):
 
     def test_fibreInit(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -52,8 +48,7 @@ class TestSci(unittest.TestCase):
                 config, 0, mask)
 
     def test_fibreFrame(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 

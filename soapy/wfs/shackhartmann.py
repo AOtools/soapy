@@ -35,6 +35,9 @@ class ShackHartmann(base.WFS):
         """
         super(ShackHartmann, self).calcInitParams()
 
+        # Sort out some required parameters
+        self.wavelength = self.wfsConfig.wavelength
+
         self.subapFOVrad = self.config.subapFOV * numpy.pi / (180. * 3600)
         self.subapDiam = self.los.telDiam/self.config.nxSubaps
 
@@ -77,6 +80,7 @@ class ShackHartmann(base.WFS):
         self.findActiveSubaps()
 
         self.referenceImage = self.wfsConfig.referenceImage
+        self.n_measurements = 2 * self.activeSubaps
 
     def findActiveSubaps(self):
         '''

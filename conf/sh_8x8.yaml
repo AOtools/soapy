@@ -46,8 +46,10 @@ DM:
   0:
     type: TT
     closed: True
-    iMatValue: 2e3
+    iMatValue: 5000
     gain: 0.6
+    svdConditioning: 0.05
+
 
   1:
     type: Piezo
@@ -55,7 +57,7 @@ DM:
     nxActuators: 9
     svdConditioning: 0.05
     gain: 0.7
-    iMatValue: 500
+    iMatValue: 750
 
 
 Science:

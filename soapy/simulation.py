@@ -60,7 +60,7 @@ Examples:
 '''
 
 #sim imports
-from . import atmosphere, logger, wfs, DM, RECON, SCI, confParse, aotools
+from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, aotools
 from .aotools import circle, interp
 
 #standard python imports
@@ -218,22 +218,22 @@ class Sim(object):
                 raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
             self.dms[dm] = dmObj(
-                    self.config, nDm=dm, wfss=self.wfss,
+                    self.config, n_dm=dm, wfss=self.wfss,
                     mask=self.mask
                     )
 
             self.dmActCommands[dm] = numpy.empty( (self.config.sim.nIters,
-                                                    self.dms[dm].acts) )
-            self.config.sim.totalActs += self.dms[dm].acts
+                                                    self.dms[dm].n_acts) )
+            self.config.sim.totalActs += self.dms[dm].n_acts
 
-            logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].acts))
+            logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].n_acts))
         logger.info("%d total DM Actuators"%self.config.sim.totalActs)
 
 
         # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
-            reconObj = getattr(RECON, self.config.sim.reconstructor)
+            reconObj = getattr(reconstruction, self.config.sim.reconstructor)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
         self.recon = reconObj(
@@ -453,7 +453,7 @@ class Sim(object):
             if self.config.dms[dm].closed == closed:
                 self.dmShapes.append(self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
-                                    self.dmAct1[dm]+self.dms[dm].acts], closed))
+                                    self.dmAct1[dm]+self.dms[dm].n_acts]))
 
         self.Tdm += time.time() - t
         return self.dmShapes
@@ -523,10 +523,6 @@ class Sim(object):
         # Save Data
         self.storeData(self.iters)
 
-
-        # logger.statusMessage(i, self.config.sim.nIters,
-        #                    "AO Loop")
-
         self.printOutput(self.iters, strehl=True)
 
         self.addToGuiQueue()
@@ -574,9 +570,11 @@ class Sim(object):
         print("Time in Reconstruction: %0.2f"%self.recon.Trecon)
         print("Time in DM: %0.2f"%self.Tdm)
         print("Time making science image: %0.2f"%self.Tsci)
+        print("\n")
+        if self.longStrehl is not None:
+            for sci_n in range(self.config.sim.nSci):
+                print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
 
-        # if self.longStrehl:
-#    print("\n\nLong Exposure Strehl Rate: %0.2f"%self.longStrehl[-1])
 
     def initSaveData(self):
         '''
