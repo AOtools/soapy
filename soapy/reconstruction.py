@@ -65,6 +65,18 @@ class Reconstructor(object):
         self.dmConds = numpy.array(self.dmConds)
         self.dmActs = numpy.array(self.dmActs)
 
+        n_acts = 0
+        self.first_acts = []
+        for i, dm in self.dms.items():
+            self.first_acts.append(n_acts)
+            n_acts += dm.n_acts
+
+        n_wfs_measurements = 0
+        self.first_measurements = []
+        for i, wfs in self.wfss.items():
+            self.first_measurements.append(n_wfs_measurements)
+            n_wfs_measurements += wfs.n_measurements
+
         #2 functions used in case reconstructor requires more WFS data.
         #i.e. learn and apply
         self.runWfs = runWfsFunc
@@ -255,6 +267,25 @@ class Reconstructor(object):
 
         return iMat
 
+    def get_dm_imat(self, dm_index, wfs_index):
+        """
+        Slices and returns the interaction matrix between a given wfs and dm from teh main interaction matrix
+
+        Parameters:
+            dm_index (int): Index of required DM
+            wfs_index (int): Index of required WFS
+
+        Return:
+             ndarray: interaction matrix
+        """
+
+        act_n1 = self.first_acts[dm_index]
+        act_n2 = act_n1 + self.dms[dm_index].n_acts
+
+        wfs_n1 = self.wfss[wfs_index].config.dataStart
+        wfs_n2 = wfs_n1 + self.wfss[wfs_index].n_measurements
+        return self.interaction_matrix[act_n1: act_n2, wfs_n1: wfs_n2]
+
 
     def makeCMat(
             self, loadIMat=True, loadCMat=True, callback=None,
@@ -360,20 +391,32 @@ class MVM_SeparateDMs(Reconstructor):
         control matrix
         '''
         acts = 0
-        for dm in xrange(self.sim_config.nDM):
-            dmIMat = self.dms[dm].iMat
-            #Treats each DM iMat seperately
-            dmCMat = scipy.linalg.pinv(
-                    dmIMat, self.dms[dm].dmConfig.svdConditioning
-                    )
+        for dm_index, dm in self.dms.items():
+
+            n_wfs_measurements = 0
+            for wfs in dm.wfss:
+                n_wfs_measurements += wfs.n_measurements
+
+            dm_interaction_matrix = numpy.zeros((dm.n_acts, n_wfs_measurements))
+            # Get interaction matrices from main matrix
+            n_wfs_measurement = 0
+            for wfs_index in [dm.dmConfig.wfs]:
+                wfs = self.wfss[wfs_index]
+                wfs_imat = self.get_dm_imat(dm_index, wfs_index)
+                print("DM: {}, WFS: {}".format(dm_index, wfs_index))
+                dm_interaction_matrix[:, n_wfs_measurement:n_wfs_measurement + wfs.n_measurements] = wfs_imat
+
+            dm_control_matrx = numpy.linalg.pinv(dm_interaction_matrix, dm.dmConfig.svdConditioning)
+
             # now put carefully back into one control matrix
-            for w, wfs in enumerate(self.dms[dm].wfss):
+            for wfs_index in [dm.dmConfig.wfs]:
+                wfs = self.wfss[wfs_index]
                 self.controlMatrix[
                         wfs.config.dataStart:
-                                wfs.config.dataStart + 2*wfs.activeSubaps,
-                        acts:acts+self.dms[dm].n_acts] = dmCMat
+                                wfs.config.dataStart + wfs.n_measurements,
+                        acts:acts+dm.n_acts] = dm_control_matrx
 
-            acts += self.dms[dm].n_acts
+            acts += dm.n_acts
 
     def reconstruct(self, slopes):
         """

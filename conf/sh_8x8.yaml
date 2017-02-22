@@ -48,6 +48,8 @@ DM:
     closed: True
     iMatValue: 2e3
     gain: 0.6
+    svdConditioning: 0.05
+
 
   1:
     type: Piezo

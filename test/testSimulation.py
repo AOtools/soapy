@@ -24,7 +24,7 @@ RESULTS = {
 class TestSimpleSCAO(unittest.TestCase):
 
     def testOnAxis(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -40,7 +40,7 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8"], atol=0.2)
 
     def testPhysProp(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -57,7 +57,7 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_phys"], atol=0.2)
 
     def testOffAxis(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -75,7 +75,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
 
     def testZernikeDM(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -100,7 +100,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testCone(self):
 
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs.yaml"))
         sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -116,7 +116,7 @@ class TestSimpleSCAO(unittest.TestCase):
                 sim.longStrehl[0,-1], RESULTS["8x8_lgs"], atol=0.2)
 
     def testOpenLoop(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -135,7 +135,7 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_open"], atol=0.2)
 
     def testLgsUplink_phys(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -152,7 +152,7 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
 
     def testLgsUplink_geo(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -170,7 +170,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
 def testMaskLoad():
     
-    sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+    sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
     sim.config.sim.simName = None
     sim.config.sim.logfile = None
 
