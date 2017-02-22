@@ -57,6 +57,8 @@ DM:
     nxActuators: 2
     iMatValue: 1
     gain: 0.6
+    svdConditioning: 0.07
+
 
   1:
     type: Piezo
