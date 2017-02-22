@@ -15,7 +15,7 @@ RESULTS = {
         "8x8_open": 0.4,
         "8x8_offAxis": 0.22,
         "8x8_zernike": 0.36,
-        "8x8_lgs"    : 0.27,
+        "8x8_lgs"    : 0.37,
         "8x8_phys": 0.53,
         "8x8_lgsuplink":0.35,
         }

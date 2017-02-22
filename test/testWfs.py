@@ -9,8 +9,7 @@ class TestWfs(unittest.TestCase):
 
     def testa_initWfs(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -18,8 +17,8 @@ class TestWfs(unittest.TestCase):
 
 
     def testb_wfsFrame(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.WFS(config, mask=mask)
@@ -29,16 +28,14 @@ class TestWfs(unittest.TestCase):
 
     def testc_initSHWfs(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.ShackHartmann(config, mask=mask)
 
     def testd_SHWfsFrame(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.ShackHartmann(config, mask=mask)
@@ -47,8 +44,7 @@ class TestWfs(unittest.TestCase):
 
     def test_PhysWfs(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         config.wfss[0].propagationMode = "Physical"
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
@@ -59,16 +55,14 @@ class TestWfs(unittest.TestCase):
 
     def testc_initGradWfs(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.Gradient(config, mask=mask)
 
     def testd_GradWfsFrame(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.Gradient(config, mask=mask)
@@ -76,7 +70,7 @@ class TestWfs(unittest.TestCase):
         wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
     # def teste_initPyrWfs(self):
-    #     config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+    #     config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
     #     config.loadSimParams()
     #
     #     mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
@@ -84,7 +78,7 @@ class TestWfs(unittest.TestCase):
     #     wfs = WFS.Pyramid(config, config.lgss[0], mask)
     #
     # def testf_PyrWfsFrame(self):
-    #     config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
+    #     config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
     #     config.loadSimParams()
     #     mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
     #

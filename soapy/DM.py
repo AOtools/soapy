@@ -171,6 +171,12 @@ class DM(object):
         self.dmShape[:] = 0
         self.actCoeffs[:] = 0
 
+    def makeIMatShapes(self):
+        """
+        Virtual method to generate the DM influence functions
+        """
+        pass
+
 class Zernike(DM):
     """
     A DM which corrects using a provided number of Zernike Polynomials
