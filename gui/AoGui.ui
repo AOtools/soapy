@@ -349,10 +349,16 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_9">
            <property name="spacing">
-            <number>-1</number>
+            <number>7</number>
            </property>
            <item>
             <widget class="QPushButton" name="initButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
               <string>AO Init</string>
              </property>
@@ -377,18 +383,40 @@
             </layout>
            </item>
            <item>
-            <widget class="QPushButton" name="runButton">
-             <property name="text">
-              <string>Run!</string>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QPushButton" name="frameButton">
+               <property name="text">
+                <string>Frame</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="runButton">
+               <property name="text">
+                <string>Run!</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
            <item>
-            <widget class="QPushButton" name="stopButton">
-             <property name="text">
-              <string>Stop</string>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_9">
+             <item>
+              <widget class="QPushButton" name="resetButton">
+               <property name="text">
+                <string>Reset</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="stopButton">
+               <property name="text">
+                <string>Stop</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </item>
@@ -418,7 +446,7 @@
      <x>0</x>
      <y>0</y>
      <width>829</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

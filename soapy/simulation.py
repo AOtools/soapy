@@ -264,8 +264,13 @@ class Sim(object):
         self.initSaveData()
 
         # Init simulation
+        #Circular buffers to hold loop iteration correction data
+        self.slopes = numpy.zeros((self.config.sim.totalWfsData))
+        self.closedCorrection = []
+        self.openCorrection = []
+        self.dmCommands = numpy.zeros( self.config.sim.totalActs )
         self.buffer = DelayBuffer()
-        self.iters=0
+        self.iters = 0
 
         # Init performance tracking
         self.Twfs = 0
@@ -527,6 +532,8 @@ class Sim(object):
 
         self.addToGuiQueue()
 
+        self.iters += 1
+
     def aoloop(self):
         """
         Main AO Loop
@@ -534,19 +541,11 @@ class Sim(object):
         Runs a WFS iteration, reconstructs the phase, runs DMs and finally the science cameras. Also makes some nice output to the console and can add data to the Queue for the GUI if it has been requested. Repeats for nIters.
         """
 
-        self.iters=0
-        self.correct=1
         self.go = True
 
-        #Circular buffers to hold loop iteration correction data
-        self.slopes = numpy.zeros((self.config.sim.totalWfsData))
-        self.closedCorrection = []
-        self.openCorrection = []
-        self.dmCommands = numpy.zeros( self.config.sim.totalActs )
 
         try:
-            for i in xrange(self.config.sim.nIters):
-                self.iters=i
+            while self.iters < self.config.sim.nIters:
                 if self.go:
                     self.loopFrame()
                 else:
@@ -559,10 +558,27 @@ class Sim(object):
         self.saveData()
         self.finishUp()
 
+    def reset_loop(self):
+        """
+        Resets parameters in the system to zero, to restart an AO run wihtout reinitialising
+        """
+        self.iters = 0
+        self.slopes[:] = 0
+        self.dmCommands[:] = 0
+        self.longStrehl[:] = 0
+        self.recon.reset()
+        for sci in self.sciImgs.values(): sci[:] = 0
+        for dm in self.dms.values(): dm.reset()
+
     def finishUp(self):
         """
         Prints a message to the console giving timing data. Used on sim end.
         """
+        print('\n')
+        if self.longStrehl is not None:
+            for sci_n in range(self.config.sim.nSci):
+                print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
+
         print("\n\nTime moving atmosphere: %0.2f"%self.Tatmos)
         print("Time making IMats and CMats: %0.2f"%self.Timat)
         print("Time in WFS: %0.2f"%self.Twfs)
@@ -571,9 +587,7 @@ class Sim(object):
         print("Time in DM: %0.2f"%self.Tdm)
         print("Time making science image: %0.2f"%self.Tsci)
         print("\n")
-        if self.longStrehl is not None:
-            for sci_n in range(self.config.sim.nSci):
-                print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
+
 
 
     def initSaveData(self):
