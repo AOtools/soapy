@@ -45,7 +45,7 @@ class Gradient(base.WFS):
 
         # Arrays to be used for gradient calculation
         telCoord = numpy.linspace(0, amp, self.soapyConfig.sim.pupilSize)
-        subapCoord = telCoord[:self.subapSpacing]
+        subapCoord = telCoord[:int(self.subapSpacing)]
         
         # Remove piston
         subapCoord -= subapCoord.mean()
@@ -69,7 +69,7 @@ class Gradient(base.WFS):
                 self.wfsConfig.nxSubaps, pupilMask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
-        self.activeSubaps = self.subapCoords.shape[0]
+        self.activeSubaps = int(self.subapCoords.shape[0])
 
     def allocDataArrays(self):
         """
@@ -83,7 +83,7 @@ class Gradient(base.WFS):
         super(Gradient, self).allocDataArrays()
 
         self.subapArrays = numpy.zeros(
-                (self.activeSubaps, self.subapSpacing, self.subapSpacing),
+                (int(self.activeSubaps), int(self.subapSpacing), int(self.subapSpacing)),
                 dtype=DTYPE)
 
         self.slopes = numpy.zeros(2 * self.activeSubaps)
