@@ -9,8 +9,7 @@ class TestDM(unittest.TestCase):
 
     def testa_initDM(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -20,29 +19,26 @@ class TestDM(unittest.TestCase):
 
     def testb_initPiezo(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.ShackHartmann(config, mask=mask)
-        self.dm = DM.Piezo(config, wfss=[wfs], mask=mask)
+        self.dm = DM.Piezo(config, n_dm=1, wfss=[wfs], mask=mask)
 
     def testd_initGauss(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.ShackHartmann(config, mask=mask)
-        dm = DM.GaussStack(config, wfss=[wfs], mask=mask)
+        dm = DM.GaussStack(config, n_dm=1, wfss=[wfs], mask=mask)
 
 
     def testf_initTT(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -54,11 +50,10 @@ class TestDM(unittest.TestCase):
 
     def testf_initFastPiezo(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.ShackHartmann(config, mask=mask)
-        dm = DM.FastPiezo(config, wfss=[wfs], mask=mask)
+        dm = DM.FastPiezo(config, n_dm=1, wfss=[wfs], mask=mask)
 

@@ -8,7 +8,7 @@ class TestConf(unittest.TestCase):
     def test_loadSh8x8_py(self):
 
         config = confParse.loadSoapyConfig(
-                os.path.join(CONFIG_PATH, "sh_8x8.py"))
+                os.path.join(CONFIG_PATH, "py_config/sh_8x8.py"))
 
     def test_loadSh8x8_yaml(self):
 
@@ -18,7 +18,7 @@ class TestConf(unittest.TestCase):
     def testa_loadSh8x8_lgsElong_py(self):
 
         config = confParse.loadSoapyConfig(
-                os.path.join(CONFIG_PATH, "sh_8x8_lgs-elongation.py"))
+                os.path.join(CONFIG_PATH, "py_config/sh_8x8_lgs-elongation.py"))
 
 
     def testa_loadSh8x8_lgsElong_yaml(self):
@@ -29,7 +29,7 @@ class TestConf(unittest.TestCase):
     def testa_loadSh8x8_lgsUplink_py(self):
 
         config = confParse.loadSoapyConfig(
-                os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.py"))
+                os.path.join(CONFIG_PATH, "py_config/sh_8x8_lgs-uplink.py"))
 
 
     def testa_loadSh8x8_lgsUplink_yaml(self):

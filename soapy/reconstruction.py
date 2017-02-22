@@ -333,15 +333,20 @@ class Reconstructor(object):
         Applies the gains set for each DM to the DM actuator commands.
 
         """
-        self.gain = self.dms[0].dmConfig.gain
 
-        # If loop is closed, only add residual measurements onto old
-        # actuator values
-        self.actuator_values += (self.dms[0].dmConfig.gain * self.new_actuator_values * self.closed_actuators)
+        # Loop through DMs and apply gain
+        for dm_i, dm in self.dms.items():
 
-        open_actuator_values = ((self.dms[0].dmConfig.gain * self.new_actuator_values)
-                                + ( (1. - self.dms[0].dmConfig.gain) * self.actuator_values) * abs(self.closed_actuators-1))
-        self.actuator_values = numpy.where(self.closed_actuators, self.actuator_values, open_actuator_values)
+            n_act1 = self.first_acts[dm_i]
+            n_act2 = self.first_acts[dm_i] + dm.n_acts
+            # If loop is closed, only add residual measurements onto old
+            # actuator values
+            if dm.dmConfig.closed:
+                self.actuator_values[n_act1: n_act2] += (dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
+
+            else:
+                self.actuator_values[n_act1: n_act2] = ((dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
+                                + ( (1. - dm.dmConfig.gain) * self.actuator_values[n_act1: n_act2]) )
 
     def reconstruct(self, wfs_measurements):
         t = time.time()
@@ -417,46 +422,6 @@ class MVM_SeparateDMs(Reconstructor):
                         acts:acts+dm.n_acts] = dm_control_matrx
 
             acts += dm.n_acts
-
-    def reconstruct(self, slopes):
-        """
-        Returns DM commands given some slopes
-
-        First, if there's a TT mirror, remove the TT from the TT WFS (the 1st
-        WFS slopes) and get TT commands to send to the mirror. These slopes may
-        then be used to reconstruct commands for others DMs, or this could be
-        the responsibility of other WFSs depending on the config file.
-        """
-
-        if self.dms[0].dmConfig.type=="TT":
-            ttMean = slopes[self.dms[0].wfs.config.dataStart:
-                            (self.dms[0].wfs.activeSubaps*2
-                                +self.dms[0].wfs.config.dataStart)
-                            ].reshape(2,
-                                self.dms[0].wfs.activeSubaps).mean(1)
-            ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-            slopes[
-                    self.dms[0].wfs.config.dataStart:
-                    (self.dms[0].wfs.config.dataStart
-                        +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
-            slopes[
-                    self.dms[0].wfs.config.dataStart
-                        +self.dms[0].wfs.activeSubaps:
-                    self.dms[0].wfs.config.dataStart
-                        +2*self.dms[0].wfs.activeSubaps] -= ttMean[1]
-
-            #get dm commands for the calculated on axis slopes
-            dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
-
-            return numpy.append(ttCommands, dmCommands)
-
-
-
-        #get dm commands for the calculated on axis slopes
-        dmCommands = self.controlMatrix.T.dot(slopes)
-        return dmCommands
-
-
 
 
 class LearnAndApply(MVM):
