@@ -139,6 +139,8 @@ class GUI(QtWidgets.QMainWindow):
         self.ui.initButton.clicked.connect(self.init)
         self.ui.iMatButton.clicked.connect(self.iMat)
         self.ui.stopButton.clicked.connect(self.stop)
+        self.ui.frameButton.clicked.connect(self.frame)
+        self.ui.resetButton.clicked.connect(self.reset)
 
         self.ui.reloadParamsAction.triggered.connect(self.read)
         self.ui.loadParamsAction.triggered.connect(self.readParamFile)
@@ -198,6 +200,8 @@ class GUI(QtWidgets.QMainWindow):
         self.init()
 
         self.console.write("Running %s\n"%self.sim.configFile)
+
+
 
     def moveEvent(self, event):
         """
@@ -516,6 +520,7 @@ class GUI(QtWidgets.QMainWindow):
         self.iThread = InitThread(self)
         self.iThread.updateProgressSignal.connect(self.progressUpdate)
         self.iThread.finished.connect(self.initPlots)
+        self.iThread.finished.connect(self.plotPupilOverlap)
         self.iThread.start()
         self.config = self.sim.config
 
@@ -528,7 +533,7 @@ class GUI(QtWidgets.QMainWindow):
 
         if running == False:
 
-            self.plotPupilOverlap()
+            # self.plotPupilOverlap()
             print("making IMat")
             self.ui.progressLabel.setText("Generating DM Shapes...")
             self.ui.progressBar.setValue(10)
@@ -537,6 +542,9 @@ class GUI(QtWidgets.QMainWindow):
             self.iMatThread.updateProgressSignal.connect(self.progressUpdate)
             self.iMatThread.start()
 
+    def frame(self):
+        self.sim.loopFrame()
+        self.update()
 
     def run(self):
 
@@ -552,6 +560,10 @@ class GUI(QtWidgets.QMainWindow):
 
         self.updateTimer.start()
         self.statsThread.start()
+
+    def reset(self):
+        self.sim.reset_loop()
+        self.update()
 
     def stop(self):
         self.sim.go=False
@@ -640,6 +652,7 @@ class StatsThread(QtCore.QThread):
 
 class InitThread(QtCore.QThread):
     updateProgressSignal = QtCore.pyqtSignal(str,str,str)
+    init_done_signal = QtCore.pyqtSignal()
     def __init__(self,guiObj):
         QtCore.QThread.__init__(self)
         self.guiObj = guiObj
