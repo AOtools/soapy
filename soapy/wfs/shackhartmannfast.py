@@ -13,6 +13,7 @@ from .. import AOFFT, LGS, logger
 from . import base
 from .. import aotools
 from ..aotools import centroiders, wfs, interp
+from .. import numbalib
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -26,138 +27,70 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 
-class ShackHartmann(base.WFS):
+class ShackHartmannFast(base.WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
-
-
-    def __init__(
-            self, soapy_config, nWfs=0, mask=None):
-
-        self.soapy_config = soapy_config
-        self.config = soapy_config.wfss[n_wfs]
-
-        self.simConfig = soapy_config.sim
-        self.telConfig = soapy_config.tel
-        self.atmosConfig = soapy_config.atmos
-        self.lgsConfig = self.config.lgs
-
-        # If supplied use the mask
-        if numpy.any(mask):
-            self.mask = mask
-        # Else we'll just make a circle
-        else:
-            self.mask = circle.circle(
-                    self.simConfig.pupilSize/2., self.simConfig.simSize,
-                    )
-
-        self.iMat = False
-
-        # Init the line of sight
-        self.initLos()
-
-        self.calcInitParams()
-        # If GS not at infinity, find meta-pupil radii for each layer
-        if self.config.GSHeight != 0:
-            self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
-        else:
-            self.radii = None
-
-        # Init LGS, FFTs and allocate some data arrays
-        self.initFFTs()
-        if self.lgsConfig and self.config.lgs:
-            self.initLGS()
-
-        self.allocDataArrays()
-
-        self.calcTiltCorrect()
-        self.getStatic()
-
-
-        self.los.calcInitParams(nOutPxls=phaseSize)
-
+    def calcInitParams(self):
+        """
+        Calculate some parameters to be used during initialisation
+        """
+        super(ShackHartmannFast, self).calcInitParams()
 
         # Sort out some required parameters
-
-
-
-        # Sim params
-        self.pupil_size = self.soapy_config.sim.pupilSize
-        self.telescope_diameter = self.soapy_config.tel.telDiam
-        self.threads = self.soapy_config.sim.threads
-        self.phase_pixel_scale = 1./self.soapy_config.sim.pxlScale
-
-        # WFS Params
-        self.gs_mag = self.config.GSMag
-        self.subap_fov = self.config.subapFOV
-        self.wavelength = self.config.wavelength
         self.nx_subaps = self.config.nxSubaps
-        self.subap_threshold = self.config.subapThreshold
+        self.subap_fov = self.config.subapFOV
         self.nx_subap_pixels = self.config.pxlsPerSubap
         self.fft_oversamp = self.config.fftOversamp
-        self.lgs_config = self.config.lgs
         self.nx_guard_pixels = self.config.nx_guard_pixels
+        self.subap_threshold = self.config.subapThreshold
 
-        # Calculate some other parameters
 
-        self.pxl_scale = self.subap_fov / self.nx_subap_pixels
-        self.subap_diam = self.telescope_diameter / self.nx_subaps
+        # Calculate some others
+        self.pixel_scale =self.subap_fov / self.nx_subap_pixels
+        self.subap_fov_rad = self.subap_fov * numpy.pi / (180. * 3600)
+        self.subap_diam = self.telescope_diameter/self.nx_subaps
         self.nm_to_rad = 1e-9 * (2 * numpy.pi) / self.wavelength
 
-        # spacing between subaps in pupil Plane (size "pupil_size")
+        # spacing between subaps in pupil Plane (size "pupilSize")
         self.nx_subap_pupil = float(self.pupil_size)/self.nx_subaps
 
         # Spacing on the "FOV Plane" - the number of elements required
         # for the correct subap FOV (from way FFT "phase" to "image" works)
-        self.subap_fov_rad = self.subap_fov * ASEC2RAD
         self.nx_subap_interp = int(round(
-                self.subap_diam * self.subap_fov_rad/ self.wavelength))
+                self.subap_diam * self.subap_fov_rad/ self.config.wavelength))
 
-        # Old#######################################################
-
-        self.subapFOVrad = self.config.subapFOV * numpy.pi / (180. * 3600)
-        self.subapDiam = self.los.telDiam/self.config.nxSubaps
-
-        # spacing between subaps in pupil Plane (size "pupilSize")
-        self.PPSpacing = float(self.simConfig.pupilSize)/self.config.nxSubaps
-
-        # Spacing on the "FOV Plane" - the number of elements required
-        # for the correct subap FOV (from way FFT "phase" to "image" works)
-        self.subapFOVSpacing = int(round(
-                self.subapDiam * self.subapFOVrad/ self.config.wavelength))
-
-        # make twice as big to double subap FOV
+        # make twice as big to double subap FOV (unless told not to!)
         if self.config.subapFieldStop==True:
             self.SUBAP_OVERSIZE = 1
         else:
             self.SUBAP_OVERSIZE = 2
+        
+        self.nx_detector_pixels = self.nx_subaps * (self.nx_subap_pixels + self.nx_guard_pixels) + self.nx_guard_pixels
 
-        self.detectorPxls = self.config.pxlsPerSubap*self.config.nxSubaps
-        self.subapFOVSpacing *= self.SUBAP_OVERSIZE
-        self.config.pxlsPerSubap2 = (self.SUBAP_OVERSIZE
-                                            *self.config.pxlsPerSubap)
+        self.nx_subap_interp *= self.SUBAP_OVERSIZE
+        self.nx_subap_pixels_oversize = self.SUBAP_OVERSIZE * self.nx_subap_pixels
 
         # The total size of the required EField for all subaps.
         # Extra scaling to account for simSize padding
         self.scaledEFieldSize = int(round(
-                self.config.nxSubaps*self.subapFOVSpacing*
-                (float(self.simConfig.simSize)/self.simConfig.pupilSize)
+                self.nx_subaps*self.nx_subap_interp*
+                (float(self.sim_size)/self.pupil_size)
                 ))
 
         # If physical prop, must always be at same pixel scale
         # If not, can use less phase points for speed
         if self.config.propagationMode=="Physical":
             # This the pixel scale required for the correct FOV
-            outPxlScale = (float(self.simConfig.simSize)/float(self.scaledEFieldSize)) * (self.simConfig.pxlScale**-1)
+            outPxlScale = (float(self.sim_size)/float(self.scaledEFieldSize)) * self.phase_scale
             self.los.calcInitParams(
                     outPxlScale=outPxlScale, nOutPxls=self.scaledEFieldSize)
-
 
         # Calculate the subaps that are actually seen behind the pupil mask
         self.findActiveSubaps()
 
-        self.referenceImage = self.wfsConfig.referenceImage
+        self.referenceImage = self.config.referenceImage
         self.n_measurements = 2 * self.activeSubaps
+
 
     def findActiveSubaps(self):
         '''
@@ -166,32 +99,42 @@ class ShackHartmann(base.WFS):
         '''
 
         mask = self.mask[
-                self.simConfig.simPad : -self.simConfig.simPad,
-                self.simConfig.simPad : -self.simConfig.simPad
+                self.sim_pad : -self.sim_pad,
+                self.sim_pad : -self.sim_pad
                 ]
-        self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
-                self.wfsConfig.nxSubaps, mask,
-                self.wfsConfig.subapThreshold, returnFill=True)
 
-        self.activeSubaps = int(self.subapCoords.shape[0])
-        self.detectorSubapCoords = numpy.round(
-                self.subapCoords*(
-                        self.detectorPxls/float(self.simConfig.pupilSize) ) )
+        (self.pupil_subap_coords, self.detector_subap_coords,
+         self.valid_subap_coords, self.detector_cent_coords,
+         self.subap_fill_factor) = findActiveSubaps(
+            self.nx_subaps, mask, self.subap_threshold, self.nx_subap_pixels,
+            self.SUBAP_OVERSIZE, self.nx_guard_pixels)
+        self.interp_subap_coords = numpy.round(
+            self.pupil_subap_coords * self.nx_subap_interp / self.nx_subap_pupil)
+
+        # self.pupil_subap_coords, self.subapFillFactor = wfs.findActiveSubaps(
+        #         self.nx_subaps, mask,
+        #         self.config.subapThreshold, returnFill=True)
+
+        self.activeSubaps = int(self.pupil_subap_coords.shape[0])
+        # self.detectorSubapCoords = numpy.round(
+        #         self.pupil_subap_coords*(
+        #                 self.nx_detector_pixels/float(self.pupil_size) ) )
+
 
         self.setMask(self.mask)
 
     def setMask(self, mask):
-        super(ShackHartmann, self).setMask(mask)
+        super(ShackHartmannFast, self).setMask(mask)
 
         # Find the mask to apply to the scaled EField
         self.scaledMask = numpy.round(interp.zoom(
                     self.mask, self.scaledEFieldSize))
 
-        p = self.simConfig.simPad
+        p = self.sim_pad
         self.subapFillFactor = wfs.computeFillFactor(
                 self.mask[p:-p, p:-p],
-                self.subapCoords,
-                round(float(self.simConfig.pupilSize)/self.wfsConfig.nxSubaps)
+                self.pupil_subap_coords,
+                round(float(self.pupil_size)/self.nx_subaps)
                 )
 
 
@@ -205,22 +148,22 @@ class ShackHartmann(base.WFS):
         """
 
         #Calculate the FFT padding to use
-        self.subapFFTPadding = self.wfsConfig.pxlsPerSubap2 * self.wfsConfig.fftOversamp
-        if self.subapFFTPadding < self.subapFOVSpacing:
-            while self.subapFFTPadding<self.subapFOVSpacing:
-                self.wfsConfig.fftOversamp+=1
+        self.subapFFTPadding = self.nx_subap_pixels_oversize * self.config.fftOversamp
+        if self.subapFFTPadding < self.nx_subap_interp:
+            while self.subapFFTPadding<self.nx_subap_interp:
+                self.config.fftOversamp+=1
                 self.subapFFTPadding\
-                        =self.wfsConfig.pxlsPerSubap2*self.wfsConfig.fftOversamp
+                        =self.nx_subap_pixels_oversize*self.config.fftOversamp
 
-            logger.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.wfsConfig.fftOversamp)
+            logger.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.config.fftOversamp)
 
         #Init the FFT to the focal plane
         self.FFT = AOFFT.FFT(
                 inputSize=(
                 self.activeSubaps, self.subapFFTPadding, self.subapFFTPadding),
                 axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                THREADS=self.wfsConfig.fftwThreads,
-                fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT"))
+                THREADS=self.config.fftwThreads,
+                fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT"))
 
         # If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
         # This works even if no lgsConfig.uplink as ``and`` short circuits
@@ -230,25 +173,25 @@ class ShackHartmann(base.WFS):
                                         self.subapFFTPadding,
                                         self.subapFFTPadding),
                     axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=self.wfsConfig.fftwThreads,
-                    fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
+                    THREADS=self.config.fftwThreads,
+                    fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
             self.lgs_iFFT = AOFFT.FFT(
                     inputSize = (self.subapFFTPadding,
                                 self.subapFFTPadding),
                     axes=(0,1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=self.wfsConfig.fftwThreads,
-                    fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
+                    THREADS=self.config.fftwThreads,
+                    fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
     def initLGS(self):
-        super(ShackHartmann, self).initLGS()
+        super(ShackHartmannFast, self).initLGS()
         if self.lgsConfig.uplink:
             lgsObj = getattr(
                     LGS, "LGS_{}".format(self.lgsConfig.propagationMode))
             self.lgs = lgsObj(
-                    self.config, self.soapyConfig,
+                    self.config, self.soapy_config,
                     nOutPxls=self.subapFFTPadding,
                     outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
                     )
@@ -263,26 +206,29 @@ class ShackHartmann(base.WFS):
         """
         self.los.allocDataArrays()
 
-        self.subapArrays=numpy.zeros((self.activeSubaps,
-                                      self.subapFOVSpacing,
-                                      self.subapFOVSpacing),
-                                     dtype=CDTYPE)
+        self.subap_interp_efield=numpy.zeros((self.activeSubaps,
+                                              self.nx_subap_interp,
+                                              self.nx_subap_interp),
+                                             dtype=CDTYPE)
         self.binnedFPSubapArrays = numpy.zeros( (self.activeSubaps,
-                                                self.wfsConfig.pxlsPerSubap2,
-                                                self.wfsConfig.pxlsPerSubap2),
+                                                self.nx_subap_pixels_oversize,
+                                                self.nx_subap_pixels_oversize),
                                                 dtype=DTYPE)
         self.FPSubapArrays = numpy.zeros((self.activeSubaps,
                                           self.subapFFTPadding,
                                           self.subapFFTPadding),dtype=DTYPE)
 
-        self.wfsDetectorPlane = numpy.zeros( (  self.detectorPxls,
-                                                self.detectorPxls   ),
+        self.detector = numpy.zeros( (  self.nx_detector_pixels,
+                                                self.nx_detector_pixels   ),
                                                 dtype = DTYPE )
         #Array used when centroiding subaps
         self.centSubapArrays = numpy.zeros( (self.activeSubaps,
-              self.config.pxlsPerSubap, self.wfsConfig.pxlsPerSubap) )
+              self.config.pxlsPerSubap, self.config.pxlsPerSubap) )
 
-        self.slopes = numpy.zeros( 2*self.activeSubaps )
+        self.slopes = numpy.zeros(2*self.activeSubaps )
+
+        # compatablity...
+        self.wfsDetectorPlane = self.detector
 
 
     def calcTiltCorrect(self):
@@ -290,23 +236,23 @@ class ShackHartmann(base.WFS):
         Calculates the required tilt to add to avoid the PSF being centred on
         only 1 pixel
         """
-        if not self.wfsConfig.pxlsPerSubap%2:
+        if not self.config.pxlsPerSubap%2:
             # If pxlsPerSubap is even
             # Angle we need to correct for half a pixel
-            theta = self.SUBAP_OVERSIZE*self.subapFOVrad/ (
+            theta = self.SUBAP_OVERSIZE*self.subap_fov_rad/ (
                     2*self.subapFFTPadding)
 
             # Magnitude of tilt required to get that angle
-            A = theta * self.subapDiam/(2*self.wfsConfig.wavelength)*2*numpy.pi
+            A = theta * self.subap_diam/(2*self.config.wavelength)*2*numpy.pi
 
             # Create tilt arrays and apply magnitude
-            coords = numpy.linspace(-1, 1, self.subapFOVSpacing)
+            coords = numpy.linspace(-1, 1, self.nx_subap_interp)
             X,Y = numpy.meshgrid(coords,coords)
 
             self.tiltFix = -1 * A * (X+Y)
 
         else:
-            self.tiltFix = numpy.zeros((self.subapFOVSpacing,)*2)
+            self.tiltFix = numpy.zeros((self.nx_subap_interp,)*2)
 
     def getStatic(self):
         """
@@ -316,7 +262,7 @@ class ShackHartmann(base.WFS):
         self.staticData = None
 
         # Make flat wavefront, and run through WFS in iMat mode to turn off features
-        phs = numpy.zeros([self.simConfig.scrnSize]*2).astype(DTYPE)
+        phs = numpy.zeros([self.screen_size]*2).astype(DTYPE)
         self.staticData = self.frame(
                 phs, iMatFrame=True).copy().reshape(2,self.activeSubaps)
 #######################################################################
@@ -337,7 +283,7 @@ class ShackHartmann(base.WFS):
             self.FPSubapArrays[:] = 0
 
         if detector:
-            self.wfsDetectorPlane[:] = 0
+            self.detector[:] = 0
 
 
     def calcFocalPlane(self, intensity=1):
@@ -360,25 +306,24 @@ class ShackHartmann(base.WFS):
 
         # Now cut out only the eField across the pupilSize
         coord = int(round(int(((self.scaledEFieldSize/2.)
-                - (self.wfsConfig.nxSubaps*self.subapFOVSpacing)/2.))))
+                - (self.nx_subaps*self.nx_subap_interp)/2.))))
         self.cropEField = scaledEField[coord:-coord, coord:-coord]
 
         #create an array of individual subap EFields
         for i in xrange(self.activeSubaps):
-            x, y = numpy.round(self.subapCoords[i] *
-                                     self.subapFOVSpacing/self.PPSpacing)
-            self.subapArrays[i] = self.cropEField[
-                                    int(x):
-                                    int(x+self.subapFOVSpacing) ,
-                                    int(y):
-                                    int(y+self.subapFOVSpacing)]
+            x, y = self.interp_subap_coords[i]
+            self.subap_interp_efield[i] = self.cropEField[
+                                          int(x):
+                                    int(x+self.nx_subap_interp) ,
+                                          int(y):
+                                    int(y+self.nx_subap_interp)]
 
         #do the fft to all subaps at the same time
         # and convert into intensity
         self.FFT.inputData[:] = 0
-        self.FFT.inputData[:,:int(round(self.subapFOVSpacing))
-                        ,:int(round(self.subapFOVSpacing))] \
-                = self.subapArrays*numpy.exp(1j*(self.tiltFix))
+        self.FFT.inputData[:,:int(round(self.nx_subap_interp))
+                        ,:int(round(self.nx_subap_interp))] \
+                = self.subap_interp_efield * numpy.exp(1j * (self.tiltFix))
 
         if intensity==1:
             self.FPSubapArrays += numpy.abs(AOFFT.ftShift2d(self.FFT()))**2
@@ -400,14 +345,14 @@ class ShackHartmann(base.WFS):
         '''
 
         # If required, convolve with LGS PSF
-        if self.wfsConfig.lgs and self.lgs and self.lgsConfig.uplink and self.iMat!=True:
+        if self.config.lgs and self.lgs and self.lgsConfig.uplink and self.iMat!=True:
             self.applyLgsUplink()
 
 
         # bins back down to correct size and then
         # fits them back in to a focal plane array
         self.binnedFPSubapArrays[:] = interp.binImgs(self.FPSubapArrays,
-                                            self.wfsConfig.fftOversamp)
+                                            self.config.fftOversamp)
 
         # In case of empty sub-aps, will get NaNs
         self.binnedFPSubapArrays[numpy.isnan(self.binnedFPSubapArrays)] = 0
@@ -416,68 +361,73 @@ class ShackHartmann(base.WFS):
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
 
-        for i in xrange(self.activeSubaps):
-            x,y=self.detectorSubapCoords[i]
+        # for i in xrange(self.activeSubaps):
+        #     x,y=self.detector_subap_coords[i]
+        #
+        #     #Set default position to put arrays into (SUBAP_OVERSIZE FOV)
+        #     x1 = int(round(
+        #             x+self.config.pxlsPerSubap/2.
+        #             -self.nx_subap_pixels_oversize/2.))
+        #     x2 = int(round(
+        #             x+self.config.pxlsPerSubap/2.
+        #             +self.nx_subap_pixels_oversize/2.))
+        #     y1 = int(round(
+        #             y+self.config.pxlsPerSubap/2.
+        #             -self.nx_subap_pixels_oversize/2.))
+        #     y2 = int(round(
+        #             y+self.config.pxlsPerSubap/2.
+        #             +self.nx_subap_pixels_oversize/2.))
+        #
+        #     #Set defualt size of input array (i.e. all of it)
+        #     x1_fp = int(0)
+        #     x2_fp = int(round(self.nx_subap_pixels_oversize))
+        #     y1_fp = int(0)
+        #     y2_fp = int(round(self.nx_subap_pixels_oversize))
+        #
+        #     # If at the edge of the field, may only fit a fraction in
+        #     if x == 0:
+        #         x1 = 0
+        #         x1_fp = int(round(
+        #                 self.nx_subap_pixels_oversize/2.
+        #                 -self.config.pxlsPerSubap/2.))
+        #
+        #     elif x == (self.nx_detector_pixels-self.config.pxlsPerSubap):
+        #         x2 = int(round(self.nx_detector_pixels))
+        #         x2_fp = int(round(
+        #                 self.nx_subap_pixels_oversize/2.
+        #                 +self.config.pxlsPerSubap/2.))
+        #
+        #     if y == 0:
+        #         y1 = 0
+        #         y1_fp = int(round(
+        #                 self.nx_subap_pixels_oversize/2.
+        #                 -self.config.pxlsPerSubap/2.))
+        #
+        #     elif y == (self.nx_detector_pixels-self.config.pxlsPerSubap):
+        #         y2 = int(self.nx_detector_pixels)
+        #         y2_fp = int(round(
+        #                 self.nx_subap_pixels_oversize/2.
+        #                 +self.config.pxlsPerSubap/2.))
+        #
+        #     self.detector[x1:x2, y1:y2] += (
+        #             self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp])
 
-            #Set default position to put arrays into (SUBAP_OVERSIZE FOV)
-            x1 = int(round(
-                    x+self.wfsConfig.pxlsPerSubap/2.
-                    -self.wfsConfig.pxlsPerSubap2/2.))
-            x2 = int(round(
-                    x+self.wfsConfig.pxlsPerSubap/2.
-                    +self.wfsConfig.pxlsPerSubap2/2.))
-            y1 = int(round(
-                    y+self.wfsConfig.pxlsPerSubap/2.
-                    -self.wfsConfig.pxlsPerSubap2/2.))
-            y2 = int(round(
-                    y+self.wfsConfig.pxlsPerSubap/2.
-                    +self.wfsConfig.pxlsPerSubap2/2.))
-
-            #Set defualt size of input array (i.e. all of it)
-            x1_fp = int(0)
-            x2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
-            y1_fp = int(0)
-            y2_fp = int(round(self.wfsConfig.pxlsPerSubap2))
-
-            # If at the edge of the field, may only fit a fraction in
-            if x == 0:
-                x1 = 0
-                x1_fp = int(round(
-                        self.wfsConfig.pxlsPerSubap2/2.
-                        -self.wfsConfig.pxlsPerSubap/2.))
-
-            elif x == (self.detectorPxls-self.wfsConfig.pxlsPerSubap):
-                x2 = int(round(self.detectorPxls))
-                x2_fp = int(round(
-                        self.wfsConfig.pxlsPerSubap2/2.
-                        +self.wfsConfig.pxlsPerSubap/2.))
-
-            if y == 0:
-                y1 = 0
-                y1_fp = int(round(
-                        self.wfsConfig.pxlsPerSubap2/2.
-                        -self.wfsConfig.pxlsPerSubap/2.))
-
-            elif y == (self.detectorPxls-self.wfsConfig.pxlsPerSubap):
-                y2 = int(self.detectorPxls)
-                y2_fp = int(round(
-                        self.wfsConfig.pxlsPerSubap2/2.
-                        +self.wfsConfig.pxlsPerSubap/2.))
-
-            self.wfsDetectorPlane[x1:x2, y1:y2] += (
-                    self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp])
+        numbalib.wfs.place_subaps_on_detector(
+                self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
+                threads=self.threads
+        )
 
         # Scale data for correct number of photons
-        self.wfsDetectorPlane /= self.wfsDetectorPlane.sum()
-        self.wfsDetectorPlane *= aotools.photonsPerMag(
-                self.wfsConfig.GSMag, self.mask, self.simConfig.pxlScale**(-1),
-                self.wfsConfig.wvlBandWidth, self.wfsConfig.exposureTime
-                ) * self.wfsConfig.throughput
+        self.detector /= self.detector.sum()
+        self.detector *= aotools.photonsPerMag(
+                self.config.GSMag, self.mask, self.phase_scale**(-1),
+                self.config.wvlBandWidth, self.config.exposureTime
+                ) * self.config.throughput
 
-        if self.wfsConfig.photonNoise:
+        if self.config.photonNoise:
             self.addPhotonNoise()
 
-        if self.wfsConfig.eReadNoise!=0:
+        if self.config.eReadNoise!=0:
             self.addReadNoise()
 
     def applyLgsUplink(self):
@@ -508,41 +458,128 @@ class ShackHartmann(base.WFS):
         Returns:
             ndarray: array of all WFS measurements
         '''
+        numbalib.wfs.chop_subaps(
+                self.detector, self.detector_cent_coords, self.nx_subap_pixels,
+                self.centSubapArrays, threads=self.threads)
 
         # Sort out FP into subaps
-        for i in xrange(self.activeSubaps):
-            x, y = self.detectorSubapCoords[i]
-            x = int(x)
-            y = int(y)
-            self.centSubapArrays[i] = self.wfsDetectorPlane[
-                    x:x+self.wfsConfig.pxlsPerSubap,
-                    y:y+self.wfsConfig.pxlsPerSubap ].astype(DTYPE)
+        # for i in xrange(self.activeSubaps):
+        #     x, y = self.detector_subap_coords[i]
+        #     x = int(x)
+        #     y = int(y)
+        #     self.centSubapArrays[i] = self.detector[
+        #             x:x+self.config.pxlsPerSubap,
+        #             y:y+self.config.pxlsPerSubap ].astype(DTYPE)
 
-        slopes = getattr(centroiders, self.wfsConfig.centMethod)(
+        slopes = getattr(centroiders, self.config.centMethod)(
                 self.centSubapArrays,
-                threshold=self.wfsConfig.centThreshold,
+                threshold=self.config.centThreshold,
                 ref=self.referenceImage
                 )
 
 
         # shift slopes relative to subap centre and remove static offsets
-        slopes -= self.wfsConfig.pxlsPerSubap/2.0
+        slopes -= self.config.pxlsPerSubap/2.0
 
         if numpy.any(self.staticData):
             slopes -= self.staticData
 
         self.slopes[:] = slopes.reshape(self.activeSubaps*2)
 
-        if self.wfsConfig.removeTT == True:
+        if self.config.removeTT == True:
             self.slopes[:self.activeSubaps] -= self.slopes[:self.activeSubaps].mean()
             self.slopes[self.activeSubaps:] -= self.slopes[self.activeSubaps:].mean()
 
-        if self.wfsConfig.angleEquivNoise and not self.iMat:
+        if self.config.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (
-                    self.wfsConfig.angleEquivNoise *
-                    float(self.wfsConfig.pxlsPerSubap)
-                    /self.wfsConfig.subapFOV )
+                    self.config.angleEquivNoise *
+                    float(self.config.pxlsPerSubap)
+                    /self.config.subapFOV )
             self.slopes += numpy.random.normal(
                     0, pxlEquivNoise, 2*self.activeSubaps)
 
         return self.slopes
+
+
+def findActiveSubaps(
+            nx_subaps, mask, threshold, nx_subap_pixels, subap_oversize, guard=0):
+    '''
+    Finds the subapertures which are "seen" be through the
+    pupil function. Returns the coords of those subaps
+
+    Parameters:
+        nx_subaps (int): The number of subaps in x (assumes square)
+        mask (ndarray): A pupil mask, where is transparent when 1, and opaque when 0
+        threshold (float): The mean value across a subap to make it "active"
+        nx_subap_pixels (int): Pixels per subaperture on detector
+        subap_oversize (int): Factor that subap is "oversized" on detector
+        guard (int, optional): Guard pixels between sub-apertures
+
+    Returns:
+        ndarray: An array of active subap coords
+    '''
+
+    pupil_coords = []
+    x_spacing = mask.shape[0]/float(nx_subaps)
+    y_spacing = mask.shape[1]/float(nx_subaps)
+
+    detector_coords = []
+    subap_coords = []
+    detector_cent_coords = []
+
+    fills = []
+
+    nx_oversize_subap = subap_oversize * nx_subap_pixels # number of pixels on oversized subap
+    detector_pad = (nx_oversize_subap - nx_subap_pixels) / 2. # Pad on each side of subap
+    nx_detector_pixels = nx_subaps * nx_subap_pixels + (nx_subaps + 1) * guard # Total number of detector pixels
+
+
+    for x in range(nx_subaps):
+        for y in range(nx_subaps):
+            subap = mask[
+                    int(numpy.round(x*x_spacing)): int(numpy.round((x+1)*x_spacing)),
+                    int(numpy.round(y*y_spacing)): int(numpy.round((y+1)*y_spacing))
+                    ]
+
+            if subap.mean() >= threshold:
+                pupil_coords.append( [x * x_spacing, y * y_spacing])
+                fills.append(subap.mean())
+
+                detector_cent_coords.append([
+                        x * nx_subap_pixels + (x+1) * guard, y * nx_subap_pixels + (y+1) * guard])
+
+                dx1 = x * nx_subap_pixels - detector_pad + (x+1) * guard
+                dx2 = (x + 1) * nx_subap_pixels + detector_pad + (x+1) * guard
+                dy1 = y * nx_subap_pixels - detector_pad + (y+1) * guard
+                dy2 = (y + 1) * nx_subap_pixels + detector_pad + (y+1) * guard
+                detector_coords.append([dx1, dx2, dy1, dy2])
+
+                if dx1 < 0:
+                    sx1 = -dx1
+                else:
+                    sx1 = 0
+
+                if dx2 > nx_detector_pixels:
+                    sx2 = -(dx2 - nx_detector_pixels)
+                else:
+                    sx2 = nx_oversize_subap
+
+                if dy1 < 0:
+                    sy1 = -dy1
+                else:
+                    sy1 = 0
+
+                if dy2 > nx_detector_pixels:
+                    sy2 = -(dy2 - nx_detector_pixels)
+                else:
+                    sy2 = nx_oversize_subap
+
+                subap_coords.append([sx1, sx2, sy1, sy2])
+
+    pupil_coords = numpy.array(pupil_coords).astype('int32')
+    detector_coords = numpy.array(detector_coords)
+    detector_coords = detector_coords.clip(0, nx_detector_pixels).astype('int32')
+    subap_coords = numpy.array(subap_coords).astype('int32')
+    detector_cent_coords = numpy.array(detector_cent_coords)
+
+    return pupil_coords, detector_coords, subap_coords, detector_cent_coords, numpy.array(fills)
