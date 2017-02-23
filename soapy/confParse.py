@@ -474,7 +474,8 @@ class SimConfig(ConfigObj):
                             effects                             ``1.2``
         ``loopDelay``       int: loop delay in integer count
                             of ``loopTime``                     ``0``
-
+        ``threads``         int: Number of threads to use
+                            for multithreaded operations        ``1``
 
         ==================  =================================   ===============
 
@@ -530,6 +531,7 @@ class SimConfig(ConfigObj):
                             ("learnAtmos", "random"),
                             ("simOversize", 1.2),
                             ("loopDelay", 0),
+                            ("threads", 1),
                         ]
 
     # Parameters which may be set at some point and are allowed
@@ -709,6 +711,9 @@ class WfsConfig(ConfigObj):
         ``subapFOV``            float: Field of View of
                                 sub-aperture in arc-secs           ``5``
         ``correlationFFTPad``   int: Padding for correlation WFS    ``None``
+        ``nx_guard_pixels``     int: Guard Pixels between
+                                Shack-Hartmann sub-apertures
+                                (Not currently operational)         ``0``
         =====================   ================================== ===========
 
 
@@ -742,7 +747,8 @@ class WfsConfig(ConfigObj):
                         ("extendedObject", None),
                         ("pxlsPerSubap", 10),
                         ("subapFOV", 5),
-                        ("correlationFFTPad", None)
+                        ("correlationFFTPad", None),
+                        ("nx_guard_pixels", 0),
                         ]
 
         # Parameters which may be Set at some point and are allowed

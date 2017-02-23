@@ -192,10 +192,10 @@ class Sim(object):
             except AttributeError:
                 raise confParse.ConfigurationError(
                         "No WFS of type {} found.".format(
-                                self.config.wfss[wfs].type))
+                                self.config.wfss[nwfs].type))
 
             self.wfss[nwfs] = wfsClass(
-                    self.config, nWfs=nwfs, mask=self.mask)
+                    self.config, n_wfs=nwfs, mask=self.mask)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[nwfs].activeSubaps*2

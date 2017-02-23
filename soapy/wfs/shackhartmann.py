@@ -42,7 +42,7 @@ class ShackHartmann(base.WFS):
         self.subapDiam = self.los.telDiam/self.config.nxSubaps
 
         # spacing between subaps in pupil Plane (size "pupilSize")
-        self.PPSpacing = float(self.simConfig.pupilSize)/self.config.nxSubaps
+        self.PPSpacing = float(self.pupil_size)/self.config.nxSubaps
 
         # Spacing on the "FOV Plane" - the number of elements required
         # for the correct subap FOV (from way FFT "phase" to "image" works)
@@ -64,14 +64,14 @@ class ShackHartmann(base.WFS):
         # Extra scaling to account for simSize padding
         self.scaledEFieldSize = int(round(
                 self.config.nxSubaps*self.subapFOVSpacing*
-                (float(self.simConfig.simSize)/self.simConfig.pupilSize)
+                (float(self.sim_size)/self.pupil_size)
                 ))
 
         # If physical prop, must always be at same pixel scale
         # If not, can use less phase points for speed
         if self.config.propagationMode=="Physical":
             # This the pixel scale required for the correct FOV
-            outPxlScale = (float(self.simConfig.simSize)/float(self.scaledEFieldSize)) * (self.simConfig.pxlScale**-1)
+            outPxlScale = (float(self.sim_size)/float(self.scaledEFieldSize)) * self.phase_scale
             self.los.calcInitParams(
                     outPxlScale=outPxlScale, nOutPxls=self.scaledEFieldSize)
 
@@ -89,8 +89,8 @@ class ShackHartmann(base.WFS):
         '''
 
         mask = self.mask[
-                self.simConfig.simPad : -self.simConfig.simPad,
-                self.simConfig.simPad : -self.simConfig.simPad
+                self.sim_pad : -self.sim_pad,
+                self.sim_pad : -self.sim_pad
                 ]
         self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, mask,
@@ -99,7 +99,7 @@ class ShackHartmann(base.WFS):
         self.activeSubaps = int(self.subapCoords.shape[0])
         self.detectorSubapCoords = numpy.round(
                 self.subapCoords*(
-                        self.detectorPxls/float(self.simConfig.pupilSize) ) )
+                        self.detectorPxls/float(self.pupil_size) ) )
 
         self.setMask(self.mask)
 
@@ -110,11 +110,11 @@ class ShackHartmann(base.WFS):
         self.scaledMask = numpy.round(interp.zoom(
                     self.mask, self.scaledEFieldSize))
 
-        p = self.simConfig.simPad
+        p = self.sim_pad
         self.subapFillFactor = wfs.computeFillFactor(
                 self.mask[p:-p, p:-p],
                 self.subapCoords,
-                round(float(self.simConfig.pupilSize)/self.wfsConfig.nxSubaps)
+                round(float(self.pupil_size)/self.wfsConfig.nxSubaps)
                 )
 
 
@@ -171,7 +171,7 @@ class ShackHartmann(base.WFS):
             lgsObj = getattr(
                     LGS, "LGS_{}".format(self.lgsConfig.propagationMode))
             self.lgs = lgsObj(
-                    self.config, self.soapyConfig,
+                    self.config, self.soapy_config,
                     nOutPxls=self.subapFFTPadding,
                     outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
                     )
@@ -239,7 +239,7 @@ class ShackHartmann(base.WFS):
         self.staticData = None
 
         # Make flat wavefront, and run through WFS in iMat mode to turn off features
-        phs = numpy.zeros([self.simConfig.scrnSize]*2).astype(DTYPE)
+        phs = numpy.zeros([self.screen_size]*2).astype(DTYPE)
         self.staticData = self.frame(
                 phs, iMatFrame=True).copy().reshape(2,self.activeSubaps)
 #######################################################################
@@ -393,7 +393,7 @@ class ShackHartmann(base.WFS):
         # Scale data for correct number of photons
         self.wfsDetectorPlane /= self.wfsDetectorPlane.sum()
         self.wfsDetectorPlane *= aotools.photonsPerMag(
-                self.wfsConfig.GSMag, self.mask, self.simConfig.pxlScale**(-1),
+                self.wfsConfig.GSMag, self.mask, self.phase_scale**(-1),
                 self.wfsConfig.wvlBandWidth, self.wfsConfig.exposureTime
                 ) * self.wfsConfig.throughput
 
