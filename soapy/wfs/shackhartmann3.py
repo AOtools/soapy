@@ -308,6 +308,7 @@ class ShackHartmann3(object):
             self.applyLgsUplink()
 
         # bins back down to correct size and then
+
         # fits them back onto the detector
         numbalib.wfs.bin_imgs(
                 self.subap_focus_intensity, self.fft_oversamp, self.detector_subaps,
