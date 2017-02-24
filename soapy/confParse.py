@@ -529,7 +529,7 @@ class SimConfig(ConfigObj):
                             ("logfile", None),
                             ("learnIters", 0),
                             ("learnAtmos", "random"),
-                            ("simOversize", 1.2),
+                            ("simOversize", 1.02),
                             ("loopDelay", 0),
                             ("threads", 1),
                         ]

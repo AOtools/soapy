@@ -198,10 +198,10 @@ class Sim(object):
                     self.config, n_wfs=nwfs, mask=self.mask)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
-            self.config.sim.totalWfsData += self.wfss[nwfs].activeSubaps*2
+            self.config.sim.totalWfsData += self.wfss[nwfs].n_measurements
 
             logger.info("WFS {0}: {1} measurements".format(nwfs,
-                     self.wfss[nwfs].activeSubaps*2))
+                     self.wfss[nwfs].n_measurements))
 
         # Init DMs
         logger.info("Initialising {0} DMs...".format(self.config.sim.nDM))
@@ -344,7 +344,7 @@ class Sim(object):
 
         slopesSize = 0
         for nwfs in wfsList:
-            slopesSize+=self.wfss[nwfs].activeSubaps*2
+            slopesSize+=self.wfss[nwfs].n_measurements
         slopes = numpy.zeros( (slopesSize) )
 
         s = 0
@@ -360,9 +360,9 @@ class Sim(object):
             else:
                 read = True
 
-            slopes[s:s+self.wfss[nwfs].activeSubaps*2] = \
+            slopes[s:s+self.wfss[nwfs].n_measurements] = \
                     self.wfss[nwfs].frame(self.scrns, dmShape, read=read)
-            s += self.wfss[nwfs].activeSubaps*2
+            s += self.wfss[nwfs].n_measurements
 
         self.Twfs+=time.time()-t_wfs
         return slopes
@@ -395,7 +395,7 @@ class Sim(object):
 
         slopesSize = 0
         for nwfs in wfsList:
-            slopesSize+=self.wfss[nwfs].activeSubaps*2
+            slopesSize+=self.wfss[nwfs].n_measurements
         slopes = numpy.zeros( (slopesSize) )
 
         wfsProcs = []
@@ -425,7 +425,7 @@ class Sim(object):
         for proc in xrange(len(wfsList)):
             nwfs = wfsList[proc]
 
-            (slopes[s:s+self.wfss[nwfs].activeSubaps*2],
+            (slopes[s:s+self.wfss[nwfs].n_measurements],
                     self.wfss[nwfs].wfsDetectorPlane,
                     self.wfss[nwfs].uncorrectedPhase,
                     lgsPsf) = wfsQueues[proc].get()
@@ -434,7 +434,7 @@ class Sim(object):
                 self.wfss[nwfs].LGS.psf1 = lgsPsf
 
             wfsProcs[proc].join()
-            s += self.wfss[nwfs].activeSubaps*2
+            s += self.wfss[nwfs].n_measurements
 
         self.Twfs+=time.time()-t_wfs
         return slopes
