@@ -361,57 +361,6 @@ class ShackHartmannFast(base.WFS):
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
 
-        # for i in xrange(self.activeSubaps):
-        #     x,y=self.detector_subap_coords[i]
-        #
-        #     #Set default position to put arrays into (SUBAP_OVERSIZE FOV)
-        #     x1 = int(round(
-        #             x+self.config.pxlsPerSubap/2.
-        #             -self.nx_subap_pixels_oversize/2.))
-        #     x2 = int(round(
-        #             x+self.config.pxlsPerSubap/2.
-        #             +self.nx_subap_pixels_oversize/2.))
-        #     y1 = int(round(
-        #             y+self.config.pxlsPerSubap/2.
-        #             -self.nx_subap_pixels_oversize/2.))
-        #     y2 = int(round(
-        #             y+self.config.pxlsPerSubap/2.
-        #             +self.nx_subap_pixels_oversize/2.))
-        #
-        #     #Set defualt size of input array (i.e. all of it)
-        #     x1_fp = int(0)
-        #     x2_fp = int(round(self.nx_subap_pixels_oversize))
-        #     y1_fp = int(0)
-        #     y2_fp = int(round(self.nx_subap_pixels_oversize))
-        #
-        #     # If at the edge of the field, may only fit a fraction in
-        #     if x == 0:
-        #         x1 = 0
-        #         x1_fp = int(round(
-        #                 self.nx_subap_pixels_oversize/2.
-        #                 -self.config.pxlsPerSubap/2.))
-        #
-        #     elif x == (self.nx_detector_pixels-self.config.pxlsPerSubap):
-        #         x2 = int(round(self.nx_detector_pixels))
-        #         x2_fp = int(round(
-        #                 self.nx_subap_pixels_oversize/2.
-        #                 +self.config.pxlsPerSubap/2.))
-        #
-        #     if y == 0:
-        #         y1 = 0
-        #         y1_fp = int(round(
-        #                 self.nx_subap_pixels_oversize/2.
-        #                 -self.config.pxlsPerSubap/2.))
-        #
-        #     elif y == (self.nx_detector_pixels-self.config.pxlsPerSubap):
-        #         y2 = int(self.nx_detector_pixels)
-        #         y2_fp = int(round(
-        #                 self.nx_subap_pixels_oversize/2.
-        #                 +self.config.pxlsPerSubap/2.))
-        #
-        #     self.detector[x1:x2, y1:y2] += (
-        #             self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp])
-
         numbalib.wfs.place_subaps_on_detector(
                 self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
                 threads=self.threads
@@ -461,15 +410,6 @@ class ShackHartmannFast(base.WFS):
         numbalib.wfs.chop_subaps(
                 self.detector, self.detector_cent_coords, self.nx_subap_pixels,
                 self.centSubapArrays, threads=self.threads)
-
-        # Sort out FP into subaps
-        # for i in xrange(self.activeSubaps):
-        #     x, y = self.detector_subap_coords[i]
-        #     x = int(x)
-        #     y = int(y)
-        #     self.centSubapArrays[i] = self.detector[
-        #             x:x+self.config.pxlsPerSubap,
-        #             y:y+self.config.pxlsPerSubap ].astype(DTYPE)
 
         slopes = getattr(centroiders, self.config.centMethod)(
                 self.centSubapArrays,
