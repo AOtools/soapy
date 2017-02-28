@@ -358,6 +358,9 @@ class FastPiezo(Piezo):
 
         return acts
 
+    def makeIMatShapes(self):
+        pass
+
     def makeDMFrame(self, actCoeffs):
 
         self.actGrid[(self.activeActs[:,0], self.activeActs[:,1])] = actCoeffs

@@ -6,6 +6,32 @@ import queue
 import numpy
 import numba
 
+def zoom_pool(data, zoomArray, thread_pool):
+    """
+    A function which deals with threaded numba interpolation.
+
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        zoomArray (ndarray, tuple): The array to place the calculation, or the shape to return
+        threads (int): Number of threads to use for calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+    nx = zoomArray.shape[0]
+
+    n_threads = thread_pool.n_threads
+
+    args = []
+    for nt in range(n_threads):
+        args.append((data,
+                numpy.array([int(nt*nx/n_threads), int((nt+1)*nx/n_threads)]),
+                zoomArray))
+
+    thread_pool.run(zoom_numbaThread, args)
+
+    return zoomArray
+
 def zoom(data, zoomArray, threads=None):
     """
     A function which deals with threaded numba interpolation.
@@ -73,6 +99,63 @@ def zoom_numbaThread(data, chunkIndices, zoomArray):
 
     return zoomArray
 
+
+def chop_subaps_mask(phase, subap_coords, nx_subap_size, subap_array, mask, threads=None):
+    if threads is None:
+        threads = N_CPU
+
+    n_subaps = subap_coords.shape[0]
+    Ts = []
+    for t in range(threads):
+        Ts.append(Thread(target=chop_subaps_mask_numba,
+                         args=(
+                             phase, subap_coords, nx_subap_size, subap_array, mask,
+                             numpy.array([int(t * n_subaps / threads), int((t + 1) * n_subaps / threads)]),
+                         )
+                         ))
+        Ts[t].start()
+
+    for T in Ts:
+        T.join()
+
+    return subap_array
+
+
+def chop_subaps_mask_pool(phase, subap_coords, nx_subap_size, subap_array, mask, thread_pool=None):
+
+    n_subaps = subap_coords.shape[0]
+    args = []
+    n_threads = thread_pool.n_threads
+    for t in range(n_threads):
+        args.append(
+            (phase, subap_coords, nx_subap_size, subap_array, mask,
+            numpy.array([int(t * n_subaps / n_threads), int((t + 1) * n_subaps / n_threads)])))
+
+    thread_pool.run(chop_subaps_mask_numba, args)
+
+    return subap_array
+
+@numba.jit(nopython=True, nogil=True)
+def chop_subaps_mask_numba(phase, subap_coords, nx_subap_size, subap_array, mask, subap_indices):
+    for i in range(subap_indices[0], subap_indices[1]):
+        x1 = subap_coords[i, 0]
+        x2 = subap_coords[i, 0] + nx_subap_size
+        y1 = subap_coords[i, 1]
+        y2 = subap_coords[i, 1] + nx_subap_size
+
+        subap_array[i, :nx_subap_size, :nx_subap_size] = phase[x1: x2, y1: y2] * mask[x1: x2, y1: y2]
+
+    return subap_array
+
+
+def chop_subaps_mask_slow(phase, subap_coords, nx_subap_size, subap_array, threads=None):
+    for i in range(len(subap_coords)):
+        x = subap_coords[i, 0]
+        y = subap_coords[i, 1]
+
+        subap_array[i, :nx_subap_size, :nx_subap_size] = phase[x: x + nx_subap_size, y: y + nx_subap_size] * mask[x: x + nx_subap_size, y: y + nx_subap_size]
+
+    return subap_array
 
 def chop_subaps(phase, subap_coords, nx_subap_size, subap_array, threads=None):
     if threads is None:

@@ -1,6 +1,7 @@
 import multiprocessing
 N_CPU = multiprocessing.cpu_count()
 from threading import Thread
+import queue
 
 import numpy
 import numba
@@ -163,3 +164,108 @@ def zoom_numbaThread(data,  chunkIndices, zoomArray):
 
 
     return zoomArray
+
+def zoom_pool(data, zoomArray, thread_pool):
+    """
+    A function which deals with threaded numba interpolation.
+
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        zoomArray (ndarray, tuple): The array to place the calculation, or the shape to return
+        threads (int): Number of threads to use for calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+    nx = zoomArray.shape[0]
+
+    n_threads = thread_pool.n_threads
+
+    args = []
+    for nt in range(n_threads):
+        args.append((data,
+                numpy.array([int(nt*nx/n_threads), int((nt+1)*nx/n_threads)]),
+                zoomArray))
+
+    thread_pool.run(zoom_numbaThread, args)
+
+    return zoomArray
+
+class ThreadPool(object):
+    """
+    A 'pool' of threads that can be used by GIL released Numba functions
+
+    A number of threads are initialised and set to watch a queue for input data
+    A function can then be specified and some parameters given, and the arguments are send to the queue,
+    where they are seen by each thread as a signal to start work. Once done, the threads will return the
+    result of their computation down a different queue. The main thread gathers these results and returns
+    them in a list. In practice its probably more useful to get the threads to operate on a static NumPy
+    array to avoid sorting out these results.
+
+    Paramters
+        n_threads (int): Number of threads in the pool
+    """
+    def __init__(self, n_threads):
+
+        self.n_threads = n_threads
+
+        self._running = True
+
+        self.input_queues = []
+        self.output_queues = []
+        self.threads = []
+        for i in range(n_threads):
+            input_queue = queue.Queue()
+            output_queue = queue.Queue()
+            thread = Thread(target=self._thread_func, args=(input_queue, output_queue))
+
+            self.input_queues.append(input_queue)
+            self.output_queues.append(output_queue)
+            self.threads.append(thread)
+
+            thread.start()
+
+
+
+    def _thread_func(self, input_queue, output_queue):
+
+        while self._running:
+            input_args = input_queue.get()
+            result = self._func(*input_args)
+
+            output_queue.put(result)
+
+
+    def run(self, func, args):
+
+        results = []
+        self._func = func
+        for i, q in enumerate(self.input_queues):
+            q.put(args[i])
+
+        for q in self.output_queues:
+            results.append(q.get())
+
+        return results
+
+    def _stop_func(self, arg):
+        pass
+
+    def stop(self):
+        print("Stopping threads!")
+        self._running = False
+        self.run(self._stop_func, [(None, )]*self.n_threads)
+
+        for t in self.threads:
+            t.join()
+
+    def __del__(self):
+        self.stop()
+
+
+
+
+
+
+
+

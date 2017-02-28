@@ -91,6 +91,7 @@ class ShackHartmannFast(base.WFS):
         self.referenceImage = self.config.referenceImage
         self.n_measurements = 2 * self.n_subaps
 
+        self.thread_pool = numbalib.ThreadPool(self.threads)
 
     def findActiveSubaps(self):
         '''
@@ -295,19 +296,16 @@ class ShackHartmannFast(base.WFS):
 
         if self.config.propagationMode=="Geometric":
             # Have to make phase the correct size if geometric prop
-            scaledEField = numbalib.wfs.zoom(self.los.phase, self.interp_phase)
+            scaledEField = numbalib.wfs.zoom_pool(self.los.phase, self.interp_phase, thread_pool=self.thread_pool)
             scaledEField = numpy.exp(1j*self.interp_phase)
         else:
             scaledEField = self.EField
 
-        # Apply the scaled pupil mask
-        scaledEField *= self.scaledMask
-
         #create an array of individual subap EFields
         self.FFT.inputData[:] = 0
-        numbalib.wfs.chop_subaps(
+        numbalib.wfs.chop_subaps_mask_pool(
                 scaledEField, self.interp_subap_coords, self.nx_subap_interp,
-                self.FFT.inputData, threads=self.threads)
+                self.FFT.inputData, self.scaledMask, thread_pool=self.thread_pool)
         self.FFT.inputData[:, :self.nx_subap_interp, :self.nx_subap_interp] *= self.tilt_fix_efield
         self.FFT()
 
