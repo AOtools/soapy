@@ -157,7 +157,7 @@ class ShackHartmannFast(base.WFS):
                 inputSize=(
                     self.n_subaps, self.subapFFTPadding, self.subapFFTPadding),
                 axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                THREADS=self.config.fftwThreads,
+                THREADS=self.threads,
                 fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT"))
 
         # If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
@@ -168,7 +168,7 @@ class ShackHartmannFast(base.WFS):
                                         self.subapFFTPadding,
                                         self.subapFFTPadding),
                     axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=self.config.fftwThreads,
+                    THREADS=self.threads,
                     fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
@@ -176,7 +176,7 @@ class ShackHartmannFast(base.WFS):
                     inputSize = (self.subapFFTPadding,
                                 self.subapFFTPadding),
                     axes=(0,1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=self.config.fftwThreads,
+                    THREADS=self.threads,
                     fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
@@ -309,13 +309,14 @@ class ShackHartmannFast(base.WFS):
                 scaledEField, self.interp_subap_coords, self.nx_subap_interp,
                 self.FFT.inputData, threads=self.threads)
         self.FFT.inputData[:, :self.nx_subap_interp, :self.nx_subap_interp] *= self.tilt_fix_efield
-
         self.FFT()
 
-        temp_subap_intensity = AOFFT.ftShift2d(self.FFT.outputData)
+        self.temp_subap_focus = AOFFT.ftShift2d(self.FFT.outputData)
 
-        numbalib.abs_squared(
-                temp_subap_intensity, self.subap_focus_intensity, threads=self.threads)
+        # numbalib.abs_squared(
+        #         self.temp_subap_focus, self.subap_focus_intensity, threads=self.threads)
+
+        self.subap_focus_intensity[:] = abs(self.temp_subap_focus)**2
 
         if intensity != 1:
             self.subap_focus_intensity *= intensity
