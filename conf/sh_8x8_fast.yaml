@@ -3,10 +3,10 @@ pupilSize: 64
 nGS: 1
 nDM: 2
 nSci: 1
-nIters: 5000
+nIters: 500
 loopTime: 0.0025
 reconstructor: "MVM"
-threads: 4
+threads: 2
 
 verbosity: 2
 
@@ -53,7 +53,7 @@ DM:
 
 
   1:
-    type: Piezo
+    type: FastPiezo
     closed: True
     nxActuators: 9
     svdConditioning: 0.05

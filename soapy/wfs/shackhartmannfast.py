@@ -340,9 +340,9 @@ class ShackHartmannFast(base.WFS):
         #                                              self.config.fftOversamp)
 
         self.binnedFPSubapArrays[:] = 0
-        numbalib.wfs.bin_imgs(
+        numbalib.wfs.bin_imgs_pool(
                 self.subap_focus_intensity, self.config.fftOversamp, self.binnedFPSubapArrays,
-                threads=self.threads)
+                thread_pool=self.thread_pool)
 
         # In case of empty sub-aps, will get NaNs
         # self.binnedFPSubapArrays[numpy.isnan(self.binnedFPSubapArrays)] = 0
@@ -351,10 +351,15 @@ class ShackHartmannFast(base.WFS):
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
 
+        # numbalib.wfs.place_subaps_on_detector_pool(
+        #         self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
+        #         thread_pool=self.thread_pool
+        # )
         numbalib.wfs.place_subaps_on_detector(
                 self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
                 threads=self.threads
         )
+
 
         # Scale data for correct number of photons
         self.detector /= self.detector.sum()
@@ -422,8 +427,7 @@ class ShackHartmannFast(base.WFS):
 
         if self.config.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (
-                    self.config.angleEquivNoise *
-                    float(self.config.pxlsPerSubap)
+                    self.config.angleEquivNoise * float(self.config.pxlsPerSubap)
                     /self.config.subapFOV )
             self.slopes += numpy.random.normal(
                     0, pxlEquivNoise, 2*self.n_subaps)
