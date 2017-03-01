@@ -263,6 +263,18 @@ def place_subaps_on_detector(subap_imgs, detector_img, detector_positions, subap
 
     return detector_img
 
+def place_subaps_on_detector_pool(subap_imgs, detector_img, detector_positions, subap_coords, thread_pool):
+
+    n_subaps = detector_positions.shape[0]
+    n_threads = thread_pool.n_threads
+    args = []
+    for t in range(n_threads):
+        args.append(
+                (subap_imgs, detector_img, detector_positions, subap_coords,
+                numpy.array([int(t * n_subaps / n_threads), int((t + 1) * n_subaps / n_threads)])))
+    thread_pool.run(place_subaps_on_detector_numba, args)
+
+    return detector_img
 
 @numba.jit(nopython=True, nogil=True)
 def place_subaps_on_detector_numba(subap_imgs, detector_img, detector_positions, subap_coords, subap_indices):
@@ -309,6 +321,23 @@ def bin_imgs(subap_imgs, bin_size, binned_imgs, threads=None):
 
     for T in Ts:
         T.join()
+
+    return binned_imgs
+
+def bin_imgs_pool(subap_imgs, bin_size, binned_imgs, thread_pool):
+
+
+    n_subaps = subap_imgs.shape[0]
+
+    n_threads = thread_pool.n_threads
+
+    args = []
+    for t in range(n_threads):
+        args.append(
+            (subap_imgs, bin_size, binned_imgs,
+            numpy.array([int(t * n_subaps / n_threads), int((t + 1) * n_subaps / n_threads)]),))
+
+    thread_pool.run(bin_imgs_numba, args)
 
     return binned_imgs
 
