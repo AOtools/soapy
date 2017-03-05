@@ -78,11 +78,19 @@ class LineOfSight(object):
 
         self.propagationDirection = propagationDirection
 
-        # If GS not at infinity, find meta-pupil radii for each layer
-        if self.height!=0:
-            self.radii = self.findMetaPupilSizes(self.height)
-        else:
-            self.radii = None
+        # Calculate coords of phase at each altitude
+        self.layer_metapupil_coords = numpy.zeros((self.n_layers, 2, self.pupil_size))
+        for i in range(self.n_layers):
+            x1, x2, y1, y2 = self.calculate_altitude_coords(self.layer_altitudes[i])
+            self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2, self.pupil_size) + self.nx_scrn_size / 2.
+            self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2, self.pupil_size) + self.nx_scrn_size / 2.
+
+        # Calculate coords of phase at each DM altitude
+        self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.pupil_size))
+        for i in range(self.n_dm):
+            x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
+            self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2, self.pupil_size) + self.nx_scrn_size / 2.
+            self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2, self.pupil_size) + self.nx_scrn_size / 2.
 
         self.allocDataArrays()
 
@@ -122,9 +130,32 @@ class LineOfSight(object):
             self.config.GSPosition
             self.config.GSPosition = position
 
-
 ############################################################
 # Initialisation routines
+    def calculate_altitude_coords(self, layer_altitude):
+        """
+        Calculate the co-ordinates of vertices of fo the meta-pupil at altitude given a guide star
+        direction and source altitude
+
+        Paramters:
+            layer_altitude (float): Altitude of phase layer
+        """
+        direction_radians = ASEC2RAD * numpy.array(self.direction)
+
+        centre = (direction_radians * layer_altitude) / self.phase_pxl_scale
+
+        if self.src_altitude != 0:
+            meta_pupil_size = self.pupil_size * (1 - layer_altitude/self.src_altitude)
+        else:
+            meta_pupil_size = self.pupil_size
+
+        x1 = centre[0] - meta_pupil_size/2.
+        x2 = centre[0] + meta_pupil_size/2.
+        y1 = centre[1] - meta_pupil_size/2.
+        y2 = centre[1] + meta_pupil_size/2.
+
+        return x1, x2, y1, y2
+
     def calcInitParams(self, outPxlScale=None, nOutPxls=None):
         """
         Calculates some parameters required later
