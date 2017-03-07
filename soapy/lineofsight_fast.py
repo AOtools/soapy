@@ -29,7 +29,7 @@ from scipy.interpolate import interp2d
 
 from . import logger
 from .aotools import opticalpropagation, interp
-
+from . import numbalib
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -68,9 +68,19 @@ class LineOfSight(object):
         self.wavelength = self.config.wavelength
         self.telescope_diameter = self.soapy_config.tel.telDiam
 
+        self.src_altitude= self.height
+
+        self.nx_scrn_size = self.soapy_config.sim.scrnSize
+        self.n_layers = self.soapy_config.atmos.scrnNo
+        self.layer_altitudes = self.soapy_config.atmos.scrnHeights
+
+        self.n_dm = self.soapy_config.sim.nDM
+        self.dm_altitudes = numpy.array([self.soapy_config.dms[dm_n].altitude for dm_n in range(self.n_dm)])
+
+        self.threads = self.soapy_config.sim.threads
+
         self.simConfig = soapyConfig.sim
         self.atmosConfig = soapyConfig.atmos
-        self.soapyConfig = soapyConfig
 
         self.mask = mask
 
@@ -79,23 +89,30 @@ class LineOfSight(object):
         self.propagationDirection = propagationDirection
 
         # Calculate coords of phase at each altitude
-        self.layer_metapupil_coords = numpy.zeros((self.n_layers, 2, self.pupil_size))
+        self.layer_metapupil_coords = numpy.zeros((self.n_layers, 2, self.sim_size))
         for i in range(self.n_layers):
             x1, x2, y1, y2 = self.calculate_altitude_coords(self.layer_altitudes[i])
-            self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2, self.pupil_size) + self.nx_scrn_size / 2.
-            self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2, self.pupil_size) + self.nx_scrn_size / 2.
+            self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.sim_size) + self.nx_scrn_size / 2.
+            self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.sim_size) + self.nx_scrn_size / 2.
 
         # Calculate coords of phase at each DM altitude
-        self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.pupil_size))
+        self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.sim_size))
         for i in range(self.n_dm):
             x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
-            self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2, self.pupil_size) + self.nx_scrn_size / 2.
-            self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2, self.pupil_size) + self.nx_scrn_size / 2.
+            self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.sim_size) + self.nx_scrn_size / 2.
+            self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.sim_size) + self.nx_scrn_size / 2.
+
+        self.radii = None
+
+        self.phase_screens = numpy.zeros((self.n_layers, self.sim_size, self.sim_size))
 
         self.allocDataArrays()
 
         # Can be set to use other values as metapupil position
         self.metaPupilPos = metaPupilPos
+
+        self.thread_pool = numbalib.ThreadPool(self.threads)
+
 
     # Some attributes for compatability between WFS and others
     @property
@@ -140,14 +157,14 @@ class LineOfSight(object):
         Paramters:
             layer_altitude (float): Altitude of phase layer
         """
-        direction_radians = ASEC2RAD * numpy.array(self.direction)
+        direction_radians = ASEC2RAD * numpy.array(self.position)
 
-        centre = (direction_radians * layer_altitude) / self.phase_pxl_scale
+        centre = (direction_radians * layer_altitude) / self.phase_pixel_scale
 
         if self.src_altitude != 0:
-            meta_pupil_size = self.pupil_size * (1 - layer_altitude/self.src_altitude)
+            meta_pupil_size = self.sim_size * (1 - layer_altitude/self.src_altitude)
         else:
-            meta_pupil_size = self.pupil_size
+            meta_pupil_size = self.sim_size
 
         x1 = centre[0] - meta_pupil_size/2.
         x2 = centre[0] + meta_pupil_size/2.
@@ -369,23 +386,28 @@ class LineOfSight(object):
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
-        for i in range(len(self.scrns)):
-            logger.debug("Layer: {}".format(i))
-            if radii is None:
-                radius = None
-            else:
-                radius = radii[i]
+        numbalib.los.get_phase_slices(
+            self.scrns, self.layer_metapupil_coords, self.phase_screens, self.thread_pool)
 
-            if self.metaPupilPos is None:
-                pos = None
-            else:
-                pos = self.metaPupilPos[i]
+        self.phase = self.phase_screens.sum(0)
 
-            phase = self.getMetaPupilPhase(
-                    self.scrns[i], self.atmosConfig.scrnHeights[i],
-                    pos=pos, radius=radius)
-
-            self.phase += phase
+        # for i in range(len(self.scrns)):
+        #     logger.debug("Layer: {}".format(i))
+        #     if radii is None:
+        #         radius = None
+        #     else:
+        #         radius = radii[i]
+        #
+        #     if self.metaPupilPos is None:
+        #         pos = None
+        #     else:
+        #         pos = self.metaPupilPos[i]
+        #
+        #     phase = self.getMetaPupilPhase(
+        #             self.scrns[i], self.atmosConfig.scrnHeights[i],
+        #             pos=pos, radius=radius)
+        #
+        #     self.phase += phase
 
         # Convert phase to radians
         self.phase *= self.phs2Rad
@@ -540,13 +562,7 @@ class LineOfSight(object):
         self.zeroData()
 
         if scrns is not None:
-        
-            #If scrns is not dict or list, assume array and put in list
-            t = type(scrns)
-            if t != dict and t != list:
-                scrns = [scrns]
             self.scrns = scrns
-
             self.makePhase(self.radii)
         
         self.residual = self.phase        

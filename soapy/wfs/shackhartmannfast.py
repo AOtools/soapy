@@ -9,7 +9,7 @@ except ImportError:
     except ImportError:
         raise ImportError("Soapy requires either pyfits or astropy")
 
-from .. import AOFFT, LGS, logger
+from .. import AOFFT, LGS, logger, lineofsight_fast
 from . import base
 from .. import aotools
 from ..aotools import centroiders, wfs, interp
@@ -92,6 +92,15 @@ class ShackHartmannFast(base.WFS):
         self.n_measurements = 2 * self.n_subaps
 
         self.thread_pool = numbalib.ThreadPool(self.threads)
+
+    def initLos(self):
+        """
+        Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
+        """
+        self.los = lineofsight_fast.LineOfSight(
+                self.config, self.soapy_config,
+                propagationDirection="down")
+
 
     def findActiveSubaps(self):
         '''
@@ -262,7 +271,7 @@ class ShackHartmannFast(base.WFS):
         self.staticData = None
 
         # Make flat wavefront, and run through WFS in iMat mode to turn off features
-        phs = numpy.zeros([self.screen_size]*2).astype(DTYPE)
+        phs = numpy.zeros([self.los.n_layers, self.screen_size, self.screen_size]).astype(DTYPE)
         self.staticData = self.frame(
                 phs, iMatFrame=True).copy().reshape(2, self.n_subaps)
 #######################################################################
