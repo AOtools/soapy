@@ -1,2 +1,2 @@
 from .numbalib import *
-from . import wfs
+from . import wfs, los
