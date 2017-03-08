@@ -137,9 +137,11 @@ class atmos(object):
         self.scrnPos = {}
         self.wholeScrns = {}
 
-        scrns={}
 
         scrnSize = int(round(self.scrnSize))
+
+        self.scrns = numpy.zeros((self.scrnNo, self.scrnSize, self.scrnSize))
+
 
         # The whole screens will be kept at this value, and then scaled to the
         # correct r0 before being sent to the simulation
@@ -162,7 +164,7 @@ class atmos(object):
                             self.wholeScrnSize, 1./self.pxlScale,
                             self.config.L0[i], 0.01)
 
-                scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
+                self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
         # Otherwise, load some others from FITS file
         else:
@@ -173,7 +175,7 @@ class atmos(object):
                 scrnHDU = fitsHDU[0]
                 self.wholeScrns[i] = scrnHDU.data.astype("float32")
 
-                scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
+                self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
                 # Do the loaded scrns tell us how strong they are?
                 # Theyre r0 must be in pixels! label: "R0"
@@ -277,7 +279,7 @@ class atmos(object):
             return self.randomScrns(subHarmonics=self.config.subHarmonics)
 
         # Other wise proceed with translating large phase screens
-        scrns={}
+
 
         for i in self.wholeScrns:
 
@@ -331,7 +333,7 @@ class atmos(object):
                                             numpy.arange(self.wholeScrnSize),
                                             self.wholeScrns[i])
 
-            scrns[i] = self.interpScrns[i](self.xCoords[i], self.yCoords[i])
+            self.scrns[i] = self.interpScrns[i](self.xCoords[i], self.yCoords[i])
 
             # Move window coordinates.
             self.scrnPos[i] = self.scrnPos[i] + self.windV[i]
@@ -339,7 +341,7 @@ class atmos(object):
             self.yCoords[i] += self.windV[i][1].astype('float')
 
             # remove piston from phase screens
-            scrns[i] -= scrns[i].mean()
+            self.scrns[i] -= self.scrns[i].mean()
 
             # Calculate the required r0 of each screen from config
             self.config.normScrnStrengths = (
@@ -348,10 +350,10 @@ class atmos(object):
             self.scrnStrengths = ( ((self.r0**(-5./3.))
                         *self.config.normScrnStrengths)**(-3./5.))
             # Finally, scale for r0 and turn to nm
-            scrns[i] *= (self.scrnStrengths[i]/self.wholeScrnR0)**(-5./6.)
-            scrns[i] *= (500/(2*numpy.pi))
+            self.scrns[i] *= (self.scrnStrengths[i]/self.wholeScrnR0)**(-5./6.)
+            self.scrns[i] *= (500/(2*numpy.pi))
 
-        return scrns
+        return self.scrns
 
     def randomScrns(self, subHarmonics=True, l0=0.01):
         """
@@ -363,21 +365,20 @@ class atmos(object):
             dict : a dictionary containing the new set of phase screens
         """
 
-        scrns = {}
         for i in xrange(self.scrnNo):
             if subHarmonics:
-                scrns[i] = phasescreen.ft_sh_phase_screen(
+                self.scrns[i] = phasescreen.ft_sh_phase_screen(
                         self.scrnStrengths[i], self.scrnSize,
                         (self.pxlScale**(-1.)), self.config.L0[i], l0)
             else:
-                scrns[i] = phasescreen.ft_phase_screen(
+                self.scrns[i] = phasescreen.ft_phase_screen(
                         self.scrnStrengths[i], self.scrnSize,
                         (self.pxlScale**(-1.)), self.config.L0[i], l0)
 
             # Turn to nm
-            scrns[i] *= (500./(2*numpy.pi))
+            self.scrns[i] *= (500./(2*numpy.pi))
 
-        return scrns
+        return self.scrns
 
 
 def pool_ft_sh_phase_screen(args):

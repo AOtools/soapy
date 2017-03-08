@@ -131,7 +131,8 @@ class PSF(object):
 
         # Chop out the phase across the pupil before the fft
         coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
-        self.EField_fov = self.EField_fov[coord:-coord, coord:-coord]
+        if coord != 0:
+            self.EField_fov = self.EField_fov[coord:-coord, coord:-coord]
 
         # Get the focal plan using an FFT
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov

@@ -31,7 +31,7 @@ class TestLgs(unittest.TestCase):
         config.wfss[1].lgs.propagationMode = "Geometric"
         lgs = LGS.LGS_Geometric(config.wfss[1], config)
         psf = lgs.getLgsPsf(
-                [numpy.zeros((config.sim.simSize, config.sim.simSize))])
+                   numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
     def testd_initPhysLgs(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
@@ -49,7 +49,7 @@ class TestLgs(unittest.TestCase):
 
         lgs = LGS.LGS_Physical(config.wfss[1], config, nOutPxls=10)
         psf = lgs.getLgsPsf(
-                [numpy.zeros((config.sim.simSize, config.sim.simSize))])
+                numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
 if __name__=="__main__":
     unittest.main()
