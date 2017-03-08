@@ -23,6 +23,8 @@ import traceback
 import sys
 import time
 
+import aotools
+
 
 #Use pyfits or astropy for fits file handling
 try:
@@ -597,6 +599,29 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
 
         return dmCommands
 
+def covmat_from_soapy(soapy_config):
+    n_wfs = soapy_config.sim.nGS
+    telescope_diameter = soapy_config.tel.telDiam
+
+    n_layers = soapy_config.atmos.scrnNo
+    layer_altitudes = soapy_config.atmos.scrnHeights[:n_layers]
+
+    normed_scrn_strengths = soapy_config.atmos.scrnStrengths / (
+        soapy_config.atmos.scrnStrengths[:n_layers].sum())
+    layer_r0s = ((soapy_config.atmos.r0 ** (-5. / 3.)) * normed_scrn_strengths) ** (-3. / 5.)
+    layer_L0s = soapy_config.atmos.L0[:n_layers]
+
+    subap_diameters = [telescope_diameter / soapy_config.wfss[wfs_n].nxSubaps for wfs_n in
+                       range(soapy_config.sim.nGS)]
+
+    pupil_masks = [aotools.circle(nx_subaps / 2., nx_subaps)] * n_wfs
+    gs_altitudes = [soapy_config.wfss[wfs_n].GSHeight for wfs_n in range(soapy_config.sim.nGS)]
+
+    gs_positions = [soapy_config.wfss[wfs_n].GSPosition for wfs_n in range(soapy_config.sim.nGS)]
+    wfs_magnifications = [1., ] * n_wfs
+    pupil_offsets = [[0, 0]] * n_wfs
+    wfs_rotations = [0] * n_wfs
+    wfs_wavelengths = [550e-9 in range(n_wfs)]
 
 
 #####################################

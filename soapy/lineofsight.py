@@ -509,11 +509,14 @@ class LineOfSight(object):
         self.zeroData()
 
         if scrns is not None:
-        
+
             #If scrns is not dict or list, assume array and put in list
-            t = type(scrns)
-            if t != dict and t != list:
-                scrns = [scrns]
+            # t = type(scrns)
+            # if t != dict and t != list:
+            #     scrns = [scrns]
+
+            if scrns.ndim == 2:
+                scrns = scrns.reshape((1, scrns.shape[0], scrns.shape[1]))
             self.scrns = scrns
 
             self.makePhase(self.radii)

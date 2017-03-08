@@ -51,7 +51,7 @@ class TestWfs(unittest.TestCase):
 
         wfs = WFS.WFS(config, mask=mask)
 
-        wfs.frame([numpy.zeros((config.sim.scrnSize,)*2)]*config.atmos.scrnNo)
+        wfs.frame(numpy.zeros((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
     def testc_initGradWfs(self):
 

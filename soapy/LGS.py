@@ -98,7 +98,7 @@ class LGS(object):
         for i in xrange(self.atmosConfig.scrnNo):
             self.los.metaPupilPos[i] = lgsOALaunchMetaPupilPos(
                     self.config.position,
-                    numpy.array(self.config.launchPosition)*self.los.telDiam/2.,
+                    numpy.array(self.config.launchPosition)*self.los.telescope_diameter/2.,
                     self.config.height, self.atmosConfig.scrnHeights[i]
                     )
         # Check position not too far from centre. May need more phase!

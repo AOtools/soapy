@@ -39,7 +39,7 @@ class ShackHartmann(base.WFS):
         self.wavelength = self.wfsConfig.wavelength
 
         self.subapFOVrad = self.config.subapFOV * numpy.pi / (180. * 3600)
-        self.subapDiam = self.los.telDiam/self.config.nxSubaps
+        self.subapDiam = self.los.telescope_diameter/self.config.nxSubaps
 
         # spacing between subaps in pupil Plane (size "pupilSize")
         self.PPSpacing = float(self.pupil_size)/self.config.nxSubaps
