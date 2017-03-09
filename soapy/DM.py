@@ -72,14 +72,23 @@ class DM(object):
     def __init__ (self, soapy_config, n_dm=0, wfss=None, mask=None):
         
         self.soapy_config = soapy_config
+
         self.simConfig = self.soapy_config.sim
-        self.dmConfig = self.soapy_config.dms[n_dm]
+        self.config = self.dmConfig = self.soapy_config.dms[n_dm]
 
         self.pupil_size = self.soapy_config.sim.pupilSize
         self.sim_size = self.soapy_config.sim.simSize
+        self.scrn_size = self.soapy_config.sim.scrnSize
+        self.altitude = self.config.altitude
+        self.diameter = self.conifg.diameter
+        self.telescope_diameter = self.soapy_config.tel.telDiam
 
         self.wfss = wfss
-        self.scrn_size = self.soapy_config.sim.scrnSize
+
+
+
+        # the number of phase elements at the DM altitude
+        self.nx_dm_elements = int(round(self.pupil_size * self.diameter / self.telescope_diameter))
 
         # If supplied use the mask
         if numpy.any(mask):
@@ -125,7 +134,7 @@ class DM(object):
                               rotShape[2] / 2. + self.sim_size / 2.
                               ]
 
-        self.dm_frame = numpy.zeros((self.scrn_size, self.scrn_size))
+        self.dm_frame = numpy.zeros((self.nx_dm_elements, self.nx_dm_elements))
 
     def getActiveActs(self):
         """
@@ -195,10 +204,9 @@ class Zernike(DM):
         interaction Matrix. In this case, this is a number of Zernike Polynomials
         '''
 
-        # nx_dm_elements =
 
         shapes = circle.zernikeArray(
-                int(self.n_acts + 1), int(self.pupil_size))[1:]
+                int(self.n_acts + 1), int(self.nx_dm_elements))[1:]
 
 
         pad = self.simConfig.simPad
