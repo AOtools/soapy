@@ -954,15 +954,11 @@ class Sim(object):
                         lgsPsf[i] = None
                         pass
 
-                try:
-                    ttShape = self.TT.dmShape
-                except AttributeError:
-                    ttShape = None
 
                 dmShape = {}
                 for i in xrange(self.config.sim.nDM):
                     try:
-                        dmShape[i] = self.dms[i].dmShape.copy()#*self.mask
+                        dmShape[i] = self.dms[i].dm_shape.copy()#*self.mask
                     except AttributeError:
                         dmShape[i] = None
 
@@ -987,7 +983,6 @@ class Sim(object):
                 guiPut = {  "wfsFocalPlane":wfsFocalPlane,
                             "wfsPhase":     wfsPhase,
                             "lgsPsf":       lgsPsf,
-                            "ttShape":      ttShape,
                             "dmShape":      dmShape,
                             "sciImg":       sciImg,
                             "instSciImg":   instSciImg,

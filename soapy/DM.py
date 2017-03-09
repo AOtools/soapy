@@ -69,14 +69,17 @@ class DM(object):
         mask (ndarray, optional): An array or size (simConfig.simSize, simConfig.simSize) which is 1 at the telescope aperture and 0 else-where. If None then a circle is generated.
     """
 
-    def __init__ (self, soapyConfig, n_dm=0, wfss=None, mask=None):
+    def __init__ (self, soapy_config, n_dm=0, wfss=None, mask=None):
         
-        self.soapyConfig = soapyConfig
-        self.simConfig = soapyConfig.sim
-        self.dmConfig = soapyConfig.dms[n_dm]
+        self.soapy_config = soapy_config
+        self.simConfig = self.soapy_config.sim
+        self.dmConfig = self.soapy_config.dms[n_dm]
+
+        self.pupil_size = self.soapy_config.sim.pupilSize
+        self.sim_size = self.soapy_config.sim.simSize
+
         self.wfss = wfss
-        self.wvl = wfss[0].wavelength
-        self.n_dm = n_dm
+        self.scrn_size = self.soapy_config.sim.scrnSize
 
         # If supplied use the mask
         if numpy.any(mask):
@@ -84,11 +87,11 @@ class DM(object):
         # Else we'll just make a circle
         else:
             self.mask = circle.circle(
-                    self.simConfig.pupilSize/2., self.simConfig.simSize,
+                    self.pupil_size/2., self.sim_size,
                     )
 
         self.n_acts = self.getActiveActs()
-        self.actCoeffs = numpy.zeros( (self.n_acts) )
+        self.actCoeffs = numpy.zeros((self.n_acts))
 
         # Sort out which WFS(s) observes the DM (for iMat making)
         if self.dmConfig.wfs!=None:
@@ -116,11 +119,13 @@ class DM(object):
             )
             rotShape = self.iMatShapes.shape
             self.iMatShapes = self.iMatShapes[:,
-                              rotShape[1] / 2. - self.simConfig.simSize / 2.:
-                              rotShape[1] / 2. + self.simConfig.simSize / 2.,
-                              rotShape[2] / 2. - self.simConfig.simSize / 2.:
-                              rotShape[2] / 2. + self.simConfig.simSize / 2.
+                              rotShape[1] / 2. - self.sim_size / 2.:
+                              rotShape[1] / 2. + self.sim_size / 2.,
+                              rotShape[2] / 2. - self.sim_size / 2.:
+                              rotShape[2] / 2. + self.sim_size / 2.
                               ]
+
+        self.dm_frame = numpy.zeros((self.scrn_size, self.scrn_size))
 
     def getActiveActs(self):
         """
@@ -147,28 +152,30 @@ class DM(object):
             ndarray: A 2-d array with the DM shape
         '''
 
-        self.dmShape = self.makeDMFrame(dmCommands)
+        self.dm_shape = self.makeDMFrame(dmCommands)
         # Remove any piston term from DM
-        self.dmShape -= self.dmShape.mean()
+        self.dm_shape -= self.dm_shape.mean()
 
-        return self.dmShape
+        # Pads to th
+
+        return self.dm_shape
 
     def makeDMFrame(self, actCoeffs):
-        dmShape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
+        dm_shape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
         
         # If DM not telescope diameter, must adjust pixel scale
-        if self.dmConfig.diameter != self.soapyConfig.tel.telDiam:
-            scaledDMSize = (dmShape.shape[0] 
-                    * float(self.dmConfig.diameter)/self.soapyConfig.tel.telDiam)
-            dmShape = interp.zoom(dmShape, scaledDMSize, order=1)
+        # if self.dmConfig.diameter != self.soapyConfig.tel.telDiam:
+        #     scaledDMSize = (dmShape.shape[0]
+        #             * float(self.dmConfig.diameter)/self.soapyConfig.tel.telDiam)
+        #     dm_shape = interp.zoom(dmShape, scaledDMSize, order=1)
             
         # Turn into phase pbject with altitude
-        dmShape = Phase(dmShape, altitude=self.dmConfig.altitude)
+        # dmShape = Phase(dmShape, altitude=self.dmConfig.altitude)
             
-        return dmShape
+        return dm_shape
 
     def reset(self):
-        self.dmShape[:] = 0
+        self.dm_shape[:] = 0
         self.actCoeffs[:] = 0
 
     def makeIMatShapes(self):
@@ -188,8 +195,10 @@ class Zernike(DM):
         interaction Matrix. In this case, this is a number of Zernike Polynomials
         '''
 
+        # nx_dm_elements =
+
         shapes = circle.zernikeArray(
-                int(self.n_acts + 1), int(self.simConfig.pupilSize))[1:]
+                int(self.n_acts + 1), int(self.pupil_size))[1:]
 
 
         pad = self.simConfig.simPad
@@ -219,7 +228,7 @@ class Piezo(DM):
         """
         activeActs = []
         xActs = self.dmConfig.nxActuators
-        self.spcing = self.simConfig.pupilSize/float(xActs)
+        self.spcing = self.pupil_size/float(xActs)
 
         for x in xrange(xActs):
             for y in xrange(xActs):
@@ -248,7 +257,7 @@ class Piezo(DM):
 
         #Create a "dmSize" - the pupilSize but with 1 extra actuator on each
         #side
-        dmSize =  int(self.simConfig.pupilSize + 2 * numpy.round(self.spcing))
+        dmSize =  int(self.pupil_size + 2 * numpy.round(self.spcing))
 
         shapes = numpy.zeros((int(self.n_acts), dmSize, dmSize), dtype="float32")
 
@@ -269,12 +278,12 @@ class Piezo(DM):
             shapes[i] -= shapes[i].mean()
 
 
-        if dmSize>self.simConfig.simSize:
-            coord = int(round(dmSize/2. - self.simConfig.simSize/2.))
+        if dmSize>self.sim_size:
+            coord = int(round(dmSize/2. - self.sim_size/2.))
             self.iMatShapes = shapes[:,coord:-coord, coord:-coord].astype("float32")
 
         else:
-            pad = int(round((self.simConfig.simSize - dmSize)/2))
+            pad = int(round((self.sim_size - dmSize)/2))
             self.iMatShapes = numpy.pad(
                     shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
                     ).astype("float32")
@@ -297,15 +306,15 @@ class GaussStack(Piezo):
         guassian is determined from the configuration file.
         """
         shapes = numpy.zeros((
-                self.n_acts, self.simConfig.pupilSize, self.simConfig.pupilSize))
+                self.n_acts, self.pupil_size, self.pupil_size))
 
-        actSpacing = self.simConfig.pupilSize/(self.dmConfig.nxActuators-1)
+        actSpacing = self.pupil_size/(self.dmConfig.nxActuators-1)
         width = actSpacing/2.
 
         for i in xrange(self.n_acts):
             x,y = self.activeActs[i]*actSpacing
             shapes[i] = circle.gaussian2d(
-                    self.simConfig.pupilSize, width, cent = (x,y))
+                    self.pupil_size, width, cent = (x,y))
 
         self.iMatShapes = shapes
 
@@ -336,10 +345,10 @@ class TT(DM):
         """
         # Make the TT across the entire sim shape, but want it 1 to -1 across
         # pupil
-        padMax = float(self.simConfig.simSize)/self.simConfig.pupilSize
+        padMax = float(self.sim_size)/self.pupil_size
 
         coords = numpy.linspace(
-                    -padMax, padMax, self.simConfig.simSize)
+                    -padMax, padMax, self.sim_size)
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
 
 
@@ -354,7 +363,7 @@ class FastPiezo(Piezo):
                 (self.dmConfig.nxActuators, self.dmConfig.nxActuators))
 
         # DM size is the pupil size, but withe one extra act on each side
-        self.dmSize =  self.simConfig.pupilSize + 2 * numpy.round(self.spcing)
+        self.dmSize =  self.pupil_size + 2 * numpy.round(self.spcing)
 
         return acts
 
@@ -375,17 +384,17 @@ class FastPiezo(Piezo):
 
         # Now check if "dmSize" bigger or smaller than "simSize".
         # Crop or pad as appropriate
-        if self.dmSize>self.simConfig.simSize:
-            coord = int(round(self.dmSize/2. - self.simConfig.simSize/2.))
-            self.dmShape = dmShape[coord:-coord, coord:-coord].astype("float32")
+        if self.dmSize>self.sim_size:
+            coord = int(round(self.dmSize/2. - self.sim_size/2.))
+            dmShape = dmShape[coord:-coord, coord:-coord].astype("float32")
 
         else:
-            pad = int(round((self.simConfig.simSize - self.dmSize)/2))
-            self.dmShape = numpy.pad(
+            pad = int(round((self.sim_size - self.dmSize)/2))
+            dmShape = numpy.pad(
                     dmShape, ((pad,pad), (pad,pad)), mode="constant"
                     ).astype("float32")
 
-        return self.dmShape
+        return dmShape
 
 class Phase(numpy.ndarray):
     def __new__(cls, input_array, altitude=0):
