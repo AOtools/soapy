@@ -332,10 +332,6 @@ class GUI(QtWidgets.QMainWindow):
                     self.lgsPlots[wfs].setImage(
                         plotDict["lgsPsf"][wfs], lut=self.LUT)
 
-
-            if numpy.any(plotDict["ttShape"])!=None:
-                self.ttPlot.setImage(plotDict["ttShape"], lut=self.LUT)
-
             for dm in range(self.config.sim.nDM):
                 if numpy.any(plotDict["dmShape"][dm]) !=None:
                     dmShape = plotDict["dmShape"][dm]
