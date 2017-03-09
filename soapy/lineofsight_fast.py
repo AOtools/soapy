@@ -518,30 +518,35 @@ class LineOfSight(object):
             correction (list or ndarray): either 2-d array describing correction, or list of correction arrays
         """
         # If just an arary, put in list
-        if isinstance(correction, numpy.ndarray):
-            correction = [correction]
+        # if isinstance(correction, numpy.ndarray):
+        #     correction = [correction]
+        #
+        # for corr in correction:
+        #     # If correction is a standard ndarray, assume at ground
+        #     if hasattr(corr, "altitude"):
+        #         altitude = corr.altitude
+        #     else:
+        #         altitude = 0
+        #
+        #     # Cut out the bit of the correction we need
+        #     metaPupilRadius = self.calcMetaPupilSize(
+        #         altitude, self.height) / self.phase_pixel_scale
+        #     corr = self.getMetaPupilPhase(corr, altitude, radius=metaPupilRadius)
 
-        for corr in correction:
-            # If correction is a standard ndarray, assume at ground
-            if hasattr(corr, "altitude"):
-                altitude = corr.altitude
-            else:
-                altitude = 0
+        numbalib.los.get_phase_slices(
+            correction, self.layer_metapupil_coords, self.correction_screens, self.thread_pool)
 
-            # Cut out the bit of the correction we need
-            metaPupilRadius = self.calcMetaPupilSize(
-                altitude, self.height) / self.phase_pixel_scale
-            corr = self.getMetaPupilPhase(corr, altitude, radius=metaPupilRadius)
+        self.phase_correction = self.correction_screens.sum(0)
 
-            # Correct EField
-            self.EField *= numpy.exp(-1j * corr * self.phs2Rad)
+        # Correct EField
+        self.EField *= numpy.exp(-1j * self.phase_correction * self.phs2Rad)
 
-            # self.phase -= corr * self.phs2Rad
+        # self.phase -= corr * self.phs2Rad
 
-            # Also correct phase in case its required
-            self.residual = self.phase / self.phs2Rad - corr
+        # Also correct phase in case its required
+        self.residual = self.phase / self.phs2Rad - self.phase_correction
 
-            self.phase = self.residual * self.phs2Rad
+        self.phase = self.residual * self.phs2Rad
 
     def frame(self, scrns=None, correction=None):
         '''
