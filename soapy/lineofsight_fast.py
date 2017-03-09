@@ -105,6 +105,7 @@ class LineOfSight(object):
         self.radii = None
 
         self.phase_screens = numpy.zeros((self.n_layers, self.sim_size, self.sim_size))
+        self.correction_screens = numpy.zeros((self.n_dm, self.sim_size, self.sim_size))
 
         self.allocDataArrays()
 
@@ -519,27 +520,27 @@ class LineOfSight(object):
         # If just an arary, put in list
         if isinstance(correction, numpy.ndarray):
             correction = [correction]
-        
+
         for corr in correction:
             # If correction is a standard ndarray, assume at ground
             if hasattr(corr, "altitude"):
                 altitude = corr.altitude
             else:
                 altitude = 0
-                   
+
             # Cut out the bit of the correction we need
             metaPupilRadius = self.calcMetaPupilSize(
-                        altitude, self.height) / self.phase_pixel_scale
+                altitude, self.height) / self.phase_pixel_scale
             corr = self.getMetaPupilPhase(corr, altitude, radius=metaPupilRadius)
-            
+
             # Correct EField
             self.EField *= numpy.exp(-1j * corr * self.phs2Rad)
-            
+
             # self.phase -= corr * self.phs2Rad
-            
+
             # Also correct phase in case its required
-            self.residual = self.phase/self.phs2Rad - corr
-           
+            self.residual = self.phase / self.phs2Rad - corr
+
             self.phase = self.residual * self.phs2Rad
 
     def frame(self, scrns=None, correction=None):
