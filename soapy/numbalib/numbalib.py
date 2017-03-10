@@ -214,31 +214,41 @@ class ThreadPool(object):
 
         self.input_queues = []
         self.output_queues = []
+        self.exception_queues = []
         self.threads = []
         for i in range(n_threads):
             input_queue = queue.Queue()
             output_queue = queue.Queue()
-            thread = Thread(target=self._thread_func, args=(input_queue, output_queue))
+            exception_queue = queue.Queue()
+            thread = Thread(
+                    target=self._thread_func,
+                    args=(input_queue, output_queue, exception_queue),
+                    daemon=True)
 
             self.input_queues.append(input_queue)
             self.output_queues.append(output_queue)
+            self.exception_queues.append(exception_queue)
             self.threads.append(thread)
 
             thread.start()
 
-        def cleanup():
-            self.stop()
-        atexit.register(cleanup)
+        # def cleanup():
+        #     self.stop()
+        # atexit.register(cleanup)
 
 
-    def _thread_func(self, input_queue, output_queue):
+    def _thread_func(self, input_queue, output_queue, exception_queue):
 
         while self._running:
             input_args = input_queue.get()
-            result = self._func(*input_args)
+            try:
+                result = self._func(*input_args)
+                output_queue.put(result)
+                exception_queue.put(None)
 
-            output_queue.put(result)
-
+            except Exception as exc:
+                output_queue.put(None)
+                exception_queue.put(exc)
 
     def run(self, func, args):
 
@@ -247,8 +257,11 @@ class ThreadPool(object):
         for i, q in enumerate(self.input_queues):
             q.put(args[i])
 
-        for q in self.output_queues:
+        for i, q in enumerate(self.output_queues):
             results.append(q.get())
+            exc = self.exception_queues[i].get()
+            if exc is not None:
+                raise exc
 
         return results
 
@@ -256,14 +269,18 @@ class ThreadPool(object):
         pass
 
     def stop(self):
+        print("Stopping threads...")
         self._running = False
         self.run(self._stop_func, [(None, )]*self.n_threads)
 
         for t in self.threads:
             t.join()
+        print("Stopped!")
+
 
     def __del__(self):
-        self.stop()
+        if self._running:
+            self.stop()
 
 
 
