@@ -187,7 +187,7 @@ class WFS(object):
 
 
     def calcInitParams(self, phaseSize=None):
-        self.los.calcInitParams(nOutPxls=phaseSize)
+        self.los.calcInitParams(nx_out_pixels=phaseSize)
 
     def initFFTs(self):
         pass

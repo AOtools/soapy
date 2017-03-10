@@ -58,7 +58,7 @@ class LineOfSight(object):
     def __init__(
             self, config, soapyConfig,
             propagationDirection="down", outPxlScale=None,
-            nOutPxls=None, mask=None, metaPupilPos=None):
+            nx_out_pixels=None, mask=None, metaPupilPos=None):
 
         self.config = config
         self.soapy_config = soapyConfig
@@ -84,28 +84,11 @@ class LineOfSight(object):
 
         self.mask = mask
 
-        self.calcInitParams(outPxlScale, nOutPxls)
+        self.calcInitParams(outPxlScale, nx_out_pixels)
 
         self.propagationDirection = propagationDirection
 
-        # Calculate coords of phase at each altitude
-        self.layer_metapupil_coords = numpy.zeros((self.n_layers, 2, self.sim_size))
-        for i in range(self.n_layers):
-            x1, x2, y1, y2 = self.calculate_altitude_coords(self.layer_altitudes[i])
-            self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.sim_size) + self.nx_scrn_size / 2.
-            self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.sim_size) + self.nx_scrn_size / 2.
 
-        # Calculate coords of phase at each DM altitude
-        self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.sim_size))
-        for i in range(self.n_dm):
-            x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
-            self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.sim_size) + self.nx_scrn_size / 2.
-            self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.sim_size) + self.nx_scrn_size / 2.
-
-        self.radii = None
-
-        self.phase_screens = numpy.zeros((self.n_layers, self.sim_size, self.sim_size))
-        self.correction_screens = numpy.zeros((self.n_dm, self.sim_size, self.sim_size))
 
         self.allocDataArrays()
 
@@ -150,6 +133,60 @@ class LineOfSight(object):
 
 ############################################################
 # Initialisation routines
+
+
+    def calcInitParams(self, out_pixel_scale=None, nx_out_pixels=None):
+        """
+        Calculates some parameters required later
+
+        Parameters:
+            outPxlScale (float): Pixel scale of required phase/EField (metres/pxl)
+            nOutPxls (int): Size of output array in pixels
+        """
+        print("Calculate LOS Init PArams!")
+        # Convert phase deviation to radians at wfs wavelength.
+        # (currently in nm remember...?)
+        self.phs2Rad = 2*numpy.pi/(self.wavelength * 10**9)
+
+        # Get the size of the phase required by the system
+        self.inPxlScale = self.phase_pixel_scale
+
+        if out_pixel_scale is None:
+            self.out_pixel_scale = self.phase_pixel_scale
+        else:
+            self.out_pixel_scale = out_pixel_scale
+
+        if nx_out_pixels is None:
+            self.nx_out_pixels = self.simConfig.simSize
+        else:
+            self.nx_out_pixels = nx_out_pixels
+
+        if self.mask is not None:
+            self.outMask = interp.zoom(
+                    self.mask, self.nx_out_pixels).round()
+
+        self.output_phase_diameter = self.nx_out_pixels * self.out_pixel_scale
+
+        # Calculate coords of phase at each altitude
+        self.layer_metapupil_coords = numpy.zeros((self.n_layers, 2, self.nx_out_pixels))
+        for i in range(self.n_layers):
+            x1, x2, y1, y2 = self.calculate_altitude_coords(self.layer_altitudes[i])
+            self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
+            self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
+
+        # Calculate coords of phase at each DM altitude
+        self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.nx_out_pixels))
+        for i in range(self.n_dm):
+            x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
+            self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
+            self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
+
+        self.radii = None
+
+        self.phase_screens = numpy.zeros((self.n_layers, self.nx_out_pixels, self.nx_out_pixels))
+        self.correction_screens = numpy.zeros((self.n_dm, self.nx_out_pixels, self.nx_out_pixels))
+        print("Done")
+
     def calculate_altitude_coords(self, layer_altitude):
         """
         Calculate the co-ordinates of vertices of fo the meta-pupil at altitude given a guide star
@@ -160,49 +197,19 @@ class LineOfSight(object):
         """
         direction_radians = ASEC2RAD * numpy.array(self.position)
 
-        centre = (direction_radians * layer_altitude) / self.phase_pixel_scale
+        centre = (direction_radians * layer_altitude)
 
         if self.src_altitude != 0:
-            meta_pupil_size = self.sim_size * (1 - layer_altitude/self.src_altitude)
+            meta_pupil_size = self.output_phase_diameter * (1 - layer_altitude / self.src_altitude)
         else:
-            meta_pupil_size = self.sim_size
+            meta_pupil_size = self.output_phase_diameter
 
-        x1 = centre[0] - meta_pupil_size/2.
-        x2 = centre[0] + meta_pupil_size/2.
-        y1 = centre[1] - meta_pupil_size/2.
-        y2 = centre[1] + meta_pupil_size/2.
+        x1 = (centre[0] - meta_pupil_size / 2.) / self.out_pixel_scale
+        x2 = (centre[0] + meta_pupil_size / 2.) / self.out_pixel_scale
+        y1 = (centre[1] - meta_pupil_size / 2.) / self.out_pixel_scale
+        y2 = (centre[1] + meta_pupil_size / 2.) / self.out_pixel_scale
 
         return x1, x2, y1, y2
-
-    def calcInitParams(self, outPxlScale=None, nOutPxls=None):
-        """
-        Calculates some parameters required later
-
-        Parameters:
-            outPxlScale (float): Pixel scale of required phase/EField (metres/pxl)
-            nOutPxls (int): Size of output array in pixels
-        """
-        # Convert phase deviation to radians at wfs wavelength.
-        # (currently in nm remember...?)
-        self.phs2Rad = 2*numpy.pi/(self.wavelength * 10**9)
-
-        # Get the size of the phase required by the system
-        self.inPxlScale = self.phase_pixel_scale
-
-        if outPxlScale is None:
-            self.outPxlScale = self.phase_pixel_scale
-        else:
-            self.outPxlScale = outPxlScale
-
-        if nOutPxls is None:
-            self.nOutPxls = self.simConfig.simSize
-        else:
-            self.nOutPxls = nOutPxls
-
-        if self.mask is not None:
-            self.outMask = interp.zoom(
-                    self.mask, self.nOutPxls).round()
-
 
     def allocDataArrays(self):
         """
@@ -213,8 +220,8 @@ class LineOfSight(object):
         keep it fast. This includes arrays for phase
         and the E-Field across the LOS
         """
-        self.phase = numpy.zeros([self.nOutPxls]*2, dtype=DTYPE)
-        self.EField = numpy.zeros([self.nOutPxls]*2, dtype=CDTYPE)
+        self.phase = numpy.zeros([self.nx_out_pixels] * 2, dtype=DTYPE)
+        self.EField = numpy.zeros([self.nx_out_pixels] * 2, dtype=CDTYPE)
 
 
     def findMetaPupilSizes(self, GSHeight):
@@ -318,7 +325,7 @@ class LineOfSight(object):
             GSCent = self.getMetaPupilPos(height) / self.phase_pixel_scale
 
         # Find the size in metres of phase that is required
-        self.phaseRadius = (self.outPxlScale * self.nOutPxls)/2.
+        self.phaseRadius = (self.out_pixel_scale * self.nx_out_pixels) / 2.
         # And a corresponding coordinate on the phase screen
         self.phaseCoord = int(round(self.phaseRadius / self.phase_pixel_scale))
 
@@ -345,8 +352,8 @@ class LineOfSight(object):
                     GSCent, scrn.shape, simSize, height, x1, x2, y1, y2, self.phaseCoord, fact))
             raise ValueError("Requested phase exceeds phase screen size. See log warnings.")
 
-        xCoords = numpy.linspace(x1, x2-1, self.nOutPxls)
-        yCoords = numpy.linspace(y1, y2-1, self.nOutPxls)
+        xCoords = numpy.linspace(x1, x2 - 1, self.nx_out_pixels)
+        yCoords = numpy.linspace(y1, y2 - 1, self.nx_out_pixels)
         scrnCoords = numpy.arange(scrnX)
         interpObj = interp2d(
                 scrnCoords, scrnCoords, scrn, copy=False)
@@ -372,11 +379,17 @@ class LineOfSight(object):
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         """
+
+        numbalib.los.get_phase_slices(
+            self.scrns, self.layer_metapupil_coords, self.phase_screens, self.thread_pool)
+
         # Check if geometric or physical
         if self.config.propagationMode == "Physical":
             return self.makePhasePhys(radii)
         else:
             return self.makePhaseGeometric(radii)
+
+
 
     def makePhaseGeometric(self, radii=None, apos=None):
         '''
@@ -387,8 +400,6 @@ class LineOfSight(object):
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
-        numbalib.los.get_phase_slices(
-            self.scrns, self.layer_metapupil_coords, self.phase_screens, self.thread_pool)
 
         self.phase = self.phase_screens.sum(0)
 
@@ -451,7 +462,7 @@ class LineOfSight(object):
             scrnRange = scrnRange[::-1]
             scrnAlts = self.atmosConfig.scrnHeights[::-1]
             self.EFieldBuf = numpy.exp(
-                    1j*numpy.zeros((self.nOutPxls,)*2)).astype(CDTYPE)
+                    1j*numpy.zeros((self.nx_out_pixels,) * 2)).astype(CDTYPE)
             logger.debug("Create EField Buf of zero phase")
 
         # Propagate to first phase screen (if not already there)
@@ -460,7 +471,7 @@ class LineOfSight(object):
             z = abs(scrnAlts[0] - ht)
             self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
                         self.EFieldBuf, self.wavelength,
-                        self.outPxlScale, self.outPxlScale, z)
+                        self.out_pixel_scale, self.out_pixel_scale, z)
 
         # Go through and propagate between phase screens
         for i in scrnRange:
@@ -474,11 +485,13 @@ class LineOfSight(object):
                 pos = None
             else:
                 pos = self.metaPupilPos[i]
-
+            # print("Propagate screen {}".format(i))
             # Get phase for this layer
-            phase = self.getMetaPupilPhase(
-                    self.scrns[i],
-                    self.atmosConfig.scrnHeights[i], radius=radius, pos=pos)
+            # phase = self.getMetaPupilPhase(
+            #         self.scrns[i],
+            #         self.atmosConfig.scrnHeights[i], radius=radius, pos=pos)
+            phase = self.phase_screens[i]
+            # print("Got phase")
 
             # Convert phase to radians
             phase *= self.phs2Rad
@@ -486,7 +499,7 @@ class LineOfSight(object):
             # Change sign if propagating up
             if self.propagationDirection == 'up':
                 self.phase *= -1
-
+            # print("Get distance")
             # Get propagation distance for this layer
             if i==(scrnNo-1):
                 z = abs(ht_final - ht) - z_total
@@ -496,15 +509,16 @@ class LineOfSight(object):
             # Update total distance counter
             z_total += z
 
+            # print("Make EField")
             # Apply phase to EField
             self.EFieldBuf *= numpy.exp(1j*phase)
 
             # Do ASP for last layer to next
             self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
                         self.EFieldBuf, self.wavelength,
-                        self.outPxlScale, self.outPxlScale, z)
+                        self.out_pixel_scale, self.out_pixel_scale, z)
 
-            logger.debug("Propagation: {}, {} m. Total: {}".format(i, z, z_total))
+            # logger.debug("Propagation: {}, {} m. Total: {}".format(i, z, z_total))
 
             self.EField[:] = self.EFieldBuf
 

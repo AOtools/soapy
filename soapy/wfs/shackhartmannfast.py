@@ -83,7 +83,7 @@ class ShackHartmannFast(base.WFS):
             # This the pixel scale required for the correct FOV
             outPxlScale = (float(self.sim_size) / float(self.nx_interp_efield)) * self.phase_scale
             self.los.calcInitParams(
-                    outPxlScale=outPxlScale, nOutPxls=self.nx_interp_efield)
+                    out_pixel_scale=outPxlScale, nx_out_pixels=self.nx_interp_efield)
 
         # Calculate the subaps that are actually seen behind the pupil mask
         self.findActiveSubaps()

@@ -72,6 +72,7 @@ class DM(object):
     def __init__ (self, soapy_config, n_dm=0, wfss=None, mask=None):
         
         self.soapy_config = soapy_config
+        self.n_dm = n_dm
 
         self.simConfig = self.soapy_config.sim
         self.config = self.dmConfig = self.soapy_config.dms[n_dm]
@@ -80,15 +81,10 @@ class DM(object):
         self.sim_size = self.soapy_config.sim.simSize
         self.scrn_size = self.soapy_config.sim.scrnSize
         self.altitude = self.config.altitude
-        self.diameter = self.conifg.diameter
+        self.diameter = self.config.diameter
         self.telescope_diameter = self.soapy_config.tel.telDiam
 
         self.wfss = wfss
-
-
-
-        # the number of phase elements at the DM altitude
-        self.nx_dm_elements = int(round(self.pupil_size * self.diameter / self.telescope_diameter))
 
         # If supplied use the mask
         if numpy.any(mask):
@@ -98,6 +94,16 @@ class DM(object):
             self.mask = circle.circle(
                     self.pupil_size/2., self.sim_size,
                     )
+
+        # the number of phase elements at the DM altitude
+        self.nx_dm_elements = int(round(self.pupil_size * self.diameter / self.telescope_diameter))
+        self.dm_frame = numpy.zeros((self.nx_dm_elements, self.nx_dm_elements))
+        # An array of phase screen size to be observed by a line of sight
+
+
+        self.dm_screen = numpy.zeros((self.scrn_size, self.scrn_size))
+        # Coordinate required to fit dm size back into screen
+        self.screen_coord = int(round((self.scrn_size - self.nx_dm_elements)/2.))
 
         self.n_acts = self.getActiveActs()
         self.actCoeffs = numpy.zeros((self.n_acts))
@@ -134,7 +140,7 @@ class DM(object):
                               rotShape[2] / 2. + self.sim_size / 2.
                               ]
 
-        self.dm_frame = numpy.zeros((self.nx_dm_elements, self.nx_dm_elements))
+
 
     def getActiveActs(self):
         """
@@ -165,9 +171,26 @@ class DM(object):
         # Remove any piston term from DM
         self.dm_shape -= self.dm_shape.mean()
 
-        # Pads to th
+        # Fit into a phase screen size
+        # self.dm_screen[
+        #         self.screen_coord: -self.screen_coord, self.screen_coord: -self.screen_coord
+        #         ] = self.dm_shape
+        # Crop or pad as appropriate
+        dm_size = self.dm_shape.shape[0]
 
-        return self.dm_shape
+        if dm_size == self.scrn_size:
+            self.dm_screen = self.dm_shape
+
+        else:
+            if dm_size>self.scrn_size:
+                coord = int(round(dm_size/2. - self.scrn_size/2.))
+                self.dm_screen[:] = self.dm_shape[coord: -coord, coord: -coord]
+
+            else:
+                pad = int(round((self.scrn_size - dm_size)/2))
+                self.dm_screen[pad:-pad, pad:-pad] = self.dm_shape
+
+        return self.dm_screen
 
     def makeDMFrame(self, actCoeffs):
         dm_shape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
@@ -236,16 +259,18 @@ class Piezo(DM):
         """
         activeActs = []
         xActs = self.dmConfig.nxActuators
-        self.spcing = self.pupil_size/float(xActs)
+        self.spcing = self.nx_dm_elements/float(xActs)
+
+
 
         for x in xrange(xActs):
             for y in xrange(xActs):
-                x1 = int(x*self.spcing+self.simConfig.simPad)
-                x2 = int((x+1)*self.spcing+self.simConfig.simPad)
-                y1 = int(y*self.spcing+self.simConfig.simPad)
-                y2 = int((y+1)*self.spcing+self.simConfig.simPad)
-                if self.mask[x1: x2, y1: y2].sum() > 0:
-                    activeActs.append([x,y])
+                # x1 = int(x*self.spcing+self.simConfig.simPad)
+                # x2 = int((x+1)*self.spcing+self.simConfig.simPad)
+                # y1 = int(y*self.spcing+self.simConfig.simPad)
+                # y2 = int((y+1)*self.spcing+self.simConfig.simPad)
+                # if self.mask[x1: x2, y1: y2].sum() > 0:
+                activeActs.append([x,y])
         self.activeActs = numpy.array(activeActs)
         self.xActs = xActs
         return self.activeActs.shape[0]
@@ -265,36 +290,54 @@ class Piezo(DM):
 
         #Create a "dmSize" - the pupilSize but with 1 extra actuator on each
         #side
-        dmSize =  int(self.pupil_size + 2 * numpy.round(self.spcing))
+        dmSize =  int(self.nx_dm_elements + 2 * numpy.round(self.spcing))
 
         shapes = numpy.zeros((int(self.n_acts), dmSize, dmSize), dtype="float32")
 
         for i in xrange(self.n_acts):
             x,y = self.activeActs[i]
 
-            #Add one to avoid the outer padding
+            # Add one to avoid the outer padding
             x+=1
             y+=1
 
             shape = numpy.zeros( (self.xActs+2,self.xActs+2) )
             shape[x,y] = 1
 
-            #Interpolate up to the padded DM size
+            # Interpolate up to the padded DM size
             shapes[i] = interp.zoom_rbs(shape,
                     (dmSize, dmSize), order=self.dmConfig.interpOrder)
 
             shapes[i] -= shapes[i].mean()
 
 
-        if dmSize>self.sim_size:
-            coord = int(round(dmSize/2. - self.sim_size/2.))
-            self.iMatShapes = shapes[:,coord:-coord, coord:-coord].astype("float32")
+
+        # if dmSize>self.sim_size:
+        #     coord = int(round(dmSize/2. - self.sim_size/2.))
+        #     self.iMatShapes = shapes[:,coord:-coord, coord:-coord].astype("float32")
+        #
+        # else:
+        #     pad = int(round((self.sim_size - dmSize)/2))
+        #     self.iMatShapes = numpy.pad(
+        #             shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
+        #             ).astype("float32")
+
+        if dmSize == self.scrn_size:
+            self.dm_screen = self.dm_shape
 
         else:
-            pad = int(round((self.sim_size - dmSize)/2))
-            self.iMatShapes = numpy.pad(
-                    shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-                    ).astype("float32")
+            if dmSize > self.scrn_size:
+                coord = int(round(dmSize/2. - self.scrn_size/2.))
+                shapes = shapes[:, coord:-coord, coord:-coord].astype("float32")
+
+            else:
+                pad = int(round((self.scrn_size - dmSize)/2))
+                shapes = numpy.pad(
+                        shapes, ((0, 0), (pad,pad), (pad,pad)), mode="constant"
+                        ).astype("float32")
+
+        self.iMatShapes = shapes
+
 
 class GaussStack(Piezo):
     """
@@ -314,7 +357,7 @@ class GaussStack(Piezo):
         guassian is determined from the configuration file.
         """
         shapes = numpy.zeros((
-                self.n_acts, self.pupil_size, self.pupil_size))
+                self.n_acts, self.nx_dm_elements, self.nx_dm_elements))
 
         actSpacing = self.pupil_size/(self.dmConfig.nxActuators-1)
         width = actSpacing/2.
@@ -322,7 +365,7 @@ class GaussStack(Piezo):
         for i in xrange(self.n_acts):
             x,y = self.activeActs[i]*actSpacing
             shapes[i] = circle.gaussian2d(
-                    self.pupil_size, width, cent = (x,y))
+                    self.nx_dm_elements, width, cent=(x,y))
 
         self.iMatShapes = shapes
 
@@ -353,10 +396,10 @@ class TT(DM):
         """
         # Make the TT across the entire sim shape, but want it 1 to -1 across
         # pupil
-        padMax = float(self.sim_size)/self.pupil_size
+        # padMax = float(self.sim_size)/self.pupil_size
 
         coords = numpy.linspace(
-                    -padMax, padMax, self.sim_size)
+                    -1, 1, self.nx_dm_elements)
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
 
 
@@ -371,7 +414,7 @@ class FastPiezo(Piezo):
                 (self.dmConfig.nxActuators, self.dmConfig.nxActuators))
 
         # DM size is the pupil size, but withe one extra act on each side
-        self.dmSize =  self.pupil_size + 2 * numpy.round(self.spcing)
+        self.dmSize =  self.nx_dm_elements + 2 * numpy.round(self.spcing)
 
         return acts
 
@@ -389,18 +432,6 @@ class FastPiezo(Piezo):
         dmShape = interp.zoom_rbs(
                 actGrid, self.dmSize, order=self.dmConfig.interpOrder)
 
-
-        # Now check if "dmSize" bigger or smaller than "simSize".
-        # Crop or pad as appropriate
-        if self.dmSize>self.sim_size:
-            coord = int(round(self.dmSize/2. - self.sim_size/2.))
-            dmShape = dmShape[coord:-coord, coord:-coord].astype("float32")
-
-        else:
-            pad = int(round((self.sim_size - self.dmSize)/2))
-            dmShape = numpy.pad(
-                    dmShape, ((pad,pad), (pad,pad)), mode="constant"
-                    ).astype("float32")
 
         return dmShape
 

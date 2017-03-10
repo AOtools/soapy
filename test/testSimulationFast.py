@@ -109,13 +109,14 @@ class TestSimpleSCAO(unittest.TestCase):
 
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs.yaml"))
         sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[1].type = "ShackHartmannFast"
 
         sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
 
         sim.aoinit()
-
+        print("WFS TYPE: {}".format(sim.wfss[0]))
         sim.makeIMat(forceNew=True)
 
         sim.aoloop()
@@ -148,6 +149,7 @@ class TestSimpleSCAO(unittest.TestCase):
     def testLgsUplink_phys(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[1].type = "ShackHartmannFast"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
@@ -167,6 +169,7 @@ class TestSimpleSCAO(unittest.TestCase):
     def testLgsUplink_geo(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[1].type = "ShackHartmannFast"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
