@@ -19,7 +19,7 @@
 import numpy
 import scipy.optimize as opt
 
-from . import AOFFT, logger, lineofsight
+from . import AOFFT, logger, lineofsight_fast
 from .aotools import circle, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
@@ -49,7 +49,7 @@ class PSF(object):
             self.padFOVPxlNo += 1
 
         # Init line of sight - Get the phase at the right size for the FOV
-        self.los = lineofsight.LineOfSight(
+        self.los = lineofsight_fast.LineOfSight(
                 self.config, self.soapyConfig,
                 propagationDirection="down")
 
@@ -89,7 +89,7 @@ class PSF(object):
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.los.EField[:] = numpy.ones(
-                (self.los.nOutPxls,) * 2, dtype=CDTYPE)
+            (self.los.nx_out_pixels,) * 2, dtype=CDTYPE)
         self.calcFocalPlane()
         self.bestPSF = self.focalPlane.copy()
         self.psfMax = self.bestPSF.max()

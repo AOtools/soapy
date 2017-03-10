@@ -52,6 +52,9 @@ class Reconstructor(object):
         self.sim_config = soapy_config.sim
         self.atmos = atmos
 
+        self.n_dms = soapy_config.sim.nDM
+        self.scrn_size = soapy_config.sim.scrnSize
+
         self.learnIters = self.sim_config.learnIters
 
         self.dmActs = []
@@ -246,6 +249,7 @@ class Reconstructor(object):
         # A vector of DM commands to use when making the iMat
         actCommands = numpy.zeros(dm.n_acts)
 
+        phase = numpy.zeros((self.n_dms, self.scrn_size, self.scrn_size))
         for i in xrange(dm.n_acts):
             # Set vector of iMat commands and phase to 0
             actCommands[:] = 0
@@ -254,7 +258,8 @@ class Reconstructor(object):
             actCommands[i] = dm.dmConfig.iMatValue
 
             # Now get a DM shape for that command
-            phase = dm.makeDMFrame(actCommands)
+            phase[:] = 0
+            phase[dm.n_dm] = dm.dmFrame(actCommands)
             # Send the DM shape off to the relavent WFS. put result in iMat
             iMat[i] = (
                     -1 * wfs.frame(None, phase_correction=phase)) / dm.dmConfig.iMatValue

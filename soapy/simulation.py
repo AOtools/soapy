@@ -266,8 +266,10 @@ class Sim(object):
         # Init simulation
         #Circular buffers to hold loop iteration correction data
         self.slopes = numpy.zeros((self.config.sim.totalWfsData))
-        self.closedCorrection = []
-        self.openCorrection = []
+        self.closed_correction = numpy.zeros((
+                self.config.sim.nDM, self.config.sim.scrnSize, self.config.sim.scrnSize
+                ))
+        self.open_correction = self.closed_correction.copy()
         self.dmCommands = numpy.zeros( self.config.sim.totalActs )
         self.buffer = DelayBuffer()
         self.iters = 0
@@ -453,15 +455,19 @@ class Sim(object):
         """
         t = time.time()
         self.dmShapes = []
+        if closed:
+            correction_buffer = self.closed_correction
+        else:
+            correction_buffer = self.open_correction
 
         for dm in xrange(self.config.sim.nDM):
             if self.config.dms[dm].closed == closed:
-                self.dmShapes.append(self.dms[dm].dmFrame(
+                correction_buffer[dm] = self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
-                                    self.dmAct1[dm]+self.dms[dm].n_acts]))
+                                    self.dmAct1[dm]+self.dms[dm].n_acts])
 
         self.Tdm += time.time() - t
-        return self.dmShapes
+        return correction_buffer
 
     def runSciCams(self, dmShape=None):
         """
@@ -509,19 +515,19 @@ class Sim(object):
         self.dmCommands = self.buffer.delay(self.dmCommands, self.config.sim.loopDelay)
 
         # Get dmShape from closed loop DMs
-        self.closedCorrection = self.runDM(
+        self.closed_correction = self.runDM(
                 self.dmCommands, closed=True)
 
         # Run WFS, with closed loop DM shape applied
-        self.slopes = self.runWfs(  dmShape=self.closedCorrection,
-                                    loopIter=self.iters)
+        self.slopes = self.runWfs(dmShape=self.closed_correction,
+                                  loopIter=self.iters)
 
         # Get DM shape for open loop DMs
-        self.openCorrection = self.runDM( self.dmCommands,
-                                            closed=False)
+        self.open_correction = self.runDM(self.dmCommands,
+                                          closed=False)
 
         # Pass whole combined DM shapes to science target
-        self.combinedCorrection = self.openCorrection + self.closedCorrection
+        self.combinedCorrection = self.open_correction + self.closed_correction
 
         self.runSciCams(self.combinedCorrection)
 
