@@ -2,6 +2,7 @@ import multiprocessing
 N_CPU = multiprocessing.cpu_count()
 from threading import Thread
 import queue
+import atexit
 
 import numpy
 import numba
@@ -225,6 +226,9 @@ class ThreadPool(object):
 
             thread.start()
 
+        def cleanup():
+            self.stop()
+        atexit.register(cleanup)
 
 
     def _thread_func(self, input_queue, output_queue):
@@ -252,7 +256,6 @@ class ThreadPool(object):
         pass
 
     def stop(self):
-        print("Stopping threads!")
         self._running = False
         self.run(self._stop_func, [(None, )]*self.n_threads)
 
