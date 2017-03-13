@@ -89,8 +89,8 @@ class LGS(object):
         # Init the line of sight object for light propation through turbulence
         self.los = lineofsight.LineOfSight(
                     self.config, self.soapyConfig,
-                    propagationDirection="up", nOutPxls=self.losNOutPxls,
-                    mask=self.losMask, outPxlScale=self.losOutPxlScale,
+                    propagationDirection="up", nx_out_pxls=self.losNOutPxls,
+                    mask=self.losMask, out_pixel_scale=self.losOutPxlScale,
                     )
 
         # Find central position of the LGS pupil at each altitude.
