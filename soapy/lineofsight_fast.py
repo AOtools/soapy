@@ -171,15 +171,15 @@ class LineOfSight(object):
         self.layer_metapupil_coords = numpy.zeros((self.n_layers, 2, self.nx_out_pixels))
         for i in range(self.n_layers):
             x1, x2, y1, y2 = self.calculate_altitude_coords(self.layer_altitudes[i])
-            self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
-            self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
+            self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels) + self.nx_scrn_size / 2.
+            self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels) + self.nx_scrn_size / 2.
 
         # Calculate coords of phase at each DM altitude
         self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.nx_out_pixels))
         for i in range(self.n_dm):
             x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
-            self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
-            self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels) + self.nx_out_pixels / 2.
+            self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels) + self.nx_scrn_size / 2.
+            self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels) + self.nx_scrn_size / 2.
 
         self.radii = None
 
@@ -402,24 +402,6 @@ class LineOfSight(object):
 
 
         self.phase = self.phase_screens.sum(0)
-
-        # for i in range(len(self.scrns)):
-        #     logger.debug("Layer: {}".format(i))
-        #     if radii is None:
-        #         radius = None
-        #     else:
-        #         radius = radii[i]
-        #
-        #     if self.metaPupilPos is None:
-        #         pos = None
-        #     else:
-        #         pos = self.metaPupilPos[i]
-        #
-        #     phase = self.getMetaPupilPhase(
-        #             self.scrns[i], self.atmosConfig.scrnHeights[i],
-        #             pos=pos, radius=radius)
-        #
-        #     self.phase += phase
 
         # Convert phase to radians
         self.phase *= self.phs2Rad
