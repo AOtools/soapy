@@ -249,7 +249,7 @@ class WFS(object):
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
-                    (self.elongLayers, self.los.nOutPxls, self.los.nOutPxls))
+                    (self.elongLayers, self.los.nx_out_pixels, self.los.nx_out_pixels))
                 for i in xrange(self.elongLayers):
                     self.elongRadii[i] = self.los.findMetaPupilSizes(
                                                 float(self.elongHeights[i]))
@@ -325,7 +325,7 @@ class WFS(object):
         pad = ((self.sim_pad,)*2, (self.sim_pad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
 
-        phaseAddition = interp.zoom(phaseAddition, self.los.nOutPxls)
+        phaseAddition = interp.zoom(phaseAddition, self.los.nx_out_pixels)
 
         return phaseAddition
 

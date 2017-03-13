@@ -24,7 +24,7 @@ class TestSci(unittest.TestCase):
         sci = SCI.PSF(
                 config, 0, mask)
 
-        sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
+        sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
     def test_sciStrehl(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
@@ -34,7 +34,7 @@ class TestSci(unittest.TestCase):
         sci = SCI.PSF(
                 config, 0, mask)
 
-        sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
+        sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
         self.assertTrue(numpy.allclose(sci.instStrehl, 1.))
 
@@ -54,6 +54,7 @@ class TestSci(unittest.TestCase):
 
         sci = SCI.singleModeFibre(
                 config, 0, mask)
+        sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
 
 if __name__=="__main__":

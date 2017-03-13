@@ -199,7 +199,7 @@ class singleModeFibre(PSF):
         return 1.0 - numpy.abs(numpy.sum(self.fibreEfield(size) * self.normMask))**2
 
     def calcInstStrehl(self):
-        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.normMask))**2
+        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * self.los.EField * self.normMask))**2
 
 
 # Compatability with older versions

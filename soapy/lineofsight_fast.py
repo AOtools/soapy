@@ -548,7 +548,7 @@ class LineOfSight(object):
         #     corr = self.getMetaPupilPhase(corr, altitude, radius=metaPupilRadius)
 
         numbalib.los.get_phase_slices(
-            correction, self.layer_metapupil_coords, self.correction_screens, self.thread_pool)
+            correction, self.dm_metapupil_coords, self.correction_screens, self.thread_pool)
 
         self.phase_correction = self.correction_screens.sum(0)
 
