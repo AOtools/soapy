@@ -77,18 +77,21 @@ class LineOfSight(object):
         self.n_dm = self.soapy_config.sim.nDM
         self.dm_altitudes = numpy.array([self.soapy_config.dms[dm_n].altitude for dm_n in range(self.n_dm)])
 
+        # If the line of sight has a launch position, must include in calculations! Conver to metres from centre of telescope
+        try:
+            self.launch_position = self.config.launchPosition * self.telescope_diameter/2.
+        except AttributeError:
+            self.launch_position = numpy.array([0, 0])
+
         self.threads = self.soapy_config.sim.threads
 
         self.simConfig = soapyConfig.sim
         self.atmosConfig = soapyConfig.atmos
 
         self.mask = mask
-
-        self.calcInitParams(out_pixel_scale, nx_out_pixels)
-
         self.propagation_direction = propagation_direction
 
-
+        self.calcInitParams(out_pixel_scale, nx_out_pixels)
 
         self.allocDataArrays()
 
@@ -176,17 +179,12 @@ class LineOfSight(object):
             self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels)
             self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels)
 
-
-
-
         # Calculate coords of phase at each DM altitude
         self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.nx_out_pixels))
         for i in range(self.n_dm):
             x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
             self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels)
             self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels)
-
-
 
         self.radii = None
 
@@ -204,6 +202,10 @@ class LineOfSight(object):
         direction_radians = ASEC2RAD * numpy.array(self.position)
 
         centre = (direction_radians * layer_altitude)
+
+        # If propagating up must account for launch position
+        if self.propagation_direction == "up":
+            centre += self.launch_position * (1 - layer_altitude/self.source_altitude)
 
         if self.source_altitude != 0:
             meta_pupil_size = self.output_phase_diameter * (1 - layer_altitude / self.source_altitude)
