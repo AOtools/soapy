@@ -516,7 +516,7 @@ class GUI(QtWidgets.QMainWindow):
         self.iThread = InitThread(self)
         self.iThread.updateProgressSignal.connect(self.progressUpdate)
         self.iThread.finished.connect(self.initPlots)
-        self.iThread.finished.connect(self.plotPupilOverlap)
+        # self.iThread.finished.connect(self.plotPupilOverlap)
         self.iThread.start()
         self.config = self.sim.config
 

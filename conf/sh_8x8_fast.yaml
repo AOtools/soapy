@@ -6,7 +6,7 @@ nSci: 1
 nIters: 500
 loopTime: 0.0025
 reconstructor: "MVM"
-threads: 2
+threads: 4
 
 verbosity: 2
 
@@ -64,6 +64,7 @@ DM:
 Science:
   0:
     position: [0, 0]
-    FOV: 2.0
+    FOV: 1.0
     wavelength: 1.65e-6
-    pxls: 128
+    pxls: 64
+

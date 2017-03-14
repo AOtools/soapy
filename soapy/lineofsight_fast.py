@@ -57,7 +57,7 @@ class LineOfSight(object):
     """
     def __init__(
             self, config, soapyConfig,
-            propagationDirection="down", outPxlScale=None,
+            propagation_direction="down", out_pixel_scale=None,
             nx_out_pixels=None, mask=None, metaPupilPos=None):
 
         self.config = config
@@ -84,9 +84,9 @@ class LineOfSight(object):
 
         self.mask = mask
 
-        self.calcInitParams(outPxlScale, nx_out_pixels)
+        self.calcInitParams(out_pixel_scale, nx_out_pixels)
 
-        self.propagation_direction = propagationDirection
+        self.propagation_direction = propagation_direction
 
 
 
@@ -233,143 +233,6 @@ class LineOfSight(object):
         self.EField = numpy.zeros([self.nx_out_pixels] * 2, dtype=CDTYPE)
 
 
-    def findMetaPupilSizes(self, GSHeight):
-        '''
-        Evaluates the sizes of the effective metePupils
-        at each screen height - if a GS of finite height is used.
-
-        Parameters:
-            GSHeight (float): The height of the GS in metres
-
-        Returns:
-            dict : A dictionary containing the radii of a meta-pupil at each screen height in phase pixels
-        '''
-
-        radii = {}
-        for i in xrange(self.atmosConfig.scrnNo):
-            radii[i] = self.calcMetaPupilSize(
-                        self.atmosConfig.scrnHeights[i], GSHeight) / self.phase_pixel_scale
-
-        return radii
-
-
-    def calcMetaPupilSize(self, scrnHeight, GSHeight):
-        """
-        Calculates the radius of a meta pupil at a altitude layer, of a GS at a give altitude
-
-        Parameters:
-            scrnHeight (float): Altitude of meta-pupil
-            GSHeight (float): Altitude of guide star
-
-        Returns:
-            float: Radius of metapupil in metres
-
-        """
-        # If GS at infinity, radius is telescope radius
-        if self.height == 0:
-            return self.telescope_diameter/2.
-
-        # If scrn is above LGS, radius is 0
-        if scrnHeight >= GSHeight:
-            return 0
-
-        # Find radius of metaPupil geometrically (fraction of pupil at
-        # Ground Layer)
-        radius = (self.telescope_diameter/2.) * (1-(float(scrnHeight)/GSHeight))
-
-        return radius
-
-    #############################################################
-    # Phase stacking routines for a WFS frame
-    def getMetaPupilPos(self, height, apos=None):
-        '''
-        Finds the centre of a metapupil at a given height,
-        when offset by a given angle in arsecs, in metres from the central position
-
-        Parameters:
-            height (float): Height of the layer in metres
-            apos (ndarray, optional):  The angular position of the GS in asec. If not set, will use the config position
-
-        Returns:
-            ndarray: The position of the centre of the metapupil in metres
-        '''
-        # if no pos given, use system pos and convert into radians
-        if not numpy.any(apos):
-            pos = (numpy.array(self.position)).astype('float')
-
-        pos *= ASEC2RAD
-
-        # Position of centre of GS metapupil off axis at required height
-        GSCent = (numpy.tan(pos) * height)
-
-        return GSCent
-
-    def getMetaPupilPhase(
-            self, scrn, height, radius=None,  apos=None, pos=None):
-        '''
-        Returns the phase across a metaPupil at some height and angular
-        offset in arcsec. Interpolates phase to size of the pupil if cone
-        effect is required
-
-        Parameters:
-            scrn (ndarray): An array representing the phase screen
-            height (float): Height of the phase screen
-            radius (float, optional): Radius of the meta-pupil. If not set, will use system pupil size.
-            apos (ndarray, optional): X, Y angular position of the guide star in asecs, otherwise will use that set in config or 'pos'
-            pos (ndarray, optional): X, Y central position of the metapupil in metres. If None, then config used to calculate it from config pos, or 'apos'.
-
-        Return:
-            ndarray: The meta pupil at the specified height
-        '''
-
-        # If the radius is 0, then 0 phase is returned
-        if radius == 0:
-            return numpy.zeros((self.sim_size, self.sim_size))
-
-        if apos is not None:
-            GSCent = self.getMetaPupilPos(height, apos) / self.phase_pixel_scale
-        elif pos is not None:
-            GSCent = pos / self.phase_pixel_scale
-        else:
-            GSCent = self.getMetaPupilPos(height) / self.phase_pixel_scale
-
-        # Find the size in metres of phase that is required
-        self.phaseRadius = (self.out_pixel_scale * self.nx_out_pixels) / 2.
-        # And a corresponding coordinate on the phase screen
-        self.phaseCoord = int(round(self.phaseRadius / self.phase_pixel_scale))
-
-        logger.debug('phaseCoord:{}'.format(self.phaseCoord))
-        # The sizes of the phase screen
-        scrnX, scrnY = scrn.shape
-
-        # If the GS is not at infinity, take into account cone effect
-        if radius != None:
-            fact = float(2*radius)/self.pupil_size
-        else:
-            fact = 1
-
-        simSize = self.simConfig.simSize
-        x1 = scrnX/2. + GSCent[0] - fact * self.phaseCoord
-        x2 = scrnX/2. + GSCent[0] + fact * self.phaseCoord
-        y1 = scrnY/2. + GSCent[1] - fact * self.phaseCoord
-        y2 = scrnY/2. + GSCent[1] + fact * self.phaseCoord
-
-        logger.debug("LoS Scrn Coords - ({0}:{1}, {2}:{3})".format(
-                x1,x2,y1,y2))
-        if ( x1 < 0 or x2 > scrnX or y1 < 0 or y2 > scrnY):
-            logger.warning("GS separation requires larger screen size. \nheight: {3}, GSCent: {0}, \nscrnSize: {1}, phaseCoord, {8}, simSize: {2}, fact: {9}\nx1: {4},x2: {5}, y1: {6}, y2: {7}".format(
-                    GSCent, scrn.shape, simSize, height, x1, x2, y1, y2, self.phaseCoord, fact))
-            raise ValueError("Requested phase exceeds phase screen size. See log warnings.")
-
-        xCoords = numpy.linspace(x1, x2 - 1, self.nx_out_pixels)
-        yCoords = numpy.linspace(y1, y2 - 1, self.nx_out_pixels)
-        scrnCoords = numpy.arange(scrnX)
-        interpObj = interp2d(
-                scrnCoords, scrnCoords, scrn, copy=False)
-        metaPupil = interpObj(xCoords, yCoords)
-
-        self.metaPupil = metaPupil
-        return metaPupil
 ######################################################
 
     def zeroData(self, **kwargs):
@@ -436,89 +299,6 @@ class LineOfSight(object):
             self.phase_screens, self.outMask, self.layer_altitudes, self.source_altitude,
             self.wavelength, self.out_pixel_scale,
             propagation_direction=self.propagation_direction)
-
-
-
-        # scrnNo = len(self.scrns)
-        # z_total = 0
-        # scrnRange = range(0, scrnNo)
-        #
-        # # Get initial up/down dependent params
-        # if self.propagation_direction == "up":
-        #     ht = 0
-        #     ht_final = self.config.height
-        #     if ht_final==0:
-        #         raise ValueError("Can't propagate up to infinity")
-        #     scrnAlts = self.atmosConfig.scrnHeights
-        #
-        #     self.EFieldBuf = self.outMask.copy().astype(CDTYPE)
-        #     logger.debug("Create EField Buf of mask")
-        #
-        # else:
-        #     ht = self.atmosConfig.scrnHeights[scrnNo-1]
-        #     ht_final = 0
-        #     scrnRange = scrnRange[::-1]
-        #     scrnAlts = self.atmosConfig.scrnHeights[::-1]
-        #     self.EFieldBuf = numpy.exp(
-        #             1j*numpy.zeros((self.nx_out_pixels,) * 2)).astype(CDTYPE)
-        #     logger.debug("Create EField Buf of zero phase")
-        #
-        # # Propagate to first phase screen (if not already there)
-        # if ht!=scrnAlts[0]:
-        #     logger.debug("propagate to first phase screen")
-        #     z = abs(scrnAlts[0] - ht)
-        #     self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
-        #                 self.EFieldBuf, self.wavelength,
-        #                 self.out_pixel_scale, self.out_pixel_scale, z)
-        #
-        # # Go through and propagate between phase screens
-        # for i in scrnRange:
-        #     # Check optional radii and position
-        #     if radii is None:
-        #         radius = None
-        #     else:
-        #         radius = radii[i]
-        #
-        #     if self.metaPupilPos is None:
-        #         pos = None
-        #     else:
-        #         pos = self.metaPupilPos[i]
-        #     # print("Propagate screen {}".format(i))
-        #     # Get phase for this layer
-        #     # phase = self.getMetaPupilPhase(
-        #     #         self.scrns[i],
-        #     #         self.atmosConfig.scrnHeights[i], radius=radius, pos=pos)
-        #     phase = self.phase_screens[i]
-        #     # print("Got phase")
-        #
-        #     # Convert phase to radians
-        #     phase *= self.phs2Rad
-        #
-        #     # Change sign if propagating up
-        #     if self.propagation_direction == 'up':
-        #         self.phase *= -1
-        #     # print("Get distance")
-        #     # Get propagation distance for this layer
-        #     if i==(scrnNo-1):
-        #         z = abs(ht_final - ht) - z_total
-        #     else:
-        #         z = abs(scrnAlts[i+1] - scrnAlts[i])
-        #
-        #     # Update total distance counter
-        #     z_total += z
-        #
-        #     # print("Make EField")
-        #     # Apply phase to EField
-        #     self.EFieldBuf *= numpy.exp(1j*phase)
-        #
-        #     # Do ASP for last layer to next
-        #     self.EFieldBuf[:] = opticalpropagation.angularSpectrum(
-        #                 self.EFieldBuf, self.wavelength,
-        #                 self.out_pixel_scale, self.out_pixel_scale, z)
-        #
-        #     # logger.debug("Propagation: {}, {} m. Total: {}".format(i, z, z_total))
-        #
-        #     self.EField[:] = self.EFieldBuf
 
         return self.EField
 

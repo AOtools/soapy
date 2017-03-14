@@ -81,9 +81,9 @@ class ShackHartmannFast(base.WFS):
         # If not, can use less phase points for speed
         if self.config.propagationMode=="Physical":
             # This the pixel scale required for the correct FOV
-            outPxlScale = (float(self.sim_size) / float(self.nx_interp_efield)) * self.phase_scale
+            out_pixel_scale = (float(self.sim_size) / float(self.nx_interp_efield)) * self.phase_scale
             self.los.calcInitParams(
-                    out_pixel_scale=outPxlScale, nx_out_pixels=self.nx_interp_efield)
+                    out_pixel_scale=out_pixel_scale, nx_out_pixels=self.nx_interp_efield)
 
         # Calculate the subaps that are actually seen behind the pupil mask
         self.findActiveSubaps()
@@ -99,7 +99,7 @@ class ShackHartmannFast(base.WFS):
         """
         self.los = lineofsight_fast.LineOfSight(
                 self.config, self.soapy_config,
-                propagationDirection="down")
+                propagation_direction="down")
 
 
     def findActiveSubaps(self):

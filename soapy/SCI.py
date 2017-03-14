@@ -51,7 +51,7 @@ class PSF(object):
         # Init line of sight - Get the phase at the right size for the FOV
         self.los = lineofsight_fast.LineOfSight(
                 self.config, self.soapyConfig,
-                propagationDirection="down")
+                propagation_direction="down")
 
         # Make a default circular mask of the pupil size if not provided
         if mask is None:
