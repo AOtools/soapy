@@ -16,7 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
-from . import AOFFT, logger, lineofsight
+from . import AOFFT, logger, lineofsight_fast
 from .aotools import circle, interp
 
 import scipy.optimize
@@ -87,9 +87,9 @@ class LGS(object):
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
         # Init the line of sight object for light propation through turbulence
-        self.los = lineofsight.LineOfSight(
+        self.los = lineofsight_fast.LineOfSight(
                     self.config, self.soapyConfig,
-                    propagationDirection="up", nx_out_pxls=self.losNOutPxls,
+                    propagation_direction="up", nx_out_pixels=self.losNOutPxls,
                     mask=self.losMask, out_pixel_scale=self.losOutPxlScale,
                     )
 
