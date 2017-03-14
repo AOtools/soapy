@@ -152,10 +152,10 @@ class WFS(object):
 
         self.calcInitParams()
         # If GS not at infinity, find meta-pupil radii for each layer
-        if self.config.GSHeight != 0:
-            self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
-        else:
-            self.radii = None
+        # if self.config.GSHeight != 0:
+        #     self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
+        # else:
+        #     self.radii = None
 
         # Init LGS, FFTs and allocate some data arrays
         self.initFFTs()
@@ -439,7 +439,7 @@ class WFS(object):
             #     except ValueError:
             #         raise ValueError("If iMat Frame, scrn must be ``simSize``")
             # else:
-            self.los.makePhase(self.radii)
+            self.los.makePhase()#self.radii)
 
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
             if phase_correction is not None:
