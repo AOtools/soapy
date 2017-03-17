@@ -63,7 +63,7 @@ class DM(object):
     given a specific WFS or WFSs.
 
     Parameters:
-        soapyConfig (ConfigObj): The soapy configuration object
+        soapy_config (ConfigObj): The soapy configuration object
         nDm (int): The ID number of this DM
         wfss (list, optional): A list of Soapy WFS object with which to record the interaction matrix
         mask (ndarray, optional): An array or size (simConfig.simSize, simConfig.simSize) which is 1 at the telescope aperture and 0 else-where. If None then a circle is generated.
@@ -196,9 +196,9 @@ class DM(object):
         dm_shape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
         
         # If DM not telescope diameter, must adjust pixel scale
-        # if self.dmConfig.diameter != self.soapyConfig.tel.telDiam:
+        # if self.dmConfig.diameter != self.soapy_config.tel.telDiam:
         #     scaledDMSize = (dmShape.shape[0]
-        #             * float(self.dmConfig.diameter)/self.soapyConfig.tel.telDiam)
+        #             * float(self.dmConfig.diameter)/self.soapy_config.tel.telDiam)
         #     dm_shape = interp.zoom(dmShape, scaledDMSize, order=1)
             
         # Turn into phase pbject with altitude
