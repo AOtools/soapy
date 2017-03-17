@@ -42,6 +42,7 @@ class PSF(object):
         self.fov = self.config.FOV
         self.threads = self.soapy_config.sim.threads
         self.telescope_diameter = self.soapy_config.tel.telDiam
+        self.nx_pixels = self.config.pxls
 
         self.fov_rad = self.config.FOV * numpy.pi / (180. * 3600)
 
@@ -69,12 +70,12 @@ class PSF(object):
                                       ).astype("int32")
 
         # Init FFT object
-        self.FFTPadding = self.config.pxls * self.config.fftOversamp
+        self.FFTPadding = self.nx_pixels * self.config.fftOversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding < self.FOVPxlNo:
                 self.config.fftOversamp += 1
                 self.FFTPadding\
-                    = self.config.pxls * self.config.fftOversamp
+                    = self.nx_pixels * self.config.fftOversamp
             logger.info(
                 "SCI FFT Padding less than FOV size... Setting oversampling to %d" % self.config.fftOversamp)
 
@@ -88,19 +89,19 @@ class PSF(object):
         self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Allocate some useful arrays
-        self.interp_coords = numpy.linspace(self.sim_pad, self.pupil_size + self.sim_pad, self.FOVPxlNo )
-        self.interp_phase = numpy.zeros((self.FOVPxlNo, self.FOVPxlNo))
+        self.interp_coords = numpy.linspace(self.sim_pad, self.pupil_size + self.sim_pad, self.FOVPxlNo).astype(DTYPE)
+        self.interp_phase = numpy.zeros((self.FOVPxlNo, self.FOVPxlNo), DTYPE)
+        self.focus_efield = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=CDTYPE)
+        self.focus_intensity = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=DTYPE)
+        self.detector = numpy.zeros((self.nx_pixels, self.nx_pixels), dtype=DTYPE)
 
         # Calculate ideal PSF for purposes of strehl calculation
-        self.los.EField[:] = numpy.ones(
-            (self.los.nx_out_pixels,) * 2, dtype=CDTYPE)
+        self.los.phase[:] = 1
         self.calcFocalPlane()
-        self.bestPSF = self.focalPlane.copy()
+        self.bestPSF = self.detector.copy()
         self.psfMax = self.bestPSF.max()
         self.longExpStrehl = 0
         self.instStrehl = 0
-
-
 
     def setMask(self, mask):
         """
@@ -117,72 +118,45 @@ class PSF(object):
                     self.pupil_size/2., self.sim_size,
                     )
 
-    def calcTiltCorrect(self):
-        """
-        Calculates the required tilt to add to avoid the PSF being centred
-        on one pixel only
-        """
-        # Only required if pxl number is even
-        if not self.config.pxls % 2:
-            # Need to correct for half a pixel angle
-            theta = float(self.fov_rad) / (2 * self.FFTPadding)
-
-            # Find magnitude of tilt from this angle
-            A = theta * self.telescope_diameter / \
-                (2 * self.config.wavelength) * 2 * numpy.pi
-
-            coords = numpy.linspace(-1, 1, self.FOVPxlNo)
-            X, Y = numpy.meshgrid(coords, coords)
-            self.tiltFix = -1 * A * (X + Y)
-        else:
-            self.tiltFix = numpy.zeros((self.FOVPxlNo,) * 2)
-
     def calcFocalPlane(self):
         '''
         Takes the calculated pupil phase, scales for the correct FOV,
         and uses an FFT to transform to the focal plane.
         '''
-        self.EField = self.los.EField
-        self.EField2 = numpy.exp(1j * self.los.phase)
-        #
-        # # Apply the system mask
-        self.EField *= self.mask
-        #
-        # # Scaled the padded phase to the right size for the requried FOV
-        self.EField_fov = interp.zoom(self.EField, self.padFOVPxlNo)
 
-        # numbalib.los.bilinear_interp(
-        #         self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
-        #         self.thread_pool)
+        numbalib.los.bilinear_interp(
+                self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
+                self.thread_pool)
 
-        # # Chop out the phase across the pupil before the fft
-        coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
-        if coord != 0:
-            self.EField_fov = self.EField_fov[coord:-coord, coord:-coord]
-
-        # self.EField_fov = numpy.exp(1j * self.interp_phase)
+        self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 
         # Get the focal plan using an FFT
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov
-        focalPlane_efield = AOFFT.ftShift2d(self.FFT())
+        self.focus_efield = AOFFT.ftShift2d(self.FFT())
+
+        # Turn complex efield into intensity
+        numbalib.abs_squared(self.focus_efield, out=self.focus_intensity)
+
+        # Bin down to detector number of pixels
+        numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
 
         # Bin down to the required number of pixels
-        self.focalPlane_efield = interp.binImgs(
-            focalPlane_efield, self.config.fftOversamp)
+        # self.focus_efield = numbalib.binImgs(
+        #     focalPlane_efield, self.config.fftOversamp, self.focus_efield)
 
-        self.focalPlane = numbalib.abs_squared(self.focalPlane_efield)
+        # self.detector = numbalib.abs_squared(self.focus_efield)
 
         # Normalise the psf
-        self.focalPlane /= self.focalPlane.sum()
+        self.detector /= self.detector.sum()
 
     def calcInstStrehl(self):
         """
         Calculates the instantaneous Strehl, including TT if configured.
         """
         if self.sciConfig.instStrehlWithTT:
-            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
+            self.instStrehl = self.detector[self.sciConfig.pxls // 2, self.sciConfig.pxls // 2] / self.detector.sum() / self.psfMax
         else:
-            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
+            self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
 
     def frame(self, scrns, correction=None):
         """
@@ -204,7 +178,7 @@ class PSF(object):
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
 
-        return self.focalPlane
+        return self.detector
 
 
 class singleModeFibre(PSF):

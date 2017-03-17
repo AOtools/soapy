@@ -744,13 +744,13 @@ class Sim(object):
         #Save Instantaneous PSF
         if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
             for sci in xrange(self.config.sim.nSci):
-                self.sciImgsInst[sci][i,:,:] = self.sciCams[sci].focalPlane#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection)
+                self.sciImgsInst[sci][i,:,:] = self.sciCams[sci].detector
 
 
         #Save Instantaneous electric field
         if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
             for sci in xrange(self.config.sim.nSci):
-                self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield#self.sciCams[sci].frame(self.scrns,phaseCorrection= self.openCorrection+self.closedCorrection,e_field=True)
+                self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield
 
     def saveData(self):
         """
@@ -977,7 +977,7 @@ class Sim(object):
                     except AttributeError:
                         sciImg[i] = None
                     try:
-                        instSciImg[i] = self.sciCams[i].focalPlane.copy()
+                        instSciImg[i] = self.sciCams[i].detector.copy()
                     except AttributeError:
                         instSciImg[i] = None
 
