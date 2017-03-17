@@ -323,7 +323,7 @@ class ShackHartmannFast(base.WFS):
         # numbalib.abs_squared(
         #         self.temp_subap_focus, self.subap_focus_intensity, threads=self.threads)
 
-        self.subap_focus_intensity[:] = abs(self.temp_subap_focus)**2
+        self.subap_focus_intensity[:] = numbalib.abs_squared(self.temp_subap_focus)
 
         if intensity != 1:
             self.subap_focus_intensity *= intensity

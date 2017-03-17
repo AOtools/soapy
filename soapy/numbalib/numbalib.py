@@ -29,20 +29,9 @@ def abs_squared(input_data, output_data, threads=None):
 
     return output_data
 
-@numba.jit(nopython=True)
-def abs_squared_numba(data, output_data, indices):
-
-    for x in range(indices[0], indices[1]):
-        for y in range(data.shape[1]):
-            output_data[x, y] = data[x, y].real**2 + data[x, y].imag**2
-
-
-def abs_squared_slow(data, output_data, threads=None):
-
-    for x in range(data.shape[0]):
-        for y in range(data.shape[1]):
-             output_data[x, y] = data[x, y].real**2 + data[x, y].imag**2
-
+@numba.vectorize(["float32(complex64)"], nopython=True, target="parallel")
+def abs_squared(data):
+    return abs(data)**2
 
 
 def bin_img(input_img, bin_size, binned_img, threads=None):
