@@ -57,17 +57,16 @@ def bilinear_interp_numba(data, xCoords, yCoords, chunkIndices, interpArray):
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
-    if xCoords[-1] == data.shape[0] - 1:
-        xCoords[-1] -= 1e-6
-    if yCoords[-1] == data.shape[1] - 1:
-        yCoords[-1] -= 1e-6
-
     jRange = range(yCoords.shape[0])
     for i in range(chunkIndices[0], chunkIndices[1]):
         x = xCoords[i]
+        if x >= data.shape[0] - 1:
+            x = data.shape[0] - 1 - 1e-9
         x1 = numba.int32(x)
         for j in jRange:
             y = yCoords[j]
+            if y >= data.shape[1] - 1:
+                y = data.shape[1] - 1 - 1e-9
             y1 = numba.int32(y)
 
             xGrad1 = data[x1 + 1, y1] - data[x1, y1]

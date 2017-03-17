@@ -213,6 +213,8 @@ class ShackHartmannFast(base.WFS):
 
         self.interp_phase = numpy.zeros(
                 (self.nx_interp_efield, self.nx_interp_efield), dtype=DTYPE)
+        self.interp_efield = numpy.zeros(
+                (self.nx_interp_efield, self.nx_interp_efield), dtype=CDTYPE)
         self.subap_interp_efield=numpy.zeros(
                 (self.n_subaps, self.nx_subap_interp, self.nx_subap_interp),
                 dtype=CDTYPE)
@@ -305,15 +307,17 @@ class ShackHartmannFast(base.WFS):
 
         if self.config.propagationMode=="Geometric":
             # Have to make phase the correct size if geometric prop
-            scaledEField = numbalib.wfs.zoom_pool(self.los.phase, self.interp_phase, thread_pool=self.thread_pool)
-            scaledEField = numpy.exp(1j*self.interp_phase)
+            numbalib.wfs.zoom_pool(self.los.phase, self.interp_phase, thread_pool=self.thread_pool)
+            self.interp_efield = numpy.exp(1j*self.interp_phase)
+            # numbalib.wfs.zoomtoefield(self.los.phase, self.interp_efield, thread_pool=self.thread_pool)
+
         else:
-            scaledEField = self.EField
+            self.interp_efield = self.EField
 
         #create an array of individual subap EFields
         self.FFT.inputData[:] = 0
         numbalib.wfs.chop_subaps_mask_pool(
-                scaledEField, self.interp_subap_coords, self.nx_subap_interp,
+                self.interp_efield, self.interp_subap_coords, self.nx_subap_interp,
                 self.FFT.inputData, self.scaledMask, thread_pool=self.thread_pool)
         self.FFT.inputData[:, :self.nx_subap_interp, :self.nx_subap_interp] *= self.tilt_fix_efield
         self.FFT()
@@ -323,7 +327,7 @@ class ShackHartmannFast(base.WFS):
         # numbalib.abs_squared(
         #         self.temp_subap_focus, self.subap_focus_intensity, threads=self.threads)
 
-        self.subap_focus_intensity[:] = numbalib.abs_squared(self.temp_subap_focus)
+        numbalib.abs_squared(self.temp_subap_focus, out=self.subap_focus_intensity)
 
         if intensity != 1:
             self.subap_focus_intensity *= intensity
