@@ -142,24 +142,25 @@ class PSF(object):
         Takes the calculated pupil phase, scales for the correct FOV,
         and uses an FFT to transform to the focal plane.
         '''
-        # self.EField = self.los.EField
+        self.EField = self.los.EField
+        self.EField2 = numpy.exp(1j * self.los.phase)
         #
         # # Apply the system mask
-        # self.EField *= self.mask
+        self.EField *= self.mask
         #
         # # Scaled the padded phase to the right size for the requried FOV
-        # self.EField_fov = interp.zoom(self.EField, self.padFOVPxlNo)
+        self.EField_fov = interp.zoom(self.EField, self.padFOVPxlNo)
 
-        numbalib.los.bilinear_interp(
-                self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
-                self.thread_pool)
+        # numbalib.los.bilinear_interp(
+        #         self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
+        #         self.thread_pool)
 
         # # Chop out the phase across the pupil before the fft
-        # coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
-        # if coord != 0:
-        #     self.EField_fov = self.EField_fov[coord:-coord, coord:-coord]
+        coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
+        if coord != 0:
+            self.EField_fov = self.EField_fov[coord:-coord, coord:-coord]
 
-        self.EField_fov = numpy.exp(1j * self.interp_phase)
+        # self.EField_fov = numpy.exp(1j * self.interp_phase)
 
         # Get the focal plan using an FFT
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov
