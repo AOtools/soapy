@@ -1,13 +1,14 @@
 import multiprocessing
 N_CPU = multiprocessing.cpu_count()
 from threading import Thread
+from . import numbalib
 import queue
 import math
 
 import numpy
 import numba
 
-def zoom_pool(data, zoomArray, thread_pool):
+def zoom(data, zoomArray, thread_pool=None):
     """
     A function which deals with threaded numba interpolation.
 
@@ -20,6 +21,9 @@ def zoom_pool(data, zoomArray, thread_pool):
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
     nx = zoomArray.shape[0]
+
+    if thread_pool is None:
+        thread_pool = numbalib.ThreadPool(N_CPU)
 
     n_threads = thread_pool.n_threads
 
@@ -30,39 +34,6 @@ def zoom_pool(data, zoomArray, thread_pool):
                 zoomArray))
 
     thread_pool.run(zoom_numbaThread, args)
-
-    return zoomArray
-
-def zoom(data, zoomArray, threads=None):
-    """
-    A function which deals with threaded numba interpolation.
-
-    Parameters:
-        array (ndarray): The 2-D array to interpolate
-        zoomArray (ndarray, tuple): The array to place the calculation, or the shape to return
-        threads (int): Number of threads to use for calculation
-
-    Returns:
-        interpArray (ndarray): A pointer to the calculated ``interpArray''
-    """
-
-    if threads is None:
-        threads = N_CPU
-
-    nx = zoomArray.shape[0]
-
-    Ts = []
-    for t in range(threads):
-        Ts.append(Thread(target=zoom_numbaThread,
-                         args=(
-                             data,
-                             numpy.array([int(t * nx / threads), int((t + 1) * nx / threads)]),
-                             zoomArray)
-                         ))
-        Ts[t].start()
-
-    for T in Ts:
-        T.join()
 
     return zoomArray
 
@@ -101,7 +72,7 @@ def zoom_numbaThread(data, chunkIndices, zoomArray):
     return zoomArray
 
 
-def zoomtoefield(data, zoomArray, thread_pool):
+def zoomtoefield(data, zoomArray, thread_pool=None):
     """
     A function which deals with threaded numba interpolation.
 
@@ -114,7 +85,8 @@ def zoomtoefield(data, zoomArray, thread_pool):
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
     nx = zoomArray.shape[0]
-
+    if thread_pool is None:
+        thread_pool = numbalib.ThreadPool(N_CPU)
     n_threads = thread_pool.n_threads
 
     args = []
@@ -123,7 +95,7 @@ def zoomtoefield(data, zoomArray, thread_pool):
                 numpy.array([int(nt*nx/n_threads), int((nt+1)*nx/n_threads)]),
                 zoomArray))
 
-    thread_pool.run(zoom_numbaThread, args)
+    thread_pool.run(zoomtoefield_numbaThread, args)
 
     return zoomArray
 
@@ -157,7 +129,7 @@ def zoomtoefield_numbaThread(data, chunkIndices, zoomArray):
 
             yGrad = a2 - a1
             phase_value = (a1 + yGrad * (y - y1))
-            zoomArray[i, j] = math.exp(1j * phase_value)
+            zoomArray[i, j] = numpy.exp(1j * phase_value)
 
     return zoomArray
 
