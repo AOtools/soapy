@@ -307,14 +307,12 @@ class ShackHartmannFast(base.WFS):
 
         if self.config.propagationMode=="Geometric":
             # Have to make phase the correct size if geometric prop
-            numbalib.wfs.zoom_pool(self.los.phase, self.interp_phase, thread_pool=self.thread_pool)
-            self.interp_efield = numpy.exp(1j*self.interp_phase)
-            # numbalib.wfs.zoomtoefield(self.los.phase, self.interp_efield, thread_pool=self.thread_pool)
+            numbalib.wfs.zoomtoefield(self.los.phase, self.interp_efield, thread_pool=self.thread_pool)
 
         else:
             self.interp_efield = self.EField
 
-        #create an array of individual subap EFields
+        # Create an array of individual subap EFields
         self.FFT.inputData[:] = 0
         numbalib.wfs.chop_subaps_mask_pool(
                 self.interp_efield, self.interp_subap_coords, self.nx_subap_interp,
@@ -323,9 +321,6 @@ class ShackHartmannFast(base.WFS):
         self.FFT()
 
         self.temp_subap_focus = AOFFT.ftShift2d(self.FFT.outputData)
-
-        # numbalib.abs_squared(
-        #         self.temp_subap_focus, self.subap_focus_intensity, threads=self.threads)
 
         numbalib.abs_squared(self.temp_subap_focus, out=self.subap_focus_intensity)
 
@@ -349,9 +344,6 @@ class ShackHartmannFast(base.WFS):
 
         # bins back down to correct size and then
         # fits them back in to a focal plane array
-        # self.binnedFPSubapArrays[:] = interp.binImgs(self.subap_focus_intensity,
-        #                                              self.config.fftOversamp)
-
         self.binnedFPSubapArrays[:] = 0
         numbalib.wfs.bin_imgs_pool(
                 self.subap_focus_intensity, self.config.fftOversamp, self.binnedFPSubapArrays,
@@ -364,15 +356,10 @@ class ShackHartmannFast(base.WFS):
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
 
-        # numbalib.wfs.place_subaps_on_detector_pool(
-        #         self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
-        #         thread_pool=self.thread_pool
-        # )
         numbalib.wfs.place_subaps_on_detector(
                 self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
                 threads=self.threads
         )
-
 
         # Scale data for correct number of photons
         self.detector /= self.detector.sum()

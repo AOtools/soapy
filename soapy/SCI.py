@@ -140,12 +140,6 @@ class PSF(object):
         # Bin down to detector number of pixels
         numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
 
-        # Bin down to the required number of pixels
-        # self.focus_efield = numbalib.binImgs(
-        #     focalPlane_efield, self.config.fftOversamp, self.focus_efield)
-
-        # self.detector = numbalib.abs_squared(self.focus_efield)
-
         # Normalise the psf
         self.detector /= self.detector.sum()
 
