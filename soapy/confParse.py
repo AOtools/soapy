@@ -81,6 +81,7 @@ class PY_Configurator(object):
         self.sim = SimConfig()
         self.atmos = AtmosConfig()
         self.tel = TelConfig()
+        self.recon = ReconstructorConfig()
 
     def readfile(self):
 
@@ -125,6 +126,9 @@ class PY_Configurator(object):
             logger.debug("Load DM {} Params".format(dm))
             self.dms.append(DmConfig(dm))
             self.dms[dm].loadParams(self.configDict["DM"])
+
+        logger.debug("Load Reconstructor Params")
+        self.recon.loadParams(self.configDict["Reconstructor"])
 
         for sci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(sci))
@@ -324,6 +328,10 @@ class YAML_Configurator(PY_Configurator):
 
             self.dms.append(DmConfig(None))
             self.dms[nDm].loadParams(dmDict)
+
+
+        logger.debug("Load Reconstructor Params")
+        self.recon.loadParams(self.configDict["Reconstructor"])
 
         for nSci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(nSci))
@@ -969,9 +977,52 @@ class DmConfig(ConfigObj):
         self.iMatValue  = float(self.iMatValue)
         self.svdConditioning = float(self.svdConditioning)
 
+class ReconstructorConfig(ConfigObj):
+    """
+    Configuration parameters describing the reconstructor that will be used to calculate
+    DM commands from WFS measurements. The ``type`` must be an object in the ``soapy.reconstruction``
+    module. Other parameters may be specific to this reconstructor
+
+    Optional:
+        ==================== =================================   ===========
+        **Parameter**        **Description**                     **Default**
+        -------------------- ---------------------------------   -----------
+        ``type``             string: Type of reconstructor to
+                             use. Must be a class in
+                             reconstruction module.              ``MVM``
+        ``svdConditioning``  float: Conditioning parameter to
+                             be using in Least Squares
+                             reconstructor inversion SVD to
+                             cut off unwanted DM modes. See
+                             ``numpy.linalg.pinv`` for details
+                             about the inversion.                ``0``
+        ``gain``             float: Gain of the integrator
+                             loop.
+
+        ==================== =================================   ===========
+
+    """
+    requiredParams = [
+                        ]
+    optionalParams = [
+            ("type", "MVM"),
+            ("svdConditioning", 0.),
+            ("gain", 0.6)
+                        ]
+
+    calculatedParams = [
+                            ]
+    allowedAttrs = copy.copy(requiredParams + calculatedParams + CONFIG_ATTRIBUTES)
+    for p in optionalParams:
+        allowedAttrs.append(p[0])
+
 class SciConfig(ConfigObj):
     """
-    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` of the parameter file. Each Science target is created seperately with an integer index. Any entries above ``sim.nSci`` will be ignored.
+    Configuration parameters characterising Science Cameras.
+
+    These should be held in the ``Science`` of the parameter file.
+    Each Science target is created seperately with an integer index.
+    Any entries above ``sim.nSci`` will be ignored.
 
     Required:
         ==================      ============================================

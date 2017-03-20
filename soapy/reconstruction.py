@@ -46,11 +46,13 @@ class Reconstructor(object):
     """
     def __init__(self, soapy_config, dms, wfss, atmos, runWfsFunc=None):
 
+        self.soapy_config = soapy_config
 
         self.dms = dms
         self.wfss = wfss
         self.sim_config = soapy_config.sim
         self.atmos = atmos
+        self.config = soapy_config.recon
 
         self.n_dms = soapy_config.sim.nDM
         self.scrn_size = soapy_config.sim.scrnSize
@@ -381,9 +383,9 @@ class MVM(Reconstructor):
         '''
 
         logger.info("Invert iMat with cond: {}".format(
-                self.dms[0].dmConfig.svdConditioning))
+                self.config.svdConditioning))
         self.controlMatrix[:] = scipy.linalg.pinv(
-                self.interaction_matrix, self.dms[0].dmConfig.svdConditioning
+                self.interaction_matrix, self.config.svdConditioning
                 )
 
 

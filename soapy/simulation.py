@@ -233,7 +233,7 @@ class Sim(object):
         # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
-            reconObj = getattr(reconstruction, self.config.sim.reconstructor)
+            reconObj = getattr(reconstruction, self.config.recon.type)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
         self.recon = reconObj(
