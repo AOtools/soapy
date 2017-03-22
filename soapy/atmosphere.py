@@ -56,9 +56,9 @@ import numpy
 import scipy.fftpack as fft
 import scipy.interpolate
 
-from . import AOFFT, logger
+from . import AOFFT, logger, numbalib
 from .aotools import phasescreen
-
+from aotools.turbulence import infinitephasescreen
 # Use either pyfits or astropy for fits file handling
 try:
     from astropy.io import fits
@@ -442,3 +442,49 @@ def makePhaseScreens(
 
     if returnScrns:
         return scrns
+
+
+class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
+    def __init__(self, nx_size, pixel_scale, r0, L0, wind_speed, time_step, wind_direction, random_seed=None, n_columns=2):
+        super(InfinitePhaseScreen, self).__init__(nx_size, pixel_scale, r0, L0, random_seed, n_columns)
+
+        self.wind_speed = wind_speed
+        self.time_step = time_step
+        self.wind_direction = wind_direction
+
+        self.n_move_pixels = (self.wind_speed / self.time_step) / self.pixel_scale
+
+        # Integer number of pixels that must be added on each iteration
+        self.int_move_pixels = int(self.n_move_pixels)
+
+        # the remainder that must be interpolated
+        self.float_position = 0
+
+        # The coordinates to use to interpolate - will add on a float  less that 1
+        self.interp_coords = numpy.arange(0, self.nx_size)
+
+        self.thread_pool = numbalib.ThreadPool(2)
+
+        self.output_screen = numpy.zeros((self.nx_size, self.nx_size))
+
+    def move_screen(self):
+
+        n_new_rows = self.int_move_pixels
+
+        self.float_position += (self.n_move_pixels - self.int_move_pixels)
+        if self.float_position >= 1:
+            n_new_rows += 1
+            self.float_position -= 1
+        print("New rows: {}, float_position: {}".format(n_new_rows, self.float_position))
+
+        for i in range(n_new_rows):
+            new_row = self.get_new_row()
+            self._scrn = numpy.append(new_row, self._scrn, axis=0)
+
+        self._scrn = self._scrn[:self.stencil_length, :self.nx_size]
+
+        numbalib.bilinear_interp(
+                self._scrn, self.interp_coords + self.float_position, self.interp_coords, self.output_screen,
+                self.thread_pool)
+
+        return self.output_screen
