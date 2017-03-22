@@ -9,7 +9,7 @@ if __name__ == "__main__":
     pixel_scale = 4/32
     r0 = 0.16
     L0 = 100.
-    wind_speed = pixel_scale/10.
+    wind_speed = pixel_scale/2
     time_step = 1.
     wind_direction = 0
 

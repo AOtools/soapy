@@ -461,7 +461,7 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
         self.float_position = 0
 
         # The coordinates to use to interpolate - will add on a float  less that 1
-        self.interp_coords = numpy.arange(0, self.nx_size)
+        self.interp_coords = numpy.arange(1, self.nx_size+1)
 
         self.thread_pool = numbalib.ThreadPool(2)
 
@@ -484,7 +484,10 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
         self._scrn = self._scrn[:self.stencil_length, :self.nx_size]
 
         numbalib.bilinear_interp(
-                self._scrn, self.interp_coords + self.float_position, self.interp_coords, self.output_screen,
+                self._scrn, self.interp_coords - self.float_position, self.interp_coords, self.output_screen,
                 self.thread_pool)
 
         return self.output_screen
+
+    def rotate_screen(self):
+        
