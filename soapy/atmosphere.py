@@ -446,6 +446,12 @@ def makePhaseScreens(
 
 class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
     def __init__(self, nx_size, pixel_scale, r0, L0, wind_speed, time_step, wind_direction, random_seed=None, n_columns=2):
+
+        if self.wind_direction is not in (0, 90, 180, 270):
+            # Have to make screne bigger to cope with rotaation
+            self.output_size = nx_size
+            nx_size *= 2**0.5
+
         super(InfinitePhaseScreen, self).__init__(nx_size, pixel_scale, r0, L0, random_seed, n_columns)
 
         self.wind_speed = wind_speed
@@ -466,7 +472,7 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
         self.thread_pool = numbalib.ThreadPool(2)
 
         self.output_screen = numpy.zeros((self.nx_size, self.nx_size))
-
+        self.rotation_output_screen = numpy.zeros((self.output_size, self.output_size))
     def move_screen(self):
 
         n_new_rows = self.int_move_pixels
@@ -487,7 +493,29 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
                 self._scrn, self.interp_coords - self.float_position, self.interp_coords, self.output_screen,
                 self.thread_pool)
 
+        self.rotate_screen()
         return self.output_screen
 
     def rotate_screen(self):
-        
+
+        if self.wind_direction == 0:
+            return self.output_screen
+
+        elif self.wind_direction == 90:
+            self.output_screen = numpy.rot90(self.output_screen)
+            return self.output_screen
+
+        elif self.wind_direction == 180:
+            self.output_screen = numpy.flipud(self.output_screen)
+            return self.output_screen
+
+        elif self.wind_direction == 270:
+            self.output_screen = numpy.rot(self.output_screen,  k=3)
+            return self.output_screen
+
+        else:
+            self.output_screen = numbalib.rotate(
+                    self.output_screen.copy(), self.output_screen, self.wind_direction*numpy.pi/180)
+            return self.output_screen
+
+
