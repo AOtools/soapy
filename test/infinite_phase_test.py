@@ -11,8 +11,7 @@ if __name__ == "__main__":
     L0 = 100.
     wind_speed = pixel_scale/2
     time_step = 1.
-    wind_direction = 0
-
+    wind_direction = 10
 
     phase_screen = atmosphere.InfinitePhaseScreen(nx_size, pixel_scale, r0, L0, wind_speed, time_step, wind_direction)
 

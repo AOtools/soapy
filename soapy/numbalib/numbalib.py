@@ -76,6 +76,39 @@ def bilinear_interp_numba(data, xCoords, yCoords, chunkIndices, interpArray):
             interpArray[i, j] = a1 + yGrad * (y - y1)
     return interpArray
 
+
+@numba.jit(nopython=True, nogil=True)
+def rotate(data, interpArray, rotation_angle):
+    for i in range(interpArray.shape[0]):
+        for j in range(interpArray.shape[1]):
+
+            i1 = i - (interpArray.shape[0] / 2. - 0.5)
+            j1 = j - (interpArray.shape[1] / 2. - 0.5)
+            x = i1 * numpy.cos(rotation_angle) - j1 * numpy.sin(rotation_angle)
+            y = i1 * numpy.sin(rotation_angle) + j1 * numpy.cos(rotation_angle)
+
+            x += data.shape[0] / 2. - 0.5
+            y += data.shape[1] / 2. - 0.5
+
+            if x >= data.shape[0] - 1:
+                x = data.shape[0] - 1.1
+            x1 = numpy.int32(x)
+
+            if y >= data.shape[1] - 1:
+                y = data.shape[1] - 1.1
+            y1 = numpy.int32(y)
+
+            xGrad1 = data[x1 + 1, y1] - data[x1, y1]
+            a1 = data[x1, y1] + xGrad1 * (x - x1)
+
+            xGrad2 = data[x1 + 1, y1 + 1] - data[x1, y1 + 1]
+            a2 = data[x1, y1 + 1] + xGrad2 * (x - x1)
+
+            yGrad = a2 - a1
+            interpArray[i, j] = a1 + yGrad * (y - y1)
+    return interpArray
+
+
 def abs_squared(input_data, output_data, threads=None):
     if threads is None:
         threads = N_CPU
