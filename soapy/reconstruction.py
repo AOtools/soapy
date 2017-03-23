@@ -225,17 +225,13 @@ class Reconstructor(object):
 
         n_acts = 0
         for dm_n, dm in self.dms.items():
-            n_wfs_measurments = 0
-            for wfs_n, wfs in self.wfss.items():
-                logger.info("Creating Interaction Matrix beteen DM %d and WFS %d..." % (dm_n, wfs_n))
-                self.interaction_matrix[
-                        n_acts: n_acts+dm.n_acts, n_wfs_measurments: n_wfs_measurments+wfs.n_measurements
-                        ] = self.make_dm_iMat(dm,  wfs, callback=callback)
-                n_wfs_measurments += wfs.n_measurements
+            logger.info("Creating Interaction Matrix beteen DM %d " % (dm_n))
+            self.interaction_matrix[n_acts: n_acts+dm.n_acts
+                    ] = self.make_dm_iMat(dm, callback=callback)
 
             n_acts += dm.n_acts
 
-    def make_dm_iMat(self, dm, wfs, callback=None):
+    def make_dm_iMat(self, dm, callback=None):
         """
         Makes an interaction matrix for a given DM with a given WFS
 
@@ -246,7 +242,7 @@ class Reconstructor(object):
         """
 
         iMat = numpy.zeros(
-            (dm.n_acts, wfs.n_measurements))
+            (dm.n_acts, self.sim_config.totalWfsData))
 
         # A vector of DM commands to use when making the iMat
         actCommands = numpy.zeros(dm.n_acts)
@@ -263,8 +259,11 @@ class Reconstructor(object):
             phase[:] = 0
             phase[dm.n_dm] = dm.dmFrame(actCommands)
             # Send the DM shape off to the relavent WFS. put result in iMat
-            iMat[i] = (
-                    -1 * wfs.frame(None, phase_correction=phase)) / dm.dmConfig.iMatValue
+            n_wfs_measurments = 0
+            for wfs_n, wfs in self.wfss.items():
+                iMat[i, n_wfs_measurments: n_wfs_measurments+wfs.n_measurements] = (
+                        -1 * wfs.frame(None, phase_correction=phase)) / dm.dmConfig.iMatValue
+                n_wfs_measurments += wfs.n_measurements
 
             if callback != None:
                 callback()
