@@ -927,7 +927,7 @@ class Sim(object):
         if strehl:
             string += "  Strehl -- "
             for sci in xrange(self.config.sim.nSci):
-                string += "sci_{0}: inst {1:.2f}, long {2:.2f}".format(
+                string += "sci_{0}: inst {1:.2f}, long {2:.2f} ".format(
                         sci, self.sciCams[sci].instStrehl,
                         self.sciCams[sci].longExpStrehl)
 
