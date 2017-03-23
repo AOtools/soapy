@@ -522,7 +522,7 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
             return self.output_rotation_screen
 
         else:
-            self.output_screen = numbalib.rotate(
+            numbalib.rotate(
                     self.output_screen, self.output_rotation_screen,
                 self.wind_direction*numpy.pi/180)
             return self.output_rotation_screen
