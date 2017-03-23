@@ -198,7 +198,7 @@ class PY_Configurator(object):
 
         self.sim.scrnSize = int(round(self.sim.scrnSize))
 
-        # Make scrnSize even
+        # Make scrn_size even
         if self.sim.scrnSize % 2 != 0:
             self.sim.scrnSize += 1
 
@@ -586,6 +586,7 @@ class AtmosConfig(ConfigObj):
         ``randomScrns``     bool: Use a random set of phase
                             phase screens for each loop
                             iteration?                          ``False``
+        ``infinite``        bool: Use infinite phase screens?   ``False``
         ``tau0``            float: Turbulence coherence time,
                             if set wind speeds are scaled.      ``None``
         ==================  =================================   ===========
@@ -605,6 +606,7 @@ class AtmosConfig(ConfigObj):
                         ("L0", None),
                         ("randomScrns", False),
                         ("tau0", None),
+                        ("infinite", False),
                         ]
 
     # Parameters which may be set at some point and are allowed
