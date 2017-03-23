@@ -5,7 +5,6 @@ nDM: 2
 nSci: 1
 nIters: 5000
 loopTime: 0.0025
-reconstructor: "MVM"
 
 verbosity: 2
 
@@ -47,17 +46,11 @@ DM:
     type: TT
     closed: True
     iMatValue: 5000
-    gain: 0.6
-    svdConditioning: 0.05
-
 
   1:
     type: Piezo
     closed: True
     nxActuators: 9
-    svdConditioning: 0.05
-    gain: 0.7
-    iMatValue: 750
 
 Reconstructor:
   type: MVM
