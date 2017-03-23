@@ -47,17 +47,12 @@ DM:
     type: TT
     closed: True
     iMatValue: 5000
-    gain: 0.6
-    svdConditioning: 0.05
 
 
   1:
     type: FastPiezo
     closed: True
     nxActuators: 9
-    svdConditioning: 0.05
-    gain: 0.7
-    iMatValue: 750
 
 Reconstructor:
   type: MVM

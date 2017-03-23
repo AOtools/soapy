@@ -72,6 +72,11 @@ DM:
     iMatValue: 500
     wfs: 1
 
+Reconstructor:
+  type: MVM
+  svdConditioning: 0.03
+  gain: 0.6
+
 Science:
   0:
     type: PSF
