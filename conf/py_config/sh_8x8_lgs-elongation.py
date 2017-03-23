@@ -78,6 +78,12 @@ simConfiguration = {
     "iMatValue"         :   [50,        10  ],
     },
 
+"Reconstructor":{
+    "type": "MVM",
+    "svdConditioning": 0.05,
+    "gain": 0.6,
+    },
+
 "Science":{
     "position"      :   [(0,0)],
     "FOV"           :   [3.0],
