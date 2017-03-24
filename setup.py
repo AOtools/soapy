@@ -22,6 +22,7 @@ setup(
                 'soapy.aotools.circle',
                 'soapy.aotools.interp',
                 'soapy.aotools.phasescreen',
+                'soapy.aotools.turbulence',
                 'soapy.aotools.wfs',
                 'soapy.aotools.fft',
                 'soapy.pyqtgraph'
