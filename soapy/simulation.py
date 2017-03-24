@@ -233,7 +233,7 @@ class Sim(object):
         # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
-            reconObj = getattr(reconstruction, self.config.sim.reconstructor)
+            reconObj = getattr(reconstruction, self.config.recon.type)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
         self.recon = reconObj(
@@ -927,7 +927,7 @@ class Sim(object):
         if strehl:
             string += "  Strehl -- "
             for sci in xrange(self.config.sim.nSci):
-                string += "sci_{0}: inst {1:.2f}, long {2:.2f}".format(
+                string += "sci_{0}: inst {1:.2f}, long {2:.2f} ".format(
                         sci, self.sciCams[sci].instStrehl,
                         self.sciCams[sci].longExpStrehl)
 
