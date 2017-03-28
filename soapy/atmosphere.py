@@ -58,7 +58,7 @@ import scipy.interpolate
 
 from . import AOFFT, logger, numbalib
 from .aotools import phasescreen
-from aotools.turbulence import infinitephasescreen
+from aotools.turbulence import infinitephasescreen, infinitephasescreen_fried
 # Use either pyfits or astropy for fits file handling
 try:
     from astropy.io import fits
@@ -444,8 +444,10 @@ def makePhaseScreens(
         return scrns
 
 
-class InfinitePhaseScreen(infinitephasescreen.PhaseScreen2):
-    def __init__(self, nx_size, pixel_scale, r0, L0, wind_speed, time_step, wind_direction, random_seed=None, n_columns=2):
+class InfinitePhaseScreen(infinitephasescreen.PhaseScreenVonKarman):
+    def __init__(
+            self, nx_size, pixel_scale, r0, L0, wind_speed,
+            time_step, wind_direction, random_seed=None, n_columns=2):
 
         if wind_direction not in (0, 90, 180, 270):
             # Have to make screne bigger to cope with rotaation

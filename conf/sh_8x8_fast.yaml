@@ -1,5 +1,5 @@
 simName:
-pupilSize: 64
+pupilSize: 100
 nGS: 1
 nDM: 2
 nSci: 1
@@ -17,11 +17,11 @@ saveSciPsf: True
 
 
 Atmosphere:
-  scrnNo: 4
+  scrnNo: 1
   scrnHeights: [0, 5000, 10000, 15000]
   scrnStrengths: [0.5, 0.3, 0.1, 0.1]
   windDirs: [0, 45, 90, 135]
-  windSpeeds: [10, 10, 15, 20]
+  windSpeeds: [32, 10, 15, 20]
   wholeScrnSize: 2048
   r0: 0.16
 
