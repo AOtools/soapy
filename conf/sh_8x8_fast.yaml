@@ -21,7 +21,7 @@ Atmosphere:
   scrnHeights: [0, 5000, 10000, 15000]
   scrnStrengths: [0.5, 0.3, 0.1, 0.1]
   windDirs: [0, 45, 90, 135]
-  windSpeeds: [32, 10, 15, 20]
+  windSpeeds: [10, 10, 15, 20]
   wholeScrnSize: 2048
   r0: 0.16
   L0: [20, 20, 20, 20]
