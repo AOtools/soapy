@@ -1,3 +1,14 @@
+#0.14.0 (in development)
+- Massive changes to internals of simulation
+- Many slow algorithms and classes rewritten using "numba" library - much faster, ELT scale problems now reasonable.
+- Rewritten parts are the lineofsight moduel and the ShackHartmann WFS
+- Added infinite phase screens
+- Interaction matrices now measured in the "reconstructor" modules rather than by the DMs themselves
+- Added reconstructor section in config file to allow for more complex reconstructor specifications
+- Improved GUI with some extra buttons!
+- Now depends on external aotools package (available on pip and here), internal aotools will be removed
+
+
 #0.13.0 (10th January 2017)
 - Use "aotools" packages instead of "AOSimLib" (aotools packaged with Soapy)
 - Move pupil mask loading and formatting to seperate function in Simulation
