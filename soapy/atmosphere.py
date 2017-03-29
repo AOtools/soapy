@@ -93,13 +93,14 @@ class atmos(object):
         self.simConfig = soapyConfig.sim
         self.config =  soapyConfig.atmos
 
-        self.scrnSize = self.simConfig.scrnSize
+        self.scrn_size = self.simConfig.scrnSize
         self.windDirs = self.config.windDirs
         self.windSpeeds = self.config.windSpeeds
-        self.pxlScale = self.simConfig.pxlScale
+        self.pixel_scale = 1./self.simConfig.pxlScale
         self.wholeScrnSize = self.config.wholeScrnSize
         self.scrnNo = self.config.scrnNo
         self.r0 = self.config.r0
+        self.L0s = self.config.L0
         self.looptime = self.simConfig.loopTime
 
         self.config.scrnStrengths = numpy.array(self.config.scrnStrengths,
@@ -138,9 +139,9 @@ class atmos(object):
         self.wholeScrns = {}
 
 
-        scrnSize = int(round(self.scrnSize))
+        scrnSize = int(round(self.scrn_size))
 
-        self.scrns = numpy.zeros((self.scrnNo, self.scrnSize, self.scrnSize))
+        self.scrns = numpy.zeros((self.scrnNo, self.scrn_size, self.scrn_size))
 
 
         # The whole screens will be kept at this value, and then scaled to the
@@ -148,99 +149,109 @@ class atmos(object):
         self.wholeScrnR0 = 1.
 
         # If required, generate some new Kolmogorov phase screens
-        if not self.config.scrnNames:
-            logger.info("Generating Phase Screens")
-            for i in xrange(self.scrnNo):
+        if self.config.infinite:
+            self.infinite_phase_screens = []
+            for layer in range(self.config.scrnNo):
+                logger.info("Initialise Infinite Phase Screen {}".format(layer+1))
+                phase_screen = InfinitePhaseScreen(
+                        self.scrn_size, self.pixel_scale, self.scrnStrengths[layer],
+                        self.L0s[layer], self.windSpeeds[layer], self.looptime, self.windDirs[layer])
+                self.infinite_phase_screens.append(phase_screen)
 
-                logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
-                if self.config.subHarmonics:
-                    self.wholeScrns[i] = phasescreen.ft_sh_phase_screen(
-                            self.wholeScrnR0,
-                            self.wholeScrnSize, 1./self.pxlScale,
-                            self.config.L0[i], 0.01)
-                else:
-                    self.wholeScrns[i] = phasescreen.ft_phase_screen(
-                            self.wholeScrnR0,
-                            self.wholeScrnSize, 1./self.pxlScale,
-                            self.config.L0[i], 0.01)
-
-                self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
-
-        # Otherwise, load some others from FITS file
         else:
-            logger.info("Loading Phase Screens")
+            if not self.config.scrnNames:
+                logger.info("Generating Phase Screens")
+                for i in xrange(self.scrnNo):
 
+                    logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
+                    if self.config.subHarmonics:
+                        self.wholeScrns[i] = phasescreen.ft_sh_phase_screen(
+                                self.wholeScrnR0,
+                                self.wholeScrnSize, self.pixel_scale,
+                                self.config.L0[i], 0.01)
+                    else:
+                        self.wholeScrns[i] = phasescreen.ft_phase_screen(
+                                self.wholeScrnR0,
+                                self.wholeScrnSize, self.pixel_scale,
+                                self.config.L0[i], 0.01)
+
+                    self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
+
+            # Otherwise, load some others from FITS file
+            else:
+                logger.info("Loading Phase Screens")
+
+                for i in xrange(self.scrnNo):
+                    fitsHDU = fits.open(self.config.scrnNames[i])
+                    scrnHDU = fitsHDU[0]
+                    self.wholeScrns[i] = scrnHDU.data.astype("float32")
+
+                    self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
+
+                    # Do the loaded scrns tell us how strong they are?
+                    # Theyre r0 must be in pixels! label: "R0"
+                    # If so, we can scale them to the desired r0
+                    try:
+                        r0 = float(scrnHDU.header["R0"])
+                        r0_metres = r0 * self.pixel_scale
+                        self.wholeScrns[i] *=(
+                                     (self.wholeScrnR0/r0_metres)**(-5./6.)
+                                             )
+
+                    except KeyError:
+                        logger.warning("no r0 info found in screen header - will assume its ok as it is")
+
+                # close fits HDU now we're done with it
+                fitsHDU.close()
+
+                if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
+                    logger.warning("Requested phase screen has different size to that input in config file....loading anyway")
+
+                self.wholeScrnSize = self.wholeScrns[i].shape[0]
+                if self.wholeScrnSize < self.scrn_size:
+                    raise Exception("required scrn size larger than phase screen")
+            
+            
+            # However we made the phase screen, turn it into meters for ease of
+            # use
+    #        for s in range(self.scrnNo):
+    #            self.wholeScrns[s] *= (500e-9/(2*numpy.pi))
+    #
+            # Set the initial starting point of the screen,
+            # If windspeed is negative, starts from the
+            # far-end of the screen to avoid rolling straight away
+            windDirs = numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
+            windV = (self.windSpeeds * numpy.array([numpy.cos(windDirs),
+                                                    numpy.sin(windDirs)])).T #This is velocity in metres per second
+            windV *= self.looptime   #Now metres per looptime
+            windV /= self.pixel_scale   #Now pxls per looptime.....ideal!
+            self.windV = windV
+
+            # Sets initial phase screen pos
+            # If velocity is negative in either direction, set the starting point
+            # to the end of the screen to avoid rolling too early.
             for i in xrange(self.scrnNo):
-                fitsHDU = fits.open(self.config.scrnNames[i])
-                scrnHDU = fitsHDU[0]
-                self.wholeScrns[i] = scrnHDU.data.astype("float32")
+                self.scrnPos[i] = numpy.array([0,0])
 
-                self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
+                if windV[i,0] < 0:
+                    self.scrnPos[i][0] = self.wholeScrns[i].shape[0] - self.scrn_size
 
-                # Do the loaded scrns tell us how strong they are?
-                # Theyre r0 must be in pixels! label: "R0"
-                # If so, we can scale them to the desired r0
-                try:
-                    r0 = float(scrnHDU.header["R0"])
-                    r0_metres = r0/self.pxlScale
-                    self.wholeScrns[i] *=(
-                                 (self.wholeScrnR0/r0_metres)**(-5./6.)
-                                         )
+                if windV[i,1] < 0:
+                    self.scrnPos[i][1] = self.wholeScrns[i].shape[1] - self.scrn_size
 
-                except KeyError:
-                    logger.warning("no r0 info found in screen header - will assume its ok as it is")
-                    
-            # close fits HDU now we're done with it
-            fitsHDU.close()
-                   
-            if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
-                logger.warning("Requested phase screen has different size to that input in config file....loading anyway")
+            self.windV = windV
 
-            self.wholeScrnSize = self.wholeScrns[i].shape[0]
-            if self.wholeScrnSize < self.scrnSize:
-                raise Exception("required scrn size larger than phase screen")
-            
-            
-        # However we made the phase screen, turn it into meters for ease of
-        # use
-#        for s in range(self.scrnNo):
-#            self.wholeScrns[s] *= (500e-9/(2*numpy.pi))
-#
-        # Set the initial starting point of the screen,
-        # If windspeed is negative, starts from the
-        # far-end of the screen to avoid rolling straight away
-        windDirs = numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
-        windV = (self.windSpeeds * numpy.array([numpy.cos(windDirs),
-                                                numpy.sin(windDirs)])).T #This is velocity in metres per second
-        windV *= self.looptime   #Now metres per looptime
-        windV *= self.pxlScale   #Now pxls per looptime.....ideal!
-        self.windV = windV
-
-        # Sets initial phase screen pos
-        # If velocity is negative in either direction, set the starting point
-        # to the end of the screen to avoid rolling too early.
-        for i in xrange(self.scrnNo):
-            self.scrnPos[i] = numpy.array([0,0])
-
-            if windV[i,0] < 0:
-                self.scrnPos[i][0] = self.wholeScrns[i].shape[0] - self.scrnSize
-
-            if windV[i,1] < 0:
-                self.scrnPos[i][1] = self.wholeScrns[i].shape[1] - self.scrnSize
-
-        self.windV = windV
-
-        #Init scipy interpolation objects which hold the phase screen data
-        self.interpScrns = {}
-        self.xCoords = {}
-        self.yCoords = {}
-        for i in xrange(self.scrnNo):
-            self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
-                                        numpy.arange(self.wholeScrnSize),
-                                        numpy.arange(self.wholeScrnSize),
-                                        self.wholeScrns[i])#, copy=True)
-            self.xCoords[i] = numpy.arange(self.scrnSize).astype('float') + self.scrnPos[i][0]
-            self.yCoords[i] = numpy.arange(self.scrnSize).astype('float') + self.scrnPos[i][1]
+            #Init scipy interpolation objects which hold the phase screen data
+            self.interpScrns = {}
+            self.xCoords = {}
+            self.yCoords = {}
+            for i in xrange(self.scrnNo):
+                self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
+                                            numpy.arange(self.wholeScrnSize),
+                                            numpy.arange(self.wholeScrnSize),
+                                            self.wholeScrns[i])#, copy=True)
+                self.xCoords[i] = numpy.arange(self.scrn_size).astype('float') + self.scrnPos[i][0]
+                self.yCoords[i] = numpy.arange(self.scrn_size).astype('float') + self.scrnPos[i][1]
 
 
     def saveScrns(self, DIR):
@@ -256,7 +267,7 @@ class atmos(object):
         for scrn in range(self.scrnNo):
             logger.info("Write Sreen {}....".format(scrn))
             hdu = fits.PrimaryHDU(self.wholeScrns[scrn])
-            hdu.header["R0"] = self.wholeScrnR0 * self.pxlScale
+            hdu.header["R0"] = self.wholeScrnR0 / self.pixel_scale
             hdulist = fits.HDUList([hdu])
             hdulist.writeto(DIR+"/scrn{}.fits".format(scrn))
             hdulist.close()
@@ -278,21 +289,26 @@ class atmos(object):
         if self.config.randomScrns:
             return self.randomScrns(subHarmonics=self.config.subHarmonics)
 
+        if self.config.infinite:
+            for layer in range(self.scrnNo):
+                self.scrns[layer] = self.infinite_phase_screens[layer].move_screen()
+                # Convert to nm
+                self.scrns *= (500/(2*numpy.pi))
+                return self.scrns
+
         # Other wise proceed with translating large phase screens
-
-
         for i in self.wholeScrns:
 
             # Deals with what happens when the window on the screen
             # reaches the edge - rolls it round and starts again.
             # X direction
-            if (self.scrnPos[i][0] + self.scrnSize) >= self.wholeScrnSize:
-                logger.debug("pos > scrnSize: rolling phase screen X")
+            if (self.scrnPos[i][0] + self.scrn_size) >= self.wholeScrnSize:
+                logger.debug("pos > scrn_size: rolling phase screen X")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                                 int(-self.scrnPos[i][0]),axis=0)
                 self.scrnPos[i][0] = 0
                 # and update the coords...
-                self.xCoords[i] = numpy.arange(self.scrnSize).astype('float')
+                self.xCoords[i] = numpy.arange(self.scrn_size).astype('float')
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
@@ -302,20 +318,20 @@ class atmos(object):
                 logger.debug("pos < 0: rolling phase screen X")
 
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
-                                            int(self.wholeScrnSize-self.scrnPos[i][0]-self.scrnSize),axis=0)
-                self.scrnPos[i][0] = self.wholeScrnSize-self.scrnSize
-                self.xCoords[i] = numpy.arange(self.scrnSize).astype('float')+self.scrnPos[i][0]
+                                                int(self.wholeScrnSize - self.scrnPos[i][0] - self.scrn_size), axis=0)
+                self.scrnPos[i][0] = self.wholeScrnSize-self.scrn_size
+                self.xCoords[i] = numpy.arange(self.scrn_size).astype('float') + self.scrnPos[i][0]
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
                                             self.wholeScrns[i])
             # Y direction
-            if (self.scrnPos[i][1] + self.scrnSize) >= self.wholeScrnSize:
-                logger.debug("pos > scrnSize: rolling Phase Screen Y")
+            if (self.scrnPos[i][1] + self.scrn_size) >= self.wholeScrnSize:
+                logger.debug("pos > scrn_size: rolling Phase Screen Y")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                                 int(-self.scrnPos[i][1]),axis=1)
                 self.scrnPos[i][1] = 0
-                self.yCoords[i] = numpy.arange(self.scrnSize).astype('float')
+                self.yCoords[i] = numpy.arange(self.scrn_size).astype('float')
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
@@ -324,10 +340,10 @@ class atmos(object):
                 logger.debug("pos < 0: rolling Phase Screen Y")
 
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
-                    int(self.wholeScrnSize-self.scrnPos[i][1]-self.scrnSize),
-                                                                axis=1)
-                self.scrnPos[i][1] = self.wholeScrnSize-self.scrnSize
-                self.yCoords[i] = numpy.arange(self.scrnSize).astype('float')+self.scrnPos[i][1]
+                                                int(self.wholeScrnSize - self.scrnPos[i][1] - self.scrn_size),
+                                                axis=1)
+                self.scrnPos[i][1] = self.wholeScrnSize-self.scrn_size
+                self.yCoords[i] = numpy.arange(self.scrn_size).astype('float') + self.scrnPos[i][1]
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
@@ -365,12 +381,12 @@ class atmos(object):
         for i in xrange(self.scrnNo):
             if subHarmonics:
                 self.scrns[i] = phasescreen.ft_sh_phase_screen(
-                        self.scrnStrengths[i], self.scrnSize,
-                        (self.pxlScale**(-1.)), self.config.L0[i], l0)
+                        self.scrnStrengths[i], self.scrn_size,
+                        self.pixel_scale, self.config.L0[i], l0)
             else:
                 self.scrns[i] = phasescreen.ft_phase_screen(
-                        self.scrnStrengths[i], self.scrnSize,
-                        (self.pxlScale**(-1.)), self.config.L0[i], l0)
+                        self.scrnStrengths[i], self.scrn_size,
+                        self.pixel_scale, self.config.L0[i], l0)
 
             # Turn to nm
             self.scrns[i] *= (500./(2*numpy.pi))
@@ -459,7 +475,7 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreenVonKarman):
         self.time_step = time_step
         self.wind_direction = wind_direction
 
-        self.n_move_pixels = (self.wind_speed / self.time_step) / self.pixel_scale
+        self.n_move_pixels = (self.wind_speed * self.time_step) / self.pixel_scale
 
         # Integer number of pixels that must be added on each iteration
         self.int_move_pixels = int(self.n_move_pixels)
@@ -486,7 +502,9 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreenVonKarman):
         # print("New rows: {}, float_position: {}".format(n_new_rows, self.float_position))
 
         for i in range(n_new_rows):
+            # print("Get row: {}".format(i))
             new_row = self.get_new_row()
+            # print("append row: {}".format(i))
             self._scrn = numpy.append(new_row, self._scrn, axis=0)
 
         self._scrn = self._scrn[:self.stencil_length, :self.nx_size]
@@ -527,3 +545,35 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreenVonKarman):
             return self.output_rotation_screen
 
 
+    def calc_seperations(self):
+        """
+        Calculates the seperations between the phase points in the stencil and the new phase vector
+        """
+        positions = numpy.append(self.stencil_positions, self.X_positions, axis=0)
+        self.seperations = numpy.zeros((len(positions), len(positions)))
+
+        calculate_seperations(positions, self.seperations)
+
+        # for i, (x1, y1) in enumerate(positions):
+        #     for j, (x2, y2) in enumerate(positions):
+        #
+        #         delta_x = x2 - x1
+        #         delta_y = y2 - y1
+        #
+        #         delta_r = numpy.sqrt(delta_x**2 + delta_y**2)
+        #
+        #         self.seperations[i, j] = delta_r
+
+import numba
+@numba.jit(nopython=True)
+def calculate_seperations(positions, seperations):
+    for i in range(positions.shape[0]):
+        (x1, y1) = positions[i]
+        for j in range(positions.shape[0]):
+            (x2, y2) = positions[j]
+            delta_x = x2 - x1
+            delta_y = y2 - y1
+
+            delta_r = numpy.sqrt(delta_x ** 2 + delta_y ** 2)
+
+            seperations[i, j] = delta_r
