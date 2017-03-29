@@ -124,7 +124,7 @@ class PSF(object):
         and uses an FFT to transform to the focal plane.
         '''
 
-        numbalib.los.bilinear_interp(
+        numbalib.bilinear_interp(
                 self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
                 self.thread_pool)
 

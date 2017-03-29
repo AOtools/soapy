@@ -381,8 +381,8 @@ class MVM(Reconstructor):
         control matrix
         '''
 
-        logger.info("Invert iMat with cond: {}".format(
-                self.config.svdConditioning))
+        logger.info("Invert iMat with conditioning: {:.4f}".format(
+                self.dms[0].dmConfig.svdConditioning))
         self.controlMatrix[:] = scipy.linalg.pinv(
                 self.interaction_matrix, self.config.svdConditioning
                 )
