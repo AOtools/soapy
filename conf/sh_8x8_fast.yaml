@@ -3,7 +3,7 @@ pupilSize: 100
 nGS: 1
 nDM: 2
 nSci: 1
-nIters: 500
+nIters: 5000
 loopTime: 0.0025
 reconstructor: "MVM"
 threads: 4

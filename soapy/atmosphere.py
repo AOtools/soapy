@@ -58,7 +58,7 @@ import scipy.interpolate
 
 from . import AOFFT, logger, numbalib
 from .aotools import phasescreen
-from aotools.turbulence import infinitephasescreen, infinitephasescreen_fried
+from aotools.turbulence import infinitephasescreen
 # Use either pyfits or astropy for fits file handling
 try:
     from astropy.io import fits
@@ -355,9 +355,6 @@ class atmos(object):
             self.scrnPos[i] = self.scrnPos[i] + self.windV[i]
             self.xCoords[i] += self.windV[i][0].astype('float')
             self.yCoords[i] += self.windV[i][1].astype('float')
-
-            # remove piston from phase screens
-            self.scrns[i] -= self.scrns[i].mean()
 
             # Calculate the required r0 of each screen from config
             self.config.normScrnStrengths = (
