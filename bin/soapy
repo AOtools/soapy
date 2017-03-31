@@ -4,12 +4,13 @@ The python AO simulation startup script.
 either starts a command line or gui version of the simulation.
 '''
 import sys
+import os
+
 if sys.platform == "win32":
     # hack to stop the interpretter craching on ctrl-c events when scipy imported.
     # described in more detail here:
     # http://stackoverflow.com/questions/15457786/ctrl-c-crashes-python-after-importing-scipy-stats
 
-    import os
     import imp
     import ctypes
     import _thread as thread
