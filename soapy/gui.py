@@ -635,15 +635,17 @@ class StatsThread(QtCore.QThread):
         self.startTime = time.time()
 
         while self.sim.iters+1 < self.sim.config.sim.nIters and self.sim.go:
-            time.sleep(0.4)
+            time.sleep(0.2)
             iTime = time.time()
-            try:
-                #Calculate and print running stats
-                itersPerSec = self.sim.iters / (iTime - self.startTime)
-                timeRemaining = (self.sim.config.sim.nIters-self.sim.iters)/itersPerSec
-                self.updateStatsSignal.emit(itersPerSec, timeRemaining)
-            except ZeroDivisionError:
-                pass
+            # try:
+            #Calculate and print running stats
+            itersPerSec = self.sim.iters / (iTime - self.startTime)
+            if itersPerSec == 0:
+                itersPerSec = 0.00001
+            timeRemaining = (self.sim.config.sim.nIters-self.sim.iters)/itersPerSec
+            self.updateStatsSignal.emit(itersPerSec, timeRemaining)
+            # except ZeroDivisionError:
+            #     pass
 
 
 class InitThread(QtCore.QThread):
