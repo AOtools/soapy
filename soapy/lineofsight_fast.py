@@ -179,17 +179,22 @@ class LineOfSight(object):
             self.layer_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels)
             self.layer_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels)
 
+        # ensure coordinates aren't out of bounds for interpolation
+        self.layer_metapupil_coords = self.layer_metapupil_coords.clip(0, self.nx_scrn_size - 1.000000001)
+
         # Calculate coords of phase at each DM altitude
         self.dm_metapupil_coords = numpy.zeros((self.n_dm, 2, self.nx_out_pixels))
         for i in range(self.n_dm):
             x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
             self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels)
             self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels)
+        self.dm_metapupil_coords = self.dm_metapupil_coords.clip(0, self.nx_scrn_size - 1.000000000000001)
 
         self.radii = None
 
         self.phase_screens = numpy.zeros((self.n_layers, self.nx_out_pixels, self.nx_out_pixels))
         self.correction_screens = numpy.zeros((self.n_dm, self.nx_out_pixels, self.nx_out_pixels))
+        self.phase_correction = numpy.zeros((self.nx_out_pixels, self.nx_out_pixels))
 
     def calculate_altitude_coords(self, layer_altitude):
         """
@@ -253,9 +258,10 @@ class LineOfSight(object):
             radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         """
-
-        numbalib.los.get_phase_slices(
-            self.scrns, self.layer_metapupil_coords, self.phase_screens, self.thread_pool)
+        for i in range(self.scrns.shape[0]):
+            numbalib.bilinear_interp(
+                self.scrns[i], self.layer_metapupil_coords[i, 0], self.layer_metapupil_coords[i, 1],
+                self.phase_screens[i], self.thread_pool, bounds_check=False)
 
         # Check if geometric or physical
         if self.config.propagationMode == "Physical":
@@ -275,7 +281,7 @@ class LineOfSight(object):
         '''
 
 
-        self.phase = self.phase_screens.sum(0)
+        self.phase_screens.sum(0, out=self.phase)
 
         # Convert phase to radians
         self.phase *= self.phs2Rad
@@ -311,16 +317,15 @@ class LineOfSight(object):
         Parameters:
             correction (list or ndarray): either 2-d array describing correction, or list of correction arrays
         """
+        for i in range(correction.shape[0]):
+            numbalib.bilinear_interp(
+                correction[i], self.dm_metapupil_coords[i, 0], self.dm_metapupil_coords[i, 1],
+                self.correction_screens[i], self.thread_pool, bounds_check=False)
 
-        numbalib.los.get_phase_slices(
-            correction, self.dm_metapupil_coords, self.correction_screens, self.thread_pool)
-
-        self.phase_correction = self.correction_screens.sum(0)
+        self.correction_screens.sum(0, out=self.phase_correction)
 
         # Correct EField
         self.EField *= numpy.exp(-1j * self.phase_correction * self.phs2Rad)
-
-        # self.phase -= corr * self.phs2Rad
 
         # Also correct phase in case its required
         self.residual = self.phase / self.phs2Rad - self.phase_correction

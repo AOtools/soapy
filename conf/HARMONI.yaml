@@ -1,0 +1,147 @@
+simName: HARMONI
+pupilSize: 444
+nGS: 1
+nDM: 2
+nSci: 1
+nIters: 100
+loopTime: 0.002
+reconstructor: "MVM"
+
+verbosity: 2
+
+threads: 4
+
+saveSlopes: True
+
+Atmosphere:
+  scrnNo: 10
+  scrnHeights: [0.,    526.,   1053.,   1579.,   2105.,   2632.,   3158.,
+         3684.,   4211.,   4737.,   5263.,   5789.,   6316.,   6842.,
+         7368.,   7895.,   8421.,   8947.,   9474.,  10000.,  10526.,
+        11053.,  11579.,  12105.,  12632.,  13158.,  13684.,  14211.,
+        14737.,  15263.,  15789.,  16316.,  16842.,  17368.,  17895.,
+        18421.,  18947.,  19474.,  20000.]
+  scrnStrengths: [ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.]
+  windDirs: [ 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.]
+  windSpeeds: [ 10.,  11.,  11.,  12.,  12.,  13.,  13.,  14.,  14.,  15.,  15.,
+        16.,  16.,  17.,  17.,  18.,  18.,  19.,  19.,  20.,  21.,  21.,
+        22.,  22.,  23.,  23.,  24.,  24.,  25.,  25.,  26.,  26.,  27.,
+        27.,  28.,  28.,  29.,  29.,  30.]
+  L0: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+       50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+       50]
+  wholeScrnSize: 1024
+  r0: 0.16
+  infinite: True
+
+Telescope:
+  telDiam: 39.
+  obsDiam: 10.
+  mask: circle
+
+WFS:
+  0:
+    type: ShackHartmannFast
+    GSPosition: [45, 0]
+    GSHeight: 0
+    GSMag: 0
+    nxSubaps: 74
+    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
+    subapFOV: 3.
+    fftOversamp: 1
+    wavelength: 550e-9
+    subapFieldStop: True
+  1:
+    type: ShackHartmannFast
+    GSPosition: [22.5, -39]
+    GSHeight: 0
+    GSMag: 0
+    nxSubaps: 74
+    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
+    subapFOV: 3.
+    fftOversamp: 1
+    wavelength: 550e-9
+    subapFieldStop: True
+
+  2:
+    type: ShackHartmannFast
+    GSPosition: [-22.5, -39]
+    GSHeight: 0
+    GSMag: 0
+    nxSubaps: 74
+    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
+    subapFOV: 3.
+    fftOversamp: 1
+    wavelength: 550e-9
+    subapFieldStop: True
+
+  3:
+    type: ShackHartmannFast
+    GSPosition: [-45, 0]
+    GSHeight: 0
+    GSMag: 0
+    nxSubaps: 74
+    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
+    subapFOV: 3.
+    fftOversamp: 1
+    wavelength: 550e-9
+    subapFieldStop: True
+
+  4:
+    type: ShackHartmannFast
+    GSPosition: [-22.5, 39]
+    GSHeight: 0
+    GSMag: 0
+    nxSubaps: 74
+    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
+    subapFOV: 3.
+    fftOversamp: 1
+    wavelength: 550e-9
+    subapFieldStop: True
+
+  5:
+    type: ShackHartmannFast
+    GSPosition: [22.5, 39]
+    GSHeight: 0
+    GSMag: 0
+    nxSubaps: 74
+    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
+    subapFOV: 3.
+    fftOversamp: 1
+    wavelength: 550e-9
+    subapFieldStop: True
+
+
+
+DM:
+  0:
+    type: TT
+    closed: True
+    gain: 0.6
+    iMatValue: 5.
+
+  1:
+    type: FastPiezo
+    closed: True
+    nxActuators: 75
+    iMatValue: 500
+
+
+Reconstructor:
+  type: MVM
+  svdConditioning: 0.01
+  gain: 0.6
+
+
+Science:
+  0:
+    type: PSF
+    position: [0, 0]
+    FOV: 0.5
+    wavelength: 1.65e-6
+    pxls: 128
+

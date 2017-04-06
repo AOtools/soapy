@@ -349,9 +349,6 @@ class ShackHartmannFast(base.WFS):
                 self.subap_focus_intensity, self.config.fftOversamp, self.binnedFPSubapArrays,
                 thread_pool=self.thread_pool)
 
-        # In case of empty sub-aps, will get NaNs
-        # self.binnedFPSubapArrays[numpy.isnan(self.binnedFPSubapArrays)] = 0
-
         # Scale each sub-ap flux by sub-aperture fill-factor
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
@@ -360,6 +357,10 @@ class ShackHartmannFast(base.WFS):
                 self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
                 threads=self.threads
         )
+        # numbalib.wfs.place_subaps_on_detector_pool(
+        #         self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
+        #         thread_pool=self.thread_pool
+        # )
 
         # Scale data for correct number of photons
         self.detector /= self.detector.sum()
