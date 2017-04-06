@@ -90,6 +90,8 @@ class PSF(object):
 
         # Allocate some useful arrays
         self.interp_coords = numpy.linspace(self.sim_pad, self.pupil_size + self.sim_pad, self.FOVPxlNo).astype(DTYPE)
+        self.interp_coords = self.interp_coords.clip(0, self.los.nx_out_pixels-1.00001)
+
         self.interp_phase = numpy.zeros((self.FOVPxlNo, self.FOVPxlNo), DTYPE)
         self.focus_efield = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=CDTYPE)
         self.focus_intensity = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=DTYPE)
@@ -126,7 +128,7 @@ class PSF(object):
 
         numbalib.bilinear_interp(
                 self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
-                self.thread_pool)
+                self.thread_pool, bounds_check=False)
 
         self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 
@@ -164,7 +166,6 @@ class PSF(object):
             ndarray: Resulting science PSF
         """
         self.los.frame(scrns, correction=correction)
-
         self.calcFocalPlane()
 
         self.calcInstStrehl()
