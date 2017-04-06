@@ -8,7 +8,7 @@ import numpy
 import numba
 
 
-def bilinear_interp(data, xCoords, yCoords, interpArray, thread_pool):
+def bilinear_interp(data, xCoords, yCoords, interpArray, thread_pool=None, bounds_check=True):
     """
     A function which deals with threaded numba interpolation.
 
@@ -18,10 +18,16 @@ def bilinear_interp(data, xCoords, yCoords, interpArray, thread_pool):
         yCoords (ndarray): A 2-D array of y-coordinates
         interpArray (ndarray): The array to place the calculation
         threads (int): Number of threads to use for calculation
-
+        bounds_check (bool, optional): Do bounds checkign in algorithm? Faster if False, but dangerous! Default is True 
     Returns:
         interpArray (ndarray): A pointer to the calculated ``interpArray''
     """
+    if thread_pool is None:
+        thread_pool = ThreadPool(N_CPU)
+
+    elif isinstance(thread_pool, int):
+        thread_pool = ThreadPool(thread_pool)
+
     nx = interpArray.shape[0]
 
     n_threads = thread_pool.n_threads
@@ -33,7 +39,10 @@ def bilinear_interp(data, xCoords, yCoords, interpArray, thread_pool):
                 numpy.array([int(nt * nx / n_threads), int((nt + 1) * nx / n_threads)]),
                 interpArray))
 
-    thread_pool.run(bilinear_interp_numba, args)
+    if bounds_check:
+        thread_pool.run(bilinear_interp_numba, args)
+    else:
+        thread_pool.run(bilinear_interp_numba_inbounds, args)
 
     return interpArray
 
@@ -78,6 +87,42 @@ def bilinear_interp_numba(data, xCoords, yCoords, chunkIndices, interpArray):
 
 
 @numba.jit(nopython=True, nogil=True)
+def bilinear_interp_numba_inbounds(data, xCoords, yCoords, chunkIndices, interpArray):
+    """
+    2-D interpolation using purely python - fast if compiled with numba
+    This version also accepts a parameter specifying how much of the array
+    to operate on. This is useful for multi-threading applications.
+
+    Parameters:
+        array (ndarray): The 2-D array to interpolate
+        xCoords (ndarray): A 1-D array of x-coordinates
+        yCoords (ndarray): A 2-D array of y-coordinates
+        chunkIndices (ndarray): A 2 element array, with (start Index, stop Index) to work on for the x-dimension.
+        interpArray (ndarray): The array to place the calculation
+
+    Returns:
+        interpArray (ndarray): A pointer to the calculated ``interpArray''
+    """
+    jRange = range(yCoords.shape[0])
+    for i in range(chunkIndices[0], chunkIndices[1]):
+        x = xCoords[i]
+        x1 = numba.int32(x)
+        for j in jRange:
+            y = yCoords[j]
+            y1 = numba.int32(y)
+
+            xGrad1 = data[x1 + 1, y1] - data[x1, y1]
+            a1 = data[x1, y1] + xGrad1 * (x - x1)
+
+            xGrad2 = data[x1 + 1, y1 + 1] - data[x1, y1 + 1]
+            a2 = data[x1, y1 + 1] + xGrad2 * (x - x1)
+
+            yGrad = a2 - a1
+            interpArray[i, j] = a1 + yGrad * (y - y1)
+    return interpArray
+
+
+@numba.jit(nopython=True, nogil=True)
 def rotate(data, interpArray, rotation_angle):
     for i in range(interpArray.shape[0]):
         for j in range(interpArray.shape[1]):
@@ -107,29 +152,6 @@ def rotate(data, interpArray, rotation_angle):
             yGrad = a2 - a1
             interpArray[i, j] = a1 + yGrad * (y - y1)
     return interpArray
-
-
-def abs_squared(input_data, output_data, threads=None):
-    if threads is None:
-        threads = N_CPU
-
-    n_rows = input_data.shape[0]
-
-    Ts = []
-    for t in range(threads):
-        x1 = int(t * n_rows / threads)
-        x2 = int((t+1) * n_rows / threads)
-        Ts.append(Thread(target=abs_squared_numba,
-                         args=(
-                             input_data, output_data,
-                             numpy.array([x1, x2]),
-                         )))
-        Ts[t].start()
-
-    for T in Ts:
-        T.join()
-
-    return output_data
 
 @numba.vectorize(["float32(complex64)"], nopython=True, target="parallel")
 def abs_squared(data):

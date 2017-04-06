@@ -573,8 +573,7 @@ class AtmosConfig(ConfigObj):
         ``windSpeeds``          list, float: Wind velocities in m/s
         ``r0``                  float: integrated  seeing strength
                                 (metres at 550nm)
-        ``wholeScrnSize``       int: Size of the phase screens to store in the
-                                ``atmosphere`` object
+
         ==================      ===================
 
     Optional:
@@ -597,6 +596,10 @@ class AtmosConfig(ConfigObj):
         ``infinite``        bool: Use infinite phase screens?   ``False``
         ``tau0``            float: Turbulence coherence time,
                             if set wind speeds are scaled.      ``None``
+        ``wholeScrnSize``   int: Size of the phase screens 
+                            to store in the ``atmosphere`` 
+                            object. Required if large screens
+                            used.                               ``None``
         ==================  =================================   ===========
     """
 
@@ -606,7 +609,6 @@ class AtmosConfig(ConfigObj):
                         "r0",
                         "windDirs",
                         "windSpeeds",
-                        "wholeScrnSize",
                         ]
 
     optionalParams = [ ("scrnNames",None),
@@ -615,7 +617,9 @@ class AtmosConfig(ConfigObj):
                         ("randomScrns", False),
                         ("tau0", None),
                         ("infinite", False),
-                        ]
+                        ("wholeScrnSize", None)
+
+                       ]
 
     # Parameters which may be set at some point and are allowed
     calculatedParams = [

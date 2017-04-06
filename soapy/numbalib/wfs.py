@@ -277,7 +277,8 @@ def chop_subaps_efield_slow(phase, subap_coords, nx_subap_size, subap_array, thr
     return subap_array
 
 
-def place_subaps_on_detector(subap_imgs, detector_img, detector_positions, subap_coords, threads=None):
+def place_subaps_on_detector(
+        subap_imgs, detector_img, detector_positions, subap_coords, threads=None):
     if threads is None:
         threads = N_CPU
 
@@ -298,15 +299,20 @@ def place_subaps_on_detector(subap_imgs, detector_img, detector_positions, subap
 
     return detector_img
 
-def place_subaps_on_detector_pool(subap_imgs, detector_img, detector_positions, subap_coords, thread_pool):
+def place_subaps_on_detector_pool(
+        subap_imgs, detector_img, detector_positions, subap_coords, thread_pool=None):
+
+    if thread_pool is None:
+        thread_pool = numbalib.ThreadPool(N_CPU)
 
     n_subaps = detector_positions.shape[0]
     n_threads = thread_pool.n_threads
     args = []
     for t in range(n_threads):
-        args.append(
-                (subap_imgs, detector_img, detector_positions, subap_coords,
-                numpy.array([int(t * n_subaps / n_threads), int((t + 1) * n_subaps / n_threads)])))
+        args.append((subap_imgs, detector_img, detector_positions, subap_coords,
+                     numpy.array([int(t * n_subaps / n_threads), int((t + 1) * n_subaps / n_threads)]),
+                     ))
+
     thread_pool.run(place_subaps_on_detector_numba, args)
 
     return detector_img

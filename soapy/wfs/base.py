@@ -431,15 +431,6 @@ class WFS(object):
 
         # If no elongation
         else:
-            # If imat frame, dont want to make it off-axis
-            # if iMatFrame:
-            #     try:
-            #         iMatPhase = interp.zoom(scrns, self.los.nOutPxls, order=1)
-            #         self.los.EField[:] = numpy.exp(1j*iMatPhase*self.los.phs2Rad)
-            #     except ValueError:
-            #         raise ValueError("If iMat Frame, scrn must be ``simSize``")
-            # else:
-            self.los.makePhase()#self.radii)
 
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
             if phase_correction is not None:
