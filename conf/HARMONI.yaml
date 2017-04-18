@@ -4,7 +4,7 @@ nGS: 1
 nDM: 2
 nSci: 1
 nIters: 100
-loopTime: 0.002
+loopTime: 0.00125
 reconstructor: "MVM"
 
 verbosity: 2
