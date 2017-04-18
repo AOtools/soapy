@@ -204,9 +204,11 @@ class Reconstructor(object):
             try:
                 self.loadIMat()
                 logger.info("Interaction Matrices loaded successfully")
-            except IOError:
+            except:
                 #traceback.print_exc()
-                logger.info("Load Interaction Matrices failed - will create new one.")
+                logger.info("Load Interaction Matrices failed with traceback:")
+                logger.info(traceback.format_exc())
+                logger.info("Will create new one.")
                 self.makeIMat(callback=callback,
                          progressCallback=progressCallback)
                 if self.simConfig.simName is not None:

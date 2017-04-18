@@ -647,11 +647,11 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             self.lgsPsfs = []
             for lgs in xrange(self.config.sim.nGS):
-                if self.config.wfss[lgs].lgsUplink:
+                if self.config.wfss[lgs].lgs and self.config.wfss[lgs].lgs.uplink:
                     self.lgsPsfs.append(
-                            numpy.empty(self.config.sim.nIters,
-                            self.config.sim.pupilSize,
-                            self.config.sim.pupilSize)
+                            numpy.empty((self.config.sim.nIters,
+                            self.wfss[lgs].lgs.nOutPxls,
+                            self.wfss[lgs].lgs.nOutPxls))
                             )
             self.lgsPsfs = numpy.array(self.lgsPsfs)
 
@@ -695,8 +695,8 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             lgs=0
             for nwfs in xrange(self.config.sim.nGS):
-                if self.config.wfss[nwfs].lgs.lgsUplink:
-                    self.lgsPsfs[lgs, i] = self.wfss[nwfs].LGS.PSF
+                if self.config.wfss[nwfs].lgs and self.config.wfss[nwfs].lgs.uplink:
+                    self.lgsPsfs[lgs, i] = self.wfss[nwfs].lgs.psf
                     lgs+=1
 
         if self.config.sim.nSci>0:
