@@ -1,3 +1,7 @@
+#0.13.1 (18th April 2017)
+- Fix issue where all required packages not installed by moving to setuptools for installation
+- added options to Gaussian DM
+
 #0.13.0 (10th January 2017)
 - Use "aotools" packages instead of "AOSimLib" (aotools packaged with Soapy)
 - Move pupil mask loading and formatting to seperate function in Simulation
