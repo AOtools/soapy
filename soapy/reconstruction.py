@@ -16,15 +16,15 @@
 #     You should have received a copy of the GNU General Public License
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy
-import scipy
-from . import logger
 import traceback
-import sys
 import time
 
+import numpy
+import scipy
 
-#Use pyfits or astropy for fits file handling
+from . import logger
+
+# Use pyfits or astropy for fits file handling
 try:
     from astropy.io import fits
 except ImportError:
@@ -41,20 +41,28 @@ except NameError:
     xrange = range
 
 class Reconstructor(object):
-    def __init__(self, soapyConfig, dms, wfss, atmos, runWfsFunc=None):
+    """
+    Reconstructor that will give DM commands required to correct an AO frame for a given set of WFS measurements
+    """
+    def __init__(self, soapy_config, dms, wfss, atmos, runWfsFunc=None):
 
+        self.soapy_config = soapy_config
 
         self.dms = dms
         self.wfss = wfss
-        self.simConfig = soapyConfig.sim
+        self.sim_config = soapy_config.sim
         self.atmos = atmos
+        self.config = soapy_config.recon
 
-        self.learnIters = self.simConfig.learnIters
+        self.n_dms = soapy_config.sim.nDM
+        self.scrn_size = soapy_config.sim.scrnSize
+
+        self.learnIters = self.sim_config.learnIters
 
         self.dmActs = []
         self.dmConds = []
         self.dmTypes = []
-        for dm in xrange(self.simConfig.nDM):
+        for dm in xrange(self.sim_config.nDM):
             self.dmActs.append(self.dms[dm].dmConfig.nxActuators)
             self.dmConds.append(self.dms[dm].dmConfig.svdConditioning)
             self.dmTypes.append(self.dms[dm].dmConfig.type)
@@ -62,36 +70,65 @@ class Reconstructor(object):
         self.dmConds = numpy.array(self.dmConds)
         self.dmActs = numpy.array(self.dmActs)
 
+        n_acts = 0
+        self.first_acts = []
+        for i, dm in self.dms.items():
+            self.first_acts.append(n_acts)
+            n_acts += dm.n_acts
+
+        n_wfs_measurements = 0
+        self.first_measurements = []
+        for i, wfs in self.wfss.items():
+            self.first_measurements.append(n_wfs_measurements)
+            n_wfs_measurements += wfs.n_measurements
+
         #2 functions used in case reconstructor requires more WFS data.
         #i.e. learn and apply
         self.runWfs = runWfsFunc
-        if self.simConfig.learnAtmos == "random":
+        if self.sim_config.learnAtmos == "random":
             self.moveScrns = atmos.randomScrns
         else:
             self.moveScrns = atmos.moveScrns
         self.wfss = wfss
 
-        self.initControlMatrix()
+        self.controlMatrix = numpy.zeros(
+            (self.sim_config.totalWfsData, self.sim_config.totalActs))
+        self.controlShape = (
+            self.sim_config.totalWfsData, self.sim_config.totalActs)
+
+        self.actuator_values = numpy.zeros(self.sim_config.totalActs)
 
         self.Trecon = 0
 
-    def initControlMatrix(self):
+        self.find_closed_actuators()
 
-        self.controlMatrix = numpy.zeros(
-            (self.simConfig.totalWfsData, self.simConfig.totalActs))
-        self.controlShape = (
-            self.simConfig.totalWfsData, self.simConfig.totalActs)
+    def find_closed_actuators(self):
+        self.closed_actuators = numpy.zeros(self.sim_config.totalActs)
+        n_act = 0
+        for i_dm, dm in self.dms.items():
+            if dm.dmConfig.closed:
+                self.closed_actuators[n_act: n_act + dm.n_acts] = 1
+            n_act += dm.n_acts
 
     def saveCMat(self):
-        filename = self.simConfig.simName+"/cMat.fits"
+        """
+        Writes the current control Matrix to FITS file
+        """
+        filename = self.sim_config.simName+"/cMat.fits"
 
         fits.writeto(
                 filename, self.controlMatrix,
-                header=self.simConfig.saveHeader, clobber=True)
+                header=self.sim_config.saveHeader, clobber=True)
 
     def loadCMat(self):
+        """
+        Loads a control matrix from file to the reconstructor
 
-        filename = self.simConfig.simName+"/cMat.fits"
+        Looks in the standard reconstructor directory for a control matrix and loads the file.
+        Also looks at the FITS header and checks that the control matrix is compatible with the current simulation.
+        """
+
+        filename = self.sim_config.simName+"/cMat.fits"
 
         logger.statusMessage(
                     1,  1, "Load Command Matrix")
@@ -129,33 +166,25 @@ class Reconstructor(object):
         else:
             self.controlMatrix = cMat
 
-    def saveIMat(self):
+    def save_interaction_matrix(self):
+        """
+        Writes the current control Matrix to FITS file
+        """
+        filename = self.sim_config.simName+"/iMat.fits"
 
-        for dm in xrange(self.simConfig.nDM):
-            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits" % dm
-            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
+        fits.writeto(
+                filename, self.interaction_matrix,
+                header=self.sim_config.saveHeader, clobber=True)
 
-            fits.writeto(
-                    filenameIMat, self.dms[dm].iMat,
-                    header=self.simConfig.saveHeader,
-                    clobber=True)
-            # If DM has pre made influence funcs, save them too
-            try:
-                fits.writeto(
-                        filenameShapes, self.dms[dm].iMatShapes,
-                        header=self.simConfig.saveHeader, clobber=True)
-            # If not, don't worry about it!
-            except AttributeError:
-                pass
 
     def loadIMat(self):
         acts = 0
-        self.iMat = numpy.empty_like(self.controlMatrix.T)
-        for dm in xrange(self.simConfig.nDM):
+        self.interaction_matrix = numpy.empty_like(self.controlMatrix.T)
+        for dm in xrange(self.sim_config.nDM):
             logger.statusMessage(
-                    dm,  self.simConfig.nDM-1, "Load DM Interaction Matrix")
-            filenameIMat = self.simConfig.simName+"/iMat_dm%d.fits" % dm
-            filenameShapes = self.simConfig.simName+"/dmShapes_dm%d.fits" % dm
+                    dm+1,  self.sim_config.nDM-1, "Load DM Interaction Matrix")
+            filenameIMat = self.sim_config.simName+"/iMat_dm%d.fits" % dm
+            filenameShapes = self.sim_config.simName+"/dmShapes_dm%d.fits" % dm
 
             iMat = fits.open(filenameIMat)[0].data
 
@@ -177,7 +206,7 @@ class Reconstructor(object):
                 pass
 
 
-            if iMat.shape != (self.dms[dm].acts, self.dms[dm].totalWfsMeasurements):
+            if iMat.shape != (self.dms[dm].n_acts, self.dms[dm].totalWfsMeasurements):
                 logger.warning(
                     "interaction matrix does not match required required size."
                     )
@@ -185,16 +214,84 @@ class Reconstructor(object):
 
             else:
                 self.dms[dm].iMat = iMat
-                self.iMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
-                acts += self.dms[dm].acts
+                self.interaction_matrix[acts:acts+self.dms[dm].n_acts] = self.dms[dm].iMat
+                acts += self.dms[dm].n_acts
 
 
 
-    def makeIMat(self, callback, progressCallback):
+    def makeIMat(self, callback=None):
 
-        for dm in xrange(self.simConfig.nDM):
-            logger.info("Creating Interaction Matrix on DM %d..." % dm)
-            self.dms[dm].makeIMat(callback=callback)
+        self.interaction_matrix = numpy.zeros((self.sim_config.totalActs, self.sim_config.totalWfsData))
+
+        n_acts = 0
+        for dm_n, dm in self.dms.items():
+            logger.info("Creating Interaction Matrix beteen DM %d " % (dm_n))
+            self.interaction_matrix[n_acts: n_acts+dm.n_acts
+                    ] = self.make_dm_iMat(dm, callback=callback)
+
+            n_acts += dm.n_acts
+
+    def make_dm_iMat(self, dm, callback=None):
+        """
+        Makes an interaction matrix for a given DM with a given WFS
+
+        Parameters:
+            dm (DM): The Soapy DM for which an interaction matri is required.
+            wfs (WFS): The Soapy WFS for which an interaction matrix is required
+            callback (func, optional): A function to be called each iteration accepting no arguments
+        """
+
+        iMat = numpy.zeros(
+            (dm.n_acts, self.sim_config.totalWfsData))
+
+        # A vector of DM commands to use when making the iMat
+        actCommands = numpy.zeros(dm.n_acts)
+
+        phase = numpy.zeros((self.n_dms, self.scrn_size, self.scrn_size))
+        for i in xrange(dm.n_acts):
+            # Set vector of iMat commands and phase to 0
+            actCommands[:] = 0
+
+            # Except the one we want to make an iMat for!
+            actCommands[i] = dm.dmConfig.iMatValue
+
+            # Now get a DM shape for that command
+            phase[:] = 0
+            phase[dm.n_dm] = dm.dmFrame(actCommands)
+            # Send the DM shape off to the relavent WFS. put result in iMat
+            n_wfs_measurments = 0
+            for wfs_n, wfs in self.wfss.items():
+                iMat[i, n_wfs_measurments: n_wfs_measurments+wfs.n_measurements] = (
+                        -1 * wfs.frame(None, phase_correction=phase)) / dm.dmConfig.iMatValue
+                n_wfs_measurments += wfs.n_measurements
+
+            if callback != None:
+                callback()
+
+            logger.statusMessage(i+1, dm.n_acts,
+                                 "Generating {} Actuator DM iMat".format(dm.n_acts))
+
+        return iMat
+
+    def get_dm_imat(self, dm_index, wfs_index):
+        """
+        Slices and returns the interaction matrix between a given wfs and dm from teh main interaction matrix
+
+        Parameters:
+            dm_index (int): Index of required DM
+            wfs_index (int): Index of required WFS
+
+        Return:
+             ndarray: interaction matrix
+        """
+
+        act_n1 = self.first_acts[dm_index]
+        act_n2 = act_n1 + self.dms[dm_index].n_acts
+
+        wfs_n1 = self.wfss[wfs_index].config.dataStart
+        wfs_n2 = wfs_n1 + self.wfss[wfs_index].n_measurements
+        return self.interaction_matrix[act_n1: act_n2, wfs_n1: wfs_n2]
+
 
     def makeCMat(
             self, loadIMat=True, loadCMat=True, callback=None,
@@ -207,16 +304,15 @@ class Reconstructor(object):
             except IOError:
                 #traceback.print_exc()
                 logger.info("Load Interaction Matrices failed - will create new one.")
-                self.makeIMat(callback=callback,
-                         progressCallback=progressCallback)
-                if self.simConfig.simName is not None:
-                    self.saveIMat()
+                self.makeIMat(callback=callback)
+                if self.sim_config.simName is not None:
+                    self.save_interaction_matrix()
                 logger.info("Interaction Matrices Done")
 
         else:
-            self.makeIMat(callback=callback, progressCallback=progressCallback)
-            if self.simConfig.simName is not None:
-                    self.saveIMat()
+            self.makeIMat(callback=callback)
+            if self.sim_config.simName is not None:
+                    self.save_interaction_matrix()
             logger.info("Interaction Matrices Done")
 
         if loadCMat:
@@ -228,24 +324,49 @@ class Reconstructor(object):
                 logger.warning("Load Command Matrix failed - will create new one")
 
                 self.calcCMat(callback, progressCallback)
-                if self.simConfig.simName is not None:
+                if self.sim_config.simName is not None:
                     self.saveCMat()
                 logger.info("Command Matrix Generated!")
         else:
             logger.info("Creating Command Matrix")
             self.calcCMat(callback, progressCallback)
-            if self.simConfig.simName is not None:
+            if self.sim_config.simName is not None:
                     self.saveCMat()
             logger.info("Command Matrix Generated!")
 
+    def apply_gain(self):
+        """
+        Applies the gains set for each DM to the DM actuator commands.
 
-    def reconstruct(self,slopes):
-        t=time.time()
+        """
 
-        dmCommands = self.controlMatrix.T.dot(slopes)
+        # Loop through DMs and apply gain
+        for dm_i, dm in self.dms.items():
+
+            n_act1 = self.first_acts[dm_i]
+            n_act2 = self.first_acts[dm_i] + dm.n_acts
+            # If loop is closed, only add residual measurements onto old
+            # actuator values
+            if dm.dmConfig.closed:
+                self.actuator_values[n_act1: n_act2] += (dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
+
+            else:
+                self.actuator_values[n_act1: n_act2] = ((dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
+                                + ( (1. - dm.dmConfig.gain) * self.actuator_values[n_act1: n_act2]) )
+
+    def reconstruct(self, wfs_measurements):
+        t = time.time()
+
+        self.new_actuator_values = self.controlMatrix.T.dot(wfs_measurements)
+
+        self.apply_gain()
+        # self.actuator_values = self.new_actuator_values
 
         self.Trecon += time.time()-t
-        return dmCommands
+        return self.actuator_values
+
+    def reset(self):
+        self.actuator_values[:] = 0
 
 
 class MVM(Reconstructor):
@@ -259,16 +380,11 @@ class MVM(Reconstructor):
         Uses DM object makeIMat methods, then inverts each to create a
         control matrix
         '''
-        acts = 0
-        self.iMat = numpy.empty_like(self.controlMatrix.T)
-        for dm in xrange(self.simConfig.nDM):
-            self.iMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
-            acts+=self.dms[dm].acts
 
-        logger.info("Invert iMat with cond: {}".format(
-                self.dms[dm].dmConfig.svdConditioning))
+        logger.info("Invert iMat with conditioning: {:.4f}".format(
+                self.config.svdConditioning))
         self.controlMatrix[:] = scipy.linalg.pinv(
-                self.iMat, self.dms[dm].dmConfig.svdConditioning
+                self.interaction_matrix, self.config.svdConditioning
                 )
 
 
@@ -286,60 +402,32 @@ class MVM_SeparateDMs(Reconstructor):
         control matrix
         '''
         acts = 0
-        for dm in xrange(self.simConfig.nDM):
-            dmIMat = self.dms[dm].iMat
-            #Treats each DM iMat seperately
-            dmCMat = scipy.linalg.pinv(
-                    dmIMat, self.dms[dm].dmConfig.svdConditioning
-                    )
+        for dm_index, dm in self.dms.items():
+
+            n_wfs_measurements = 0
+            for wfs in dm.wfss:
+                n_wfs_measurements += wfs.n_measurements
+
+            dm_interaction_matrix = numpy.zeros((dm.n_acts, n_wfs_measurements))
+            # Get interaction matrices from main matrix
+            n_wfs_measurement = 0
+            for wfs_index in [dm.dmConfig.wfs]:
+                wfs = self.wfss[wfs_index]
+                wfs_imat = self.get_dm_imat(dm_index, wfs_index)
+                print("DM: {}, WFS: {}".format(dm_index, wfs_index))
+                dm_interaction_matrix[:, n_wfs_measurement:n_wfs_measurement + wfs.n_measurements] = wfs_imat
+
+            dm_control_matrx = numpy.linalg.pinv(dm_interaction_matrix, dm.dmConfig.svdConditioning)
+
             # now put carefully back into one control matrix
-            for w, wfs in enumerate(self.dms[dm].wfss):
+            for wfs_index in [dm.dmConfig.wfs]:
+                wfs = self.wfss[wfs_index]
                 self.controlMatrix[
                         wfs.config.dataStart:
-                                wfs.config.dataStart + 2*wfs.activeSubaps,
-                        acts:acts+self.dms[dm].acts] = dmCMat
+                                wfs.config.dataStart + wfs.n_measurements,
+                        acts:acts+dm.n_acts] = dm_control_matrx
 
-            acts += self.dms[dm].acts
-
-    def reconstruct(self, slopes):
-        """
-        Returns DM commands given some slopes
-
-        First, if there's a TT mirror, remove the TT from the TT WFS (the 1st
-        WFS slopes) and get TT commands to send to the mirror. These slopes may
-        then be used to reconstruct commands for others DMs, or this could be
-        the responsibility of other WFSs depending on the config file.
-        """
-
-        if self.dms[0].dmConfig.type=="TT":
-            ttMean = slopes[self.dms[0].wfs.config.dataStart:
-                            (self.dms[0].wfs.activeSubaps*2
-                                +self.dms[0].wfs.config.dataStart)
-                            ].reshape(2,
-                                self.dms[0].wfs.activeSubaps).mean(1)
-            ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-            slopes[
-                    self.dms[0].wfs.config.dataStart:
-                    (self.dms[0].wfs.config.dataStart
-                        +self.dms[0].wfs.activeSubaps)] -= ttMean[0]
-            slopes[
-                    self.dms[0].wfs.config.dataStart
-                        +self.dms[0].wfs.activeSubaps:
-                    self.dms[0].wfs.config.dataStart
-                        +2*self.dms[0].wfs.activeSubaps] -= ttMean[1]
-
-            #get dm commands for the calculated on axis slopes
-            dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
-
-            return numpy.append(ttCommands, dmCommands)
-
-
-
-        #get dm commands for the calculated on axis slopes
-        dmCommands = self.controlMatrix.T.dot(slopes)
-        return dmCommands
-
-
+            acts += dm.n_acts
 
 
 class LearnAndApply(MVM):
@@ -352,11 +440,11 @@ class LearnAndApply(MVM):
     '''
 
     def saveCMat(self):
-        cMatFilename = self.simConfig.simName+"/cMat.fits"
-        tomoMatFilename = self.simConfig.simName+"/tomoMat.fits"
+        cMatFilename = self.sim_config.simName+"/cMat.fits"
+        tomoMatFilename = self.sim_config.simName+"/tomoMat.fits"
 
         # cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        # cMatHDU.header["DMNO"] = self.simConfig.nDM
+        # cMatHDU.header["DMNO"] = self.sim_config.nDM
         # cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
         # cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
         # cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
@@ -369,12 +457,12 @@ class LearnAndApply(MVM):
 
         fits.writeto(
                 cMatFilename, self.controlMatrix,
-                header=self.simConfig.saveHeader, clobber=True
+                header=self.sim_config.saveHeader, clobber=True
                 )
 
         fits.writeto(
                 tomoMatFilename, self.tomoRecon,
-                header=self.simConfig.saveHeader, clobber=True
+                header=self.sim_config.saveHeader, clobber=True
                 )
 
     def loadCMat(self):
@@ -382,13 +470,13 @@ class LearnAndApply(MVM):
         super(LearnAndApply, self).loadCMat()
 
         #Load tomo reconstructor
-        tomoFilename = self.simConfig.simName+"/tomoMat.fits"
+        tomoFilename = self.sim_config.simName+"/tomoMat.fits"
         tomoMat = fits.getdata(tomoFilename)
 
         #And check its the right size
         if tomoMat.shape != (
                 2*self.wfss[0].activeSubaps,
-                self.simConfig.totalWfsData - 2*self.wfss[0].activeSubaps):
+                self.sim_config.totalWfsData - 2*self.wfss[0].activeSubaps):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:
@@ -397,7 +485,7 @@ class LearnAndApply(MVM):
 
     def initControlMatrix(self):
 
-        self.controlShape = (2*self.wfss[0].activeSubaps, self.simConfig.totalActs)
+        self.controlShape = (2*self.wfss[0].activeSubaps, self.sim_config.totalActs)
         self.controlMatrix = numpy.zeros( self.controlShape )
 
 
@@ -408,7 +496,7 @@ class LearnAndApply(MVM):
         assumes that this is WFS0
         '''
 
-        self.learnSlopes = numpy.zeros( (self.learnIters,self.simConfig.totalWfsData) )
+        self.learnSlopes = numpy.zeros( (self.learnIters,self.sim_config.totalWfsData) )
         for i in xrange(self.learnIters):
             self.learnIter=i
 
@@ -416,17 +504,17 @@ class LearnAndApply(MVM):
             self.learnSlopes[i] = self.runWfs(scrns)
 
 
-            logger.statusMessage(i, self.learnIters, "Performing Learn")
+            logger.statusMessage(i+1, self.learnIters, "Performing Learn")
             if callback!=None:
                 callback()
             if progressCallback!=None:
                progressCallback("Performing Learn", i, self.learnIters )
 
-        if self.simConfig.saveLearn:
-            #FITS.Write(self.learnSlopes,self.simConfig.simName+"/learn.fits")
+        if self.sim_config.saveLearn:
+            #FITS.Write(self.learnSlopes,self.sim_config.simName+"/learn.fits")
             fits.writeto(
-                    self.simConfig.simName+"/learn.fits",
-                    self.learnSlopes, header=self.simConfig.saveHeader,
+                    self.sim_config.simName+"/learn.fits",
+                    self.learnSlopes, header=self.sim_config.saveHeader,
                     clobber=True )
 
 
@@ -507,7 +595,7 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
 
     def initControlMatrix(self):
 
-        self.controlShape = (2*(self.wfss[0].activeSubaps+self.wfss[1].activeSubaps), self.simConfig.totalActs)
+        self.controlShape = (2*(self.wfss[0].activeSubaps+self.wfss[1].activeSubaps), self.sim_config.totalActs)
         self.controlMatrix = numpy.zeros( self.controlShape )
 
 
@@ -615,7 +703,7 @@ class GLAO_4LGS(MVM):
     def initControlMatrix(self):
 
         self.controlShape = (2*self.wfss[0].activeSubaps+2*self.wfss[1].activeSubaps,
-                             self.simConfig.totalActs)
+                             self.sim_config.totalActs)
         self.controlMatrix = numpy.zeros( self.controlShape )
 
 
@@ -683,12 +771,12 @@ class WooferTweeter(Reconstructor):
         and DM 1 is high order.
         '''
 
-        if self.simConfig.nDM==1:
+        if self.sim_config.nDM==1:
             logger.warning("Woofer Tweeter Reconstruction not valid for 1 dm.")
             return None
         acts = 0
         dmCMats = []
-        for dm in xrange(self.simConfig.nDM):
+        for dm in xrange(self.sim_config.nDM):
             dmIMat = self.dms[dm].iMat
 
             logger.info("Invert DM {} IMat with conditioning:{}".format(dm,self.dms[dm].dmConfig.svdConditioning))
@@ -698,28 +786,28 @@ class WooferTweeter(Reconstructor):
                 dmCMat = numpy.linalg.pinv(
                                     dmIMat, self.dms[dm].dmConfig.svdConditioning)
 
-            #if dm != self.simConfig.nDM-1:
-            #    self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-            #    acts+=self.dms[dm].acts
+            #if dm != self.sim_config.nDM-1:
+            #    self.controlMatrix[:,acts:acts+self.dms[dm].n_acts] = dmCMat
+            #    acts+=self.dms[dm].n_acts
 
             dmCMats.append(dmCMat)
 
 
-        self.controlMatrix[:, 0:self.dms[0].acts]
-        acts = self.dms[0].acts
-        for dm in range(1, self.simConfig.nDM):
+        self.controlMatrix[:, 0:self.dms[0].n_acts]
+        acts = self.dms[0].n_acts
+        for dm in range(1, self.sim_config.nDM):
 
             #This is the matrix which converts from Low order DM commands
             #to high order DM commands, via slopes
             lowToHighTransform = self.dms[dm-1].iMat.T.dot( dmCMats[dm-1] )
 
             highOrderCMat = dmCMats[dm].T.dot(
-                    numpy.identity(self.simConfig.totalWfsData)-lowToHighTransform)
+                    numpy.identity(self.sim_config.totalWfsData)-lowToHighTransform)
 
             dmCMats[dm] = highOrderCMat
 
-            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = highOrderCMat.T
-            acts += self.dms[dm].acts
+            self.controlMatrix[:,acts:acts+self.dms[dm].n_acts] = highOrderCMat.T
+            acts += self.dms[dm].n_acts
 
 
 class LgsTT(LearnAndApply):
@@ -734,7 +822,7 @@ class LgsTT(LearnAndApply):
     def initControlMatrix(self):
 
         self.controlShape = (2*self.wfss[0].activeSubaps+2*self.wfss[1].activeSubaps,
-                             self.simConfig.totalActs)
+                             self.sim_config.totalActs)
         self.controlMatrix = numpy.zeros( self.controlShape )
 
 
@@ -834,10 +922,10 @@ class ANN(Reconstructor):
 
         nSlopes = self.wfss[0].activeSubaps*2
 
-        self.controlShape = (nSlopes, self.simConfig.totalActs)
-        self.controlMatrix = numpy.zeros((nSlopes, self.simConfig.totalActs))
+        self.controlShape = (nSlopes, self.sim_config.totalActs)
+        self.controlMatrix = numpy.zeros((nSlopes, self.sim_config.totalActs))
         acts = 0
-        for dm in xrange(self.simConfig.nDM):
+        for dm in xrange(self.sim_config.nDM):
             dmIMat = self.dms[dm].iMat
 
             if dmIMat.shape[0]==dmIMat.shape[1]:
@@ -845,8 +933,8 @@ class ANN(Reconstructor):
             else:
                 dmCMat = numpy.linalg.pinv(dmIMat, self.dmConds[dm])
 
-            self.controlMatrix[:,acts:acts+self.dms[dm].acts] = dmCMat
-            acts += self.dms[dm].acts
+            self.controlMatrix[:,acts:acts+self.dms[dm].n_acts] = dmCMat
+            acts += self.dms[dm].n_acts
 
     def reconstruct(self, slopes):
         """

@@ -9,8 +9,7 @@ class TestSci(unittest.TestCase):
 
     def test_sciInit(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -18,33 +17,30 @@ class TestSci(unittest.TestCase):
                 config, 0, mask)
 
     def test_sciFrame(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         sci = SCI.PSF(
                 config, 0, mask)
 
-        sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
+        sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
     def test_sciStrehl(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         sci = SCI.PSF(
                 config, 0, mask)
 
-        sci.frame(numpy.ones((config.sim.simSize, config.sim.simSize)))
+        sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
         self.assertTrue(numpy.allclose(sci.instStrehl, 1.))
 
     def test_fibreInit(self):
 
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
@@ -52,13 +48,13 @@ class TestSci(unittest.TestCase):
                 config, 0, mask)
 
     def test_fibreFrame(self):
-        config = confParse.Configurator(os.path.join(CONFIG_PATH, "sh_8x8.py"))
-        config.loadSimParams()
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         sci = SCI.singleModeFibre(
                 config, 0, mask)
+        sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
 
 if __name__=="__main__":

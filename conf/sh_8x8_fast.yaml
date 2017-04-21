@@ -1,10 +1,11 @@
-simName: sh_8x8
-pupilSize: 128
+simName:
+pupilSize: 100
 nGS: 1
 nDM: 2
 nSci: 1
 nIters: 5000
 loopTime: 0.0025
+threads: 4
 
 verbosity: 2
 
@@ -16,13 +17,15 @@ saveSciPsf: True
 
 
 Atmosphere:
-  scrnNo: 4
+  scrnNo: 1
   scrnHeights: [0, 5000, 10000, 15000]
   scrnStrengths: [0.5, 0.3, 0.1, 0.1]
   windDirs: [0, 45, 90, 135]
   windSpeeds: [10, 10, 15, 20]
   wholeScrnSize: 2048
   r0: 0.16
+  L0: [20, 20, 20, 20]
+  infinite: True
 
 
 Telescope:
@@ -32,7 +35,7 @@ Telescope:
 
 WFS:
   0:
-    type: ShackHartmann
+    type: ShackHartmannFast
     GSPosition: [0, 0]
     GSHeight: 0
     GSMag: 8
@@ -47,8 +50,9 @@ DM:
     closed: True
     iMatValue: 5000
 
+
   1:
-    type: Piezo
+    type: FastPiezo
     closed: True
     nxActuators: 9
 
@@ -60,6 +64,7 @@ Reconstructor:
 Science:
   0:
     position: [0, 0]
-    FOV: 2.0
+    FOV: 1.0
     wavelength: 1.65e-6
-    pxls: 128
+    pxls: 64
+

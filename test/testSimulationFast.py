@@ -25,6 +25,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testOnAxis(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -41,6 +42,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testPhysProp(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
+
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -58,6 +61,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testOffAxis(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
+
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -76,6 +81,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testZernikeDM(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
+
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -101,12 +108,15 @@ class TestSimpleSCAO(unittest.TestCase):
     def testCone(self):
 
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[1].type = "ShackHartmannFast"
+
         sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
 
         sim.aoinit()
-
+        print("WFS TYPE: {}".format(sim.wfss[0]))
         sim.makeIMat(forceNew=True)
 
         sim.aoloop()
@@ -117,6 +127,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testOpenLoop(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
+
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -136,6 +148,9 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testLgsUplink_phys(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[1].type = "ShackHartmannFast"
+
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -153,6 +168,9 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testLgsUplink_geo(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
+        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[1].type = "ShackHartmannFast"
+
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -167,39 +185,6 @@ class TestSimpleSCAO(unittest.TestCase):
 
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
-
-def testMaskLoad():
-    
-    sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-    sim.config.sim.simName = None
-    sim.config.sim.logfile = None
-
-    sim.aoinit()
-
-    mask = numpy.ones((sim.config.sim.pupilSize, sim.config.sim.pupilSize))
-
-    # save mask
-    if os.path.isfile('testmask.fits'):
-        os.remove('testmask.fits')
-    
-    hdu = fits.PrimaryHDU(mask)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto('testmask.fits')
-    hdulist.close()
-    
-    try:
-        # attempt to load it
-        sim.config.tel.mask = 'testmask.fits'
-        sim.aoinit()
-
-        # check its good
-        p = sim.config.sim.simPad
-        pad_mask = numpy.pad(mask, mode="constant", pad_width=((p,p),(p,p)))
-        assert numpy.array_equal(sim.mask, pad_mask)
-    except:
-        raise
-    finally:
-        os.remove('testmask.fits') 
 
 if __name__ == '__main__':
     unittest.main()

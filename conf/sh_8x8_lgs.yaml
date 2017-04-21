@@ -46,11 +46,11 @@ WFS:
   1:
     type: ShackHartmann
     GSPosition: [0, 0]
-    GSHeight: 90000
+    GSHeight: 0
     GSMag: 8
     nxSubaps: 8
     pxlsPerSubap: 10
-    subapFOV: 5.0
+    subapFOV: 2.5
     wavelength: 600e-9
     removeTT: True
 
@@ -59,21 +59,28 @@ DM:
     type: TT
     nxActuators: 2
     wfs: 0
-    iMatValue: 1
+    iMatValue: 500
     gain: 0.6
+    svdConditioning: 0
 
   1:
     type: Piezo
+    closed: True
     nxActuators: 9
-    svdConditioning: 0.07
-    gain: 0.6
-    iMatValue: 0.2
+    svdConditioning: 0.05
+    gain: 0.7
+    iMatValue: 500
     wfs: 1
+
+Reconstructor:
+  type: MVM
+  svdConditioning: 0.03
+  gain: 0.6
 
 Science:
   0:
     type: PSF
     position: [0,0]
-    FOV: 1.0
+    FOV: 2.0
     wavelength: 1.65e-6
-    pxls: 64
+    pxls: 200

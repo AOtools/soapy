@@ -16,7 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
-from . import AOFFT, logger, lineofsight
+from . import AOFFT, logger, lineofsight_fast
 from .aotools import circle, interp
 
 import scipy.optimize
@@ -87,10 +87,10 @@ class LGS(object):
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
         # Init the line of sight object for light propation through turbulence
-        self.los = lineofsight.LineOfSight(
+        self.los = lineofsight_fast.LineOfSight(
                     self.config, self.soapyConfig,
-                    propagationDirection="up", nOutPxls=self.losNOutPxls,
-                    mask=self.losMask, outPxlScale=self.losOutPxlScale,
+                    propagation_direction="up", nx_out_pixels=self.losNOutPxls,
+                    mask=self.losMask, out_pixel_scale=self.losOutPxlScale,
                     )
 
         # Find central position of the LGS pupil at each altitude.
@@ -98,7 +98,7 @@ class LGS(object):
         for i in xrange(self.atmosConfig.scrnNo):
             self.los.metaPupilPos[i] = lgsOALaunchMetaPupilPos(
                     self.config.position,
-                    numpy.array(self.config.launchPosition)*self.los.telDiam/2.,
+                    numpy.array(self.config.launchPosition)*self.los.telescope_diameter/2.,
                     self.config.height, self.atmosConfig.scrnHeights[i]
                     )
         # Check position not too far from centre. May need more phase!

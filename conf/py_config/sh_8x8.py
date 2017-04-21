@@ -29,6 +29,12 @@ simConfiguration = {
     "saveSciPsf"    :   True,
     },
 
+"Reconstructor":{
+    "type": "MVM",
+    "svdConditioning": 0.05,
+    "gain": 0.6,
+    },
+
 "Atmosphere":{
     "scrnNo"        :   4,
     "scrnHeights"   :   numpy.array([0, 5000, 10000, 15000]),

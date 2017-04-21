@@ -31,20 +31,20 @@ class Gradient(base.WFS):
 
     def calcInitParams(self):
         super(Gradient, self).calcInitParams()
-        self.subapSpacing = self.simConfig.pupilSize/self.wfsConfig.nxSubaps
+        self.subapSpacing = self.pupil_size/self.wfsConfig.nxSubaps
         self.findActiveSubaps()
 
         # Normalise gradient measurement to 1 radian
-        self.subapDiam = float(self.telConfig.telDiam) / self.wfsConfig.nxSubaps
+        self.subapDiam = float(self.telescope_diameter) / self.wfsConfig.nxSubaps
 
         # Amp in m of 1 arcsecond tilt for single sub-aperture
-        amp = self.telConfig.telDiam * 1. * ASEC2RAD
+        amp = self.telescope_diameter * 1. * ASEC2RAD
         
         # amp of 1" tilt in rads of the light
         amp *= ((2 * numpy.pi) / self.config.wavelength)
 
         # Arrays to be used for gradient calculation
-        telCoord = numpy.linspace(0, amp, self.soapyConfig.sim.pupilSize)
+        telCoord = numpy.linspace(0, amp, self.pupil_size)
         subapCoord = telCoord[:int(self.subapSpacing)]
         
         # Remove piston
@@ -62,8 +62,8 @@ class Gradient(base.WFS):
         determined if mean of subap coords of the mask is above threshold.
         '''
         pupilMask = self.mask[
-                self.simConfig.simPad : -self.simConfig.simPad,
-                self.simConfig.simPad : -self.simConfig.simPad
+                self.sim_pad : -self.sim_pad,
+                self.sim_pad : -self.sim_pad
                 ]
         self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, pupilMask,
@@ -101,7 +101,7 @@ class Gradient(base.WFS):
         self.los.phase *= self.mask
 
         # Now cut out only the phase across the pupilSize
-        coord = self.simConfig.simPad
+        coord = self.sim_pad
         self.pupilPhase = self.los.phase[coord:-coord, coord:-coord]
 
         # Create an array of individual subap phase
