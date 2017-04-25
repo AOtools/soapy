@@ -1,6 +1,6 @@
 simName: HARMONI
 pupilSize: 444
-nGS: 6
+nGS: 1
 nDM: 2
 nSci: 1
 nIters: 100
@@ -14,7 +14,7 @@ threads: 4
 saveSlopes: True
 
 Atmosphere:
-  scrnNo: 35
+  scrnNo: 10
   scrnHeights: [0.,    526.,   1053.,   1579.,   2105.,   2632.,   3158.,
          3684.,   4211.,   4737.,   5263.,   5789.,   6316.,   6842.,
          7368.,   7895.,   8421.,   8947.,   9474.,  10000.,  10526.,
@@ -46,8 +46,8 @@ Telescope:
 WFS:
   0:
     type: ShackHartmannFast
-    GSPosition: [45, 0]
-    GSHeight: 90000
+    GSPosition: [0, 0]
+    GSHeight: 0
     GSMag: 0
     nxSubaps: 74
     pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
@@ -55,66 +55,6 @@ WFS:
     fftOversamp: 1
     wavelength: 550e-9
     subapFieldStop: True
-  1:
-    type: ShackHartmannFast
-    GSPosition: [22.5, -39]
-    GSHeight: 90000
-    GSMag: 0
-    nxSubaps: 74
-    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
-    subapFOV: 3.
-    fftOversamp: 1
-    wavelength: 550e-9
-    subapFieldStop: True
-
-  2:
-    type: ShackHartmannFast
-    GSPosition: [-22.5, -39]
-    GSHeight: 90000
-    GSMag: 0
-    nxSubaps: 74
-    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
-    subapFOV: 3.
-    fftOversamp: 1
-    wavelength: 550e-9
-    subapFieldStop: True
-
-  3:
-    type: ShackHartmannFast
-    GSPosition: [-45, 0]
-    GSHeight: 90000
-    GSMag: 0
-    nxSubaps: 74
-    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
-    subapFOV: 3.
-    fftOversamp: 1
-    wavelength: 550e-9
-    subapFieldStop: True
-
-  4:
-    type: ShackHartmannFast
-    GSPosition: [-22.5, 39]
-    GSHeight: 90000
-    GSMag: 0
-    nxSubaps: 74
-    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
-    subapFOV: 3.
-    fftOversamp: 1
-    wavelength: 550e-9
-    subapFieldStop: True
-
-  5:
-    type: ShackHartmannFast
-    GSPosition: [22.5, 39]
-    GSHeight: 90000
-    GSMag: 0
-    nxSubaps: 74
-    pxlsPerSubap: 10 #pxl scale of ~0.3 - (0.5* diffraction limit)
-    subapFOV: 3.
-    fftOversamp: 1
-    wavelength: 550e-9
-    subapFieldStop: True
-
 
 
 DM:

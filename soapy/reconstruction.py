@@ -382,7 +382,7 @@ class MVM(Reconstructor):
         '''
 
         logger.info("Invert iMat with conditioning: {:.4f}".format(
-                self.dms[0].dmConfig.svdConditioning))
+                self.config.svdConditioning))
         self.controlMatrix[:] = scipy.linalg.pinv(
                 self.interaction_matrix, self.config.svdConditioning
                 )

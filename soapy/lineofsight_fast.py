@@ -188,7 +188,7 @@ class LineOfSight(object):
             x1, x2, y1, y2 = self.calculate_altitude_coords(self.dm_altitudes[i])
             self.dm_metapupil_coords[i, 0] = numpy.linspace(x1, x2-1, self.nx_out_pixels)
             self.dm_metapupil_coords[i, 1] = numpy.linspace(y1, y2-1, self.nx_out_pixels)
-        self.dm_metapupil_coords = self.dm_metapupil_coords.clip(0, self.nx_scrn_size - 1.000000000000001)
+        self.dm_metapupil_coords = self.dm_metapupil_coords.clip(0, self.nx_scrn_size - 1.000000001)
 
         self.radii = None
 
@@ -354,7 +354,7 @@ class LineOfSight(object):
         if scrns is not None:
             self.scrns = scrns
             self.makePhase(self.radii)
-        
+
         self.residual = self.phase        
         if correction is not None:
             self.performCorrection(correction)
