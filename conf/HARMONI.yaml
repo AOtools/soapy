@@ -1,6 +1,6 @@
 simName: HARMONI
 pupilSize: 444
-nGS: 1
+nGS: 5
 nDM: 2
 nSci: 1
 nIters: 100
@@ -14,7 +14,7 @@ threads: 4
 saveSlopes: True
 
 Atmosphere:
-  scrnNo: 10
+  scrnNo: 35
   scrnHeights: [0.,    526.,   1053.,   1579.,   2105.,   2632.,   3158.,
          3684.,   4211.,   4737.,   5263.,   5789.,   6316.,   6842.,
          7368.,   7895.,   8421.,   8947.,   9474.,  10000.,  10526.,
