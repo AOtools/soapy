@@ -64,13 +64,14 @@ class DM(object):
 
     Parameters:
         soapy_config (ConfigObj): The soapy configuration object
-        nDm (int): The ID number of this DM
+        n_dm (int): The ID number of this DM
         wfss (list, optional): A list of Soapy WFS object with which to record the interaction matrix
         mask (ndarray, optional): An array or size (simConfig.simSize, simConfig.simSize) which is 1 at the telescope aperture and 0 else-where. If None then a circle is generated.
     """
 
     def __init__ (self, soapy_config, n_dm=0, wfss=None, mask=None):
-        
+
+        # Sort out some required attributes
         self.soapy_config = soapy_config
         self.n_dm = n_dm
 
@@ -98,10 +99,10 @@ class DM(object):
         # the number of phase elements at the DM altitude
         self.nx_dm_elements = int(round(self.pupil_size * self.diameter / self.telescope_diameter))
         self.dm_frame = numpy.zeros((self.nx_dm_elements, self.nx_dm_elements))
+
         # An array of phase screen size to be observed by a line of sight
-
-
         self.dm_screen = numpy.zeros((self.scrn_size, self.scrn_size))
+
         # Coordinate required to fit dm size back into screen
         self.screen_coord = int(round((self.scrn_size - self.nx_dm_elements)/2.))
 
@@ -119,27 +120,11 @@ class DM(object):
         else:
             self.wfss = wfss
 
-        # find the total number of WFS subaps, and make imat
-        # placeholder
-        self.totalWfsMeasurements = 0
-        for nWfs in range(len(self.wfss)):
-            self.totalWfsMeasurements += self.wfss[nWfs].n_measurements
-
         logger.info("Making DM Influence Functions...")
         self.makeIMatShapes()
-        if self.dmConfig.rotation:
-            self.iMatShapes = rotate(
-                self.iMatShapes, self.dmConfig.rotation,
-                order=self.dmConfig.interpOrder, axes=(-2, -1)
-            )
-            rotShape = self.iMatShapes.shape
-            self.iMatShapes = self.iMatShapes[:,
-                              rotShape[1] / 2. - self.sim_size / 2.:
-                              rotShape[1] / 2. + self.sim_size / 2.,
-                              rotShape[2] / 2. - self.sim_size / 2.:
-                              rotShape[2] / 2. + self.sim_size / 2.
-                              ]
 
+        # An array of values for each actuator. 1 if actuator is valid, 0 if not
+        self.valid_actuators = numpy.ones((self.n_acts))
 
 
     def getActiveActs(self):
@@ -171,10 +156,20 @@ class DM(object):
         # Remove any piston term from DM
         self.dm_shape -= self.dm_shape.mean()
 
-        # Fit into a phase screen size
-        # self.dm_screen[
-        #         self.screen_coord: -self.screen_coord, self.screen_coord: -self.screen_coord
-        #         ] = self.dm_shape
+
+        if self.dmConfig.rotation:
+            dm_size = self.dm_shape.shape
+            rot_dm_shape = rotate(
+                self.dm_shape, self.dmConfig.rotation,
+                order=self.dmConfig.interpOrder)
+            rotShape = rot_dm_shape.shape
+            self.dm_shape = rot_dm_shape[:,
+                              rotShape[0] / 2. - dm_size[0] / 2.:
+                              rotShape[0] / 2. + dm_size[0] / 2.,
+                              rotShape[1] / 2. - dm_size[1] / 2.:
+                              rotShape[1] / 2. + dm_size[1] / 2.
+                              ]
+
         # Crop or pad as appropriate
         dm_size = self.dm_shape.shape[0]
 
@@ -194,15 +189,6 @@ class DM(object):
 
     def makeDMFrame(self, actCoeffs):
         dm_shape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
-        
-        # If DM not telescope diameter, must adjust pixel scale
-        # if self.dmConfig.diameter != self.soapy_config.tel.telDiam:
-        #     scaledDMSize = (dmShape.shape[0]
-        #             * float(self.dmConfig.diameter)/self.soapy_config.tel.telDiam)
-        #     dm_shape = interp.zoom(dmShape, scaledDMSize, order=1)
-            
-        # Turn into phase pbject with altitude
-        # dmShape = Phase(dmShape, altitude=self.dmConfig.altitude)
             
         return dm_shape
 
@@ -210,11 +196,23 @@ class DM(object):
         self.dm_shape[:] = 0
         self.actCoeffs[:] = 0
 
+
+
     def makeIMatShapes(self):
         """
         Virtual method to generate the DM influence functions
         """
         pass
+
+    @property
+    def valid_actuators(self):
+        return self._valid_actuators
+
+    @valid_actuators.setter
+    def valid_actuators(self, valid_actuators):
+        self._valid_actuators = valid_actuators
+        self.n_valid_actuators = self._valid_actuators.sum()
+
 
 class Zernike(DM):
     """
@@ -261,19 +259,12 @@ class Piezo(DM):
         xActs = self.dmConfig.nxActuators
         self.spcing = self.nx_dm_elements/float(xActs)
 
-
-
         for x in xrange(xActs):
             for y in xrange(xActs):
-                # x1 = int(x*self.spcing+self.simConfig.simPad)
-                # x2 = int((x+1)*self.spcing+self.simConfig.simPad)
-                # y1 = int(y*self.spcing+self.simConfig.simPad)
-                # y2 = int((y+1)*self.spcing+self.simConfig.simPad)
-                # if self.mask[x1: x2, y1: y2].sum() > 0:
                 activeActs.append([x,y])
-        self.activeActs = numpy.array(activeActs)
+        self.valid_act_coords = numpy.array(activeActs)
         self.xActs = xActs
-        return self.activeActs.shape[0]
+        return self.valid_act_coords.shape[0]
 
 
     def makeIMatShapes(self):
@@ -295,7 +286,7 @@ class Piezo(DM):
         shapes = numpy.zeros((int(self.n_acts), dmSize, dmSize), dtype="float32")
 
         for i in xrange(self.n_acts):
-            x,y = self.activeActs[i]
+            x,y = self.valid_act_coords[i]
 
             # Add one to avoid the outer padding
             x+=1
@@ -309,18 +300,6 @@ class Piezo(DM):
                     (dmSize, dmSize), order=self.dmConfig.interpOrder)
 
             shapes[i] -= shapes[i].mean()
-
-
-
-        # if dmSize>self.sim_size:
-        #     coord = int(round(dmSize/2. - self.sim_size/2.))
-        #     self.iMatShapes = shapes[:,coord:-coord, coord:-coord].astype("float32")
-        #
-        # else:
-        #     pad = int(round((self.sim_size - dmSize)/2))
-        #     self.iMatShapes = numpy.pad(
-        #             shapes, ((0,0), (pad,pad), (pad,pad)), mode="constant"
-        #             ).astype("float32")
 
         if dmSize == self.scrn_size:
             self.dm_screen = self.dm_shape
@@ -337,6 +316,19 @@ class Piezo(DM):
                         ).astype("float32")
 
         self.iMatShapes = shapes
+
+
+    @property
+    def valid_actuators(self):
+        return self._valid_actuators
+
+    @valid_actuators.setter
+    def valid_actuators(self, valid_actuators):
+        self._valid_actuators = valid_actuators
+        self.n_valid_actuators = self._valid_actuators.sum()
+
+        # Must remove any invalid actuators
+        self.valid_act_coords = numpy.array([self.valid_act_coords[i] for i in range(len(valid_actuators)) if valid_actuators[i]])
 
 
 class GaussStack(Piezo):
@@ -363,7 +355,7 @@ class GaussStack(Piezo):
         width = actSpacing/2.
 
         for i in xrange(self.n_acts):
-            x,y = self.activeActs[i]*actSpacing
+            x,y = self.valid_act_coords[i] * actSpacing
             shapes[i] = circle.gaussian2d(
                     self.nx_dm_elements, width, cent=(x,y))
 
@@ -423,7 +415,8 @@ class FastPiezo(Piezo):
 
     def makeDMFrame(self, actCoeffs):
 
-        self.actGrid[(self.activeActs[:,0], self.activeActs[:,1])] = actCoeffs
+        self.actGrid[:] = 0
+        self.actGrid[(self.valid_act_coords[:, 0], self.valid_act_coords[:, 1])] = actCoeffs
 
         # Add space around edge for 1 extra act to avoid edge effects
         actGrid = numpy.pad(self.actGrid, ((1,1), (1,1)), mode="constant")
@@ -434,6 +427,8 @@ class FastPiezo(Piezo):
 
 
         return dmShape
+
+
 
 class Phase(numpy.ndarray):
     def __new__(cls, input_array, altitude=0):
