@@ -213,6 +213,8 @@ class DM(object):
         self._valid_actuators = valid_actuators
         self.n_valid_actuators = self._valid_actuators.sum()
 
+        # Sort threough imat shapes and get rid of those not valid
+        self.iMatShapes = numpy.array([self.iMatShapes[i] for i in range(len(valid_actuators)) if valid_actuators[i]])
 
 class Zernike(DM):
     """
@@ -318,17 +320,6 @@ class Piezo(DM):
         self.iMatShapes = shapes
 
 
-    @property
-    def valid_actuators(self):
-        return self._valid_actuators
-
-    @valid_actuators.setter
-    def valid_actuators(self, valid_actuators):
-        self._valid_actuators = valid_actuators
-        self.n_valid_actuators = self._valid_actuators.sum()
-
-        # Must remove any invalid actuators
-        self.valid_act_coords = numpy.array([self.valid_act_coords[i] for i in range(len(valid_actuators)) if valid_actuators[i]])
 
 
 class GaussStack(Piezo):
@@ -428,6 +419,17 @@ class FastPiezo(Piezo):
 
         return dmShape
 
+    @property
+    def valid_actuators(self):
+        return self._valid_actuators
+
+    @valid_actuators.setter
+    def valid_actuators(self, valid_actuators):
+        self._valid_actuators = valid_actuators
+        self.n_valid_actuators = self._valid_actuators.sum()
+
+        # Must remove any invalid actuators
+        self.valid_act_coords = numpy.array([self.valid_act_coords[i] for i in range(len(valid_actuators)) if valid_actuators[i]])
 
 
 class Phase(numpy.ndarray):
