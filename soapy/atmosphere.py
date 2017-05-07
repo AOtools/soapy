@@ -57,8 +57,8 @@ import scipy.fftpack as fft
 import scipy.interpolate
 
 from . import AOFFT, logger, numbalib
-from .aotools import phasescreen
-from aotools.turbulence import infinitephasescreen
+# from .aotools import phasescreen
+from aotools.turbulence import infinitephasescreen, phasescreen
 # Use either pyfits or astropy for fits file handling
 try:
     from astropy.io import fits
