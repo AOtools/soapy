@@ -24,6 +24,7 @@ install:
 - python setup.py install
 - pip install pyfftw
 - pip install codecov
+- pip install aotools
 script:
 - nosetests --verbosity=3 --with-coverage --cover-package=soapy test/
 after_success:

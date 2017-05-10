@@ -19,8 +19,9 @@
 import numpy
 import scipy.optimize as opt
 
-from . import AOFFT, logger, lineofsight_fast, numbalib
-from .aotools import circle, interp
+import aotools
+
+from . import AOFFT, logger, lineofsight_fast, numbalib, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -116,7 +117,7 @@ class PSF(object):
         if numpy.any(mask):
             self.mask = mask
         else:
-            self.mask = circle.circle(
+            self.mask = aotools.circle(
                     self.pupil_size/2., self.sim_size,
                     )
 

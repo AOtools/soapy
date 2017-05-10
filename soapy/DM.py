@@ -46,8 +46,10 @@ operation.
 import numpy
 from scipy.ndimage.interpolation import rotate
 
-from . import logger
-from .aotools import interp, circle
+import aotools
+
+from . import logger, interp
+# from .aotools import interp, circle
 
 try:
     xrange
@@ -92,7 +94,7 @@ class DM(object):
             self.mask = mask
         # Else we'll just make a circle
         else:
-            self.mask = circle.circle(
+            self.mask = aotools.circle(
                     self.pupil_size/2., self.sim_size,
                     )
 
@@ -124,7 +126,7 @@ class DM(object):
         self.makeIMatShapes()
 
         # An array of values for each actuator. 1 if actuator is valid, 0 if not
-        self.valid_actuators = numpy.ones((self.n_acts))
+        self._valid_actuators = numpy.ones((self.n_acts))
 
 
     def getActiveActs(self):
@@ -202,7 +204,8 @@ class DM(object):
         """
         Virtual method to generate the DM influence functions
         """
-        pass
+        # Place holder for where some influence functions could go
+        self.iMatShapes = numpy.zeros((self.n_acts))
 
     @property
     def valid_actuators(self):
@@ -228,7 +231,7 @@ class Zernike(DM):
         '''
 
 
-        shapes = circle.zernikeArray(
+        shapes = aotools.zernikeArray(
                 int(self.n_acts + 1), int(self.nx_dm_elements))[1:]
 
 
@@ -347,7 +350,7 @@ class GaussStack(Piezo):
 
         for i in xrange(self.n_acts):
             x,y = self.valid_act_coords[i] * actSpacing
-            shapes[i] = circle.gaussian2d(
+            shapes[i] = aotools.gaussian2d(
                     self.nx_dm_elements, width, cent=(x,y))
 
         self.iMatShapes = shapes

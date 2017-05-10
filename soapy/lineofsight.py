@@ -27,8 +27,9 @@ Examples::
 import numpy
 from scipy.interpolate import interp2d
 
-from . import logger
-from .aotools import opticalpropagation, interp
+from . import logger, interp
+
+from aotools import opticalpropagation
 
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64

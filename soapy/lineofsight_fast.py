@@ -25,11 +25,12 @@ Examples::
 """
 
 import numpy
-from scipy.interpolate import interp2d
 
-from . import logger
-from .aotools import opticalpropagation, interp
+from aotools import opticalpropagation
+
+from . import logger, interp
 from . import numbalib
+
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 

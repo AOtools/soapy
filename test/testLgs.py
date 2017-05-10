@@ -1,5 +1,5 @@
 from soapy import confParse, LGS
-from soapy.aotools import circle
+import aotools
 import unittest
 import numpy
 import os
@@ -11,7 +11,7 @@ class TestLgs(unittest.TestCase):
 
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
 
-        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         lgs = LGS.LGS(config.wfss[1], config)
 
@@ -20,14 +20,14 @@ class TestLgs(unittest.TestCase):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         config.wfss[1].lgs.propagationMode = "Geometric"
 
-        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         lgs = LGS.LGS_Geometric(config.wfss[1], config)
 
     def testc_geoLgsPsf(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
 
-        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
         config.wfss[1].lgs.propagationMode = "Geometric"
         lgs = LGS.LGS_Geometric(config.wfss[1], config)
         psf = lgs.getLgsPsf(
@@ -37,7 +37,7 @@ class TestLgs(unittest.TestCase):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         config.wfss[1].lgs.propagationMode = "Physical"
 
-        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         lgs = LGS.LGS_Physical(config.wfss[1], config)
 
@@ -45,7 +45,7 @@ class TestLgs(unittest.TestCase):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
 
         config.wfss[1].lgs.propagationMode = "Physical"
-        mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
+        mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         lgs = LGS.LGS_Physical(config.wfss[1], config, nOutPxls=10)
         psf = lgs.getLgsPsf(

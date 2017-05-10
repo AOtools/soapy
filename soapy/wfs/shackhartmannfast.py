@@ -3,18 +3,12 @@ import numpy.random
 
 import pyfftw
 
-try:
-    from astropy.io import fits
-except ImportError:
-    try:
-        import pyfits as fits
-    except ImportError:
-        raise ImportError("Soapy requires either pyfits or astropy")
+import aotools
+from aotools.image_processing import centroiders
+from aotools import wfs
 
-from .. import LGS, logger, lineofsight_fast, AOFFT
+from .. import LGS, logger, lineofsight_fast, AOFFT, interp
 from . import base
-from .. import aotools
-from ..aotools import centroiders, wfs, interp
 from .. import numbalib
 
 # xrange now just "range" in python3.

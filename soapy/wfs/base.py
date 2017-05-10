@@ -80,16 +80,10 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 
 import numpy
 import numpy.random
-try:
-    from astropy.io import fits
-except ImportError:
-    try:
-        import pyfits as fits
-    except ImportError:
-        raise ImportError("PyAOS requires either pyfits or astropy")
+
+import aotools
 
 from .. import AOFFT, LGS, logger, lineofsight
-from ..aotools import centroiders, circle
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -143,7 +137,7 @@ class WFS(object):
             self.mask = mask
         # Else we'll just make a circle
         else:
-            self.mask = circle.circle(self.pupil_size/2., self.sim_size)
+            self.mask = aotools.circle(self.pupil_size/2., self.sim_size)
 
         self.iMat = False
 
@@ -181,7 +175,7 @@ class WFS(object):
         if numpy.any(mask):
             self.mask = mask
         else:
-            self.mask = circle.circle(
+            self.mask = aotools.circle(
                     self.pupil_size/2., self.sim_size,
                     )
 
