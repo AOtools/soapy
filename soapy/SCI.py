@@ -189,8 +189,8 @@ class singleModeFibre(PSF):
         print("Coupling efficiency: {0:.3f}".format(self.refStrehl))
 
     def fibreEfield(self, size):
-        fibre_efield = circle.gaussian2d((self.sim_size, self.sim_size), (size, size))
-        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(circle.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
+        fibre_efield = aotools.gaussian2d((self.sim_size, self.sim_size), (size, size))
+        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(aotools.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
         return fibre_efield
 
     def refCouplingLoss(self, size):
