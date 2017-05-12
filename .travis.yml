@@ -3,7 +3,7 @@ sudo: false
 branches:
   only:
   - master
-  - numba
+  - develop
   
 python:
 - 2.7

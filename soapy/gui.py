@@ -21,7 +21,7 @@ The GUI for the Soapy adaptive optics simulation
 """
 
 import sys
-
+# Attempt to import PyQt5, if not try PyQt4
 try:
     from PyQt5 import QtGui, QtWidgets, QtCore
     PYQT_VERSION = 5
@@ -30,7 +30,6 @@ except (ImportError ,RuntimeError):
     QtWidgets = QtGui
     PYQT_VERSION = 4
 
-# Attempt to import PyQt5, if not try PyQt4
 
 # Do this so uses new Jupyter console if available
 try:

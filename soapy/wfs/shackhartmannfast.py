@@ -354,14 +354,7 @@ class ShackHartmannFast(base.WFS):
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
 
         numbalib.wfs.place_subaps_on_detector(
-                self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
-                threads=self.threads
-        )
-        # numbalib.wfs.place_subaps_on_detector_pool(
-        #         self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords,
-        #         thread_pool=self.thread_pool
-        # )
-
+                self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords)
         # Scale data for correct number of photons
         self.detector /= self.detector.sum()
         self.detector *= aotools.photonsPerMag(
