@@ -23,6 +23,6 @@ setup(
         "numpy >= 1.7.0",
         "scipy >= 0.15.0",
         "astropy >= 1.0",
-        "aotools >= 0.2"
+        "aotools >= 0.3.0"
       ],
 )

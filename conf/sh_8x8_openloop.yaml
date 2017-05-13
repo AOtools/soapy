@@ -5,6 +5,7 @@ nDM: 2
 nSci: 1
 nIters: 5000
 loopTime: 0.0025
+reconstructor: "MVM"
 
 verbosity: 2
 
@@ -40,27 +41,28 @@ WFS:
     pxlsPerSubap: 10
     subapFOV: 2.5
     wavelength: 600e-9
+    centThreshold: 0.1
 
 DM:
   0:
     type: TT
-    closed: True
+    closed: False
     iMatValue: 2e3
 
   1:
     type: Piezo
-    closed: True
+    closed: False
     nxActuators: 9
     iMatValue: 500
 
 Reconstructor:
   type: MVM
   svdConditioning: 0.03
-  gain: 0.6
+  gain: 0.9
 
 Science:
   0:
     position: [0, 0]
-    FOV: 1.5
+    FOV: 2.0
     wavelength: 1.65e-6
     pxls: 128
