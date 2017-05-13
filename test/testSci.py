@@ -13,16 +13,14 @@ class TestSci(unittest.TestCase):
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        sci = SCI.PSF(
-                config, 0, mask)
+        sci = SCI.PSF(config, 0, mask)
 
     def test_sciFrame(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        sci = SCI.PSF(
-                config, 0, mask)
+        sci = SCI.PSF(config, 0, mask)
 
         sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
@@ -44,16 +42,14 @@ class TestSci(unittest.TestCase):
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        sci = SCI.singleModeFibre(
-                config, 0, mask)
+        sci = SCI.singleModeFibre(config, 0, mask)
 
     def test_fibreFrame(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = circle.circle(config.sim.pupilSize/2., config.sim.simSize)
 
-        sci = SCI.singleModeFibre(
-                config, 0, mask)
+        sci = SCI.singleModeFibre(config, 0, mask)
         sci.frame(numpy.ones((config.atmos.scrnNo, config.sim.scrnSize, config.sim.scrnSize)))
 
 
