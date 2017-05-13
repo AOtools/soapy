@@ -392,10 +392,10 @@ class ShackHartmannFast(base.WFS):
         self.iFFT()
 
         # Do convolution
-        self.ifft_output_data *= self.lgss_ifft_output_data
+        self.ifft_output_data *= self.lgs_ifft_output_data
 
         # back to Focal Plane.
-        self.fft_input_data[:] = self.iFFTFPSubapsArray
+        self.fft_input_data[:] = self.ifft_output_data
         self.FFT()
         self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.fft_output_data).real
 

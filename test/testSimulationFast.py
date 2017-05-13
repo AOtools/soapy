@@ -126,7 +126,7 @@ class TestSimpleSCAO(unittest.TestCase):
                 sim.longStrehl[0,-1], RESULTS["8x8_lgs"], atol=0.2)
 
     def testOpenLoop(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_openloop.yaml"))
         sim.config.wfss[0].type = "ShackHartmannFast"
 
         sim.config.sim.simName = None
@@ -135,7 +135,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.wfss[0].GSPosition=(0,0)
 
         for i in range(sim.config.sim.nDM-1):
-            sim.config.dms[i+1].closed = False
+            sim.config.dms[i].closed = False
 
         sim.aoinit()
 
