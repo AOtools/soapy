@@ -19,8 +19,9 @@
 import numpy
 import scipy.optimize as opt
 
-from . import AOFFT, logger, lineofsight_fast, numbalib
-from .aotools import circle, interp
+import aotools
+
+from . import AOFFT, logger, lineofsight_fast, numbalib, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -116,7 +117,7 @@ class PSF(object):
         if numpy.any(mask):
             self.mask = mask
         else:
-            self.mask = circle.circle(
+            self.mask = aotools.circle(
                     self.pupil_size/2., self.sim_size,
                     )
 
@@ -188,8 +189,8 @@ class singleModeFibre(PSF):
         print("Coupling efficiency: {0:.3f}".format(self.refStrehl))
 
     def fibreEfield(self, size):
-        fibre_efield = circle.gaussian2d((self.sim_size, self.sim_size), (size, size))
-        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(circle.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
+        fibre_efield = aotools.gaussian2d((self.sim_size, self.sim_size), (size, size))
+        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(aotools.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
         return fibre_efield
 
     def refCouplingLoss(self, size):

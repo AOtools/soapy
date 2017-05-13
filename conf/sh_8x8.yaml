@@ -51,6 +51,7 @@ DM:
     type: Piezo
     closed: True
     nxActuators: 9
+    iMatValue: 300
 
 Reconstructor:
   type: MVM

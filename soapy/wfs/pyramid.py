@@ -1,17 +1,8 @@
 import numpy
 import numpy.random
-from scipy.interpolate import interp2d
-try:
-    from astropy.io import fits
-except ImportError:
-    try:
-        import pyfits as fits
-    except ImportError:
-        raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, LGS, logger
+from .. import AOFFT, LGS, logger, interp
 from . import base
-from ..aotools import interp
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3

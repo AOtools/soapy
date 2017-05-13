@@ -1,7 +1,7 @@
 import time
 from matplotlib import pyplot
 
-import tqdm
+# import tqdm
 from soapy import atmosphere
 
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     fig = pyplot.figure()
 
     t1 = time.time()
-    for i in tqdm.tqdm(range(N_iters)):
+    for i in range(N_iters):
         screen = phase_screen.move_screen()
     t2 = time.time()
 

@@ -91,16 +91,16 @@ class Reconstructor(object):
             self.moveScrns = atmos.moveScrns
         self.wfss = wfss
 
-        self.controlMatrix = numpy.zeros(
+        self.control_matrix = numpy.zeros(
             (self.sim_config.totalWfsData, self.sim_config.totalActs))
         self.controlShape = (
             self.sim_config.totalWfsData, self.sim_config.totalActs)
 
-        self.actuator_values = numpy.zeros(self.sim_config.totalActs)
-
         self.Trecon = 0
 
         self.find_closed_actuators()
+
+        self.actuator_values = None
 
     def find_closed_actuators(self):
         self.closed_actuators = numpy.zeros(self.sim_config.totalActs)
@@ -117,7 +117,7 @@ class Reconstructor(object):
         filename = self.sim_config.simName+"/cMat.fits"
 
         fits.writeto(
-                filename, self.controlMatrix,
+                filename, self.control_matrix,
                 header=self.sim_config.saveHeader, clobber=True)
 
     def loadCMat(self):
@@ -164,7 +164,7 @@ class Reconstructor(object):
             logger.warning("designated control matrix does not match the expected shape")
             raise IOError
         else:
-            self.controlMatrix = cMat
+            self.control_matrix = cMat
 
     def save_interaction_matrix(self):
         """
@@ -179,7 +179,7 @@ class Reconstructor(object):
 
     def loadIMat(self):
         acts = 0
-        self.interaction_matrix = numpy.empty_like(self.controlMatrix.T)
+        self.interaction_matrix = numpy.empty_like(self.control_matrix.T)
         for dm in xrange(self.sim_config.nDM):
             logger.statusMessage(
                     dm+1,  self.sim_config.nDM-1, "Load DM Interaction Matrix")
@@ -224,12 +224,19 @@ class Reconstructor(object):
         self.interaction_matrix = numpy.zeros((self.sim_config.totalActs, self.sim_config.totalWfsData))
 
         n_acts = 0
+        dm_imats = []
+        total_valid_actuators = 0
         for dm_n, dm in self.dms.items():
-            logger.info("Creating Interaction Matrix beteen DM %d " % (dm_n))
-            self.interaction_matrix[n_acts: n_acts+dm.n_acts
-                    ] = self.make_dm_iMat(dm, callback=callback)
+            logger.info("Creating Interaction Matrix for DM %d " % (dm_n))
+            dm_imats.append(self.make_dm_iMat(dm, callback=callback))
 
-            n_acts += dm.n_acts
+            total_valid_actuators += dm_imats[dm_n].shape[0]
+
+        self.interaction_matrix = numpy.zeros((total_valid_actuators, self.sim_config.totalWfsData))
+        act_n = 0
+        for imat in dm_imats:
+            self.interaction_matrix[act_n: act_n + imat.shape[0]] = imat
+            act_n += imat.shape[0]
 
     def make_dm_iMat(self, dm, callback=None):
         """
@@ -248,7 +255,7 @@ class Reconstructor(object):
         actCommands = numpy.zeros(dm.n_acts)
 
         phase = numpy.zeros((self.n_dms, self.scrn_size, self.scrn_size))
-        for i in xrange(dm.n_acts):
+        for i in range(dm.n_acts):
             # Set vector of iMat commands and phase to 0
             actCommands[:] = 0
 
@@ -271,7 +278,32 @@ class Reconstructor(object):
             logger.statusMessage(i+1, dm.n_acts,
                                  "Generating {} Actuator DM iMat".format(dm.n_acts))
 
-        return iMat
+        logger.info("Checking for redundant actuators...")
+        # Now check tath each actuator actually does something on a WFS.
+        # If an act has a <0.1% effect then it will be removed
+        # NOTE: THIS SHOULD REALLY BE DONE ON A PER WFS BASIS
+        valid_actuators = numpy.zeros((dm.n_acts), dtype="int")
+        act_threshold = abs(iMat).max() * 0.001
+        for i in range(dm.n_acts):
+            if abs(iMat[i]).max() > act_threshold:
+                valid_actuators[i] = 1
+            else:
+                valid_actuators[i] = 0
+
+        dm.valid_actuators = valid_actuators
+        n_valid_acts = valid_actuators.sum()
+        logger.info("DM {} has {} valid actuators ({} dropped)".format(
+                dm.n_dm, n_valid_acts, dm.n_acts - n_valid_acts))
+
+        # Can now make a final interaction matrix with only valid entries
+        valid_iMat = numpy.zeros((n_valid_acts, self.sim_config.totalWfsData))
+        i_valid_act = 0
+        for i in range(dm.n_acts):
+            if valid_actuators[i]:
+                valid_iMat[i_valid_act] = iMat[i]
+                i_valid_act += 1
+
+        return valid_iMat
 
     def get_dm_imat(self, dm_index, wfs_index):
         """
@@ -336,15 +368,14 @@ class Reconstructor(object):
 
     def apply_gain(self):
         """
-        Applies the gains set for each DM to the DM actuator commands.
-
+        Applies the gains set for each DM to the DM actuator commands. 
+        Also applies different control law if DM is in "closed" or "open" loop mode
         """
-
         # Loop through DMs and apply gain
+        n_act1 = 0
         for dm_i, dm in self.dms.items():
 
-            n_act1 = self.first_acts[dm_i]
-            n_act2 = self.first_acts[dm_i] + dm.n_acts
+            n_act2 = n_act1 + dm.n_valid_actuators
             # If loop is closed, only add residual measurements onto old
             # actuator values
             if dm.dmConfig.closed:
@@ -354,13 +385,18 @@ class Reconstructor(object):
                 self.actuator_values[n_act1: n_act2] = ((dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
                                 + ( (1. - dm.dmConfig.gain) * self.actuator_values[n_act1: n_act2]) )
 
+            n_act1 += dm.n_valid_actuators
+
+
     def reconstruct(self, wfs_measurements):
         t = time.time()
 
-        self.new_actuator_values = self.controlMatrix.T.dot(wfs_measurements)
+        if self.actuator_values is None:
+            self.actuator_values = numpy.zeros((self.sim_config.totalActs))
+
+        self.new_actuator_values = self.control_matrix.T.dot(wfs_measurements)
 
         self.apply_gain()
-        # self.actuator_values = self.new_actuator_values
 
         self.Trecon += time.time()-t
         return self.actuator_values
@@ -383,7 +419,7 @@ class MVM(Reconstructor):
 
         logger.info("Invert iMat with conditioning: {:.4f}".format(
                 self.config.svdConditioning))
-        self.controlMatrix[:] = scipy.linalg.pinv(
+        self.control_matrix = scipy.linalg.pinv(
                 self.interaction_matrix, self.config.svdConditioning
                 )
 
@@ -422,7 +458,7 @@ class MVM_SeparateDMs(Reconstructor):
             # now put carefully back into one control matrix
             for wfs_index in [dm.dmConfig.wfs]:
                 wfs = self.wfss[wfs_index]
-                self.controlMatrix[
+                self.control_matrix[
                         wfs.config.dataStart:
                                 wfs.config.dataStart + wfs.n_measurements,
                         acts:acts+dm.n_acts] = dm_control_matrx
@@ -793,7 +829,7 @@ class WooferTweeter(Reconstructor):
             dmCMats.append(dmCMat)
 
 
-        self.controlMatrix[:, 0:self.dms[0].n_acts]
+        self.control_matrix[:, 0:self.dms[0].n_acts]
         acts = self.dms[0].n_acts
         for dm in range(1, self.sim_config.nDM):
 
@@ -806,7 +842,7 @@ class WooferTweeter(Reconstructor):
 
             dmCMats[dm] = highOrderCMat
 
-            self.controlMatrix[:,acts:acts+self.dms[dm].n_acts] = highOrderCMat.T
+            self.control_matrix[:, acts:acts + self.dms[dm].n_acts] = highOrderCMat.T
             acts += self.dms[dm].n_acts
 
 

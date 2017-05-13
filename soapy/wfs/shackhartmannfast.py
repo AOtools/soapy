@@ -1,18 +1,14 @@
 import numpy
 import numpy.random
-from scipy.interpolate import interp2d
-try:
-    from astropy.io import fits
-except ImportError:
-    try:
-        import pyfits as fits
-    except ImportError:
-        raise ImportError("Soapy requires either pyfits or astropy")
 
-from .. import AOFFT, LGS, logger, lineofsight_fast
+import pyfftw
+
+import aotools
+from aotools.image_processing import centroiders
+from aotools import wfs
+
+from .. import LGS, logger, lineofsight_fast, AOFFT, interp
 from . import base
-from .. import aotools
-from ..aotools import centroiders, wfs, interp
 from .. import numbalib
 
 # xrange now just "range" in python3.
@@ -163,32 +159,45 @@ class ShackHartmannFast(base.WFS):
             logger.warning("requested WFS FFT Padding less than FOV size... Setting oversampling to: %d"%self.config.fftOversamp)
 
         #Init the FFT to the focal plane
-        self.FFT = AOFFT.FFT(
-                inputSize=(
-                    self.n_subaps, self.subapFFTPadding, self.subapFFTPadding),
-                axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                THREADS=self.threads,
-                fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT"))
+        # self.FFT = AOFFT.FFT(
+        #         inputSize=(
+        #             self.n_subaps, self.subapFFTPadding, self.subapFFTPadding),
+        #         axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
+        #         THREADS=self.threads,
+        #         fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT"))
+
+        self.fft_input_data = pyfftw.empty_aligned(
+                (self.n_subaps, self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+        self.fft_output_data = pyfftw.empty_aligned(
+                (self.n_subaps, self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+        self.FFT = pyfftw.FFTW(
+                self.fft_input_data, self.fft_output_data, axes=(-2, -1),
+                threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT")
+                )
 
         # If LGS uplink, init FFTs to conovolve LGS PSF and WFS PSF(s)
         # This works even if no lgsConfig.uplink as ``and`` short circuits
         if self.lgsConfig and self.lgsConfig.uplink:
-            self.iFFT = AOFFT.FFT(
-                    inputSize = (self.n_subaps,
-                                        self.subapFFTPadding,
-                                        self.subapFFTPadding),
-                    axes=(-2,-1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=self.threads,
-                    fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
-                    )
 
-            self.lgs_iFFT = AOFFT.FFT(
-                    inputSize = (self.subapFFTPadding,
-                                self.subapFFTPadding),
-                    axes=(0,1), mode="pyfftw",dtype=CDTYPE,
-                    THREADS=self.threads,
-                    fftw_FLAGS=(self.config.fftwFlag,"FFTW_DESTROY_INPUT")
-                    )
+            self.ifft_input_data = pyfftw.empty_aligned(
+                    (self.n_subaps, self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+            self.ifft_output_data = pyfftw.empty_aligned(
+                    (self.n_subaps, self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+            self.iFFT = pyfftw.FFTW(
+                self.ifft_input_data, self.ifft_output_data, axes=(-2, -1),
+                threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
+                direction="FFTW_BACKWARD"
+                )
+
+            self.lgs_ifft_input_data = pyfftw.empty_aligned(
+                (self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+            self.lgs_ifft_output_data = pyfftw.empty_aligned(
+                (self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+            self.lgs_iFFT = pyfftw.FFTW(
+                self.lgs_ifft_input_data, self.lgs_ifft_output_data, axes=(0, 1),
+                threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
+                direction="FFTW_BACKWARD"
+                )
 
     def initLGS(self):
         super(ShackHartmannFast, self).initLGS()
@@ -313,14 +322,14 @@ class ShackHartmannFast(base.WFS):
             self.interp_efield = self.EField
 
         # Create an array of individual subap EFields
-        self.FFT.inputData[:] = 0
+        self.fft_input_data[:] = 0
         numbalib.wfs.chop_subaps_mask_pool(
                 self.interp_efield, self.interp_subap_coords, self.nx_subap_interp,
-                self.FFT.inputData, self.scaledMask, thread_pool=self.thread_pool)
-        self.FFT.inputData[:, :self.nx_subap_interp, :self.nx_subap_interp] *= self.tilt_fix_efield
+                self.fft_input_data, self.scaledMask, thread_pool=self.thread_pool)
+        self.fft_input_data[:, :self.nx_subap_interp, :self.nx_subap_interp] *= self.tilt_fix_efield
         self.FFT()
 
-        self.temp_subap_focus = AOFFT.ftShift2d(self.FFT.outputData)
+        self.temp_subap_focus = AOFFT.ftShift2d(self.fft_output_data)
 
         numbalib.abs_squared(self.temp_subap_focus, out=self.subap_focus_intensity)
 
@@ -369,25 +378,26 @@ class ShackHartmannFast(base.WFS):
             self.addReadNoise()
 
     def applyLgsUplink(self):
-        '''
+        """
         A method to deal with convolving the LGS PSF
         with the subap focal plane.
-        '''
+        """
 
         self.lgs.getLgsPsf(self.los.scrns)
 
-        self.lgs_iFFT.inputData[:] = self.lgs.psf
-        self.iFFTLGSPSF = self.lgs_iFFT()
+        self.lgs_ifft_input_data[:] = self.lgs.psf
+        self.lgs_iFFT()
 
-        self.iFFT.inputData[:] = self.subap_focus_intensity
-        self.iFFTFPSubapsArray = self.iFFT()
+        self.ifft_input_data[:] = self.subap_focus_intensity
+        self.iFFT()
 
         # Do convolution
-        self.iFFTFPSubapsArray *= self.iFFTLGSPSF
+        self.ifft_output_data *= self.lgss_ifft_output_data
 
         # back to Focal Plane.
-        self.FFT.inputData[:] = self.iFFTFPSubapsArray
-        self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.FFT()).real
+        self.fft_input_data[:] = self.iFFTFPSubapsArray
+        self.FFT()
+        self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.fft_output_data).real
 
     def calculateSlopes(self):
         '''

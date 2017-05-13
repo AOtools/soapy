@@ -1,18 +1,12 @@
 import numpy
 import numpy.random
-from scipy.interpolate import interp2d
-try:
-    from astropy.io import fits
-except ImportError:
-    try:
-        import pyfits as fits
-    except ImportError:
-        raise ImportError("Soapy requires either pyfits or astropy")
 
-from .. import AOFFT, LGS, logger
+import aotools
+from aotools.image_processing import centroiders
+from aotools import wfs
+
+from .. import AOFFT, LGS, logger, interp
 from . import base
-from .. import aotools
-from ..aotools import centroiders, wfs, interp
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -24,7 +18,6 @@ except NameError:
 # The data type of data arrays (complex and real respectively)
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
-
 
 class ShackHartmann(base.WFS):
     """Class to simulate a Shack-Hartmann WFS"""

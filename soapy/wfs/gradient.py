@@ -9,9 +9,10 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
+from aotools import wfs
+
 from .. import AOFFT, LGS, logger
 from . import base
-from ..aotools import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
