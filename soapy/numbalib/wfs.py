@@ -2,8 +2,6 @@ import multiprocessing
 N_CPU = multiprocessing.cpu_count()
 from threading import Thread
 from . import numbalib
-import queue
-import math
 
 import numpy
 import numba

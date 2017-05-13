@@ -1,12 +1,15 @@
 import multiprocessing
 N_CPU = multiprocessing.cpu_count()
 from threading import Thread
-import queue
-import atexit
+
+# python3 has queue, python2 has Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 import numpy
 import numba
-
 
 def bilinear_interp(data, xCoords, yCoords, interpArray, thread_pool=None, bounds_check=True):
     """
