@@ -333,6 +333,7 @@ class LineOfSight(object):
 
         self.phase = self.residual * self.phs2Rad
 
+
     def frame(self, scrns=None, correction=None):
         '''
         Runs one frame through a line of sight
@@ -353,6 +354,8 @@ class LineOfSight(object):
         self.zeroData()
 
         if scrns is not None:
+            if scrns.ndim==2:
+                scrns.shape = 1, scrns.shape[0], scrns.shape[1]
             self.scrns = scrns
             self.makePhase(self.radii)
 
