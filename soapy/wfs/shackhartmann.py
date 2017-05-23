@@ -385,7 +385,7 @@ class ShackHartmann(base.WFS):
 
         # Scale data for correct number of photons
         self.wfsDetectorPlane /= self.wfsDetectorPlane.sum()
-        self.wfsDetectorPlane *= aotools.photonsPerMag(
+        self.wfsDetectorPlane *= aotools.photons_per_mag(
                 self.wfsConfig.GSMag, self.mask, self.phase_scale**(-1),
                 self.wfsConfig.wvlBandWidth, self.wfsConfig.exposureTime
                 ) * self.wfsConfig.throughput
