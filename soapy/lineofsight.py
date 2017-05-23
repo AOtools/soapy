@@ -166,7 +166,7 @@ class LineOfSight(object):
         and the E-Field across the LOS
         """
         self.phase = numpy.zeros([self.nx_out_pixels] * 2, dtype=DTYPE)
-        self.EField = numpy.zeros([self.nx_out_pixels] * 2, dtype=CDTYPE)
+        self.EField = numpy.ones([self.nx_out_pixels] * 2, dtype=CDTYPE)
 
 
     def findMetaPupilSizes(self, GSHeight):
@@ -312,7 +312,7 @@ class LineOfSight(object):
         """
         Sets the phase and complex amp data to zero
         """
-        self.EField[:] = 0
+        self.EField[:] = 1
         self.phase[:] = 0
 
     def makePhase(self, radii=None, apos=None):
