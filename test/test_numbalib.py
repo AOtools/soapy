@@ -186,8 +186,7 @@ def test_place_subaps_detector():
     subap_coords = numpy.array(subap_coords).astype("int")
 
     numbalib.wfs.place_subaps_on_detector(
-        subaps, detector, detector_coords, subap_coords,
-        threads=n_threads)   
+        subaps, detector, detector_coords, subap_coords)
 
     numpy_place_subaps(subaps, detector_numpy, detector_coords, subap_coords)
 
