@@ -385,7 +385,7 @@ class ShackHartmannFast(base.WFS):
 
         self.lgs.getLgsPsf(self.los.scrns)
 
-        self.lgs_ifft_input_data[:] = self.lgs.psf
+        self.lgs_ifft_input_data[:] = self.lgs.psf[::-1, ::-1]
         self.lgs_iFFT()
 
         self.ifft_input_data[:] = self.subap_focus_intensity
