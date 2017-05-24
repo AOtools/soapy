@@ -239,7 +239,7 @@ class Sim(object):
         try:
             reconObj = getattr(reconstruction, self.config.recon.type)
         except AttributeError:
-            raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
+            raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.recon.type))
         self.recon = reconObj(
                 self.config, self.dms, self.wfss, self.atmos,
                 self.runWfs
