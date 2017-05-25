@@ -235,7 +235,7 @@ class WFS(object):
                     )
 
                 # Calculate the zernikes to add
-                self.elongZs = circle.zernikeArray([2,3,4], self.pupil_size)
+                self.elongZs = aotools.zernikeArray([2,3,4], self.pupil_size)
 
                 # Calculate the radii of the metapupii at for different elong
                 # Layer heights
@@ -288,14 +288,14 @@ class WFS(object):
         dh = h - self.config.GSHeight
         H = float(self.lgsConfig.height)
         d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telDiam/2.
-        D = self.los.telDiam
+        D = self.telescope_diameter
         theta = (d.astype("float")/H) - self.config.GSPosition
 
 
         # for the focus terms....
         focalPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * ((
-            ((self.los.telDiam/2.)**2 + (h**2) )**0.5\
-          - ((self.los.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh)
+            ((self.telescope_diameter/2.)**2 + (h**2) )**0.5\
+          - ((self.telescope_diameter/2.)**2 + (H)**2 )**0.5 ) - dh)
 
         # For tilt terms.....
         tiltPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * (
@@ -340,7 +340,7 @@ class WFS(object):
         H = float(self.config.GSHeight)            # Height of GS
 
         # Position of launch in m
-        xl = numpy.array(self.lgsLaunchPos) * self.los.telDiam/2.
+        xl = numpy.array(self.lgsLaunchPos) * self.telescope_diameter/2.
 
         # GS Pos in radians
         GSPos = numpy.array(self.config.GSPosition) * RAD2ASEC
