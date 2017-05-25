@@ -338,8 +338,8 @@ class ThreadPool(object):
             exception_queue = queue.Queue()
             thread = Thread(
                     target=self._thread_func,
-                    args=(input_queue, output_queue, exception_queue),
-                    daemon=True)
+                    args=(input_queue, output_queue, exception_queue))
+            thread.daemon = True
 
             self.input_queues.append(input_queue)
             self.output_queues.append(output_queue)
