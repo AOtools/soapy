@@ -19,9 +19,18 @@
 """
 The GUI for the Soapy adaptive optics simulation
 """
-
 import sys
 
+# Following required in case pyqt api v1 is default (on smome linux distros)
+# Explicitly set it to get v2!
+import sip
+API_NAMES = ["QDate", "QDateTime", "QString", "QTextStream", "QTime", "QUrl", "QVariant"]
+API_VERSION = 2
+for name in API_NAMES:
+    sip.setapi(name, API_VERSION)
+
+from . import logger
+# Attempt to import PyQt5, if not try PyQt4
 try:
     from PyQt5 import QtGui, QtWidgets, QtCore
     PYQT_VERSION = 5
@@ -29,8 +38,7 @@ except (ImportError ,RuntimeError):
     from PyQt4 import QtGui, QtCore
     QtWidgets = QtGui
     PYQT_VERSION = 4
-
-# Attempt to import PyQt5, if not try PyQt4
+logger.debug("Use PyQT Version {}".format(PYQT_VERSION ))
 
 # Do this so uses new Jupyter console if available
 try:
@@ -78,9 +86,8 @@ if PYQT_VERSION == 5:
 elif PYQT_VERSION == 4:
     from .aogui_ui4 import Ui_MainWindow
 
-from . import logger
 
-import sys
+
 import numpy
 import time
 import json
@@ -90,6 +97,7 @@ from functools import partial
 try:
     import queue
 except ImportError:
+
     import Queue as queue
 try:
     xrange
