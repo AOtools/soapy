@@ -155,6 +155,28 @@ class PSF(object):
         else:
             self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
 
+
+    def calc_wavefronterror(self):
+        """
+        Calculates the wavefront error across the telescope pupil 
+        
+        Returns:
+             float: RMS WFE across pupil in nm
+        """
+
+        res = (self.los.phase.copy() * self.mask) / self.los.phs2Rad
+
+        # Piston is mean across aperture
+        piston = res.sum() / self.mask.sum()
+
+        # remove from WFE measurements as its not a problem
+        res -= (piston*self.mask)
+
+        ms_wfe = numpy.square(res).sum() / self.mask.sum()
+        rms_wfe = numpy.sqrt(ms_wfe)
+
+        return rms_wfe
+
     def frame(self, scrns, correction=None):
         """
         Runs a single science camera frame with one or more phase screens

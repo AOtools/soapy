@@ -737,12 +737,13 @@ class Sim(object):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
-                # Record WFE residual
-                res = self.sciCams[sci].los.residual
-                # Remove piston first
-                res -= res.sum()/self.mask.sum()
-                res *= self.mask
-                self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
+                # # Record WFE residual
+                # res = self.sciCams[sci].los.residual
+                # # Remove piston first
+                # res -= res.sum()/self.mask.sum()
+                # res *= self.mask
+                # self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
+                self.WFE[sci, i] = self.sciCams[sci].calc_wavefronterror()
 
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
