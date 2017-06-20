@@ -596,7 +596,7 @@ class Sim(object):
         Prints a message to the console giving timing data. Used on sim end.
         """
         print('\n')
-        if self.longStrehl is not None:
+        if hasattr(self, "longStrehl") and (self.longStrehl is not None):
             for sci_n in range(self.config.sim.nSci):
                 print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
 
