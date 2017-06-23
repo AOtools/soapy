@@ -289,11 +289,12 @@ class atmos(object):
             return self.randomScrns(subHarmonics=self.config.subHarmonics)
 
         if self.config.infinite:
-            for layer in range(self.scrnNo):
-                self.scrns[layer] = self.infinite_phase_screens[layer].move_screen()
-                # Convert to nm
-                self.scrns *= (500/(2*numpy.pi))
-                return self.scrns
+            for layer_n in range(self.scrnNo):
+                self.scrns[layer_n] = self.infinite_phase_screens[layer_n].move_screen()
+
+            # Convert to nm
+            self.scrns *= (500/(2*numpy.pi))
+            return self.scrns
 
         # Other wise proceed with translating large phase screens
         for i in self.wholeScrns:
