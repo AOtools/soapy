@@ -177,6 +177,7 @@ class PSF(object):
 
         return rms_wfe
 
+
     def frame(self, scrns, correction=None):
         """
         Runs a single science camera frame with one or more phase screens
