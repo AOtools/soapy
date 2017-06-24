@@ -443,8 +443,7 @@ class ShackHartmannFast(base.WFS):
         """
         Add photon noise to ``wfsDetectorPlane`` using ``numpy.random.poisson``
         """
-        self.detector = numpy.random.poisson(
-                self.detector).astype(DTYPE)
+        self.detector[:] = numpy.random.poisson(self.detector).astype(DTYPE)
 
 
     def addReadNoise(self):
