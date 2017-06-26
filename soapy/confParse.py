@@ -484,7 +484,9 @@ class SimConfig(ConfigObj):
                             of ``loopTime``                     ``0``
         ``threads``         int: Number of threads to use
                             for multithreaded operations        ``1``
-
+        ``photometric_zp``  float: Photometric zeropoint -
+                            number of photons/meter/second
+                            from a magnitude 0 star             ``2e9``
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -540,6 +542,7 @@ class SimConfig(ConfigObj):
                             ("simOversize", 1.02),
                             ("loopDelay", 0),
                             ("threads", 1),
+                            ("photometric_zp", 2e9),
                         ]
 
     # Parameters which may be set at some point and are allowed
