@@ -1007,7 +1007,8 @@ class ReconstructorConfig(ConfigObj):
                              about the inversion.                ``0``
         ``gain``             float: Gain of the integrator
                              loop.
-
+        ``imat_noise``       bool: include WFS noise when
+                             making in interaction matrix        ``True``
         ==================== =================================   ===========
 
     """
@@ -1016,7 +1017,8 @@ class ReconstructorConfig(ConfigObj):
     optionalParams = [
             ("type", "MVM"),
             ("svdConditioning", 0.),
-            ("gain", 0.6)
+            ("gain", 0.6),
+            ("imat_noise", True)
                         ]
 
     calculatedParams = [
