@@ -55,6 +55,7 @@ WFS:
     fftOversamp: 1
     wavelength: 550e-9
     subapFieldStop: True
+    centThreshold: 0
 
 
 DM:
@@ -62,13 +63,13 @@ DM:
     type: TT
     closed: True
     gain: 0.6
-    iMatValue: 5.
+    iMatValue: 1
 
   1:
     type: FastPiezo
     closed: True
     nxActuators: 75
-    iMatValue: 500
+    iMatValue: 2000
 
 
 Reconstructor:

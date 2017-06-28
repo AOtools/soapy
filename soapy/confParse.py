@@ -751,7 +751,7 @@ class WfsConfig(ConfigObj):
                         ("GSHeight", 0),
                         ("subapThreshold", 0.5),
                         ("lgs", None),
-                        ("centThreshold", 0.3),
+                        ("centThreshold", 0.),
                         ("centMethod", "centreOfGravity"),
                         ("type", "ShackHartmann"),
                         ("exposureTime", None),
