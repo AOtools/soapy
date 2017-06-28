@@ -260,7 +260,7 @@ class Reconstructor(object):
             actCommands[:] = 0
 
             # Except the one we want to make an iMat for!
-            actCommands[i] = dm.dmConfig.iMatValue
+            actCommands[i] = 1 # dm.dmConfig.iMatValue
 
             # Now get a DM shape for that command
             phase[:] = 0
@@ -269,7 +269,7 @@ class Reconstructor(object):
             n_wfs_measurments = 0
             for wfs_n, wfs in self.wfss.items():
                 iMat[i, n_wfs_measurments: n_wfs_measurments+wfs.n_measurements] = (
-                        -1 * wfs.frame(None, phase_correction=phase)) / dm.dmConfig.iMatValue
+                        -1 * wfs.frame(None, phase_correction=phase))# / dm.dmConfig.iMatValue
                 n_wfs_measurments += wfs.n_measurements
 
             if callback != None:

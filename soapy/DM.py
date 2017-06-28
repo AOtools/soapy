@@ -51,6 +51,8 @@ import aotools
 from . import logger, interp
 # from .aotools import interp, circle
 
+ASEC2RAD = (1/3600) * (numpy.pi/180)
+
 try:
     xrange
 except NameError:
@@ -320,7 +322,7 @@ class Piezo(DM):
                         shapes, ((0, 0), (pad,pad), (pad,pad)), mode="constant"
                         ).astype("float32")
 
-        self.iMatShapes = shapes
+        self.iMatShapes = shapes * self.config.iMatValue
 
 
 
@@ -386,7 +388,15 @@ class TT(DM):
 
         coords = numpy.linspace(
                     -1, 1, self.nx_dm_elements)
+
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
+
+        # Convert to arcsecs
+        tt_amp = -(ASEC2RAD * self.soapy_config.tel.telDiam/2.) * 1e9
+
+        self.iMatShapes *= tt_amp
+
+        self.iMatShapes *= self.config.iMatValue
 
 
 class FastPiezo(Piezo):
@@ -410,7 +420,7 @@ class FastPiezo(Piezo):
     def makeDMFrame(self, actCoeffs):
 
         self.actGrid[:] = 0
-        self.actGrid[(self.valid_act_coords[:, 0], self.valid_act_coords[:, 1])] = actCoeffs
+        self.actGrid[(self.valid_act_coords[:, 0], self.valid_act_coords[:, 1])] = actCoeffs*self.config.iMatValue
 
         # Add space around edge for 1 extra act to avoid edge effects
         actGrid = numpy.pad(self.actGrid, ((1,1), (1,1)), mode="constant")
