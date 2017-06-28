@@ -416,6 +416,8 @@ class ShackHartmannFast(base.WFS):
                 ref=self.referenceImage
                 )
 
+        # If no light in a sub-ap may get NaNs
+        slopes = numpy.nan_to_num(slopes)
 
         # shift slopes relative to subap centre and remove static offsets
         slopes -= self.config.pxlsPerSubap/2.0
@@ -545,10 +547,11 @@ def findActiveSubaps(
 
 def photons_per_mag(mag, mask, phase_scale, exposureTime, zeropoint):
 
-    # N photons per metre per second for mag and zp
-    n_photons = zeropoint * (10**(-float(mag)/2.5))
+    # ZP of telescope
+    n_photons = float(zeropoint) * mask.sum() * phase_scale**2
 
-    # scale to photons per aperture per exposure
-    n_photons *= mask.sum() * phase_scale**2 * exposureTime
+    # N photons for mag and exposure time
+    n_photons *= (10**(-float(mag)/2.5)) * exposureTime
+
 
     return n_photons
