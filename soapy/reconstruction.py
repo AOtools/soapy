@@ -262,28 +262,27 @@ class Reconstructor(object):
             # Except the one we want to make an iMat for!
             actCommands[i] = 1 # dm.dmConfig.iMatValue
 
-            # turn off wfs noise if set
-            if self.config.imat_noise is False:
-                wfs_pnoise = wfs.config.photonNoise
-                wfs.config.photonNoise = False
-                wfs_rnoise = wfs.config.eReadNoise
-                wfs.config.eReadNoise = 0
-
             # Now get a DM shape for that command
             phase[:] = 0
             phase[dm.n_dm] = dm.dmFrame(actCommands)
             # Send the DM shape off to the relavent WFS. put result in iMat
             n_wfs_measurments = 0
             for wfs_n, wfs in self.wfss.items():
+                # turn off wfs noise if set
+                if self.config.imat_noise is False:
+                    wfs_pnoise = wfs.config.photonNoise
+                    wfs.config.photonNoise = False
+                    wfs_rnoise = wfs.config.eReadNoise
+                    wfs.config.eReadNoise = 0
+
                 iMat[i, n_wfs_measurments: n_wfs_measurments+wfs.n_measurements] = (
                         -1 * wfs.frame(None, phase_correction=phase))# / dm.dmConfig.iMatValue
                 n_wfs_measurments += wfs.n_measurements
 
-
-            # Turn noise back on again if it was turned off
-            if self.config.imat_noise is False:
-                wfs.config.photonNoise = wfs_pnoise
-                wfs.config.eReadNoise = wfs_rnoise
+                # Turn noise back on again if it was turned off
+                if self.config.imat_noise is False:
+                    wfs.config.photonNoise = wfs_pnoise
+                    wfs.config.eReadNoise = wfs_rnoise
 
             if callback != None:
                 callback()
