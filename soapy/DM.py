@@ -127,6 +127,10 @@ class DM(object):
         logger.info("Making DM Influence Functions...")
         self.makeIMatShapes()
 
+        # If using imatshapes, sclae by imat value
+        if hasattr(self, "iMatShapes"):
+            self.iMatShapes *= self.config.iMatValue
+            
         # An array of values for each actuator. 1 if actuator is valid, 0 if not
         self._valid_actuators = numpy.ones((self.n_acts))
 
@@ -322,7 +326,7 @@ class Piezo(DM):
                         shapes, ((0, 0), (pad,pad), (pad,pad)), mode="constant"
                         ).astype("float32")
 
-        self.iMatShapes = shapes * self.config.iMatValue
+        self.iMatShapes = shapes
 
 
 
@@ -395,8 +399,6 @@ class TT(DM):
         tt_amp = -(ASEC2RAD * self.soapy_config.tel.telDiam/2.) * 1e9
 
         self.iMatShapes *= tt_amp
-
-        self.iMatShapes *= self.config.iMatValue
 
 
 class FastPiezo(Piezo):
