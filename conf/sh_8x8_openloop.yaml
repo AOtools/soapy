@@ -47,7 +47,7 @@ DM:
   0:
     type: TT
     closed: False
-    iMatValue: 2e3
+    iMatValue: 0.2
 
   1:
     type: Piezo

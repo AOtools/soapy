@@ -48,13 +48,14 @@ DM:
   0:
     type: TT
     closed: True
-    iMatValue: 5000
+    iMatValue: 0.25
 
 
   1:
     type: FastPiezo
     closed: True
     nxActuators: 9
+    iMatValue: 500
 
 Reconstructor:
   type: MVM

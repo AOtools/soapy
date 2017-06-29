@@ -59,7 +59,7 @@ DM:
     type: TT
     nxActuators: 2
     wfs: 0
-    iMatValue: 500
+    iMatValue: 0.25
     gain: 0.6
     svdConditioning: 0
 
