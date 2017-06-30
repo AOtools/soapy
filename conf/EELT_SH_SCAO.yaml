@@ -45,7 +45,7 @@ Telescope:
 
 WFS:
   0:
-    type: ShackHartmannFast
+    type: ShackHartmann
     GSPosition: [0, 0]
     GSHeight: 0
     GSMag: 0
