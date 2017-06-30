@@ -25,7 +25,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testOnAxis(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
@@ -42,7 +42,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testPhysProp(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
@@ -61,7 +61,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testOffAxis(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
@@ -81,7 +81,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testZernikeDM(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
@@ -108,8 +108,8 @@ class TestSimpleSCAO(unittest.TestCase):
     def testCone(self):
 
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
-        sim.config.wfss[1].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
+        sim.config.wfss[1].type = "ShackHartmannLegacy"
 
         sim.config.sim.simName= None
         sim.config.sim.logfile = None
@@ -127,7 +127,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testOpenLoop(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_openloop.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
@@ -148,8 +148,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testLgsUplink_phys(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
-        sim.config.wfss[1].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
+        sim.config.wfss[1].type = "ShackHartmannLegacy"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
@@ -168,8 +168,8 @@ class TestSimpleSCAO(unittest.TestCase):
 
     def testLgsUplink_geo(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
-        sim.config.wfss[0].type = "ShackHartmannFast"
-        sim.config.wfss[1].type = "ShackHartmannFast"
+        sim.config.wfss[0].type = "ShackHartmannLegacy"
+        sim.config.wfss[1].type = "ShackHartmannLegacy"
 
         sim.config.sim.simName = None
         sim.config.sim.logfile = None

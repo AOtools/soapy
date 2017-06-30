@@ -83,7 +83,7 @@ import numpy.random
 
 import aotools
 
-from .. import AOFFT, LGS, logger, lineofsight
+from .. import AOFFT, LGS, logger, lineofsight_legacy
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -193,7 +193,7 @@ class WFS(object):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
-        self.los = lineofsight.LineOfSight(
+        self.los = lineofsight_legacy.LineOfSight(
                 self.config, self.soapy_config,
                 propagationDirection="down")
 
