@@ -4,6 +4,12 @@ A library of functions which may be of use to analyse WFS data
 
 import numpy
 
+# Best range for python2 and 3
+try:
+    range = xrange
+except:
+    pass
+
 def r0fromSlopes(slopes, wavelength, subapDiam):
     """
     Measures the value of R0 from a set of WFS slopes.
@@ -93,3 +99,26 @@ def computeFillFactor(mask, subapPos, subapSpacing):
         fills[i] = mask[x1:x2, y1:y2].mean()
 
     return fills
+
+def make_subaps_2d(data, mask):
+    """
+    Fills in a pupil shape with 2-d sub-apertures
+
+    Parameters:
+        data (ndarray): slope data, of shape, (frames, 2, nSubaps)
+        mask (ndarray): 2-d array of shape (nxSubaps, nxSubaps), where 1 indicates a valid subap position and 0 a masked subap 
+    """ 
+    n_frames = data.shape[0]
+    n_subaps = data.shape[-1]
+    nx_subaps = mask.shape[0]
+
+    subaps_2d = numpy.zeros((data.shape[0], 2, mask.shape[0], mask.shape[1]), dtype=data.dtype)
+
+    n_subap = 0
+    for x in range(nx_subaps):
+        for y in range(nx_subaps):
+            if mask[x, y] == 1:
+                subaps_2d[:, :, x, y] = data[:, :, n_subap]
+                n_subap += 1
+
+    return subaps_2d

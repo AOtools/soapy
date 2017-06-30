@@ -15,7 +15,7 @@ verbosity: 2
 saveCMat: False
 saveSlopes: True
 saveDmCommands: False
-saveLgsPsf: False
+saveLgsPsf: True
 saveSciPsf: True
 
 Atmosphere:

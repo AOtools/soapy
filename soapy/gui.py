@@ -19,9 +19,26 @@
 """
 The GUI for the Soapy adaptive optics simulation
 """
+import sys
 
-import os
-os.environ["QT_API"]="pyqt"
+# Following required in case pyqt api v1 is default (on smome linux distros)
+# Explicitly set it to get v2!
+import sip
+API_NAMES = ["QDate", "QDateTime", "QString", "QTextStream", "QTime", "QUrl", "QVariant"]
+API_VERSION = 2
+for name in API_NAMES:
+    sip.setapi(name, API_VERSION)
+
+from . import logger
+# Attempt to import PyQt5, if not try PyQt4
+try:
+    from PyQt5 import QtGui, QtWidgets, QtCore
+    PYQT_VERSION = 5
+except (ImportError ,RuntimeError):
+    from PyQt4 import QtGui, QtCore
+    QtWidgets = QtGui
+    PYQT_VERSION = 4
+logger.debug("Use PyQT Version {}".format(PYQT_VERSION ))
 
 # Do this so uses new Jupyter console if available
 try:
@@ -33,12 +50,14 @@ except ImportError:
 
 from IPython.lib import guisupport
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+if PYQT_VERSION == 5:
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+elif PYQT_VERSION == 4:
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+
 from matplotlib.figure import Figure
 
-
-from PyQt4 import QtGui,QtCore
-import pyqtgraph
+from . import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
 # set default colourmaps available
@@ -61,20 +80,30 @@ pyqtgraph.graphicsItems.GradientEditorItem.Gradients = pyqtgraph.pgcollections.O
                         (1.0, (251, 252, 191))], 'mode':'rgb'})
         ])
 
-from .AOGUIui import Ui_MainWindow
-from . import logger
 
-import sys
+if PYQT_VERSION == 5:
+    from .aogui_ui5 import Ui_MainWindow
+elif PYQT_VERSION == 4:
+    from .aogui_ui4 import Ui_MainWindow
+
+
+
 import numpy
 import time
 import json
 import traceback
 from functools import partial
-#Python2/3 queue compatibility
+#Python2/3  compatibility
 try:
     import queue
 except ImportError:
+
     import Queue as queue
+try:
+    xrange
+except NameError:
+    xrange = range
+
 
 from argparse import ArgumentParser
 import pylab
@@ -82,7 +111,7 @@ import os
 try:
     from OpenGL import GL
 except ImportError:
-    pass
+    GL = False
 
 
 guiFile_path = os.path.abspath(os.path.realpath(__file__)+"/..")
@@ -95,10 +124,19 @@ CMAP={'mode': 'rgb',
             (0.5, (255, 255, 255, 255)),
             (1., (255, 26, 26, 255))]}
 
-class GUI(QtGui.QMainWindow):
+
+# Must overwrite sys.excepthook to aviod crash on exception
+def execpthook(etype, value, tb):
+    traceback.print_exception(etype, value, tb)
+
+sys.excepthook = execpthook
+
+class GUI(QtWidgets.QMainWindow):
     def __init__(self, sim, useOpenGL=False, verbosity=None):
-        self.app = QtGui.QApplication([])
-        QtGui.QMainWindow.__init__(self)
+        QtWidgets.QMainWindow.__init__(self)
+
+        # get current application instance
+        self.app = QtCore.QCoreApplication.instance()
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -168,7 +206,6 @@ class GUI(QtGui.QMainWindow):
         self.init()
 
         self.console.write("Running %s\n"%self.sim.configFile)
-        sys.exit(self.app.exec_())
 
     def moveEvent(self, event):
         """
@@ -181,12 +218,17 @@ class GUI(QtGui.QMainWindow):
 #Load Param file methods
     def readParamFile(self):
 
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',
-                '/home')
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
 
-        self.sim.readParams(fname)
-        self.config = self.sim.config
-        self.initPlots()
+        if PYQT_VERSION == 5:
+            fname = fname[0]
+        
+        fname = str(fname)
+
+        if fname is not "":
+            self.sim.readParams(fname)
+            self.config = self.sim.config
+            self.initPlots()
 
 ################################################################
 #Plot Methods
@@ -574,7 +616,7 @@ class GUI(QtGui.QMainWindow):
 ###############################################
 
 #Tidy up before closing the gui
-
+    #
     # def closeEvent(self, event):
     #     del(self.app)
 
@@ -775,6 +817,20 @@ class PlotWidget(QtGui.QWidget):
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)
 
+
+def start_gui(simulation, useOpenGL=False, verbosity=1):
+    app = QtWidgets.QApplication([])
+
+    gui = GUI(simulation, useOpenGL=useOpenGL, verbosity=verbosity)
+
+    app.exec_()
+    del(gui.initThread)
+    del(gui.iMatThread)
+    del(gui.loopThread)
+    del(gui.console)
+    del(gui)
+    # sys.exit()
+
 if __name__ == "__main__":
 
     parser = ArgumentParser()
@@ -789,3 +845,4 @@ if __name__ == "__main__":
 
 
     G = GUI(confFile,useOpenGL=args.gl)
+

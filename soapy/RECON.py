@@ -89,15 +89,6 @@ class Reconstructor(object):
                 filename, self.controlMatrix,
                 header=self.simConfig.saveHeader, clobber=True)
 
-        # cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        # cMatHDU.header["DMNO"] = self.simConfig.nDM
-        # cMatHDU.header["DMACTS"] = "%s" % list(self.dmActs)
-        # cMatHDU.header["DMTYPE"] = "%s" % list(self.dmTypes)
-        # cMatHDU.header["DMCOND"] = "%s" % list(self.dmConds)
-
-        # cMatHDU.writeto(filename, clobber=True)
-        # commented as will be included in new global sim header. apr 6/7/15
-
     def loadCMat(self):
 
         filename = self.simConfig.simName+"/cMat.fits"
@@ -158,7 +149,8 @@ class Reconstructor(object):
                 pass
 
     def loadIMat(self):
-
+        acts = 0
+        self.iMat = numpy.empty_like(self.controlMatrix.T)
         for dm in xrange(self.simConfig.nDM):
             logger.statusMessage(
                     dm,  self.simConfig.nDM-1, "Load DM Interaction Matrix")
@@ -193,6 +185,10 @@ class Reconstructor(object):
 
             else:
                 self.dms[dm].iMat = iMat
+                self.iMat[acts:acts+self.dms[dm].acts] = self.dms[dm].iMat
+                acts += self.dms[dm].acts
+
+
 
     def makeIMat(self, callback, progressCallback):
 
@@ -208,16 +204,21 @@ class Reconstructor(object):
             try:
                 self.loadIMat()
                 logger.info("Interaction Matrices loaded successfully")
-            except IOError:
+            except:
                 #traceback.print_exc()
-                logger.info("Load Interaction Matrices failed - will create new one.")
+                logger.info("Load Interaction Matrices failed with traceback:")
+                logger.info(traceback.format_exc())
+                logger.info("Will create new one.")
                 self.makeIMat(callback=callback,
                          progressCallback=progressCallback)
-                self.saveIMat()
+                if self.simConfig.simName is not None:
+                    self.saveIMat()
                 logger.info("Interaction Matrices Done")
 
         else:
             self.makeIMat(callback=callback, progressCallback=progressCallback)
+            if self.simConfig.simName is not None:
+                    self.saveIMat()
             logger.info("Interaction Matrices Done")
 
         if loadCMat:
@@ -229,11 +230,14 @@ class Reconstructor(object):
                 logger.warning("Load Command Matrix failed - will create new one")
 
                 self.calcCMat(callback, progressCallback)
-                self.saveCMat()
+                if self.simConfig.simName is not None:
+                    self.saveCMat()
                 logger.info("Command Matrix Generated!")
         else:
             logger.info("Creating Command Matrix")
             self.calcCMat(callback, progressCallback)
+            if self.simConfig.simName is not None:
+                    self.saveCMat()
             logger.info("Command Matrix Generated!")
 
 

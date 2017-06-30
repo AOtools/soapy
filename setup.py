@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 import versioneer
 
 
@@ -15,16 +15,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author='Andrew Reeves',
     author_email='a.p.reeves@durham.ac.uk',
-    packages=[  'soapy', 
-                'soapy.wfs', 
-                'soapy.aotools',
-                'soapy.aotools.centroiders',
-                'soapy.aotools.circle',
-                'soapy.aotools.interp',
-                'soapy.aotools.phasescreen',
-                'soapy.aotools.wfs',
-                'soapy.aotools.fft'
-                ],
+    packages=find_packages(),
     scripts=['bin/soapy'],
     description='A tomographic astronomical adaptive optics simulation with realistic laser guide star propagation.',
     long_description=open('README.md').read(),

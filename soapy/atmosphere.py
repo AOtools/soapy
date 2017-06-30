@@ -207,9 +207,9 @@ class atmos(object):
         # Set the initial starting point of the screen,
         # If windspeed is negative, starts from the
         # far-end of the screen to avoid rolling straight away
-        windDirs= numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
-        windV=(self.windSpeeds * numpy.array([numpy.cos(windDirs),
-                                              numpy.sin(windDirs)])).T #This is velocity in metres per second
+        windDirs = numpy.array(self.windDirs,dtype="float32") * numpy.pi/180.0
+        windV = (self.windSpeeds * numpy.array([numpy.cos(windDirs),
+                                                numpy.sin(windDirs)])).T #This is velocity in metres per second
         windV *= self.looptime   #Now metres per looptime
         windV *= self.pxlScale   #Now pxls per looptime.....ideal!
         self.windV = windV
@@ -244,7 +244,8 @@ class atmos(object):
     def saveScrns(self, DIR):
         """
         Saves the currently loaded phase screens to file,
-        saving the r0 value in the fits header (in units of pixels).
+        saving the r0 value in the fits header (in units of pixels). 
+        Saved phase data is in radians @500nm
 
         Args:
             DIR (string): The directory to save the screens
@@ -264,6 +265,8 @@ class atmos(object):
     def moveScrns(self):
         """
         Moves the phase screens one time-step, defined by the atmosphere object parameters.
+        
+        Returned phase is in units of nana-meters
 
         Returns:
             dict : a dictionary containing the new set of phase screens
@@ -278,15 +281,15 @@ class atmos(object):
 
         for i in self.wholeScrns:
 
-            #Deals with what happens when the window on the screen
-            #reaches the edge - rolls it round and starts again.
-            #X direction
+            # Deals with what happens when the window on the screen
+            # reaches the edge - rolls it round and starts again.
+            # X direction
             if (self.scrnPos[i][0] + self.scrnSize) >= self.wholeScrnSize:
                 logger.debug("pos > scrnSize: rolling phase screen X")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
                                                 int(-self.scrnPos[i][0]),axis=0)
                 self.scrnPos[i][0] = 0
-                #and update the coords...
+                # and update the coords...
                 self.xCoords[i] = numpy.arange(self.scrnSize).astype('float')
                 self.interpScrns[i] = scipy.interpolate.RectBivariateSpline(
                                             numpy.arange(self.wholeScrnSize),
@@ -304,7 +307,7 @@ class atmos(object):
                                             numpy.arange(self.wholeScrnSize),
                                             numpy.arange(self.wholeScrnSize),
                                             self.wholeScrns[i])
-            #Y direction
+            # Y direction
             if (self.scrnPos[i][1] + self.scrnSize) >= self.wholeScrnSize:
                 logger.debug("pos > scrnSize: rolling Phase Screen Y")
                 self.wholeScrns[i] = numpy.roll(self.wholeScrns[i],
@@ -328,18 +331,17 @@ class atmos(object):
                                             numpy.arange(self.wholeScrnSize),
                                             self.wholeScrns[i])
 
-
-            scrns[i] = self.interpScrns[i](self.xCoords[i],self.yCoords[i])
+            scrns[i] = self.interpScrns[i](self.xCoords[i], self.yCoords[i])
 
             # Move window coordinates.
             self.scrnPos[i] = self.scrnPos[i] + self.windV[i]
             self.xCoords[i] += self.windV[i][0].astype('float')
             self.yCoords[i] += self.windV[i][1].astype('float')
 
-            #remove piston from phase screens
+            # remove piston from phase screens
             scrns[i] -= scrns[i].mean()
 
-            # Calculate the r0 of each screen
+            # Calculate the required r0 of each screen from config
             self.config.normScrnStrengths = (
                     self.config.scrnStrengths/
                         self.config.scrnStrengths[:self.scrnNo].sum())
@@ -354,6 +356,8 @@ class atmos(object):
     def randomScrns(self, subHarmonics=True, l0=0.01):
         """
         Generated random phase screens defined by the atmosphere object parameters.
+
+        Returned phase is in units of nana-meters
 
         Returns:
             dict : a dictionary containing the new set of phase screens

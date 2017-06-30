@@ -3,7 +3,7 @@ sudo: false
 branches:
   only:
   - master
-  - numba
+  - develop
   
 python:
 - 2.7
@@ -13,18 +13,18 @@ addons:
     packages:
     - libfftw3-dev
 before_install:
-- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+- wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 - chmod +x miniconda.sh
 - ./miniconda.sh -b
-- export PATH=/home/travis/miniconda2/bin:$PATH
+- export PATH=/home/travis/miniconda3/bin:$PATH
 - ls
 - conda update --yes conda
 install:
-- conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose astropy
-  numba
+- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose astropy pyyaml
 - python setup.py install
 - pip install pyfftw
 - pip install codecov
+- pip install aotools
 script:
 - nosetests --verbosity=3 --with-coverage --cover-package=soapy test/
 after_success:
