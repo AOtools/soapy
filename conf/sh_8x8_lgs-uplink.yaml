@@ -52,6 +52,7 @@ WFS:
     subapFOV: 5.0
     wavelength: 600e-9
     removeTT: True
+    centThreshold: 0.3
     lgs:
       propagationMode: Geometric
       uplink: True
