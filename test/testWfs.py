@@ -71,13 +71,15 @@ class TestWfs(unittest.TestCase):
     def testc_initGradWfs(self):
 
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-
+        config.sim.pupilSize = 10*config.wfss[0].nxSubaps
         mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.Gradient(config, mask=mask)
 
     def testd_GradWfsFrame(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        config.sim.pupilSize = 10*config.wfss[0].nxSubaps
+
         mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
 
         wfs = WFS.Gradient(config, mask=mask)
