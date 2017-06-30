@@ -21,7 +21,7 @@ import scipy.optimize as opt
 
 import aotools
 
-from . import AOFFT, logger, lineofsight_fast, numbalib, interp
+from . import AOFFT, logger, lineofsight, numbalib, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -63,7 +63,7 @@ class PSF(object):
             self.padFOVPxlNo += 1
 
         # Init line of sight - Get the phase at the right size for the FOV
-        self.los = lineofsight_fast.LineOfSight(
+        self.los = lineofsight.LineOfSight(
                 self.config, self.soapy_config,
                 propagation_direction="down")
 

@@ -19,7 +19,7 @@ import numpy
 
 import aotools
 
-from . import AOFFT, logger, lineofsight_fast, interp
+from . import AOFFT, logger, lineofsight, interp
 # from .aotools import circle, interp
 
 #xrange now just "range" in python3.
@@ -87,7 +87,7 @@ class LGS(object):
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
         # Init the line of sight object for light propation through turbulence
-        self.los = lineofsight_fast.LineOfSight(
+        self.los = lineofsight.LineOfSight(
                     self.config, self.soapyConfig,
                     propagation_direction="up", nx_out_pixels=self.losNOutPxls,
                     mask=self.losMask, out_pixel_scale=self.losOutPxlScale,
