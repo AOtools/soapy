@@ -42,18 +42,18 @@ class TestWfs(unittest.TestCase):
 
         wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
-    def testc_initFastSHWfs(self):
+    def testc_initLegacySHWfs(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
 
         mask = aotools.circle(config.sim.pupilSize / 2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmannFast(config, mask=mask)
+        wfs = WFS.ShackHartmannLegacy(config, mask=mask)
 
-    def testd_FastSHWfsFrame(self):
+    def testd_LegacySHWfsFrame(self):
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         mask = aotools.circle(config.sim.pupilSize / 2., config.sim.simSize)
 
-        wfs = WFS.ShackHartmannFast(config, mask=mask)
+        wfs = WFS.ShackHartmannLegacy(config, mask=mask)
 
         wfs.frame(numpy.zeros((config.atmos.scrnNo, config.sim.simSize, config.sim.simSize)))
 
