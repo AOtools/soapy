@@ -51,7 +51,7 @@ import aotools
 from . import logger, interp
 # from .aotools import interp, circle
 
-ASEC2RAD = (1/3600) * (numpy.pi/180)
+ASEC2RAD = (1./3600) * (numpy.pi/180.)
 
 try:
     xrange
@@ -379,7 +379,8 @@ class TT(DM):
         """
         Returns the number of active actuators on the DM. Always 2 for a TT.
         """
-        return 2
+        self.n_active_actuators = 2
+        return self.n_active_actuators
 
 
     def makeIMatShapes(self):
