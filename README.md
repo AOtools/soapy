@@ -37,14 +37,11 @@ Soapy doesn't have too many requirements in terms of external libraries, though 
     numpy => 1.7.0
     scipy => 0.10
     pyfits *or* astropy
+    pyfftw
     
-### Recommended
-    
-#### for performance:
-    pyfftw (Highly Recommended!)
-    
-#### for gui
-    PyQt4
+### For GUI
+
+    PyQt5 (attempted to be compatibile with PyQt4 but not guaranteed)
     pyqtgraph (http://www.pyqtgraph.org)
     matplotlib
     ipython

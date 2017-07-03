@@ -38,24 +38,11 @@ Required
     numpy
     scipy
     pyfits *or* astropy
-
------------    
-Recommended
------------
-
-^^^^^^^^^^^^^^^
-for performance
-^^^^^^^^^^^^^^^
-::
-
-    pyfftw (Highly Recommended!)
-
-^^^^^^^    
-for gui
-^^^^^^^
-
-::
-    
+    pyfftw 
+-------    
+For GUI
+-------
+::   
     PyQt4
     pyqtgraph (http://www.pyqtgraph.org)
     matplotlib
