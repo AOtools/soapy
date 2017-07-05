@@ -484,7 +484,9 @@ class SimConfig(ConfigObj):
                             of ``loopTime``                     ``0``
         ``threads``         int: Number of threads to use
                             for multithreaded operations        ``1``
-
+        ``photometric_zp``  float: Photometric zeropoint -
+                            number of photons/meter/second
+                            from a magnitude 0 star             ``2e9``
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -540,6 +542,7 @@ class SimConfig(ConfigObj):
                             ("simOversize", 1.02),
                             ("loopDelay", 0),
                             ("threads", 1),
+                            ("photometric_zp", 2e9),
                         ]
 
     # Parameters which may be set at some point and are allowed
@@ -748,7 +751,7 @@ class WfsConfig(ConfigObj):
                         ("GSHeight", 0),
                         ("subapThreshold", 0.5),
                         ("lgs", None),
-                        ("centThreshold", 0.3),
+                        ("centThreshold", 0.),
                         ("centMethod", "centreOfGravity"),
                         ("type", "ShackHartmann"),
                         ("exposureTime", None),
@@ -1004,7 +1007,8 @@ class ReconstructorConfig(ConfigObj):
                              about the inversion.                ``0``
         ``gain``             float: Gain of the integrator
                              loop.
-
+        ``imat_noise``       bool: include WFS noise when
+                             making in interaction matrix        ``True``
         ==================== =================================   ===========
 
     """
@@ -1013,7 +1017,8 @@ class ReconstructorConfig(ConfigObj):
     optionalParams = [
             ("type", "MVM"),
             ("svdConditioning", 0.),
-            ("gain", 0.6)
+            ("gain", 0.6),
+            ("imat_noise", True)
                         ]
 
     calculatedParams = [

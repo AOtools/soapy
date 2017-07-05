@@ -366,10 +366,10 @@ class ShackHartmannFast(base.WFS):
                 self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords)
         # Scale data for correct number of photons
         self.detector /= self.detector.sum()
-        self.detector *= aotools.photons_per_band(
-                self.config.GSMag, self.mask, self.phase_scale**(-1),
-                self.config.exposureTime,
-                ) * self.config.throughput
+        self.detector *= photons_per_mag(
+                self.config.GSMag, self.mask, self.phase_scale,
+                self.config.exposureTime, self.soapy_config.sim.photometric_zp
+                )# * self.config.throughput
 
         if self.config.photonNoise:
             self.addPhotonNoise()
@@ -416,6 +416,8 @@ class ShackHartmannFast(base.WFS):
                 ref=self.referenceImage
                 )
 
+        # If no light in a sub-ap may get NaNs
+        slopes = numpy.nan_to_num(slopes)
 
         # shift slopes relative to subap centre and remove static offsets
         slopes -= self.config.pxlsPerSubap/2.0
@@ -542,3 +544,14 @@ def findActiveSubaps(
     detector_cent_coords = numpy.array(detector_cent_coords)
 
     return pupil_coords, detector_coords, subap_coords, detector_cent_coords, numpy.array(fills)
+
+def photons_per_mag(mag, mask, phase_scale, exposureTime, zeropoint):
+
+    # ZP of telescope
+    n_photons = float(zeropoint) * mask.sum() * phase_scale**2
+
+    # N photons for mag and exposure time
+    n_photons *= (10**(-float(mag)/2.5)) * exposureTime
+
+
+    return n_photons
