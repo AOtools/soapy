@@ -170,52 +170,79 @@ class Reconstructor(object):
         """
         Writes the current control Matrix to FITS file
         """
-        filename = self.sim_config.simName+"/iMat.fits"
+        imat_filename = self.sim_config.simName+"/iMat.fits"
 
         fits.writeto(
-                filename, self.interaction_matrix,
-                header=self.sim_config.saveHeader, clobber=True)
+                imat_filename, self.interaction_matrix,
+                header=self.sim_config.saveHeader, overwrite=True)
+
+        for i in range(self.n_dms):
+            valid_acts_filename =  self.sim_config.simName+"/active_acts_dm{}.fits".format(i)
+            valid_acts = self.dms[i].valid_actuators
+            fits.writeto(valid_acts_filename, valid_acts, header=self.sim_config.saveHeader, overwrite=True)
 
 
-    def loadIMat(self):
-        acts = 0
-        self.interaction_matrix = numpy.empty_like(self.control_matrix.T)
-        for dm in xrange(self.sim_config.nDM):
-            logger.statusMessage(
-                    dm+1,  self.sim_config.nDM-1, "Load DM Interaction Matrix")
-            filenameIMat = self.sim_config.simName+"/iMat_dm%d.fits" % dm
-            filenameShapes = self.sim_config.simName+"/dmShapes_dm%d.fits" % dm
 
-            iMat = fits.open(filenameIMat)[0].data
+    def load_interaction_matrix(self):
 
-            # See if influence functions are also there...
-            try:
-                iMatShapes = fits.open(filenameShapes)[0].data
-                # Check if loaded influence funcs are the right size
-                if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
-                    logger.warning(
-                            "loaded DM shapes are not same size as current sim."
-                            )
-                    raise IOError
-                self.dms[dm].iMatShapes = iMatShapes
+        filename = self.sim_config.simName+"/iMat.fits"
 
-            # If not, assume doesn't need them.
-            # May raise an error elsewhere though
-            except IOError:
-                logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
-                pass
+        imat_header = fits.getheader(filename)
+        imat_data = fits.getdata(filename)
+
+        # Check that imat shape is copatibile with curretn sim
+        if imat_data.shape != (self.sim_config.totalActs, self.sim_config.totalWfsData):
+            logger.warning(
+                "interaction matrix does not match required required size."
+            )
+            raise IOError("interaction matrix does not match required required size.")
+
+        # Load valid actuators
+        for i in range(self.n_dms):
+            valid_acts_filename =  self.sim_config.simName+"/active_acts_dm{}.fits".format(i)
+            valid_acts = fits.getdata(valid_acts_filename)
+            self.dms[i].valid_actuators = valid_acts
 
 
-            if iMat.shape != (self.dms[dm].n_acts, self.dms[dm].totalWfsMeasurements):
-                logger.warning(
-                    "interaction matrix does not match required required size."
-                    )
-                raise IOError
-
-            else:
-                self.dms[dm].iMat = iMat
-                self.interaction_matrix[acts:acts+self.dms[dm].n_acts] = self.dms[dm].iMat
-                acts += self.dms[dm].n_acts
+    # def loadIMat(self):
+    #     acts = 0
+    #     self.interaction_matrix = numpy.empty_like(self.control_matrix.T)
+    #     for dm in xrange(self.sim_config.nDM):
+    #         logger.statusMessage(
+    #                 dm+1,  self.sim_config.nDM-1, "Load DM Interaction Matrix")
+    #         filenameIMat = self.sim_config.simName+"/iMat_dm%d.fits" % dm
+    #         filenameShapes = self.sim_config.simName+"/dmShapes_dm%d.fits" % dm
+    #
+    #         iMat = fits.open(filenameIMat)[0].data
+    #
+    #         # See if influence functions are also there...
+    #         try:
+    #             iMatShapes = fits.open(filenameShapes)[0].data
+    #             # Check if loaded influence funcs are the right size
+    #             if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
+    #                 logger.warning(
+    #                         "loaded DM shapes are not same size as current sim."
+    #                         )
+    #                 raise IOError
+    #             self.dms[dm].iMatShapes = iMatShapes
+    #
+    #         # If not, assume doesn't need them.
+    #         # May raise an error elsewhere though
+    #         except IOError:
+    #             logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
+    #             pass
+    #
+    #
+    #         if iMat.shape != (self.dms[dm].n_acts, self.dms[dm].totalWfsMeasurements):
+    #             logger.warning(
+    #                 "interaction matrix does not match required required size."
+    #                 )
+    #             raise IOError
+    #
+    #         else:
+    #             self.dms[dm].iMat = iMat
+    #             self.interaction_matrix[acts:acts+self.dms[dm].n_acts] = self.dms[dm].iMat
+    #             acts += self.dms[dm].n_acts
 
 
 
@@ -343,11 +370,11 @@ class Reconstructor(object):
 
         if loadIMat:
             try:
-                self.loadIMat()
+                self.load_interaction_matrix()
                 logger.info("Interaction Matrices loaded successfully")
-            except IOError:
-                #traceback.print_exc()
-                logger.info("Load Interaction Matrices failed - will create new one.")
+            except:
+                tc = traceback.format_exc()
+                logger.info("Load Interaction Matrices failed with error: {} - will create new one...".format(tc))
                 self.makeIMat(callback=callback)
                 if self.sim_config.simName is not None:
                     self.save_interaction_matrix()
@@ -363,9 +390,9 @@ class Reconstructor(object):
             try:
                 self.loadCMat()
                 logger.info("Command Matrix Loaded Successfully")
-            except IOError:
-                #traceback.print_exc()
-                logger.warning("Load Command Matrix failed - will create new one")
+            except:
+                tc = traceback.format_exc()
+                logger.warning("Load Command Matrix failed qith error: {} - will create new one...".format(tc))
 
                 self.calcCMat(callback, progressCallback)
                 if self.sim_config.simName is not None:
@@ -491,26 +518,14 @@ class LearnAndApply(MVM):
         cMatFilename = self.sim_config.simName+"/cMat.fits"
         tomoMatFilename = self.sim_config.simName+"/tomoMat.fits"
 
-        # cMatHDU = fits.PrimaryHDU(self.controlMatrix)
-        # cMatHDU.header["DMNO"] = self.sim_config.nDM
-        # cMatHDU.header["DMACTS"] = "%s"%list(self.dmActs)
-        # cMatHDU.header["DMTYPE"]  = "%s"%list(self.dmTypes)
-        # cMatHDU.header["DMCOND"]  = "%s"%list(self.dmConds)
-
-        # tomoMatHDU = fits.PrimaryHDU(self.tomoRecon)
-
-        # tomoMatHDU.writeto(tomoMatFilename, clobber=True)
-        # cMatHDU.writeto(cMatFilename, clobber=True)
-        # Commented 8/7/15 to add sim wide header. - apr
-
         fits.writeto(
                 cMatFilename, self.controlMatrix,
-                header=self.sim_config.saveHeader, clobber=True
+                header=self.sim_config.saveHeader, overwrite=True
                 )
 
         fits.writeto(
                 tomoMatFilename, self.tomoRecon,
-                header=self.sim_config.saveHeader, clobber=True
+                header=self.sim_config.saveHeader, overwrite=True
                 )
 
     def loadCMat(self):
@@ -563,7 +578,7 @@ class LearnAndApply(MVM):
             fits.writeto(
                     self.sim_config.simName+"/learn.fits",
                     self.learnSlopes, header=self.sim_config.saveHeader,
-                    clobber=True )
+                    overwrite=True )
 
 
     def calcCMat(self,callback=None, progressCallback=None):
