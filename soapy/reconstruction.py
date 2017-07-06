@@ -216,6 +216,8 @@ class Reconstructor(object):
             )
             raise IOError("interaction matrix does not match required required size.")
 
+        self.interaction_matrix[:] = imat_data
+
         # Load valid actuators
         for i in range(self.n_dms):
             valid_acts_filename =  self.sim_config.simName+"/active_acts_dm{}.fits".format(i)
