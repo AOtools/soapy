@@ -38,6 +38,7 @@ Soapy doesn't have too many requirements in terms of external libraries, though 
     scipy => 0.10
     pyfits *or* astropy
     pyfftw
+    numba
     
 ### For GUI
 
