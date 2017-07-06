@@ -1,3 +1,8 @@
+"""
+A simple WFS that directly measures the gradient of the wavefront across a number of
+ pupil sub-apertures. Much faster to compute than a full SH simulation, though doesn't
+ include the many experimental effects of such a WFS
+"""
 import numpy
 import numpy.random
 from scipy.interpolate import interp2d
@@ -29,6 +34,13 @@ RAD2ASEC = 206264.849159
 ASEC2RAD = 1./RAD2ASEC
 
 class Gradient(base.WFS):
+    """
+    The Grandient WFS class.
+
+    Phase is propagated through turbulence through a "lineofsight", and is then split into a
+    number of sub-apertures. The phase is then measured directly by multiplying element wise
+    by a tip and tilt mode and calculating the sum.
+    """
 
     def calcInitParams(self):
         super(Gradient, self).calcInitParams()
