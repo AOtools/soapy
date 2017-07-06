@@ -138,7 +138,6 @@ class Reconstructor(object):
         header = cMatHDU.header
 
         try:
-            # dmActs = dmTypes = dmConds = None
             dmNo = int(header["NBDM"])
             exec("dmActs = numpy.array({})".format(
                     cMatHDU.header["DMACTS"]), globals())
@@ -152,7 +151,6 @@ class Reconstructor(object):
                 logger.warning("loaded control matrix may not be compatibile with \
                                 the current simulation. Will try anyway....")
 
-            #cMat = cMatFile[1]
             cMat = cMatHDU.data
 
         except KeyError:
@@ -169,6 +167,10 @@ class Reconstructor(object):
     def save_interaction_matrix(self):
         """
         Writes the current control Matrix to FITS file
+
+        Writes the current interaction matrix to a FITS file in the simulation directory. Also
+        writes the "valid actuators" as accompanying FITS files, and potentially premade DM
+        influence functions.
         """
         imat_filename = self.sim_config.simName+"/iMat.fits"
 
@@ -181,9 +183,26 @@ class Reconstructor(object):
             valid_acts = self.dms[i].valid_actuators
             fits.writeto(valid_acts_filename, valid_acts, header=self.sim_config.saveHeader, overwrite=True)
 
-
+            # If DM has pre made influence funcs, save them too
+            try:
+                dm_shapes_filename = self.sim_config.simName + "/dmShapes_dm{}.fits".format(i)
+                fits.writeto(
+                        dm_shapes_filename, self.dms[i].iMatShapes,
+                        header=self.simConfig.saveHeader, overwrite=True)
+            # If not, don't worry about it! Must be a DM with no pre-made influence funcs
+            except AttributeError:
+                pass
 
     def load_interaction_matrix(self):
+        """
+        Loads the interaction matrix from file
+
+        AO interaction matrices can get very big, so its useful to be able to load it frmo file
+        rather than make it new everytime. It is assumed that the iMat is saved as "FITS" in the
+        simulation saved directory, with other accompanying FITS files that contain the indices
+        of actuators which are "valid". Some DMs also use pre made influence functions, which are
+        also loaded here.
+        """
 
         filename = self.sim_config.simName+"/iMat.fits"
 
@@ -203,47 +222,15 @@ class Reconstructor(object):
             valid_acts = fits.getdata(valid_acts_filename)
             self.dms[i].valid_actuators = valid_acts
 
+            # DM may also have preloaded influence functions
+            try:
+                dm_shapes_filename = self.sim_config.simName + "/dmShapes_dm{}.fits".format(i)
+                dm_shapes = fits.getdata(dm_shapes_filename)
+                self.dms[i].iMatShapes = dm_shapes
 
-    # def loadIMat(self):
-    #     acts = 0
-    #     self.interaction_matrix = numpy.empty_like(self.control_matrix.T)
-    #     for dm in xrange(self.sim_config.nDM):
-    #         logger.statusMessage(
-    #                 dm+1,  self.sim_config.nDM-1, "Load DM Interaction Matrix")
-    #         filenameIMat = self.sim_config.simName+"/iMat_dm%d.fits" % dm
-    #         filenameShapes = self.sim_config.simName+"/dmShapes_dm%d.fits" % dm
-    #
-    #         iMat = fits.open(filenameIMat)[0].data
-    #
-    #         # See if influence functions are also there...
-    #         try:
-    #             iMatShapes = fits.open(filenameShapes)[0].data
-    #             # Check if loaded influence funcs are the right size
-    #             if iMatShapes.shape[-1] != self.dms[dm].simConfig.simSize:
-    #                 logger.warning(
-    #                         "loaded DM shapes are not same size as current sim."
-    #                         )
-    #                 raise IOError
-    #             self.dms[dm].iMatShapes = iMatShapes
-    #
-    #         # If not, assume doesn't need them.
-    #         # May raise an error elsewhere though
-    #         except IOError:
-    #             logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
-    #             pass
-    #
-    #
-    #         if iMat.shape != (self.dms[dm].n_acts, self.dms[dm].totalWfsMeasurements):
-    #             logger.warning(
-    #                 "interaction matrix does not match required required size."
-    #                 )
-    #             raise IOError
-    #
-    #         else:
-    #             self.dms[dm].iMat = iMat
-    #             self.interaction_matrix[acts:acts+self.dms[dm].n_acts] = self.dms[dm].iMat
-    #             acts += self.dms[dm].n_acts
-
+            except IOError:
+                # Found no DM influence funcs
+                logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
 
 
     def makeIMat(self, callback=None):
@@ -264,6 +251,7 @@ class Reconstructor(object):
         for imat in dm_imats:
             self.interaction_matrix[act_n: act_n + imat.shape[0]] = imat
             act_n += imat.shape[0]
+
 
     def make_dm_iMat(self, dm, callback=None):
         """
@@ -343,6 +331,7 @@ class Reconstructor(object):
                 i_valid_act += 1
 
         return valid_iMat
+
 
     def get_dm_imat(self, dm_index, wfs_index):
         """
