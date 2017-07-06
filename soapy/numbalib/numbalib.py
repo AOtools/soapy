@@ -1,12 +1,15 @@
 import multiprocessing
 N_CPU = multiprocessing.cpu_count()
 from threading import Thread
-import queue
-import atexit
+
+# python3 has queue, python2 has Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 import numpy
 import numba
-
 
 def bilinear_interp(data, xCoords, yCoords, interpArray, thread_pool=None, bounds_check=True):
     """
@@ -335,8 +338,8 @@ class ThreadPool(object):
             exception_queue = queue.Queue()
             thread = Thread(
                     target=self._thread_func,
-                    args=(input_queue, output_queue, exception_queue),
-                    daemon=True)
+                    args=(input_queue, output_queue, exception_queue))
+            thread.daemon = True
 
             self.input_queues.append(input_queue)
             self.output_queues.append(output_queue)

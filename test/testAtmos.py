@@ -31,7 +31,7 @@ class TestAtmos(unittest.TestCase):
         
         config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH,"sh_8x8.yaml"))
         config.atmos.wholeScrnSize = 512
-
+        config.atmos.infinite = False
         atmos = atmosphere.atmos(config)
         
         # Make a directory to save the screens in 

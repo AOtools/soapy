@@ -19,8 +19,9 @@
 import numpy
 import scipy.optimize as opt
 
-from . import AOFFT, logger, lineofsight_fast, numbalib
-from .aotools import circle, interp
+import aotools
+
+from . import AOFFT, logger, lineofsight, numbalib, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -62,7 +63,7 @@ class PSF(object):
             self.padFOVPxlNo += 1
 
         # Init line of sight - Get the phase at the right size for the FOV
-        self.los = lineofsight_fast.LineOfSight(
+        self.los = lineofsight.LineOfSight(
                 self.config, self.soapy_config,
                 propagation_direction="down")
 
@@ -116,7 +117,7 @@ class PSF(object):
         if numpy.any(mask):
             self.mask = mask
         else:
-            self.mask = circle.circle(
+            self.mask = aotools.circle(
                     self.pupil_size/2., self.sim_size,
                     )
 
@@ -154,6 +155,29 @@ class PSF(object):
         else:
             self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
 
+
+    def calc_wavefronterror(self):
+        """
+        Calculates the wavefront error across the telescope pupil 
+        
+        Returns:
+             float: RMS WFE across pupil in nm
+        """
+
+        res = (self.los.phase.copy() * self.mask) / self.los.phs2Rad
+
+        # Piston is mean across aperture
+        piston = res.sum() / self.mask.sum()
+
+        # remove from WFE measurements as its not a problem
+        res -= (piston*self.mask)
+
+        ms_wfe = numpy.square(res).sum() / self.mask.sum()
+        rms_wfe = numpy.sqrt(ms_wfe)
+
+        return rms_wfe
+
+
     def frame(self, scrns, correction=None):
         """
         Runs a single science camera frame with one or more phase screens
@@ -188,8 +212,8 @@ class singleModeFibre(PSF):
         print("Coupling efficiency: {0:.3f}".format(self.refStrehl))
 
     def fibreEfield(self, size):
-        fibre_efield = circle.gaussian2d((self.sim_size, self.sim_size), (size, size))
-        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(circle.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
+        fibre_efield = aotools.gaussian2d((self.sim_size, self.sim_size), (size, size))
+        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(aotools.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
         return fibre_efield
 
     def refCouplingLoss(self, size):

@@ -80,16 +80,10 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 
 import numpy
 import numpy.random
-try:
-    from astropy.io import fits
-except ImportError:
-    try:
-        import pyfits as fits
-    except ImportError:
-        raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, LGS, logger, lineofsight
-from ..aotools import centroiders, circle
+import aotools
+
+from .. import AOFFT, LGS, logger, lineofsight_legacy
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -143,7 +137,7 @@ class WFS(object):
             self.mask = mask
         # Else we'll just make a circle
         else:
-            self.mask = circle.circle(self.pupil_size/2., self.sim_size)
+            self.mask = aotools.circle(self.pupil_size/2., self.sim_size)
 
         self.iMat = False
 
@@ -181,7 +175,7 @@ class WFS(object):
         if numpy.any(mask):
             self.mask = mask
         else:
-            self.mask = circle.circle(
+            self.mask = aotools.circle(
                     self.pupil_size/2., self.sim_size,
                     )
 
@@ -199,7 +193,7 @@ class WFS(object):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
-        self.los = lineofsight.LineOfSight(
+        self.los = lineofsight_legacy.LineOfSight(
                 self.config, self.soapy_config,
                 propagationDirection="down")
 
@@ -241,7 +235,7 @@ class WFS(object):
                     )
 
                 # Calculate the zernikes to add
-                self.elongZs = circle.zernikeArray([2,3,4], self.pupil_size)
+                self.elongZs = aotools.zernikeArray([2,3,4], self.pupil_size)
 
                 # Calculate the radii of the metapupii at for different elong
                 # Layer heights
@@ -294,14 +288,14 @@ class WFS(object):
         dh = h - self.config.GSHeight
         H = float(self.lgsConfig.height)
         d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telDiam/2.
-        D = self.los.telDiam
+        D = self.telescope_diameter
         theta = (d.astype("float")/H) - self.config.GSPosition
 
 
         # for the focus terms....
         focalPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * ((
-            ((self.los.telDiam/2.)**2 + (h**2) )**0.5\
-          - ((self.los.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh)
+            ((self.telescope_diameter/2.)**2 + (h**2) )**0.5\
+          - ((self.telescope_diameter/2.)**2 + (H)**2 )**0.5 ) - dh)
 
         # For tilt terms.....
         tiltPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * (
@@ -346,7 +340,7 @@ class WFS(object):
         H = float(self.config.GSHeight)            # Height of GS
 
         # Position of launch in m
-        xl = numpy.array(self.lgsLaunchPos) * self.los.telDiam/2.
+        xl = numpy.array(self.lgsLaunchPos) * self.telescope_diameter/2.
 
         # GS Pos in radians
         GSPos = numpy.array(self.config.GSPosition) * RAD2ASEC

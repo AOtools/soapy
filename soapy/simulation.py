@@ -59,12 +59,7 @@ Examples:
 
 '''
 
-#sim imports
-from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, aotools
-from .aotools import circle, interp
-
-#standard python imports
-import numpy
+# standard python imports
 import datetime
 import os
 import time
@@ -73,6 +68,7 @@ from multiprocessing import Process, Queue
 from argparse import ArgumentParser
 import shutil
 
+import numpy
 #Use pyfits or astropy for fits file handling
 try:
     from astropy.io import fits
@@ -82,6 +78,10 @@ except ImportError:
     except ImportError:
         raise ImportError("soapy requires either pyfits or astropy")
 
+import aotools
+
+#sim imports
+from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, interp
 
 #xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
@@ -148,7 +148,11 @@ class Sim(object):
         '''
         Initialises all simulation objects.
 
-        Initialises and passes relevant data to sim objects. This does important pre-run tasks, such as creating or loading phase screens, determining WFS geometry, setting propagation modes and pre-allocating data arrays used later in the simulation.
+        Initialises and passes relevant data to sim objects. 
+        This does important pre-run tasks, such as creating or 
+        loading phase screens, determining WFS geometry, 
+        setting propagation modes and pre-allocating data arrays 
+        used later in the simulation.
         '''
 
         # Read params if they haven't been read before
@@ -167,8 +171,6 @@ class Sim(object):
         # Init Pupil Mask
         logger.info("Creating mask...")
         self.mask = make_mask(self.config)
-
-
 
         self.atmos = atmosphere.atmos(self.config)
 
@@ -208,8 +210,8 @@ class Sim(object):
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
+        self.dmShape = numpy.zeros([self.config.sim.simSize]*2)
         self.dmAct1 = []
-        self.dmShape = numpy.zeros( [self.config.sim.simSize]*2 )
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
@@ -222,8 +224,10 @@ class Sim(object):
                     mask=self.mask
                     )
 
-            self.dmActCommands[dm] = numpy.empty( (self.config.sim.nIters,
-                                                    self.dms[dm].n_acts) )
+            self.dmActCommands[dm] = numpy.empty(
+                    (self.config.sim.nIters, self.dms[dm].n_acts))
+
+            self.dmAct1.append(self.config.sim.totalActs)
             self.config.sim.totalActs += self.dms[dm].n_acts
 
             logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].n_acts))
@@ -235,12 +239,11 @@ class Sim(object):
         try:
             reconObj = getattr(reconstruction, self.config.recon.type)
         except AttributeError:
-            raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.sim.reconstructor))
+            raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.recon.type))
         self.recon = reconObj(
                 self.config, self.dms, self.wfss, self.atmos,
                 self.runWfs
                 )
-
 
         # Init Science Cameras
         logger.info("Initialising {0} Science Cams...".format(self.config.sim.nSci))
@@ -258,7 +261,6 @@ class Sim(object):
 
             self.sciImgs[nSci] = numpy.zeros( [self.config.scis[nSci].pxls]*2 )
 
-
         # Init data storage
         logger.info("Initialise Data Storage...")
         self.initSaveData()
@@ -270,7 +272,7 @@ class Sim(object):
                 self.config.sim.nDM, self.config.sim.scrnSize, self.config.sim.scrnSize
                 ))
         self.open_correction = self.closed_correction.copy()
-        self.dmCommands = numpy.zeros( self.config.sim.totalActs )
+        self.dmCommands = numpy.zeros(self.config.sim.totalActs)
         self.buffer = DelayBuffer()
         self.iters = 0
 
@@ -319,7 +321,20 @@ class Sim(object):
 
         self.recon.makeCMat(loadIMat=loadIMat,loadCMat=loadCMat,
                 callback=self.addToGuiQueue, progressCallback=progressCallback)
-        self.Timat+= time.time()-t
+
+
+        # Now know valid actuators for each DM, can get the index of the each DM in the command vector
+        self.dmAct1 = []
+        self.config.sim.totalActs = 0
+        for dm in self.dms.values():
+            self.dmAct1.append(self.config.sim.totalActs)
+            self.config.sim.totalActs += dm.n_valid_actuators
+
+        self.dmCommands = numpy.zeros(self.config.sim.totalActs)
+
+        self.Timat+= time.time() - t
+
+
 
     def runWfs_noMP(self, scrns = None, dmShape=None, wfsList=None,
                     loopIter=None):
@@ -464,7 +479,7 @@ class Sim(object):
             if self.config.dms[dm].closed == closed:
                 correction_buffer[dm] = self.dms[dm].dmFrame(
                         dmCommands[ self.dmAct1[dm]:
-                                    self.dmAct1[dm]+self.dms[dm].n_acts])
+                                    self.dmAct1[dm]+self.dms[dm].n_valid_actuators])
 
         self.Tdm += time.time() - t
         return correction_buffer
@@ -581,7 +596,7 @@ class Sim(object):
         Prints a message to the console giving timing data. Used on sim end.
         """
         print('\n')
-        if self.longStrehl is not None:
+        if hasattr(self, "longStrehl") and (self.longStrehl is not None):
             for sci_n in range(self.config.sim.nSci):
                 print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
 
@@ -722,12 +737,13 @@ class Sim(object):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
-                # Record WFE residual
-                res = self.sciCams[sci].los.residual
-                # Remove piston first
-                res -= res.sum()/self.mask.sum()
-                res *= self.mask
-                self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
+                # # Record WFE residual
+                # res = self.sciCams[sci].los.residual
+                # # Remove piston first
+                # res -= res.sum()/self.mask.sum()
+                # res *= self.mask
+                # self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
+                self.WFE[sci, i] = self.sciCams[sci].calc_wavefronterror()
 
             if self.config.sim.saveSciRes:
                 for sci in xrange(self.config.sim.nSci):
@@ -1016,10 +1032,10 @@ def make_mask(config):
         ndarray: 2-d pupil mask
     """
     if config.tel.mask == "circle":
-        mask = circle.circle(config.sim.pupilSize / 2.,
+        mask = aotools.circle(config.sim.pupilSize / 2.,
                                   config.sim.simSize)
         if config.tel.obsDiam != None:
-            mask -= circle.circle(
+            mask -= aotools.circle(
                 config.tel.obsDiam * config.sim.pxlScale / 2.,
                 config.sim.simSize
             )

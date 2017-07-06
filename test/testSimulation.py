@@ -15,8 +15,8 @@ RESULTS = {
         "8x8_open": 0.4,
         "8x8_offAxis": 0.22,
         "8x8_zernike": 0.36,
-        "8x8_lgs"    : 0.37,
-        "8x8_phys": 0.53,
+        "8x8_lgs"    : 0.45,
+        "8x8_phys": 0.50,
         "8x8_lgsuplink":0.35,
         }
 
@@ -116,7 +116,7 @@ class TestSimpleSCAO(unittest.TestCase):
                 sim.longStrehl[0,-1], RESULTS["8x8_lgs"], atol=0.2)
 
     def testOpenLoop(self):
-        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_openloop.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100

@@ -8,7 +8,6 @@ nDM: 2
 nSci: 1
 nIters: 5000
 loopTime: 0.0025
-reconstructor: MVM_SeparateDMs
 
 verbosity: 2
 
@@ -44,7 +43,7 @@ WFS:
     wavelength: 600e-9
 
   1:
-    type: ShackHartmann
+    type: ShackHartmannLegacy
     GSPosition: [0, 0]
     GSHeight: 90000
     GSMag: 8
@@ -53,6 +52,7 @@ WFS:
     subapFOV: 5.0
     wavelength: 600e-9
     removeTT: True
+    centThreshold: 0.3
     lgs:
       propagationMode: Geometric
       uplink: True
@@ -65,7 +65,7 @@ DM:
     type: TT
     nxActuators: 2
     wfs: 0
-    iMatValue: 500
+    iMatValue: 0.2
     gain: 0.6
 
   1:
@@ -77,7 +77,7 @@ DM:
     wfs: 1
 
 Reconstructor:
-  type: MVM
+  type: MVM_SeparateDMs
   svdConditioning: 0.03
   gain: 0.6
 

@@ -9,4 +9,4 @@ from .shackhartmann import ShackHartmann
 from .gradient import Gradient
 from .pyramid import Pyramid
 from .extendedshackhartmann import ExtendedSH
-from .shackhartmannfast import ShackHartmannFast
+from .shackhartmann_legacy import ShackHartmannLegacy

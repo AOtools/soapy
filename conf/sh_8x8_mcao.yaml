@@ -24,6 +24,8 @@ Atmosphere:
   windSpeeds: [10, 10]
   wholeScrnSize: 2048
   r0: 0.16
+  L0: [100, 100]
+  infinite: True
 
 
 Telescope:

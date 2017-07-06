@@ -3,11 +3,11 @@ sudo: false
 branches:
   only:
   - master
-  - numba
+  - develop
   
 python:
 - 2.7
-- 3.5
+- 3.6
 addons:
   apt:
     packages:
@@ -20,12 +20,13 @@ before_install:
 - ls
 - conda update --yes conda
 install:
-- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose astropy pyyaml
+- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose astropy pyyaml matplotlib numba
 - python setup.py install
 - pip install pyfftw
 - pip install codecov
+- pip install aotools
 script:
-- nosetests --verbosity=3 --with-coverage --cover-package=soapy test/
+- nosetests -vv --with-coverage --cover-package=soapy test/
 after_success:
 - codecov
 notifications:

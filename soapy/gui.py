@@ -21,7 +21,7 @@ The GUI for the Soapy adaptive optics simulation
 """
 
 import sys
-
+# Attempt to import PyQt5, if not try PyQt4
 try:
     from PyQt5 import QtGui, QtWidgets, QtCore
     PYQT_VERSION = 5
@@ -30,7 +30,6 @@ except (ImportError ,RuntimeError):
     QtWidgets = QtGui
     PYQT_VERSION = 4
 
-# Attempt to import PyQt5, if not try PyQt4
 
 # Do this so uses new Jupyter console if available
 try:
@@ -729,12 +728,10 @@ class LoopThread(QtCore.QThread):
 class IPythonConsole:
     def __init__(self, layout, sim, gui):
         # Create an in-process kernel
-        # >>> print_process_id()
-        # will print the same process ID as the main process
+
         self.kernel_manager = QtInProcessKernelManager()
         self.kernel_manager.start_kernel()
         self.kernel = self.kernel_manager.kernel
-        self.kernel.gui = 'qt4'
 
         self.kernel.shell.write("Welcome to AO Sim!")
 
@@ -755,7 +752,6 @@ class IPythonConsole:
             usefulObjects["sci{}Config".format(i)] = sim.config.scis[i]
 
         self.kernel.shell.push(usefulObjects)
-        #kernel.shell.push({'foo': 43, 'print_process_id': print_process_id})
 
         self.kernel_client = self.kernel_manager.client()
         self.kernel_client.start_channels()
@@ -768,9 +764,7 @@ class IPythonConsole:
         layout.addWidget(control)
 
         self.kernel.shell.ex("")
-        #control.show()
 
-        #self.kernel.show
     def stop(self):
         self.kernel_client.stop_channels()
         self.kernel_manager.shutdown_kernel()
@@ -847,5 +841,5 @@ if __name__ == "__main__":
         confFile = "conf/testConf.py"
 
 
-    G = GUI(confFile,useOpenGL=args.gl)
+    G = GUI(confFile, useOpenGL=args.gl)
 

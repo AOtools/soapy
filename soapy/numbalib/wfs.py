@@ -2,8 +2,6 @@ import multiprocessing
 N_CPU = multiprocessing.cpu_count()
 from threading import Thread
 from . import numbalib
-import queue
-import math
 
 import numpy
 import numba
@@ -276,54 +274,13 @@ def chop_subaps_efield_slow(phase, subap_coords, nx_subap_size, subap_array, thr
 
     return subap_array
 
-
-def place_subaps_on_detector(
-        subap_imgs, detector_img, detector_positions, subap_coords, threads=None):
-    if threads is None:
-        threads = N_CPU
-
-    n_subaps = detector_positions.shape[0]
-
-    Ts = []
-    for t in range(threads):
-        Ts.append(Thread(target=place_subaps_on_detector_numba,
-                         args=(
-                             subap_imgs, detector_img, detector_positions, subap_coords,
-                             numpy.array([int(t * n_subaps / threads), int((t + 1) * n_subaps / threads)]),
-                         )
-                         ))
-        Ts[t].start()
-
-    for T in Ts:
-        T.join()
-
-    return detector_img
-
-def place_subaps_on_detector_pool(
-        subap_imgs, detector_img, detector_positions, subap_coords, thread_pool=None):
-
-    if thread_pool is None:
-        thread_pool = numbalib.ThreadPool(N_CPU)
-
-    n_subaps = detector_positions.shape[0]
-    n_threads = thread_pool.n_threads
-    args = []
-    for t in range(n_threads):
-        args.append((subap_imgs, detector_img, detector_positions, subap_coords,
-                     numpy.array([int(t * n_subaps / n_threads), int((t + 1) * n_subaps / n_threads)]),
-                     ))
-
-    thread_pool.run(place_subaps_on_detector_numba, args)
-
-    return detector_img
-
 @numba.jit(nopython=True, nogil=True)
-def place_subaps_on_detector_numba(subap_imgs, detector_img, detector_positions, subap_coords, subap_indices):
+def place_subaps_on_detector(subap_imgs, detector_img, detector_positions, subap_coords):
     """
     Puts a set of sub-apertures onto a detector image
     """
 
-    for i in range(subap_indices[0], subap_indices[1]):
+    for i in range(subap_imgs.shape[0]):
         x1, x2, y1, y2 = detector_positions[i]
         sx1 ,sx2, sy1, sy2 = subap_coords[i]
         detector_img[x1: x2, y1: y2] += subap_imgs[i, sx1: sx2, sy1: sy2]

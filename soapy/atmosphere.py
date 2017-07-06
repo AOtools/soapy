@@ -57,8 +57,7 @@ import scipy.fftpack as fft
 import scipy.interpolate
 
 from . import AOFFT, logger, numbalib
-from .aotools import phasescreen
-from aotools.turbulence import infinitephasescreen
+from aotools.turbulence import infinitephasescreen, phasescreen
 # Use either pyfits or astropy for fits file handling
 try:
     from astropy.io import fits
@@ -290,11 +289,12 @@ class atmos(object):
             return self.randomScrns(subHarmonics=self.config.subHarmonics)
 
         if self.config.infinite:
-            for layer in range(self.scrnNo):
-                self.scrns[layer] = self.infinite_phase_screens[layer].move_screen()
-                # Convert to nm
-                self.scrns *= (500/(2*numpy.pi))
-                return self.scrns
+            for layer_n in range(self.scrnNo):
+                self.scrns[layer_n] = self.infinite_phase_screens[layer_n].move_screen()
+
+            # Convert to nm
+            self.scrns *= (500/(2*numpy.pi))
+            return self.scrns
 
         # Other wise proceed with translating large phase screens
         for i in self.wholeScrns:

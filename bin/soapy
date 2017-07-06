@@ -96,7 +96,7 @@ if __name__=="__main__":
     if args.configFile!=None:
         configFile = args.configFile
     else:
-        configFile = bin_path+"/../conf/sh_8x8.py"
+        configFile = bin_path+"/../conf/sh_8x8.yaml"
 
     # Run sim with given args
     # Set the verbosity
