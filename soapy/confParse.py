@@ -575,7 +575,7 @@ class AtmosConfig(ConfigObj):
         ``windDirs``            list, float: Wind directions in degrees.
         ``windSpeeds``          list, float: Wind velocities in m/s
         ``r0``                  float: integrated  seeing strength
-                                (metres at 550nm)
+                                (metres at 500nm)
 
         ==================      ===================
 
