@@ -575,7 +575,13 @@ class Sim(object):
             self.go = False
             logger.info("\nSim exited by user\n")
 
-        #Finally save data after loop is over.
+        # compute final ee50d
+        for sci in range(self.config.sim.nSci):
+            pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
+            self.ee50d[sci] = aotools.calcEncircledEnergyDiameter(
+                self.sciImgs[sci], fraction=0.5) * pxscale
+
+        # Finally save data after loop is over.
         self.saveData()
         self.finishUp()
 
@@ -587,6 +593,7 @@ class Sim(object):
         self.slopes[:] = 0
         self.dmCommands[:] = 0
         self.longStrehl[:] = 0
+        self.ee50d[:] = 0
         self.recon.reset()
         for sci in self.sciImgs.values(): sci[:] = 0
         for dm in self.dms.values(): dm.reset()
@@ -599,6 +606,8 @@ class Sim(object):
         if hasattr(self, "longStrehl") and (self.longStrehl is not None):
             for sci_n in range(self.config.sim.nSci):
                 print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
+        if hasattr(self, "ee50d") and (self.ee50d is not None):
+                print("                   EE50 diameter [mas]: {:0.2f}".format(self.ee50d[sci_n] * 1000))
 
         print("\n\nTime moving atmosphere: %0.2f"%self.Tatmos)
         print("Time making IMats and CMats: %0.2f"%self.Timat)
@@ -643,6 +652,7 @@ class Sim(object):
                     (self.config.sim.nSci, self.config.sim.nIters) )
             self.longStrehl = numpy.zeros(
                     (self.config.sim.nSci, self.config.sim.nIters) )
+            self.ee50d = numpy.zeros((self.config.sim.nSci))
 
             # Init science WFE saving
             self.WFE = numpy.zeros(
