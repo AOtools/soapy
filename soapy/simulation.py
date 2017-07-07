@@ -578,8 +578,8 @@ class Sim(object):
         # compute final ee50d
         for sci in range(self.config.sim.nSci):
             pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
-            self.ee50d[sci] = aotools.calcEncircledEnergyDiameter(
-                self.sciImgs[sci], fraction=0.5) * pxscale
+            self.ee50d[sci] = aotools.encircledEnergy(
+                self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
 
         # Finally save data after loop is over.
         self.saveData()
