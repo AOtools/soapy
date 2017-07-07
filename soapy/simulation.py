@@ -607,7 +607,8 @@ class Sim(object):
             for sci_n in range(self.config.sim.nSci):
                 print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
         if hasattr(self, "ee50d") and (self.ee50d is not None):
-                print("                   EE50 diameter [mas]: {:0.2f}".format(self.ee50d[sci_n] * 1000))
+                print("                  EE50 diameter [mas]: {:0.0f}".format(
+                      self.ee50d[sci_n] * 1000))
 
         print("\n\nTime moving atmosphere: %0.2f"%self.Tatmos)
         print("Time making IMats and CMats: %0.2f"%self.Timat)
