@@ -578,8 +578,17 @@ class Sim(object):
         # compute final ee50d
         for sci in range(self.config.sim.nSci):
             pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
-            self.ee50d[sci] = aotools.encircledEnergy(
+            ee50d = aotools.encircledEnergy(
                 self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
+            if ee50d < (self.sciCams[sci].fov / 2):
+                self.ee50d[sci] = ee50d
+            else:
+                logger.info(("\nEE50d computation invalid "
+                             "due to small FoV of Science Camera {}\n").
+                            format(sci))
+                self.ee50d[sci] = None
+
+
 
         # Finally save data after loop is over.
         self.saveData()
