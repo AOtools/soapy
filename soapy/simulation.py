@@ -791,66 +791,66 @@ class Sim(object):
             if self.config.sim.saveSlopes:
                 fits.writeto(
                         self.path+"/slopes.fits", self.allSlopes,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveDmCommands:
                 fits.writeto(
                         self.path+"/dmCommands.fits",
                         self.allDmCommands, header=self.config.sim.saveHeader,
-                        clobber=True)
+                        overwrite=True)
 
             if self.config.sim.saveLgsPsf:
                 fits.writeto(
                         self.path+"/lgsPsf.fits", self.lgsPsfs,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveWfe:
                 fits.writeto(
                         self.path+"/WFE.fits", self.WFE,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveStrehl:
                 fits.writeto(
                         self.path+"/instStrehl.fits", self.instStrehl,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
                 fits.writeto(
                         self.path+"/longStrehl.fits", self.longStrehl,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveSciRes:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciResidual_%02d.fits"%i,
                                 self.sciPhase[i],
                                 header=self.config.sim.saveHeader,
-                                clobber=True)
+                                overwrite=True)
 
             if self.config.sim.saveSciPsf:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciPsf_%02d.fits"%i,
                                         self.sciImgs[i],
                                         header=self.config.sim.saveHeader,
-                                        clobber=True )
+                                        overwrite=True )
 
             if self.config.sim.saveInstPsf:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciPsfInst_%02d.fits"%i,
                                  self.sciImgsInst[i],
                                  header=self.config.sim.saveHeader,
-                                 clobber=True )
+                                 overwrite=True )
 
             if self.config.sim.saveInstScieField:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/scieFieldInst_%02d_real.fits"%i,
                                  self.scieFieldInst[i].real,
                                  header=self.config.sim.saveHeader,
-                                 clobber=True )
+                                 overwrite=True )
 
             if self.config.sim.saveInstScieField:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/scieFieldInst_%02d_imag.fits"%i,
                                  self.scieFieldInst[i].imag,
                                  header=self.config.sim.saveHeader,
-                                 clobber=True )
+                                 overwrite=True )
 
 
 
