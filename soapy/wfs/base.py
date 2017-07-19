@@ -80,16 +80,10 @@ The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurem
 
 import numpy
 import numpy.random
-try:
-    from astropy.io import fits
-except ImportError:
-    try:
-        import pyfits as fits
-    except ImportError:
-        raise ImportError("PyAOS requires either pyfits or astropy")
 
-from .. import AOFFT, LGS, logger, lineofsight
-from ..aotools import centroiders, circle
+import aotools
+
+from .. import AOFFT, LGS, logger, lineofsight_legacy
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -114,29 +108,36 @@ class WFS(object):
     guide star geometry.
 
     Parameters:
-        soapyConfig (ConfigObj): The soapy configuration object
+        soapy_config (ConfigObj): The soapy configuration object
         nWfs (int): The ID number of this WFS
         mask (ndarray, optional): An array or size (simConfig.simSize, simConfig.simSize) which is 1 at the telescope aperture and 0 else-where.
     '''
 
     def __init__(
-            self, soapyConfig, nWfs=0, mask=None):
+            self, soapy_config, n_wfs=0, mask=None):
 
-        self.soapyConfig = soapyConfig
-        self.config = self.wfsConfig = soapyConfig.wfss[nWfs] # For compatability
-        self.simConfig = soapyConfig.sim
-        self.telConfig = soapyConfig.tel
-        self.atmosConfig = soapyConfig.atmos
+        self.soapy_config = soapy_config
+        self.config = self.wfsConfig = soapy_config.wfss[n_wfs] # For compatability
+
         self.lgsConfig = self.config.lgs
+
+        # Sort out some required, static, parameters
+        self.pupil_size = self.soapy_config.sim.pupilSize
+        self.sim_size = self.soapy_config.sim.simSize
+        self.phase_scale = 1./self.soapy_config.sim.pxlScale
+        self.sim_pad = self.soapy_config.sim.simPad
+        self.screen_size = self.soapy_config.sim.scrnSize
+        self.telescope_diameter = self.soapy_config.tel.telDiam
+        self.wavelength = self.config.wavelength
+        self.threads = self.soapy_config.sim.threads
+
 
         # If supplied use the mask
         if numpy.any(mask):
             self.mask = mask
         # Else we'll just make a circle
         else:
-            self.mask = circle.circle(
-                    self.simConfig.pupilSize/2., self.simConfig.simSize,
-                    )
+            self.mask = aotools.circle(self.pupil_size/2., self.sim_size)
 
         self.iMat = False
 
@@ -145,10 +146,10 @@ class WFS(object):
 
         self.calcInitParams()
         # If GS not at infinity, find meta-pupil radii for each layer
-        if self.config.GSHeight != 0:
-            self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
-        else:
-            self.radii = None
+        # if self.config.GSHeight != 0:
+        #     self.radii = self.los.findMetaPupilSizes(self.config.GSHeight)
+        # else:
+        #     self.radii = None
 
         # Init LGS, FFTs and allocate some data arrays
         self.initFFTs()
@@ -174,13 +175,13 @@ class WFS(object):
         if numpy.any(mask):
             self.mask = mask
         else:
-            self.mask = circle.circle(
-                    self.simConfig.pupilSize/2., self.simConfig.simSize,
+            self.mask = aotools.circle(
+                    self.pupil_size/2., self.sim_size,
                     )
 
 
     def calcInitParams(self, phaseSize=None):
-        self.los.calcInitParams(nOutPxls=phaseSize)
+        self.los.calcInitParams(nx_out_pixels=phaseSize)
 
     def initFFTs(self):
         pass
@@ -192,8 +193,8 @@ class WFS(object):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
-        self.los = lineofsight.LineOfSight(
-                self.config, self.soapyConfig,
+        self.los = lineofsight_legacy.LineOfSight(
+                self.config, self.soapy_config,
                 propagationDirection="down")
 
     def initLGS(self):
@@ -211,7 +212,7 @@ class WFS(object):
         # or geometric propagation.
         if self.lgsConfig.uplink:
             lgsObj = eval("LGS.LGS_{}".format(self.lgsConfig.propagationMode))
-            self.lgs = lgsObj(self.config, self.soapyConfig)
+            self.lgs = lgsObj(self.config, self.soapy_config)
         else:
             self.lgs = None
 
@@ -234,7 +235,7 @@ class WFS(object):
                     )
 
                 # Calculate the zernikes to add
-                self.elongZs = circle.zernikeArray([2,3,4], self.simConfig.pupilSize)
+                self.elongZs = aotools.zernikeArray([2,3,4], self.pupil_size)
 
                 # Calculate the radii of the metapupii at for different elong
                 # Layer heights
@@ -242,7 +243,7 @@ class WFS(object):
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
-                    (self.elongLayers, self.los.nOutPxls, self.los.nOutPxls))
+                    (self.elongLayers, self.los.nx_out_pixels, self.los.nx_out_pixels))
                 for i in xrange(self.elongLayers):
                     self.elongRadii[i] = self.los.findMetaPupilSizes(
                                                 float(self.elongHeights[i]))
@@ -287,14 +288,14 @@ class WFS(object):
         dh = h - self.config.GSHeight
         H = float(self.lgsConfig.height)
         d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telDiam/2.
-        D = self.los.telDiam
+        D = self.telescope_diameter
         theta = (d.astype("float")/H) - self.config.GSPosition
 
 
         # for the focus terms....
         focalPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * ((
-            ((self.los.telDiam/2.)**2 + (h**2) )**0.5\
-          - ((self.los.telDiam/2.)**2 + (H)**2 )**0.5 ) - dh)
+            ((self.telescope_diameter/2.)**2 + (h**2) )**0.5\
+          - ((self.telescope_diameter/2.)**2 + (H)**2 )**0.5 ) - dh)
 
         # For tilt terms.....
         tiltPathDiff = (2*numpy.pi/self.wfsConfig.wavelength) * (
@@ -305,7 +306,7 @@ class WFS(object):
 
 
         phaseAddition = numpy.zeros(
-                    (self.simConfig.pupilSize, self.simConfig.pupilSize))
+                    (self.pupil_size, self.pupil_size))
 
         phaseAddition +=((self.elongZs[2]/self.elongZs[2].max())
                              * focalPathDiff )
@@ -315,10 +316,10 @@ class WFS(object):
         phaseAddition += ((self.elongZs[1]/self.elongZs[1].max()) *tiltPathDiff[1])
 
         # Pad from pupilSize to simSize
-        pad = ((self.simConfig.simPad,)*2, (self.simConfig.simPad,)*2)
+        pad = ((self.sim_pad,)*2, (self.sim_pad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
 
-        phaseAddition = interp.zoom(phaseAddition, self.los.nOutPxls)
+        phaseAddition = interp.zoom(phaseAddition, self.los.nx_out_pixels)
 
         return phaseAddition
 
@@ -339,7 +340,7 @@ class WFS(object):
         H = float(self.config.GSHeight)            # Height of GS
 
         # Position of launch in m
-        xl = numpy.array(self.lgsLaunchPos) * self.los.telDiam/2.
+        xl = numpy.array(self.lgsLaunchPos) * self.telescope_diameter/2.
 
         # GS Pos in radians
         GSPos = numpy.array(self.config.GSPosition) * RAD2ASEC
@@ -385,7 +386,7 @@ class WFS(object):
             # Add onto the focal plane with that layers intensity
             self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
 
-    def frame(self, scrns, correction=None, read=True, iMatFrame=False):
+    def frame(self, scrns, phase_correction=None, read=True, iMatFrame=False):
         '''
         Runs one WFS frame
 
@@ -420,23 +421,14 @@ class WFS(object):
 
         # If LGS elongation simulated
         if self.config.lgs and self.elong!=0:
-            self.makeElongationFrame(correction)
+            self.makeElongationFrame(phase_correction)
 
         # If no elongation
         else:
-            # If imat frame, dont want to make it off-axis
-            # if iMatFrame:
-            #     try:
-            #         iMatPhase = interp.zoom(scrns, self.los.nOutPxls, order=1)
-            #         self.los.EField[:] = numpy.exp(1j*iMatPhase*self.los.phs2Rad)
-            #     except ValueError:
-            #         raise ValueError("If iMat Frame, scrn must be ``simSize``")
-            # else:
-            self.los.makePhase(self.radii)
 
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
-            if correction is not None:
-                self.los.performCorrection(correction)
+            if phase_correction is not None:
+                self.los.performCorrection(phase_correction)
                 
             self.calcFocalPlane()
 

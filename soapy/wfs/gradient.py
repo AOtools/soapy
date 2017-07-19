@@ -1,3 +1,8 @@
+"""
+A simple WFS that directly measures the gradient of the wavefront across a number of
+ pupil sub-apertures. Much faster to compute than a full SH simulation, though doesn't
+ include the many experimental effects of such a WFS
+"""
 import numpy
 import numpy.random
 from scipy.interpolate import interp2d
@@ -9,9 +14,10 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
+from aotools import wfs
+
 from .. import AOFFT, LGS, logger
 from . import base
-from ..aotools import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -28,23 +34,30 @@ RAD2ASEC = 206264.849159
 ASEC2RAD = 1./RAD2ASEC
 
 class Gradient(base.WFS):
+    """
+    The Grandient WFS class.
+
+    Phase is propagated through turbulence through a "lineofsight", and is then split into a
+    number of sub-apertures. The phase is then measured directly by multiplying element wise
+    by a tip and tilt mode and calculating the sum.
+    """
 
     def calcInitParams(self):
         super(Gradient, self).calcInitParams()
-        self.subapSpacing = self.simConfig.pupilSize/self.wfsConfig.nxSubaps
+        self.subapSpacing = self.pupil_size/self.wfsConfig.nxSubaps
         self.findActiveSubaps()
 
         # Normalise gradient measurement to 1 radian
-        self.subapDiam = float(self.telConfig.telDiam) / self.wfsConfig.nxSubaps
+        self.subapDiam = float(self.telescope_diameter) / self.wfsConfig.nxSubaps
 
         # Amp in m of 1 arcsecond tilt for single sub-aperture
-        amp = self.telConfig.telDiam * 1. * ASEC2RAD
+        amp = self.telescope_diameter * 1. * ASEC2RAD
         
         # amp of 1" tilt in rads of the light
         amp *= ((2 * numpy.pi) / self.config.wavelength)
 
         # Arrays to be used for gradient calculation
-        telCoord = numpy.linspace(0, amp, self.soapyConfig.sim.pupilSize)
+        telCoord = numpy.linspace(0, amp, self.pupil_size)
         subapCoord = telCoord[:int(self.subapSpacing)]
         
         # Remove piston
@@ -62,8 +75,8 @@ class Gradient(base.WFS):
         determined if mean of subap coords of the mask is above threshold.
         '''
         pupilMask = self.mask[
-                self.simConfig.simPad : -self.simConfig.simPad,
-                self.simConfig.simPad : -self.simConfig.simPad
+                self.sim_pad : -self.sim_pad,
+                self.sim_pad : -self.sim_pad
                 ]
         self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, pupilMask,
@@ -101,7 +114,7 @@ class Gradient(base.WFS):
         self.los.phase *= self.mask
 
         # Now cut out only the phase across the pupilSize
-        coord = self.simConfig.simPad
+        coord = self.sim_pad
         self.pupilPhase = self.los.phase[coord:-coord, coord:-coord]
 
         # Create an array of individual subap phase

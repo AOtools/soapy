@@ -10,16 +10,16 @@ import numpy
 simConfiguration = {
 
 "Sim":{
-    "simName"       :  "sh_8x8_lgs",
-    "logfile"       :   "sh_8x8_lgs.log",
+    "simName"    :  "sh_8x8_lgsUp",
+    "logfile"       :   "sh_8x8_lgsUp.log",
     "pupilSize"     :   128,
-    "nGS"           :   1,
+    "nGS"           :   2,
     "nDM"           :   2,
     "nSci"          :   1,
-    "nIters"        :   1000,
-    "loopTime"      :   1/250.0,
-    "gain"          :   0.6,
-    "reconstructor" :   "MVM",
+    "nIters"        :   5000,
+    "loopTime"      :   1/400.0,
+    "reconstructor" :   "MVM_SeparateDMs",
+    "wfsMP"         :   False,
 
     "verbosity"     :   2,
 
@@ -36,55 +36,59 @@ simConfiguration = {
     "scrnStrengths" :   numpy.array([0.5,0.3,0.1,0.1]),
     "windDirs"      :   numpy.array([0,45,90,135]),
     "windSpeeds"    :   numpy.array([10,10,15,20]),
-    "wholeScrnSize" :   1024,
+    "wholeScrnSize" :   2048,
     "r0"            :   0.16,
     },
 
 "Telescope":{
    "telDiam"        :   8.,  #Metres
-   "obsDiam"        :   1.2, #Central Obscuration
+   "obsDiam"        :   1.1, #Central Obscuration
    "mask"           :   "circle",
     },
 
 "WFS":{
-    "GSPosition"    :   [(0,0)]*2,
-    "GSHeight"      :   [90e3],
-    "GSMag"         :   [8],
-    "nxSubaps"      :   [8],
-    "pxlsPerSubap"  :   [20],
-    "subapFOV"      :   [6.0],
-    "subapOversamp" :   [3],
-    "wavelength"    :   [589e-9],
-    "lgs"           :   [True],
-    "centMethod"    :   ["brightestPxl"],
-    "centThreshold" :   [0.2],
+    "GSPosition"    :   [(0,0),    (0,0)],
+    "GSHeight"      :   [0,         90e3],
+    "GSMag"         :   [8,         8],
+    "nxSubaps"      :   [2,         8],
+    "pxlsPerSubap"  :   [10,         14],
+    "subapFOV"      :   [2.0,       5.0],
+    "wavelength"    :   [600e-9]*2,
+    "lgs"           :   [False,     True],
+    "centThreshold" :   [0.2]*2,
+    "removeTT"      :   [False,     True],
     },
 
 "LGS":{
-    "uplink"            :   [False],
-    "height"            :   [90e3],
-    "elongationDepth"   :  [8e3],
-    "elongationLayers"  :   [8],
-    "launchPosition"    :   [(0,0)],
+    "uplink"            :   [True]*2,
+    "pupilDiam"         :   [0.3]*2,
+    "wavelength"        :   [600e-9]*2,
+    "propagationMode"   :   ["Physical"]*2,
+    "height"            :   [90e3]*2,
+    "elongationDepth"   :   [0]*2,
+    "elongationLayers"  :   [5]*2,
     },
 
 "DM":{
-
     "type"              :   ["TT",     "Piezo"],
     "nxActuators"       :   [2,         9],
-    "svdConditioning"   :   [1e-15,      0.05],
-    "closed"            :   [False,      False],
+    "svdConditioning"   :   [1e-15,      0.07],
+    "closed"            :   [True,      True],
     "gain"              :   [0.6,       0.6],
-    "iMatValue"         :   [50,        10  ],
+    "iMatValue"         :   [1.,        0.2  ],
+    "wfs"               :   [0,         1],
+    },
+
+"Reconstructor":{
+    "type": "MVM",
+    "svdConditioning": 0.05,
+    "gain": 0.6,
     },
 
 "Science":{
     "position"      :   [(0,0)],
-    "FOV"           :   [3.0],
+    "FOV"           :   [1.0],
     "wavelength"    :   [1.65e-6],
-    "pxls"          :   [128],
-    "fftOversamp"      :   [2],
+    "pxls"          :   [64],
     }
-
-
 }

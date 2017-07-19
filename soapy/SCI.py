@@ -19,8 +19,9 @@
 import numpy
 import scipy.optimize as opt
 
-from . import AOFFT, logger, lineofsight
-from .aotools import circle, interp
+import aotools
+
+from . import AOFFT, logger, lineofsight, numbalib, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -29,52 +30,53 @@ class PSF(object):
 
     def __init__(self, soapyConfig, nSci=0, mask=None):
 
-        self.soapyConfig = soapyConfig
+        self.soapy_config = soapyConfig
+        self.config = self.sciConfig = self.soapy_config.scis[nSci]
+
         self.simConfig = soapyConfig.sim
-        self.telConfig = soapyConfig.tel
-        self.config = self.sciConfig = soapyConfig.scis[nSci] # For compatability
-        self.atmosConfig = soapyConfig.atmos
-        self.mask = mask
-        self.FOVrad = self.config.FOV * numpy.pi / (180. * 3600)
+
+
+        # Get some vital params from config
+        self.sim_size = self.soapy_config.sim.simSize
+        self.pupil_size = self.soapy_config.sim.pupilSize
+        self.sim_pad = self.soapy_config.sim.simPad
+        self.fov = self.config.FOV
+        self.threads = self.soapy_config.sim.threads
+        self.telescope_diameter = self.soapy_config.tel.telDiam
+        self.nx_pixels = self.config.pxls
+
+        self.fov_rad = self.config.FOV * numpy.pi / (180. * 3600)
+
+        self.setMask(mask)
+
+        self.thread_pool = numbalib.ThreadPool(self.threads)
 
         self.FOVPxlNo = int(numpy.round(
-            self.telConfig.telDiam * self.FOVrad
+            self.telescope_diameter * self.fov_rad
             / self.config.wavelength))
 
         self.padFOVPxlNo = int(round(
-            self.FOVPxlNo * float(self.simConfig.simSize)
-            / self.simConfig.pupilSize)
+            self.FOVPxlNo * float(self.sim_size)
+            / self.pupil_size)
         )
         if self.padFOVPxlNo % 2 != self.FOVPxlNo % 2:
             self.padFOVPxlNo += 1
 
         # Init line of sight - Get the phase at the right size for the FOV
         self.los = lineofsight.LineOfSight(
-                self.config, self.soapyConfig,
-                propagationDirection="down")
+                self.config, self.soapy_config,
+                propagation_direction="down")
 
-        # Make a default circular mask of the pupil size if not provided
-        if mask is None:
-            mask = circle.circle(
-                    self.simConfig.pupilSize/2., self.simConfig.pupilSize)
-        else:
-            # If the provided mask is the simSize, must crop down to pupilSize
-            if mask.shape == (self.simConfig.simSize,)*2:
-                mask = self.mask[
-                        self.simConfig.simPad:-self.simConfig.simPad,
-                        self.simConfig.simPad:-self.simConfig.simPad
-                        ]
-
-        self.scaledMask = numpy.round(interp.zoom(mask, self.FOVPxlNo)
+        self.scaledMask = numpy.round(interp.zoom(self.mask, self.FOVPxlNo)
                                       ).astype("int32")
 
         # Init FFT object
-        self.FFTPadding = self.config.pxls * self.config.fftOversamp
+        self.FFTPadding = self.nx_pixels * self.config.fftOversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding < self.FOVPxlNo:
                 self.config.fftOversamp += 1
                 self.FFTPadding\
-                    = self.config.pxls * self.config.fftOversamp
+                    = self.nx_pixels * self.config.fftOversamp
             logger.info(
                 "SCI FFT Padding less than FOV size... Setting oversampling to %d" % self.config.fftOversamp)
 
@@ -87,73 +89,94 @@ class PSF(object):
         # Convert phase in nm to radians at science wavelength
         self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
+        # Allocate some useful arrays
+        self.interp_coords = numpy.linspace(self.sim_pad, self.pupil_size + self.sim_pad, self.FOVPxlNo).astype(DTYPE)
+        self.interp_coords = self.interp_coords.clip(0, self.los.nx_out_pixels-1.00001)
+
+        self.interp_phase = numpy.zeros((self.FOVPxlNo, self.FOVPxlNo), DTYPE)
+        self.focus_efield = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=CDTYPE)
+        self.focus_intensity = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=DTYPE)
+        self.detector = numpy.zeros((self.nx_pixels, self.nx_pixels), dtype=DTYPE)
+
         # Calculate ideal PSF for purposes of strehl calculation
-        self.los.EField[:] = numpy.ones(
-                (self.los.nOutPxls,) * 2, dtype=CDTYPE)
+        self.los.phase[:] = 1
         self.calcFocalPlane()
-        self.bestPSF = self.focalPlane.copy()
+        self.bestPSF = self.detector.copy()
         self.psfMax = self.bestPSF.max()
         self.longExpStrehl = 0
         self.instStrehl = 0
 
-    def calcTiltCorrect(self):
+    def setMask(self, mask):
         """
-        Calculates the required tilt to add to avoid the PSF being centred
-        on one pixel only
+        Sets the pupil mask as seen by the WFS.
+
+        This method can be called during a simulation
         """
-        # Only required if pxl number is even
-        if not self.config.pxls % 2:
-            # Need to correct for half a pixel angle
-            theta = float(self.FOVrad) / (2 * self.FFTPadding)
 
-            # Find magnitude of tilt from this angle
-            A = theta * self.telConfig.telDiam / \
-                (2 * self.config.wavelength) * 2 * numpy.pi
-
-            coords = numpy.linspace(-1, 1, self.FOVPxlNo)
-            X, Y = numpy.meshgrid(coords, coords)
-            self.tiltFix = -1 * A * (X + Y)
+        # If supplied use the mask
+        if numpy.any(mask):
+            self.mask = mask
         else:
-            self.tiltFix = numpy.zeros((self.FOVPxlNo,) * 2)
+            self.mask = aotools.circle(
+                    self.pupil_size/2., self.sim_size,
+                    )
 
     def calcFocalPlane(self):
         '''
         Takes the calculated pupil phase, scales for the correct FOV,
         and uses an FFT to transform to the focal plane.
         '''
-        self.EField = self.los.EField
 
-        # Apply the system mask
-        self.EField *= self.mask
+        numbalib.bilinear_interp(
+                self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
+                self.thread_pool, bounds_check=False)
 
-        # Scaled the padded phase to the right size for the requried FOV
-        self.EField_fov = interp.zoom(self.EField, self.padFOVPxlNo)
-
-        # Chop out the phase across the pupil before the fft
-        coord = int(round((self.padFOVPxlNo - self.FOVPxlNo) / 2.))
-        self.EField_fov = self.EField_fov[coord:-coord, coord:-coord]
+        self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 
         # Get the focal plan using an FFT
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov
-        focalPlane_efield = AOFFT.ftShift2d(self.FFT())
+        self.focus_efield = AOFFT.ftShift2d(self.FFT())
 
-        # Bin down to the required number of pixels
-        self.focalPlane_efield = interp.binImgs(
-            focalPlane_efield, self.config.fftOversamp)
+        # Turn complex efield into intensity
+        numbalib.abs_squared(self.focus_efield, out=self.focus_intensity)
 
-        self.focalPlane = numpy.abs(self.focalPlane_efield.copy())**2
+        # Bin down to detector number of pixels
+        numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
 
         # Normalise the psf
-        self.focalPlane /= self.focalPlane.sum()
+        self.detector /= self.detector.sum()
 
     def calcInstStrehl(self):
         """
         Calculates the instantaneous Strehl, including TT if configured.
         """
         if self.sciConfig.instStrehlWithTT:
-            self.instStrehl = self.focalPlane[self.sciConfig.pxls//2,self.sciConfig.pxls//2]/self.focalPlane.sum()/self.psfMax
+            self.instStrehl = self.detector[self.sciConfig.pxls // 2, self.sciConfig.pxls // 2] / self.detector.sum() / self.psfMax
         else:
-            self.instStrehl = self.focalPlane.max()/self.focalPlane.sum()/ self.psfMax
+            self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
+
+
+    def calc_wavefronterror(self):
+        """
+        Calculates the wavefront error across the telescope pupil 
+        
+        Returns:
+             float: RMS WFE across pupil in nm
+        """
+
+        res = (self.los.phase.copy() * self.mask) / self.los.phs2Rad
+
+        # Piston is mean across aperture
+        piston = res.sum() / self.mask.sum()
+
+        # remove from WFE measurements as its not a problem
+        res -= (piston*self.mask)
+
+        ms_wfe = numpy.square(res).sum() / self.mask.sum()
+        rms_wfe = numpy.sqrt(ms_wfe)
+
+        return rms_wfe
+
 
     def frame(self, scrns, correction=None):
         """
@@ -167,7 +190,6 @@ class PSF(object):
             ndarray: Resulting science PSF
         """
         self.los.frame(scrns, correction=correction)
-
         self.calcFocalPlane()
 
         self.calcInstStrehl()
@@ -175,7 +197,7 @@ class PSF(object):
         # Here so when viewing data, that outside of the pupil isn't visible.
         # self.residual*=self.mask
 
-        return self.focalPlane
+        return self.detector
 
 
 class singleModeFibre(PSF):
@@ -184,21 +206,21 @@ class singleModeFibre(PSF):
         scienceCam.__init__(self, soapyConfig, nSci, mask)
 
         self.normMask = self.mask / numpy.sqrt(numpy.sum(numpy.abs(self.mask)**2))
-        self.fibreSize = opt.minimize_scalar(self.refCouplingLoss, bracket=[1.0, self.simConfig.simSize]).x
+        self.fibreSize = opt.minimize_scalar(self.refCouplingLoss, bracket=[1.0, self.sim_size]).x
         self.refStrehl = 1.0 - self.refCouplingLoss(self.fibreSize)
         self.fibre_efield = self.fibreEfield(self.fibreSize)
         print("Coupling efficiency: {0:.3f}".format(self.refStrehl))
 
     def fibreEfield(self, size):
-        fibre_efield = circle.gaussian2d((self.simConfig.simSize, self.simConfig.simSize), (size, size))
-        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(circle.gaussian2d((self.simConfig.simSize*3, self.simConfig.simSize*3), (size, size)))**2))
+        fibre_efield = aotools.gaussian2d((self.sim_size, self.sim_size), (size, size))
+        fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(aotools.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
         return fibre_efield
 
     def refCouplingLoss(self, size):
         return 1.0 - numpy.abs(numpy.sum(self.fibreEfield(size) * self.normMask))**2
 
     def calcInstStrehl(self):
-        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * numpy.exp(1j*self.residual*self.phsNm2Rad) * self.normMask))**2
+        self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * self.los.EField * self.normMask))**2
 
 
 # Compatability with older versions

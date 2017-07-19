@@ -2,7 +2,7 @@ simName: sh_8x8
 pupilSize: 64
 nGS: 3
 nDM: 2
-nSci: 1
+nSci: 3
 nIters: 5000
 loopTime: 0.0025
 reconstructor: "MVM"
@@ -24,6 +24,8 @@ Atmosphere:
   windSpeeds: [10, 10]
   wholeScrnSize: 2048
   r0: 0.16
+  L0: [100, 100]
+  infinite: True
 
 
 Telescope:
@@ -34,7 +36,7 @@ Telescope:
 # WFSs in equalateral triange, with asterism radius 25"
 WFS:
   0:
-    type: ShackHartmann
+    type: ShackHartmannFast
     GSPosition: [0, 25]
     GSHeight: 0
     GSMag: 8
@@ -44,7 +46,7 @@ WFS:
     wavelength: 600e-9
     
   1:
-    type: ShackHartmann
+    type: ShackHartmannFast
     GSPosition: [-21.5, -12.5]
     GSHeight: 0
     GSMag: 8
@@ -53,7 +55,7 @@ WFS:
     subapFOV: 2.5
     wavelength: 600e-9
   2:
-    type: ShackHartmann
+    type: ShackHartmannFast
     GSPosition: [21.5, -12.5]
     GSHeight: 0
     GSMag: 8
@@ -64,7 +66,7 @@ WFS:
 
 DM:
   0:
-    type: Piezo
+    type: FastPiezo
     closed: True
     nxActuators: 9
     svdConditioning: 0.05
@@ -72,7 +74,7 @@ DM:
     gain: 0.7
 
   1:
-    type: Piezo
+    type: FastPiezo
     closed: True
     nxActuators: 9
     svdConditioning: 0.05
@@ -81,10 +83,26 @@ DM:
     altitude: 10000
     diameter: 10
 
+Reconstructor:
+  type: MVM
+  svdConditioning: 0.03
+  gain: 0.6
 
 Science:
   0:
     position: [0, 0]
+    FOV: 2.0
+    wavelength: 1.65e-6
+    pxls: 128
+
+  1:
+    position: [20, 0]
+    FOV: 2.0
+    wavelength: 1.65e-6
+    pxls: 128
+
+  2:
+    position: [0, 20]
     FOV: 2.0
     wavelength: 1.65e-6
     pxls: 128

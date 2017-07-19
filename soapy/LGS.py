@@ -16,11 +16,11 @@
 #     You should have received a copy of the GNU General Public License
 #     along with soapy.  If not, see <http://www.gnu.org/licenses/>.
 import numpy
-from . import AOFFT, logger, lineofsight
-from .aotools import circle, interp
 
-import scipy.optimize
-from scipy.interpolate import interp2d
+import aotools
+
+from . import AOFFT, logger, lineofsight, interp
+# from .aotools import circle, interp
 
 #xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
@@ -89,8 +89,8 @@ class LGS(object):
         # Init the line of sight object for light propation through turbulence
         self.los = lineofsight.LineOfSight(
                     self.config, self.soapyConfig,
-                    propagationDirection="up", nOutPxls=self.losNOutPxls,
-                    mask=self.losMask, outPxlScale=self.losOutPxlScale,
+                    propagation_direction="up", nx_out_pixels=self.losNOutPxls,
+                    mask=self.losMask, out_pixel_scale=self.losOutPxlScale,
                     )
 
         # Find central position of the LGS pupil at each altitude.
@@ -98,7 +98,7 @@ class LGS(object):
         for i in xrange(self.atmosConfig.scrnNo):
             self.los.metaPupilPos[i] = lgsOALaunchMetaPupilPos(
                     self.config.position,
-                    numpy.array(self.config.launchPosition)*self.los.telDiam/2.,
+                    numpy.array(self.config.launchPosition)*self.los.telescope_diameter/2.,
                     self.config.height, self.atmosConfig.scrnHeights[i]
                     )
         # Check position not too far from centre. May need more phase!
@@ -158,7 +158,7 @@ class LGS_Geometric(LGS):
                 / self.config.wavelength))
 
         # The mask to apply before geometric FFTing
-        self.mask = circle.circle(self.nFovPxls/2., self.nFovPxls)
+        self.mask = aotools.circle(self.nFovPxls/2., self.nFovPxls)
 
         self.losNOutPxls = self.lgsPupilPxls
         self.losOutPxlScale = self.config.pupilDiam/self.lgsPupilPxls
@@ -208,7 +208,7 @@ class LGS_Physical(LGS):
         Calculate some useful paramters to be used later
         """
 
-        self.mask = circle.circle(
+        self.mask = aotools.circle(
                 0.5*self.config.pupilDiam*self.simConfig.pxlScale,
                 self.simConfig.simSize)
 
@@ -236,7 +236,7 @@ class LGS_Physical(LGS):
 
         # The mask to apply before physical propagation
         self.lgsPupilPxls = int(round(self.config.pupilDiam/self.outPxlScale_m))
-        self.mask = circle.circle(self.lgsPupilPxls/2., 3*self.nOutPxls)
+        self.mask = aotools.circle(self.lgsPupilPxls/2., 3*self.nOutPxls)
         self.losMask = self.mask
 
         self.losOutPxlScale = self.outPxlScale_m

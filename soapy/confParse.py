@@ -81,6 +81,7 @@ class PY_Configurator(object):
         self.sim = SimConfig()
         self.atmos = AtmosConfig()
         self.tel = TelConfig()
+        self.recon = ReconstructorConfig()
 
     def readfile(self):
 
@@ -125,6 +126,9 @@ class PY_Configurator(object):
             logger.debug("Load DM {} Params".format(dm))
             self.dms.append(DmConfig(dm))
             self.dms[dm].loadParams(self.configDict["DM"])
+
+        logger.debug("Load Reconstructor Params")
+        self.recon.loadParams(self.configDict["Reconstructor"])
 
         for sci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(sci))
@@ -198,7 +202,7 @@ class PY_Configurator(object):
 
         self.sim.scrnSize = int(round(self.sim.scrnSize))
 
-        # Make scrnSize even
+        # Make scrn_size even
         if self.sim.scrnSize % 2 != 0:
             self.sim.scrnSize += 1
 
@@ -324,6 +328,10 @@ class YAML_Configurator(PY_Configurator):
 
             self.dms.append(DmConfig(None))
             self.dms[nDm].loadParams(dmDict)
+
+
+        logger.debug("Load Reconstructor Params")
+        self.recon.loadParams(self.configDict["Reconstructor"])
 
         for nSci in range(self.sim.nSci):
             logger.debug("Load Science {} Params".format(nSci))
@@ -474,8 +482,11 @@ class SimConfig(ConfigObj):
                             effects                             ``1.2``
         ``loopDelay``       int: loop delay in integer count
                             of ``loopTime``                     ``0``
-
-
+        ``threads``         int: Number of threads to use
+                            for multithreaded operations        ``1``
+        ``photometric_zp``  float: Photometric zeropoint -
+                            number of photons/meter/second
+                            from a magnitude 0 star             ``2e9``
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -528,8 +539,10 @@ class SimConfig(ConfigObj):
                             ("logfile", None),
                             ("learnIters", 0),
                             ("learnAtmos", "random"),
-                            ("simOversize", 1.2),
+                            ("simOversize", 1.02),
                             ("loopDelay", 0),
+                            ("threads", 1),
+                            ("photometric_zp", 2e9),
                         ]
 
     # Parameters which may be set at some point and are allowed
@@ -562,9 +575,8 @@ class AtmosConfig(ConfigObj):
         ``windDirs``            list, float: Wind directions in degrees.
         ``windSpeeds``          list, float: Wind velocities in m/s
         ``r0``                  float: integrated  seeing strength
-                                (metres at 550nm)
-        ``wholeScrnSize``       int: Size of the phase screens to store in the
-                                ``atmosphere`` object
+                                (metres at 500nm)
+
         ==================      ===================
 
     Optional:
@@ -584,8 +596,13 @@ class AtmosConfig(ConfigObj):
         ``randomScrns``     bool: Use a random set of phase
                             phase screens for each loop
                             iteration?                          ``False``
+        ``infinite``        bool: Use infinite phase screens?   ``False``
         ``tau0``            float: Turbulence coherence time,
                             if set wind speeds are scaled.      ``None``
+        ``wholeScrnSize``   int: Size of the phase screens 
+                            to store in the ``atmosphere`` 
+                            object. Required if large screens
+                            used.                               ``None``
         ==================  =================================   ===========
     """
 
@@ -595,7 +612,6 @@ class AtmosConfig(ConfigObj):
                         "r0",
                         "windDirs",
                         "windSpeeds",
-                        "wholeScrnSize",
                         ]
 
     optionalParams = [ ("scrnNames",None),
@@ -603,7 +619,10 @@ class AtmosConfig(ConfigObj):
                         ("L0", None),
                         ("randomScrns", False),
                         ("tau0", None),
-                        ]
+                        ("infinite", False),
+                        ("wholeScrnSize", None)
+
+                       ]
 
     # Parameters which may be set at some point and are allowed
     calculatedParams = [
@@ -709,6 +728,9 @@ class WfsConfig(ConfigObj):
         ``subapFOV``            float: Field of View of
                                 sub-aperture in arc-secs           ``5``
         ``correlationFFTPad``   int: Padding for correlation WFS    ``None``
+        ``nx_guard_pixels``     int: Guard Pixels between
+                                Shack-Hartmann sub-apertures
+                                (Not currently operational)         ``0``
         =====================   ================================== ===========
 
 
@@ -729,7 +751,7 @@ class WfsConfig(ConfigObj):
                         ("GSHeight", 0),
                         ("subapThreshold", 0.5),
                         ("lgs", None),
-                        ("centThreshold", 0.3),
+                        ("centThreshold", 0.),
                         ("centMethod", "centreOfGravity"),
                         ("type", "ShackHartmann"),
                         ("exposureTime", None),
@@ -742,7 +764,8 @@ class WfsConfig(ConfigObj):
                         ("extendedObject", None),
                         ("pxlsPerSubap", 10),
                         ("subapFOV", 5),
-                        ("correlationFFTPad", None)
+                        ("correlationFFTPad", None),
+                        ("nx_guard_pixels", 0),
                         ]
 
         # Parameters which may be Set at some point and are allowed
@@ -963,9 +986,54 @@ class DmConfig(ConfigObj):
         self.iMatValue  = float(self.iMatValue)
         self.svdConditioning = float(self.svdConditioning)
 
+class ReconstructorConfig(ConfigObj):
+    """
+    Configuration parameters describing the reconstructor that will be used to calculate
+    DM commands from WFS measurements. The ``type`` must be an object in the ``soapy.reconstruction``
+    module. Other parameters may be specific to this reconstructor
+
+    Optional:
+        ==================== =================================   ===========
+        **Parameter**        **Description**                     **Default**
+        -------------------- ---------------------------------   -----------
+        ``type``             string: Type of reconstructor to
+                             use. Must be a class in
+                             reconstruction module.              ``MVM``
+        ``svdConditioning``  float: Conditioning parameter to
+                             be using in Least Squares
+                             reconstructor inversion SVD to
+                             cut off unwanted DM modes. See
+                             ``numpy.linalg.pinv`` for details
+                             about the inversion.                ``0``
+        ``gain``             float: Gain of the integrator
+                             loop.
+        ``imat_noise``       bool: include WFS noise when
+                             making in interaction matrix        ``True``
+        ==================== =================================   ===========
+
+    """
+    requiredParams = [
+                        ]
+    optionalParams = [
+            ("type", "MVM"),
+            ("svdConditioning", 0.),
+            ("gain", 0.6),
+            ("imat_noise", True)
+                        ]
+
+    calculatedParams = [
+                            ]
+    allowedAttrs = copy.copy(requiredParams + calculatedParams + CONFIG_ATTRIBUTES)
+    for p in optionalParams:
+        allowedAttrs.append(p[0])
+
 class SciConfig(ConfigObj):
     """
-    Configuration parameters characterising Science Cameras. These should be held in the ``Science`` of the parameter file. Each Science target is created seperately with an integer index. Any entries above ``sim.nSci`` will be ignored.
+    Configuration parameters characterising Science Cameras.
+
+    These should be held in the ``Science`` of the parameter file.
+    Each Science target is created seperately with an integer index.
+    Any entries above ``sim.nSci`` will be ignored.
 
     Required:
         ==================      ============================================
