@@ -33,7 +33,7 @@ MOCK_MODULES = ['pyfftw', 'ipython','pyfits', 'PyQt4','IPython.qt.console.rich_i
                     'matplotlib.figure',
                     'IPython.qt.console.rich_ipython_widget', 
                     'scipy.ndimage','scipy.optimize', 'scipy.lib.blas.fblas','scipy.fftpack','scipy.interpolate','scipy', 'scipy.signal',
-                    'numpy', 'numpy.linalg', 'numpy.random', 'scipy.ndimage.interpolation',
+                    'numpy', 'numpy.linalg', 'numpy.random', 'scipy.ndimage.interpolation', 'aotools',
                     ]
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
