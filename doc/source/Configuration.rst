@@ -53,6 +53,12 @@ Deformable Mirror Parameters
 .. autoclass:: soapy.confParse.DmConfig
 	:members:
 
+Reconstructor Parameters
+------------------------
+
+.. autoclass:: soapy.confParse.ReconstructorConfig
+    :members:
+
 Science Camera Parameters
 -------------------------
 

@@ -27,7 +27,7 @@ This latter method may require superuser permissions for your system and should 
 Required Libraries
 ==================
 
-soapy doesn't have too many requirements in terms of external libraries, though it does rely on some. There are also some optional libraries which are recommended for plotting or performance.
+Soapy doesn't have too many requirements in terms of external libraries, though it does rely on some. Performance of the simulation is made reasonable (for ELT scale operation) by using pyfftw and the numba library. Pyfftw simply wraps the FFTW library for fast fourier transforms. Numba, is a clever library that leverages the LLVM compiler infrastructure to compile python code directly to machine code. A library of functions has been written for the most computationally challenging algorithms, which are in pure python so can be easily read and improved, but operate quickly with the option of using multiple threads.  There are also some optional libraries which are recommended for plotting.
 
 --------
 Required
@@ -38,7 +38,9 @@ Required
     numpy
     scipy
     pyfits *or* astropy
-    pyfftw 
+    pyfftw
+    numba
+
 -------    
 For GUI
 -------
