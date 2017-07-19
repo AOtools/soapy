@@ -1,7 +1,7 @@
-#Simulation 'Optique Adaptative' with Python
+# Simulation 'Optique Adaptative' with Python
 (formerly PyAOS)
 
-[![Build Status](https://travis-ci.org/AOtools/soapy.svg?branch=master)](https://travis-ci.org/AOtools/soapy))
+[![Build Status](https://travis-ci.org/AOtools/soapy.svg?branch=master)](https://travis-ci.org/AOtools/soapy)
 [![Build status](https://ci.appveyor.com/api/projects/status/ea65yv0p7s32ejxx/branch/master?svg=true)](https://ci.appveyor.com/project/Soapy/soapy/branch/master)
 [![codecov](https://codecov.io/gh/AOtools/soapy/branch/master/graph/badge.svg)](https://codecov.io/gh/AOtools/soapy)
 [![Documentation Status](http://readthedocs.org/projects/soapy/badge/?version=latest)](http://soapy.readthedocs.io/en/latest/?badge=latest)
