@@ -1,11 +1,11 @@
-simName: sh_8x8
-pupilSize: 128
+simName:
+pupilSize: 100
 nGS: 1
 nDM: 2
 nSci: 1
 nIters: 5000
 loopTime: 0.0025
-reconstructor: "MVM"
+threads: 4
 
 verbosity: 2
 
@@ -24,6 +24,8 @@ Atmosphere:
   windSpeeds: [10, 10, 15, 20]
   wholeScrnSize: 2048
   r0: 0.16
+  L0: [20, 20, 20, 20]
+  infinite: True
 
 
 Telescope:
@@ -46,21 +48,24 @@ DM:
   0:
     type: TT
     closed: True
-    iMatValue: 2e3
-    gain: 0.6
+    iMatValue: 0.25
+
 
   1:
-    type: Piezo
+    type: FastPiezo
     closed: True
     nxActuators: 9
-    svdConditioning: 0.05
-    gain: 0.7
     iMatValue: 500
 
+Reconstructor:
+  type: MVM
+  svdConditioning: 0.03
+  gain: 0.6
 
 Science:
   0:
     position: [0, 0]
-    FOV: 2.0
+    FOV: 1.0
     wavelength: 1.65e-6
-    pxls: 128
+    pxls: 64
+

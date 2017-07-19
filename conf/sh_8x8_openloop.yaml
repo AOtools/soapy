@@ -1,22 +1,20 @@
-# Example configuration file for AO system with single, on-axis LGS.
-# LGS features realistic uplink propagation, so a NGS TT sensor also present
-
-simName: sh_8x8_lgsElong
+simName: sh_8x8
 pupilSize: 128
 nGS: 1
 nDM: 2
 nSci: 1
 nIters: 5000
 loopTime: 0.0025
-reconstructor: MVM
+reconstructor: "MVM"
 
 verbosity: 2
 
 saveCMat: False
 saveSlopes: True
-saveDmCommands: False
+saveDmCommands:   False
 saveLgsPsf: False
 saveSciPsf: True
+
 
 Atmosphere:
   scrnNo: 4
@@ -27,8 +25,9 @@ Atmosphere:
   wholeScrnSize: 2048
   r0: 0.16
 
+
 Telescope:
-  telDiam: 8
+  telDiam: 8.
   obsDiam: 1.1
   mask: circle
 
@@ -36,45 +35,34 @@ WFS:
   0:
     type: ShackHartmann
     GSPosition: [0, 0]
-    GSHeight: 90000
+    GSHeight: 0
     GSMag: 8
     nxSubaps: 8
     pxlsPerSubap: 10
-    subapFOV: 5.0
+    subapFOV: 2.5
     wavelength: 600e-9
-    lgs:
-      uplink: False
-      pupilDiam: 0.3
-      wavelength: 600e-9
-      height:   90000
-      elongationDepth: 12000
-      elongationLayers: 10
-      launchPosition: [1, 0]
+    centThreshold: 0.1
 
 DM:
   0:
     type: TT
-    nxActuators: 2
-    iMatValue: 1
-    gain: 0.6
-    svdConditioning: 0.07
-
+    closed: False
+    iMatValue: 0.2
 
   1:
     type: Piezo
+    closed: False
     nxActuators: 9
-    svdConditioning: 0.07
-    gain: 0.6
-    iMatValue: 0.2
+    iMatValue: 500
 
 Reconstructor:
   type: MVM
   svdConditioning: 0.03
-  gain: 0.6
+  gain: 0.9
 
 Science:
   0:
-    position: [0,0]
-    FOV: 1.5
+    position: [0, 0]
+    FOV: 2.0
     wavelength: 1.65e-6
-    pxls: 64
+    pxls: 128
