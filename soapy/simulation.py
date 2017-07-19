@@ -61,7 +61,7 @@ Examples:
 
 #sim imports
 from . import atmosphere, logger, wfs, DM, RECON, SCI, confParse, aotools
-from .aotools import circle
+from .aotools import circle, interp
 
 #standard python imports
 import numpy
@@ -166,30 +166,9 @@ class Sim(object):
 
         # Init Pupil Mask
         logger.info("Creating mask...")
-        if self.config.tel.mask == "circle":
-            self.mask = circle.circle(self.config.sim.pupilSize/2.,
-                                        self.config.sim.pupilSize)
-            if self.config.tel.obsDiam!=None:
-                self.mask -= circle.circle(
-                        self.config.tel.obsDiam*self.config.sim.pxlScale/2.,
-                        self.config.sim.pupilSize
-                        )
-        elif isinstance(self.config.tel.mask, str):
-            maskHDUList = fits.open(self.config.tel.mask)
-            self.mask = maskHDUList[0].data.copy()
-            maskHDUList.close()
-            logger.info('load mask "{}", of size: {}'.format(self.config.tel.mask, self.mask.shape))
-            
-        else:
-            self.mask = self.config.tel.mask.copy()
+        self.mask = make_mask(self.config)
 
-        if (not numpy.array_equal(self.mask.shape, (self.config.sim.pupilSize,)*2) 
-                and not numpy.array_equal(self.mask.shape, (self.config.sim.simSize,)*2) ):
-            raise ValueError("Mask Shape {} not compatible. Should be either `pupilSize` or `simSize`".format(self.mask.shape))
 
-        if self.mask.shape != (self.config.sim.simSize, )*2:
-            self.mask = numpy.pad(
-                    self.mask, self.config.sim.simPad, mode="constant")
 
         self.atmos = atmosphere.atmos(self.config)
 
@@ -668,11 +647,11 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             self.lgsPsfs = []
             for lgs in xrange(self.config.sim.nGS):
-                if self.config.wfss[lgs].lgsUplink:
+                if self.config.wfss[lgs].lgs and self.config.wfss[lgs].lgs.uplink:
                     self.lgsPsfs.append(
-                            numpy.empty(self.config.sim.nIters,
-                            self.config.sim.pupilSize,
-                            self.config.sim.pupilSize)
+                            numpy.empty((self.config.sim.nIters,
+                            self.wfss[lgs].lgs.nOutPxls,
+                            self.wfss[lgs].lgs.nOutPxls))
                             )
             self.lgsPsfs = numpy.array(self.lgsPsfs)
 
@@ -716,8 +695,8 @@ class Sim(object):
         if self.config.sim.saveLgsPsf:
             lgs=0
             for nwfs in xrange(self.config.sim.nGS):
-                if self.config.wfss[nwfs].lgs.lgsUplink:
-                    self.lgsPsfs[lgs, i] = self.wfss[nwfs].LGS.PSF
+                if self.config.wfss[nwfs].lgs and self.config.wfss[nwfs].lgs.uplink:
+                    self.lgsPsfs[lgs, i] = self.wfss[nwfs].lgs.psf
                     lgs+=1
 
         if self.config.sim.nSci>0:
@@ -846,7 +825,7 @@ class Sim(object):
         header["TELESCOP"] = "SOAPY"
         header["RUNID"] = self.config.sim.simName
         header["LOOP"] = True
-        header["TIME"] = self.timeStamp
+        header["DATE-OBS"] = self.time.strftime("%Y-%m-%dT%H:%M:%S")
 
         # Tel Params
         header["TELDIAM"] = self.config.tel.telDiam
@@ -908,7 +887,8 @@ class Sim(object):
             string: nicely formatted timestamp of current time.
         """
 
-        return datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.time = datetime.datetime.now()
+        return self.time.strftime("%Y-%m-%d-%H-%M-%S")
 
 
     def printOutput(self, iter, strehl=False):
@@ -1010,6 +990,50 @@ class Sim(object):
                 self.guiLock.unlock()
 
                 self.waitingPlot = False
+
+
+def make_mask(config):
+    """
+    Generates a Soapy pupil mask
+
+    Parameters:
+        config (SoapyConfig): Config object describing Soapy simulation
+
+    Returns:
+        ndarray: 2-d pupil mask
+    """
+    if config.tel.mask == "circle":
+        mask = circle.circle(config.sim.pupilSize / 2.,
+                                  config.sim.simSize)
+        if config.tel.obsDiam != None:
+            mask -= circle.circle(
+                config.tel.obsDiam * config.sim.pxlScale / 2.,
+                config.sim.simSize
+            )
+
+    elif isinstance(config.tel.mask, str):
+        maskHDUList = fits.open(config.tel.mask)
+        mask = maskHDUList[0].data.copy()
+        maskHDUList.close()
+        logger.info('load mask "{}", of size: {}'.format(config.tel.mask, mask.shape))
+
+        if not numpy.array_equal(mask.shape, (config.sim.pupilSize,) * 2):
+            # interpolate mask to pupilSize if not that size already
+            mask = numpy.round(interp.zoom(mask, config.sim.pupilSize))
+
+    else:
+        mask = config.tel.mask.copy()
+
+    # Check its size is compatible. If its the pupil size, pad to sim size
+    if (not numpy.array_equal(mask.shape, (config.sim.pupilSize,)*2)
+            and not numpy.array_equal(mask.shape, (config.sim.simSize,)*2) ):
+        raise ValueError("Mask Shape {} not compatible. Should be either `pupilSize` or `simSize`".format(mask.shape))
+
+    if mask.shape != (config.sim.simSize, )*2:
+        mask = numpy.pad(
+                mask, config.sim.simPad, mode="constant")
+
+    return mask
 
 
 # Functions used by MP stuff

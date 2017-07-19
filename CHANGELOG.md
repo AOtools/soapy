@@ -1,4 +1,18 @@
-#0.12.0
+#0.13.1 (18th April 2017)
+- Fix issue where all required packages not installed by moving to setuptools for installation
+- added options to Gaussian DM
+
+#0.13.0 (10th January 2017)
+- Use "aotools" packages instead of "AOSimLib" (aotools packaged with Soapy)
+- Move pupil mask loading and formatting to seperate function in Simulation
+- Update GUI to use PyQt5 if available (still bugs need ironed out of this implementation)
+- Can set a SH WFS `pxlScale`, which overrides the FOV parameter
+- Improve extended SH WFS implementation
+- fix bug in infinite phase screen covariance calculation
+- Bug fixes
+- Docs updates
+
+#0.12.0 (18th May 2016)
 - Shift lots of light propagation code to a separate `LineOfSight` object, which is shared by WFSs, LGSs and Science targets
 - Add optional YAML configuration style. This will now be the main supported configuration method
 - Added ability to conjugate DMs at a finite altitude
@@ -6,13 +20,16 @@
 - Fix "Gradient" WFS so slopes outputted in arcseconds
 - Other fixes and small features
 
-#0.11.0
--  Begun restructuring of components as files were getting very large. Now components will be kept in sub-modules. Done WFS module.
+#0.11.0 (3rd March 2016)
+- Begun restructuring of components as files were getting very large. Now components will be kept in sub-modules. Done WFS module.
 - Re-worked correlation WFSing - now there is an "ExtendedSH" WFS, which can take an extended object, that is convolved with the sub-aperture PSF to form a wide-field WFSer. A correlation centroiding technique is used to get centroids (thanks to @matthewtownson!)
 - Added options of integer frame loop delay (thanks to @jwoillez!)
 - Can set tau_0 parameters in atmosphere. Atmosphere also prints out atmosphere summary on init. (thanks to @jwoillez)
 
-#0.10.0
+#0.10.1 (9th February 2016)
+- Config objects can be converted to dictionaries
+
+#0.10.0 (7th December 2015)
 - Phase is now internally passed around in nano-metres
 - Added both WFS photon and read noise. Still needs comparisons to verify though
 - Added a DM which is interpolated on each frame - better for larger systems
@@ -21,14 +38,12 @@
 - Data now saved with common FITS header
 
 
-#0.9.1
+#0.9.1 (23rd June 2015)
 - Tutorial added to docs
-
 - Fix bug in off-axis science cameras, where Interp2d wasnt imported
-
 - Can use a random phase screen for each loop iteration
 
-#0.9
+#0.9 (12th May 2015)
 - Name change to Soapy!
 
 - Some parameters changed name 
@@ -59,14 +74,14 @@
     ```
 - Configuration parameters in lists are now accessed as plurals, e.g. `sim.config.wfs[0].nxSubaps` --> `sim.config.wfss[0].nxSubaps`.
 
-#0.8.1
+#0.8.1 (22nd April 2015)
 - Some bugs fixed with WFSs
 
 - Made it easier to change shack-hartmann WFS centroider. Add new centroider to pyaos/tool/centroiders.py, then use the function name in the config file -- the simulation will now use the new centroider
 
 - continued adding to docs and tests
 
-#0.8.0
+#0.8.0 (15th April 2015)
 - `simSize` is now defined, which is the size of phase arrays to be passed around. This is currently sized at 1.2 x pupilSize, though this can be altered, and eliminates any edge effects which used to appear when interpolating near edges. This broke lots of things, which I think have all been fixed. If any exceptions which feature simSize or pupilSize occur, they could be caused by his change and if reported should be quickly fixed. Now, phase from DMs and the expected correction given to WFSs should be of shape `config.sim.simSize`, rather than `config.sim.pupilSize` as previously.
 
 - A major bug in scaling phase for r0 has been fixed, which caused a big degradation in AO performance. AO Performance now matched YAO well for single NGS cases.

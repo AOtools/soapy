@@ -35,7 +35,7 @@ def centreOfGravity(img, threshold=0, **kwargs):
     y_centroid+=0.5
     x_centroid+=0.5
 
-    return numpy.array([y_centroid,x_centroid])
+    return numpy.array([x_centroid, y_centroid])
 
 
 def brightestPxl(img, threshold, **kwargs):

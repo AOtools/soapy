@@ -92,7 +92,7 @@ class ShackHartmann(base.WFS):
                 self.wfsConfig.nxSubaps, mask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
-        self.activeSubaps = self.subapCoords.shape[0]
+        self.activeSubaps = int(self.subapCoords.shape[0])
         self.detectorSubapCoords = numpy.round(
                 self.subapCoords*(
                         self.detectorPxls/float(self.simConfig.pupilSize) ) )
@@ -304,6 +304,9 @@ class ShackHartmann(base.WFS):
         else:
             self.FPSubapArrays += intensity*numpy.abs(
                     AOFFT.ftShift2d(self.FFT()))**2
+
+        # Sub-aps need to be flipped to correct orientation
+        self.FPSubapsArrays = self.FPSubapArrays[:, ::-1, ::-1]
 
     def makeDetectorPlane(self):
         '''

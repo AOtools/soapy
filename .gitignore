@@ -62,3 +62,5 @@ target/
 *_bkup
 
 *.DS_Store
+
+.idea/

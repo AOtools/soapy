@@ -359,7 +359,7 @@ class GaussStack(Piezo):
                 self.acts, self.simConfig.pupilSize, self.simConfig.pupilSize))
 
         actSpacing = self.simConfig.pupilSize/(self.dmConfig.nxActuators-1)
-        width = actSpacing/2.
+        width = actSpacing * self.dmConfig.gauss_width
 
         for i in xrange(self.acts):
             x,y = self.activeActs[i]*actSpacing

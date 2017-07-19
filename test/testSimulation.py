@@ -176,12 +176,13 @@ def testMaskLoad():
 
     sim.aoinit()
 
+    mask = numpy.ones((sim.config.sim.pupilSize, sim.config.sim.pupilSize))
+
     # save mask
-    mask = sim.mask.copy()
     if os.path.isfile('testmask.fits'):
         os.remove('testmask.fits')
     
-    hdu = fits.PrimaryHDU(sim.mask)
+    hdu = fits.PrimaryHDU(mask)
     hdulist = fits.HDUList([hdu])
     hdulist.writeto('testmask.fits')
     hdulist.close()
@@ -192,7 +193,9 @@ def testMaskLoad():
         sim.aoinit()
 
         # check its good
-        assert numpy.array_equal(sim.mask, mask)
+        p = sim.config.sim.simPad
+        pad_mask = numpy.pad(mask, mode="constant", pad_width=((p,p),(p,p)))
+        assert numpy.array_equal(sim.mask, pad_mask)
     except:
         raise
     finally:

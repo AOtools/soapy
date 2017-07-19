@@ -164,6 +164,12 @@ class WFS(object):
 # Initialisation routines
 
     def setMask(self, mask):
+        """
+        Sets the pupil mask as seen by the WFS.
+
+        This method can be called during a simulation
+        """
+
         # If supplied use the mask
         if numpy.any(mask):
             self.mask = mask
@@ -447,8 +453,10 @@ class WFS(object):
             self.config.eReadNoise = eReadNoise
 
         # Check that slopes aint `nan`s. Set to 0 if so
+        # if numpy.any(numpy.isnan(self.slopes)):
+        #     self.slopes[:] = 0
         if numpy.any(numpy.isnan(self.slopes)):
-            self.slopes[:] = 0
+            numpy.nan_to_num(self.slopes)
 
         return self.slopes
 
