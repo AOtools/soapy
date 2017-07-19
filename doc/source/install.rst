@@ -37,16 +37,16 @@ Required
 
     numpy
     scipy
-    pyfits *or* astropy
+    astropy
     pyfftw
     numba
+    yaml
 
 -------    
 For GUI
 -------
 ::   
-    PyQt4
-    pyqtgraph (http://www.pyqtgraph.org)
+    PyQt5 (PyQt4 supported)
     matplotlib
     ipython
     
@@ -55,41 +55,59 @@ For GUI
 Linux
 =====
 If your starting with python from scratch, there a couple of options. For Ubuntu (14.04+) linux users, all these packages can be installed via apt-get::
-    
-    sudo apt-get install python-numpy python-scipy python-fftw python-astropy python-qt4 python-matplotlib ipython ipython-qtconsole python-pyqtgraph
-    
-    
-for Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names. Again, get pyqtgraph from http://www.pyqtgraph.org, but download the source. pyqtgraph, like most python packages is pretty easy to install from source, just download the package, unpack, navigate into the package and run ``sudo python setup.py install``
-    
+
+    sudo apt-get install python-numpy python-scipy python-fftw python-astropy python-qt4 python-matplotlib ipython ipython-qtconsole python-yaml python-numba
+
+
+for Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names.
+
+
 =======
 Mac OSX
 =======
 
 for mac os, all of these packages can be install via macports, with::
-    
-    sudo port install python27 py27-numpy py27-scipy py27-astropy py27-pyfftw py27-pyqt4 py27-ipython py27-pyqtgraph py27-jupyter
+
+    sudo port install python36 py36-numpy py36-scipy py36-astropy py36-pyqt5 py36-ipython py36-jupyter py36-numba py36-yaml py36-qtconsole
+
+`pyfftw <https://github.com/pyFFTW/pyFFTW>`_ is not available for python3.6 on macports, so must be installed with another method, such as pip (see below)
+
+If you're using Python 2.7::
+
+    sudo port install python27 py27-numpy py27-scipy py27-astropy py27-pyfftw py27-pyqt5 py27-ipython py27-jupyter py27-numba py27-qtconsole py27-yaml
 
 
 ======
 Any OS
 ======
 
-For any OS, including Windows, python distributions exist which include lots of python packages useful for science. A couple of good examples are Enthought Canopy (https://www.enthought.com), which is free for academics, and Anaconda (https://store.continuum.io/cshop/anaconda/) which is also free.
+---------------
+Anaconda Python
+---------------
+For any OS, including Windows, python distributions exist which include lots of python packages useful for science.
+A couple of good examples are Enthought Canopy (https://www.enthought.com), which is free for academics, and Anaconda (https://store.continuum.io/cshop/anaconda/) which is also free.
+Anaconda includes most of the required libraries by default apart from pyfftw and pyyaml. These can be installed with::
 
+    conda install pyyaml
+    pip install pyfftw
+
+---
+pip
+---
 
 A lot of python packages are also listed on `pypi <https://pypi.python.org/pypi>`_. Usually when python is installed, a script called ``easy_install`` is installed also, which can be used to get any package on pypi with ``easy_install <package>``. Confusingly, ``pip`` is now the recommended Python package manager instead of ``easy_install``. If you've only got ``easy_install`` you can install ``pip`` using ``easy_install pip``, or it can be installed using the script linked `here <https://pip.readthedocs.org/en/latest/installing.html>`_.
 
 Once you have ``pip``, the required libraries can be installed by using the ``requirements.txt`` file. From the soapy directory, just run (may need to be as ``sudo``)::
 
-    pip -r requirements.txt
+    pip install numpy scipy astropy pyfftw pyyaml numba
     
-and all the requirements should be installed for you!
+and all the requirements should be installed for the simulation, though not the GUI. For the GUI PyQt4 or PyQt5 is required, I dont think these are available from pip.
 
 =======
 Testing
 =======
-Once you think everything is installed, tests can be run by navigating to the ``test`` directory and running ::
-    
+Once you think everything is installed, tests can be run by navigating to the ``test`` directory and running::
+
     python testSimulation.py
 
 Currently, this only runs system wide tests, but further, more atomic tests will be added in future. To run the tests, soapy must be either "installed", or manually put into the PYTHONPATH.
