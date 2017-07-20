@@ -1006,7 +1006,7 @@ class ReconstructorConfig(ConfigObj):
                              ``numpy.linalg.pinv`` for details
                              about the inversion.                ``0``
         ``gain``             float: Gain of the integrator
-                             loop.
+                             loop.                               ``0.6``
         ``imat_noise``       bool: include WFS noise when
                              making in interaction matrix        ``True``
         ==================== =================================   ===========
