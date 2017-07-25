@@ -575,7 +575,22 @@ class Sim(object):
             self.go = False
             logger.info("\nSim exited by user\n")
 
-        #Finally save data after loop is over.
+        # compute final ee50d
+        for sci in range(self.config.sim.nSci):
+            pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
+            ee50d = aotools.encircledEnergy(
+                self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
+            if ee50d < (self.sciCams[sci].fov / 2):
+                self.ee50d[sci] = ee50d
+            else:
+                logger.info(("\nEE50d computation invalid "
+                             "due to small FoV of Science Camera {}\n").
+                            format(sci))
+                self.ee50d[sci] = None
+
+
+
+        # Finally save data after loop is over.
         self.saveData()
         self.finishUp()
 
@@ -587,6 +602,7 @@ class Sim(object):
         self.slopes[:] = 0
         self.dmCommands[:] = 0
         self.longStrehl[:] = 0
+        self.ee50d[:] = 0
         self.recon.reset()
         for sci in self.sciImgs.values(): sci[:] = 0
         for dm in self.dms.values(): dm.reset()
@@ -598,7 +614,11 @@ class Sim(object):
         print('\n')
         if hasattr(self, "longStrehl") and (self.longStrehl is not None):
             for sci_n in range(self.config.sim.nSci):
-                print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".format(sci_n, self.longStrehl[sci_n][self.iters-1]))
+                print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".
+                      format(sci_n, self.longStrehl[sci_n][self.iters-1]))
+                if hasattr(self, "ee50d") and (self.ee50d is not None):
+                    print("                  EE50 diameter [mas]: {:0.0f}".
+                          format(self.ee50d[sci_n] * 1000))
 
         print("\n\nTime moving atmosphere: %0.2f"%self.Tatmos)
         print("Time making IMats and CMats: %0.2f"%self.Timat)
@@ -643,6 +663,7 @@ class Sim(object):
                     (self.config.sim.nSci, self.config.sim.nIters) )
             self.longStrehl = numpy.zeros(
                     (self.config.sim.nSci, self.config.sim.nIters) )
+            self.ee50d = numpy.zeros((self.config.sim.nSci))
 
             # Init science WFE saving
             self.WFE = numpy.zeros(
@@ -780,66 +801,66 @@ class Sim(object):
             if self.config.sim.saveSlopes:
                 fits.writeto(
                         self.path+"/slopes.fits", self.allSlopes,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveDmCommands:
                 fits.writeto(
                         self.path+"/dmCommands.fits",
                         self.allDmCommands, header=self.config.sim.saveHeader,
-                        clobber=True)
+                        overwrite=True)
 
             if self.config.sim.saveLgsPsf:
                 fits.writeto(
                         self.path+"/lgsPsf.fits", self.lgsPsfs,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveWfe:
                 fits.writeto(
                         self.path+"/WFE.fits", self.WFE,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveStrehl:
                 fits.writeto(
                         self.path+"/instStrehl.fits", self.instStrehl,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
                 fits.writeto(
                         self.path+"/longStrehl.fits", self.longStrehl,
-                        header=self.config.sim.saveHeader, clobber=True)
+                        header=self.config.sim.saveHeader, overwrite=True)
 
             if self.config.sim.saveSciRes:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciResidual_%02d.fits"%i,
                                 self.sciPhase[i],
                                 header=self.config.sim.saveHeader,
-                                clobber=True)
+                                overwrite=True)
 
             if self.config.sim.saveSciPsf:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciPsf_%02d.fits"%i,
                                         self.sciImgs[i],
                                         header=self.config.sim.saveHeader,
-                                        clobber=True )
+                                        overwrite=True )
 
             if self.config.sim.saveInstPsf:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/sciPsfInst_%02d.fits"%i,
                                  self.sciImgsInst[i],
                                  header=self.config.sim.saveHeader,
-                                 clobber=True )
+                                 overwrite=True )
 
             if self.config.sim.saveInstScieField:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/scieFieldInst_%02d_real.fits"%i,
                                  self.scieFieldInst[i].real,
                                  header=self.config.sim.saveHeader,
-                                 clobber=True )
+                                 overwrite=True )
 
             if self.config.sim.saveInstScieField:
                 for i in xrange(self.config.sim.nSci):
                     fits.writeto(self.path+"/scieFieldInst_%02d_imag.fits"%i,
                                  self.scieFieldInst[i].imag,
                                  header=self.config.sim.saveHeader,
-                                 clobber=True )
+                                 overwrite=True )
 
 
 
