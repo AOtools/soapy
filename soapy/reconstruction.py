@@ -118,7 +118,7 @@ class Reconstructor(object):
 
         fits.writeto(
                 filename, self.control_matrix,
-                header=self.sim_config.saveHeader, clobber=True)
+                header=self.sim_config.saveHeader, overwrite=True)
 
     def loadCMat(self):
         """
