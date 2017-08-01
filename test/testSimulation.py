@@ -122,8 +122,8 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
 
-        for i in range(sim.config.sim.nDM-1):
-            sim.config.dms[i+1].closed = False
+        for i in range(sim.config.sim.nDM):
+            sim.config.dms[i].closed = False
 
         sim.aoinit()
 
