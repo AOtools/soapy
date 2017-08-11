@@ -571,7 +571,7 @@ class AtmosConfig(ConfigObj):
         ------------------      -------------------
         ``scrnNo``              int: Number of turbulence layers
         ``scrnHeights``         list, int: Phase screen heights in metres
-        ``scrnStrength``        list, float: Relative layer scrnStrength
+        ``scrnStrengths``       list, float: Relative layer scrnStrength
         ``windDirs``            list, float: Wind directions in degrees.
         ``windSpeeds``          list, float: Wind velocities in m/s
         ``r0``                  float: integrated  seeing strength
