@@ -63,13 +63,13 @@ DM:
     type: TT
     closed: True
     gain: 0.6
-    iMatValue: 1
+    iMatValue: 0.25
 
   1:
     type: FastPiezo
     closed: True
     nxActuators: 75
-    iMatValue: 2000
+    iMatValue: 500
 
 
 Reconstructor:

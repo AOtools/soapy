@@ -11,8 +11,8 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../conf/
 soapy.logger.setLoggingLevel(3)
 
 RESULTS = {
-        "8x8": 0.47,
-        "8x8_open": 0.4,
+        "8x8": 0.5,
+        "8x8_open": 0.5,
         "8x8_offAxis": 0.22,
         "8x8_zernike": 0.36,
         "8x8_lgs"    : 0.45,
@@ -122,8 +122,8 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
 
-        for i in range(sim.config.sim.nDM-1):
-            sim.config.dms[i+1].closed = False
+        for i in range(sim.config.sim.nDM):
+            sim.config.dms[i].closed = False
 
         sim.aoinit()
 
