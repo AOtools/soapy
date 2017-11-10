@@ -83,6 +83,8 @@ import aotools
 #sim imports
 from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, interp
 
+import shutil
+
 #xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
 try:
@@ -862,7 +864,11 @@ class Sim(object):
                                  header=self.config.sim.saveHeader,
                                  overwrite=True )
 
-
+            if self.config.sim.saveCalib:
+                shutil.copy(self.config.sim.simName + '/cMat.fits',
+                            self.path + "/cMat.fits")
+                shutil.copy(self.config.sim.simName + '/iMat.fits',
+                            self.path + "/iMat.fits")
 
     def makeSaveHeader(self):
         """
