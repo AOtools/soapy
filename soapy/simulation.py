@@ -870,6 +870,23 @@ class Sim(object):
                 shutil.copy(self.config.sim.simName + '/iMat.fits',
                             self.path + "/iMat.fits")
 
+            # Creating cubes with the WfsFrames
+            if self.config.sim.saveWfsFrames:
+                for nwfs in xrange(self.config.sim.nGS):
+                    i = 0
+                    wfs_first = fits.getdata(
+                        self.path + "/wfsFPFrames/wfs-%d_frame-%d.fits" % (nwfs, i))
+                    wfs_cube = numpy.zeros((self.iters, wfs_first.shape[0],
+                                            wfs_first.shape[1]))
+                    wfs_cube[0, :, :] = wfs_first
+                    for i in range(1, self.iters):
+                        wfs_cube[i, :, :] = fits.getdata(
+                            self.path + "/wfsFPFrames/wfs-%d_frame-%d.fits" % (nwfs, i))
+
+                    fits.writeto(self.path + "/wfs_frames_%02d.fits" % (nwfs),
+                                 wfs_cube,
+                                 header=self.config.sim.saveHeader)
+
     def makeSaveHeader(self):
         """
         Forms a header which can be used to give a header to FITS files saved by the simulation.
