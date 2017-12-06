@@ -885,7 +885,8 @@ class Sim(object):
 
                     fits.writeto(self.path + "/wfs_frames_%02d.fits" % (nwfs),
                                  wfs_cube,
-                                 header=self.config.sim.saveHeader)
+                                 header=self.config.sim.saveHeader,
+                                 overwrite = True)
 
     def makeSaveHeader(self):
         """
