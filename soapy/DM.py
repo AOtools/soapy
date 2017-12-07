@@ -223,7 +223,83 @@ class DM(object):
         self.n_valid_actuators = self._valid_actuators.sum()
 
         # Sort threough imat shapes and get rid of those not valid
-        self.iMatShapes = numpy.array([self.iMatShapes[i] for i in range(len(valid_actuators)) if valid_actuators[i]])
+        self.iMatShapes = numpy.array([self.iMatShapes[i]
+                                       for i in range(len(valid_actuators)) if valid_actuators[i]])
+
+
+class CustomShapes(DM):
+    """
+
+    """
+
+    def makeIMatShapes(self):
+        '''
+        Creates all the DM shapes which are required for creating the
+        interaction Matrix.
+
+        if the shapes are not of the correct size, it interpolates them by slices
+        with non valid value either NaN or 0.
+
+        For best result, it is however preferable that no interpolation occurs.
+        '''
+        try:
+            dmShape = fits.getdata(self.config.dmShapesFilename)
+        except:
+            raise ValueError("Can't open fits file %s" % self.config.dmShapesFilename)
+
+        assert dmShape.shape[0] >= int(self.n_acts), 'Not enough shapes in DM shape file'
+        dmShape = dmShape[:int(self.n_acts), :, :]
+
+        if (dmShape.shape[1] != int(self.nx_dm_elements)) or\
+                (dmShape.shape[2] != int(self.nx_dm_elements)):
+            logger.warning("Interpolation custom DM shapes of size "
+                           "({0:1.0f}, {1:1.0f}) to size of "
+                           "({2:1.0f}, {2:1.0f})".format(dmShape.shape[1],
+                                                         dmShape.shape[1],
+                                                         self.nx_dm_elements))
+            if (numpy.any(dmShape == 0)):
+                dmShape[dmShape == 0] = numpy.nan
+            shapes = interp.zoomWithMissingData(dmShape,
+                                                (self.nx_dm_elements,
+                                                 self.nx_dm_elements),
+                                                 non_valid_value=numpy.nan)
+        else:
+            shapes = dmShape
+
+        shapes[numpy.isnan(shapes)] = 0
+        pad = self.simConfig.simPad
+        self.iMatShapes = numpy.pad(
+            shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
+        ).astype("float32")
+
+
+class KarhuenenLoeve(DM):
+    """
+    A DM which corrects using a provided number of Zernike Polynomials
+    """
+
+    def makeIMatShapes(self):
+        '''
+        Creates all the DM shapes which are required for creating the
+        interaction Matrix. In this case, this is a number of Zernike Polynomials
+        '''
+        diam = self.soapy_config.tel.telDiam
+        cobs = self.soapy_config.tel.obsDiam / diam
+
+        from . import karhuenenLoeve as KL
+        if self.n_acts <= 500:
+            nr = 64
+        elif self.n_acts <= 1000:
+            nr = 72
+        elif self.nacts > 1000:
+            nr = 128
+        shapes, _, _, _ = KL.make_kl(int(self.n_acts), int(self.nx_dm_elements),
+                                     ri=cobs, nr=nr, mask=True)
+        pad = self.simConfig.simPad
+        self.iMatShapes = numpy.pad(
+            shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
+        ).astype("float32")
+
 
 class Zernike(DM):
     """
@@ -236,15 +312,14 @@ class Zernike(DM):
         interaction Matrix. In this case, this is a number of Zernike Polynomials
         '''
 
-
         shapes = aotools.zernikeArray(
-                int(self.n_acts + 1), int(self.nx_dm_elements))[1:]
-
+            int(self.n_acts + 1), int(self.nx_dm_elements))[1:]
 
         pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
-                shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
-                ).astype("float32")
+            shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
+        ).astype("float32")
+
 
 class Piezo(DM):
     """
