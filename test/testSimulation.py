@@ -189,10 +189,9 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.saveInstScieField = False
 
         sim.config.sim.nIters = 2
-        wdir = os.path.dirname(os.path.abspath(__file__)) + '/'
-
+        wdir ='./'
         sim.aoinit()
-        sim.makeIMat()
+        sim.makeIMat(forceNew=True)
         sim.aoloop()
 
         try:
