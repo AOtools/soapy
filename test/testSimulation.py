@@ -6,6 +6,7 @@ import numpy
 from astropy.io import fits
 
 import os
+import shutil
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../conf/")
 
 soapy.logger.setLoggingLevel(3)
@@ -168,8 +169,56 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
 
+
+    def testSaveData(self):
+        sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        sim.config.sim.simName = 'test_sh8x8'
+        sim.config.sim.logfile = False
+
+        sim.config.sim.saveSlopes = True
+        sim.config.sim.saveDmCommands = True
+        sim.config.sim.saveLgsPsf = True
+        sim.config.sim.saveWfe = True
+        sim.config.sim.saveStrehl = True
+        sim.config.sim.saveSciPsf = True
+        sim.config.sim.saveInstPsf = True
+        sim.config.sim.saveCalib = True
+        sim.config.sim.saveWfsFrames = True
+
+        sim.config.sim.saveSciRes = False
+        sim.config.sim.saveInstScieField = False
+
+        sim.config.sim.nIters = 2
+        wdir = os.path.dirname(os.path.abspath(__file__)) + '/'
+
+        sim.aoinit()
+        sim.makeIMat()
+        sim.aoloop()
+
+        try:
+            assert os.path.isfile(wdir + sim.path + '/slopes.fits') &\
+                os.path.isfile(wdir + sim.path + '/dmCommands.fits') &\
+                os.path.isfile(wdir + sim.path + '/lgsPsf.fits') &\
+                os.path.isfile(wdir + sim.path + '/WFE.fits') &\
+                os.path.isfile(wdir + sim.path + '/instStrehl.fits') &\
+                os.path.isfile(wdir + sim.path + '/longStrehl.fits') &\
+                os.path.isfile(wdir + sim.path + '/sciPsf_00.fits') &\
+                os.path.isfile(wdir + sim.path + '/sciPsfInst_00.fits') &\
+                os.path.isfile(wdir + sim.path + '/iMat.fits') &\
+                os.path.isfile(wdir + sim.path + '/cMat.fits') &\
+                os.path.isfile(wdir + sim.path + '/wfsFPFrames/wfs-0_frame-0.fits')
+                # os.path.isfile(wdir + sim.path + '/sciResidual_00.fits') &\
+                # os.path.isfile(wdir + sim.path + '/scieFieldInst_00_real.fits') &\
+                # os.path.isfile(wdir + sim.path + '/scieFieldInst_00_imag.fits') &\
+        except:
+            raise
+        finally:
+            dd = os.path.dirname(sim.path)
+            shutil.rmtree(wdir + dd)
+
+
 def testMaskLoad():
-    
+
     sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
     sim.config.sim.simName = None
     sim.config.sim.logfile = None
