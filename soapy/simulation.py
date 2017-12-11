@@ -83,6 +83,8 @@ import aotools
 #sim imports
 from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, interp
 
+import shutil
+
 #xrange now just "range" in python3.
 #Following code means fastest implementation used in 2 and 3
 try:
@@ -862,7 +864,29 @@ class Sim(object):
                                  header=self.config.sim.saveHeader,
                                  overwrite=True )
 
+            if self.config.sim.saveCalib:
+                shutil.copy(self.config.sim.simName + '/cMat.fits',
+                            self.path + "/cMat.fits")
+                shutil.copy(self.config.sim.simName + '/iMat.fits',
+                            self.path + "/iMat.fits")
 
+            # Creating cubes with the WfsFrames
+            if self.config.sim.saveWfsFrames:
+                for nwfs in xrange(self.config.sim.nGS):
+                    i = 0
+                    wfs_first = fits.getdata(
+                        self.path + "/wfsFPFrames/wfs-%d_frame-%d.fits" % (nwfs, i))
+                    wfs_cube = numpy.zeros((self.iters, wfs_first.shape[0],
+                                            wfs_first.shape[1]))
+                    wfs_cube[0, :, :] = wfs_first
+                    for i in range(1, self.iters):
+                        wfs_cube[i, :, :] = fits.getdata(
+                            self.path + "/wfsFPFrames/wfs-%d_frame-%d.fits" % (nwfs, i))
+
+                    fits.writeto(self.path + "/wfs_frames_%02d.fits" % (nwfs),
+                                 wfs_cube,
+                                 header=self.config.sim.saveHeader,
+                                 overwrite = True)
 
     def makeSaveHeader(self):
         """

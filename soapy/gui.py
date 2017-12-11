@@ -56,7 +56,7 @@ elif PYQT_VERSION == 4:
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
 from matplotlib.figure import Figure
-
+import matplotlib.pyplot as pyplot
 from . import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
@@ -226,7 +226,7 @@ class GUI(QtWidgets.QMainWindow):
 
         if PYQT_VERSION == 5:
             fname = fname[0]
-        
+
         fname = str(fname)
 
         if fname is not "":
@@ -751,7 +751,9 @@ class IPythonConsole:
                             "config" : config,
                             "simConfig" : sim.config.sim,
                             "telConfig" : sim.config.tel,
-                            "atmosConfig" : sim.config.atmos}
+                            "atmosConfig" : sim.config.atmos,
+                            "np" : numpy,
+                            "plt" : pyplot}
 
         for i in range(sim.config.sim.nGS):
             usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
@@ -851,4 +853,3 @@ if __name__ == "__main__":
 
 
     G = GUI(confFile, useOpenGL=args.gl)
-

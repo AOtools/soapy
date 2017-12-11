@@ -509,6 +509,8 @@ class SimConfig(ConfigObj):
         ``saveInstPsf``             Saves the instantenous science PSF.
         ``saveInstScieField``       Saves the instantaneous electric field at focal plane.
         ``saveSciRes``              Save Science residual phase
+        ``saveCalib``               Copy calibration (IM, Rec) to save directory
+                                    of simulation
         ======================      ===================
 
     """
@@ -534,6 +536,7 @@ class SimConfig(ConfigObj):
                             ("saveInstScieField", False),
                             ("saveWfe", False),
                             ("saveSciRes", False),
+                            ("saveCalib", False),
                             ("wfsMP", False),
                             ("verbosity", 2),
                             ("logfile", None),
