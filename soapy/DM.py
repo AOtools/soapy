@@ -38,16 +38,17 @@ Adding New DMs
 ==============
 
 New DMs are easy to add into the simulation. At its simplest, the :py:class:`DM`
-class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided, 
+class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided,
 which creates the independent influence function the DM can make. The
 base class deals with the rest, including making interaction matrices and loop
 operation.
 """
 import numpy
 from scipy.ndimage.interpolation import rotate
-
+import astropy.io.fits as fits
 import aotools
 
+from . import karhunenLoeve as KL
 from . import logger, interp
 # from .aotools import interp, circle
 
@@ -273,7 +274,7 @@ class CustomShapes(DM):
         ).astype("float32")
 
 
-class KarhuenenLoeve(DM):
+class KarhunenLoeve(DM):
     """
     A DM which corrects using a provided number of Zernike Polynomials
     """
@@ -286,7 +287,6 @@ class KarhuenenLoeve(DM):
         diam = self.soapy_config.tel.telDiam
         cobs = self.soapy_config.tel.obsDiam / diam
 
-        from . import karhuenenLoeve as KL
         if self.n_acts <= 500:
             nr = 64
         elif self.n_acts <= 1000:
