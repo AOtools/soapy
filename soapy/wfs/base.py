@@ -83,7 +83,7 @@ import numpy.random
 
 import aotools
 
-from .. import AOFFT, LGS, logger, lineofsight_legacy
+from .. import AOFFT, LGS, logger, lineofsight_legacy, interp
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -287,7 +287,7 @@ class WFS(object):
         h = self.elongHeights[elongLayer]
         dh = h - self.config.GSHeight
         H = float(self.lgsConfig.height)
-        d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telDiam/2.
+        d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telescope_diameter/2.
         D = self.telescope_diameter
         theta = (d.astype("float")/H) - self.config.GSPosition
 

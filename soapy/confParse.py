@@ -907,6 +907,7 @@ class LgsConfig(ConfigObj):
 
         self.wavelength = float(self.wavelength)
         self.height = float(self.height)
+        self.launchPosition = numpy.array(self.launchPosition)
 
 class DmConfig(ConfigObj):
     """
