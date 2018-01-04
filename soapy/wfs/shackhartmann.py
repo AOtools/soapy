@@ -74,7 +74,7 @@ class ShackHartmann(base.WFS):
             self.SUBAP_OVERSIZE = 1
         else:
             self.SUBAP_OVERSIZE = 2
-        
+
         self.nx_detector_pixels = self.nx_subaps * (self.nx_subap_pixels + self.nx_guard_pixels) + self.nx_guard_pixels
 
         self.nx_subap_interp *= self.SUBAP_OVERSIZE
@@ -442,8 +442,13 @@ class ShackHartmann(base.WFS):
         self.slopes[:] = slopes.reshape(self.n_subaps * 2)
 
         if self.config.removeTT == True:
-            self.slopes[:self.n_subaps] -= self.slopes[:self.n_subaps].mean()
-            self.slopes[self.n_subaps:] -= self.slopes[self.n_subaps:].mean()
+            _tip = self.slopes[:self.n_subaps].mean()
+            _tilt = self.slopes[self.n_subaps:].mean()
+            self._tiptilt = numpy.array([_tip, _tilt])
+            self.slopes[:self.n_subaps] -= self._tiptilt[0]
+            # self.slopes[:self.n_subaps].mean()
+            self.slopes[self.n_subaps:] -= self._tiptilt[1]
+            # self.slopes[self.n_subaps:].mean()
 
         if self.config.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (

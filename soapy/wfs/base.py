@@ -161,6 +161,17 @@ class WFS(object):
         self.calcTiltCorrect()
         self.getStatic()
 
+        # Set up array for tip-tilt uplink compensation
+        self._upTTCommand = numpy.array([0, 0])
+
+        self._nx_elements = int(round(self.pupil_size))
+        coords = numpy.linspace(
+                    -1, 1, self._nx_elements)
+        self.tip1arcsec, self.tilt1arcsec = numpy.meshgrid(coords, coords)
+        tt_amp = -(ASEC2RAD * self.soapy_config.tel.telDiam/2.) * 1e9
+        self.tip1arcsec *= tt_amp
+        self.tilt1arcsec *= tt_amp
+
 ############################################################
 # Initialisation routines
 
@@ -429,7 +440,7 @@ class WFS(object):
             self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
             if phase_correction is not None:
                 self.los.performCorrection(phase_correction)
-                
+
             self.calcFocalPlane()
 
         if read:
@@ -480,6 +491,12 @@ class WFS(object):
 
     def LGSUplink(self):
         pass
+
+    def correctUplinkTilt(self, phase):
+        self._upTTCommand += self.config.uplinkgain * self._tiptilt
+
+        phase -= self._upTTCommand[0] * self.tip1arcsec
+        phase -= self._upTTCommand[1] * self.tilt1arcsec
 
     def calculateSlopes(self):
         self.slopes = self.los.EField
