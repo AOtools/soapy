@@ -162,15 +162,27 @@ class WFS(object):
         self.getStatic()
 
         # Set up array for tip-tilt uplink compensation
-        self._upTTCommand = numpy.array([0, 0])
+        if self.config.lgs:
+            if self.lgsConfig.correctLgsTT:
+                self._upTTCommand = numpy.array([0, 0], dtype='float')
+                self._tiptilt = numpy.array([0, 0], dtype='float')
+                self._nx_elements = int(round(self.sim_size))
+                fact = self.sim_size / self.pupil_size
+                coords = numpy.linspace(
+                            -1 * fact, 1 * fact, self._nx_elements) / 2
+                self.tip1arcsec, self.tilt1arcsec = numpy.meshgrid(coords,
+                                                                   coords)
 
-        self._nx_elements = int(round(self.pupil_size))
-        coords = numpy.linspace(
-                    -1, 1, self._nx_elements)
-        self.tip1arcsec, self.tilt1arcsec = numpy.meshgrid(coords, coords)
-        tt_amp = -(ASEC2RAD * self.soapy_config.tel.telDiam/2.) * 1e9
-        self.tip1arcsec *= tt_amp
-        self.tilt1arcsec *= tt_amp
+                tt_amp = -(ASEC2RAD * self.soapy_config.tel.telDiam/2.) * 1e9
+                self.tip1arcsec *= tt_amp
+                self.tilt1arcsec *= tt_amp
+
+                if self.config.removeTT == 0:
+                    logger.warning("LGS tiptilt correction will not work: "
+                                   "correctLgs==1 but removeTT==0")
+                if self.lgsConfig.uplinkgain == 0:
+                    logger.warning("LGS tiptilt correction will not work: "
+                                   "correctLgs==1 but uplinkgain==0")
 
 ############################################################
 # Initialisation routines
@@ -421,6 +433,8 @@ class WFS(object):
             self.iMat = True
             removeTT = self.config.removeTT
             self.config.removeTT = False
+            lgsDic = self.config.lgs
+            self.config.lgs = None
             photonNoise = self.config.photonNoise
             self.config.photonNoise = False
             eReadNoise = self.config.eReadNoise
@@ -429,6 +443,9 @@ class WFS(object):
         self.zeroData(detector=read, FP=False)
 
         self.los.frame(scrns)
+        if self.config.lgs:
+            if self.lgsConfig.correctLgsTT:
+                self.correctUplinkTilt()
 
         # If LGS elongation simulated
         if self.config.lgs and self.elong!=0:
@@ -452,6 +469,7 @@ class WFS(object):
         if iMatFrame:
             self.iMat=False
             self.config.removeTT = removeTT
+            self.config.lgs = lgsDic
             self.config.photonNoise = photonNoise
             self.config.eReadNoise = eReadNoise
 
@@ -492,11 +510,11 @@ class WFS(object):
     def LGSUplink(self):
         pass
 
-    def correctUplinkTilt(self, phase):
-        self._upTTCommand += self.config.uplinkgain * self._tiptilt
+    def correctUplinkTilt(self):
+        self._upTTCommand += self.lgsConfig.uplinkgain * self._tiptilt
 
-        phase -= self._upTTCommand[0] * self.tip1arcsec
-        phase -= self._upTTCommand[1] * self.tilt1arcsec
+        self.los.phase -= self._upTTCommand[0] * self.tip1arcsec
+        self.los.phase -= self._upTTCommand[1] * self.tilt1arcsec
 
     def calculateSlopes(self):
         self.slopes = self.los.EField

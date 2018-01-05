@@ -444,11 +444,11 @@ class ShackHartmann(base.WFS):
         if self.config.removeTT == True:
             _tip = self.slopes[:self.n_subaps].mean()
             _tilt = self.slopes[self.n_subaps:].mean()
-            self._tiptilt = numpy.array([_tip, _tilt])
-            self.slopes[:self.n_subaps] -= self._tiptilt[0]
+            self.slopes[:self.n_subaps] -= _tip
             # self.slopes[:self.n_subaps].mean()
-            self.slopes[self.n_subaps:] -= self._tiptilt[1]
+            self.slopes[self.n_subaps:] -= _tilt
             # self.slopes[self.n_subaps:].mean()
+            self._tiptilt = numpy.array([_tip, _tilt]) * self.pixel_scale
 
         if self.config.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (

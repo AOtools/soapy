@@ -871,6 +871,10 @@ class LgsConfig(ConfigObj):
         ``naProfile``        list: The relative sodium layer
                              strength for each elongation
                              layer. If None, all equal.          ``None``
+        ``correctLgsTT``     bool: correct the LGS tip-tilt on   ``False``
+                                the sensor. Required 'removeTT'
+                                == True and 'uplinkgain>0'
+        ``uplinkgain``       float: LGS tip-tilt gain            0
         ==================== =================================   ===========
 
     """
@@ -888,6 +892,8 @@ class LgsConfig(ConfigObj):
                         ("elongationLayers", 10),
                         ("launchPosition",  numpy.array([0,0])),
                         ("naProfile", None),
+                        ("correctLgsTT", False),
+                        ("uplinkgain", 0)
                         ]
     calculatedParams = ["position"]
 
@@ -908,6 +914,7 @@ class LgsConfig(ConfigObj):
         self.wavelength = float(self.wavelength)
         self.height = float(self.height)
         self.launchPosition = numpy.array(self.launchPosition)
+        self.uplinkgain = float(self.uplinkgain)
 
 class DmConfig(ConfigObj):
     """
