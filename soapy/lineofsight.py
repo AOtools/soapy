@@ -239,7 +239,7 @@ class LineOfSight(object):
         """
         self.phase = numpy.zeros([self.nx_out_pixels] * 2, dtype=DTYPE)
         self.EField = numpy.ones([self.nx_out_pixels] * 2, dtype=CDTYPE)
-
+        self.residual = numpy.zeros([self.nx_out_pixels] * 2, dtype=DTYPE)
 
 ######################################################
 

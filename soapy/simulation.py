@@ -758,12 +758,7 @@ class Sim(object):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
-                # # Record WFE residual
-                # res = self.sciCams[sci].los.residual
-                # # Remove piston first
-                # res -= res.sum()/self.mask.sum()
-                # res *= self.mask
-                # self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
+                # Record WFE residual
                 self.WFE[sci, i] = self.sciCams[sci].calc_wavefronterror()
 
             if self.config.sim.saveSciRes:
@@ -1019,7 +1014,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].los.residual.copy()*self.mask
+                        residual[i] = self.sciCams[i].residual
                     except AttributeError:
                         residual[i] = None
 
