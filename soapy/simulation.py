@@ -371,7 +371,7 @@ class Sim(object):
             #check if due to read out WFS
             if loopIter:
                 read=False
-                if (int(float(self.config.sim.loopTime*loopIter)
+                if (int(float(self.config.sim.loopTime*(loopIter+1))
                         /self.config.wfss[nwfs].exposureTime)
                                         != self.wfsFrameNo[nwfs]):
                     self.wfsFrameNo[nwfs]+=1
@@ -425,7 +425,7 @@ class Sim(object):
             # check if due to read out WFS
             if loopIter:
                 read=False
-                if (int(float(self.config.sim.loopTime*loopIter)
+                if (int(float(self.config.sim.loopTime*(loopIter+1))
                         /self.config.wfss[nwfs].exposureTime)
                                         != self.wfsFrameNo[nwfs]):
                     self.wfsFrameNo[nwfs]+=1
