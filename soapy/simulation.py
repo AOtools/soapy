@@ -129,9 +129,9 @@ class Sim(object):
         if configFile:
             self.configFile = configFile
 
+        logger.info("Loading configuration file...")
         self.config = confParse.loadSoapyConfig(self.configFile)
-        logger.statusMessage(
-                1, 1,"Loaded configuration file successfully!" )
+        logger.info("Loading configuration file... success!")
 
     def setLoggingLevel(self, level):
         """
