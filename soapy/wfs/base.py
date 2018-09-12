@@ -432,8 +432,8 @@ class WFS(object):
                 
             self.calcFocalPlane()
 
+        self.makeDetectorPlane(read=read)
         if read:
-            self.makeDetectorPlane()
             self.calculateSlopes()
             self.zeroData(detector=False)
 
@@ -475,7 +475,7 @@ class WFS(object):
     def calcFocalPlane(self, intensity=None):
         pass
 
-    def makeDetectorPlane(self):
+    def makeDetectorPlane(self, read=True):
         pass
 
     def LGSUplink(self):
