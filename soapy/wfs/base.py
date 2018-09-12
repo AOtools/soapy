@@ -450,7 +450,10 @@ class WFS(object):
         if numpy.any(numpy.isnan(self.slopes)):
             numpy.nan_to_num(self.slopes)
 
-        return self.slopes
+        if read:
+            return self.slopes
+        else:
+            return numpy.zeros((self.n_measurements), dtype=float)
 
     def addPhotonNoise(self):
         """
