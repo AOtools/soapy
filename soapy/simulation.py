@@ -987,7 +987,7 @@ class Sim(object):
                         sci, self.sciCams[sci].instStrehl,
                         self.sciCams[sci].longExpStrehl)
 
-        logger.statusMessage(iter+1, self.config.sim.nIters, string )
+        logger.statusMessage(iter, self.config.sim.nIters, string )
 
 
     def addToGuiQueue(self):
