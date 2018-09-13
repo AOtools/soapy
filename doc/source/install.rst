@@ -41,6 +41,7 @@ Required
     pyfftw
     numba
     yaml
+    aotools
 
 -------    
 For GUI
@@ -58,6 +59,7 @@ Linux
 If your starting with python from scratch, there a couple of options. For Ubuntu (14.04+) linux users, all these packages can be installed via apt-get::
 
     sudo apt-get install python-numpy python-scipy python-fftw python-astropy python-qt4 python-matplotlib ipython ipython-qtconsole python-yaml python-numba
+    pip install aotools
 
 
 for Red-hat based systems these packages should also be available from repositories, though I'm not sure of they're names.
@@ -70,12 +72,14 @@ Mac OSX
 for mac os, all of these packages can be install via macports, with::
 
     sudo port install python36 py36-numpy py36-scipy py36-astropy py36-pyqt5 py36-ipython py36-jupyter py36-numba py36-yaml py36-qtconsole
+    pip install aotools
 
 `pyfftw <https://github.com/pyFFTW/pyFFTW>`_ is not available for python3.6 on macports, so must be installed with another method, such as pip (see below)
 
 If you're using Python 2.7::
 
     sudo port install python27 py27-numpy py27-scipy py27-astropy py27-pyfftw py27-pyqt5 py27-ipython py27-jupyter py27-numba py27-qtconsole py27-yaml
+    pip install aotools
 
 
 ======
@@ -91,6 +95,7 @@ Anaconda includes most of the required libraries by default apart from pyfftw an
 
     conda install pyyaml
     pip install pyfftw
+    pip install aotools
 
 
 ---
@@ -101,7 +106,7 @@ A lot of python packages are also listed on `pypi <https://pypi.python.org/pypi>
 
 Once you have ``pip``, the required libraries can be installed by using the ``requirements.txt`` file. From the soapy directory, just run (may need to be as ``sudo``)::
 
-    pip install numpy scipy astropy pyfftw pyyaml numba
+    pip install numpy scipy astropy pyfftw pyyaml numba aotools
     
 and all the requirements should be installed for the simulation, though not the GUI. For the GUI PyQt4 or PyQt5 is required, I dont think these are available from pip.
 
