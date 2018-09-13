@@ -127,6 +127,9 @@ class PSF(object):
         and uses an FFT to transform to the focal plane.
         '''
 
+        # Store the residual phase for later analysis and plotting
+        self.residual = self.los.residual.copy() * self.mask
+
         numbalib.bilinear_interp(
                 self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
                 self.thread_pool, bounds_check=False)

@@ -27,13 +27,13 @@ class Mock(MagicMock):
             return Mock()
 
 
-MOCK_MODULES = ['pyfftw', 'ipython','pyfits', 'PyQt4','IPython.qt.console.rich_ipython_widget',
+MOCK_MODULES = ['pyfftw', 'ipython','pyfits', 'PyQt5','IPython.qt.console.rich_ipython_widget',
                     'IPython.qt.inprocess', 
-                    'matplotlib.backends.backend_qt4agg','sip', 'pyqtgraph','pylab', 'OpenGL',
+                    'matplotlib.backends.backend_qt5agg','sip', 'pyqtgraph','pylab', 'OpenGL',
                     'matplotlib.figure',
                     'IPython.qt.console.rich_ipython_widget', 
                     'scipy.ndimage','scipy.optimize', 'scipy.lib.blas.fblas','scipy.fftpack','scipy.interpolate','scipy', 'scipy.signal',
-                    'numpy', 'numpy.linalg', 'numpy.random', 'scipy.ndimage.interpolation',
+                    'scipy.ndimage.interpolation', 'scipy.special', 'numba'
                     ]
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)

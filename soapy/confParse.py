@@ -509,6 +509,8 @@ class SimConfig(ConfigObj):
         ``saveInstPsf``             Saves the instantenous science PSF.
         ``saveInstScieField``       Saves the instantaneous electric field at focal plane.
         ``saveSciRes``              Save Science residual phase
+        ``saveCalib``               Copy calibration (IM, Rec) to save directory
+                                    of simulation
         ======================      ===================
 
     """
@@ -534,6 +536,7 @@ class SimConfig(ConfigObj):
                             ("saveInstScieField", False),
                             ("saveWfe", False),
                             ("saveSciRes", False),
+                            ("saveCalib", False),
                             ("wfsMP", False),
                             ("verbosity", 2),
                             ("logfile", None),
@@ -571,7 +574,7 @@ class AtmosConfig(ConfigObj):
         ------------------      -------------------
         ``scrnNo``              int: Number of turbulence layers
         ``scrnHeights``         list, int: Phase screen heights in metres
-        ``scrnStrength``        list, float: Relative layer scrnStrength
+        ``scrnStrengths``       list, float: Relative layer scrnStrength
         ``windDirs``            list, float: Wind directions in degrees.
         ``windSpeeds``          list, float: Wind velocities in m/s
         ``r0``                  float: integrated  seeing strength
@@ -1006,7 +1009,7 @@ class ReconstructorConfig(ConfigObj):
                              ``numpy.linalg.pinv`` for details
                              about the inversion.                ``0``
         ``gain``             float: Gain of the integrator
-                             loop.
+                             loop.                               ``0.6``
         ``imat_noise``       bool: include WFS noise when
                              making in interaction matrix        ``True``
         ==================== =================================   ===========

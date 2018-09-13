@@ -45,7 +45,8 @@ Required
 -------    
 For GUI
 -------
-::   
+::
+
     PyQt5 (PyQt4 supported)
     matplotlib
     ipython
@@ -91,6 +92,7 @@ Anaconda includes most of the required libraries by default apart from pyfftw an
     conda install pyyaml
     pip install pyfftw
 
+
 ---
 pip
 ---
@@ -102,6 +104,12 @@ Once you have ``pip``, the required libraries can be installed by using the ``re
     pip install numpy scipy astropy pyfftw pyyaml numba
     
 and all the requirements should be installed for the simulation, though not the GUI. For the GUI PyQt4 or PyQt5 is required, I dont think these are available from pip.
+
+Sometimes pyfftw has a hard time finding your installation of fftw to link against. On a Mac, these lines usually help before running the pip command::
+
+    export DYLIB_LIBRARY_PATH=$DYLIB_LIBRARY_PATH:<path/to/fftw>/lib
+    export LDFLAGS=-L<path/to/fftw>/lib
+    export CFLAGS=-I<path/to/fftw>/include/
 
 =======
 Testing

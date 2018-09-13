@@ -118,7 +118,7 @@ class Reconstructor(object):
 
         fits.writeto(
                 filename, self.control_matrix,
-                header=self.sim_config.saveHeader, clobber=True)
+                header=self.sim_config.saveHeader, overwrite=True)
 
     def loadCMat(self):
         """
@@ -293,7 +293,7 @@ class Reconstructor(object):
                     wfs.config.eReadNoise = 0
 
                 iMat[i, n_wfs_measurments: n_wfs_measurments+wfs.n_measurements] = (
-                        -1 * wfs.frame(None, phase_correction=phase))# / dm.dmConfig.iMatValue
+                        -1 * wfs.frame(None, phase_correction=phase, iMatFrame=True))# / dm.dmConfig.iMatValue
                 n_wfs_measurments += wfs.n_measurements
 
                 # Turn noise back on again if it was turned off

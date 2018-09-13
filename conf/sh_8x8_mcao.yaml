@@ -36,7 +36,7 @@ Telescope:
 # WFSs in equalateral triange, with asterism radius 25"
 WFS:
   0:
-    type: ShackHartmannFast
+    type: ShackHartmann
     GSPosition: [0, 25]
     GSHeight: 0
     GSMag: 8
@@ -46,7 +46,7 @@ WFS:
     wavelength: 600e-9
     
   1:
-    type: ShackHartmannFast
+    type: ShackHartmann
     GSPosition: [-21.5, -12.5]
     GSHeight: 0
     GSMag: 8
@@ -55,7 +55,7 @@ WFS:
     subapFOV: 2.5
     wavelength: 600e-9
   2:
-    type: ShackHartmannFast
+    type: ShackHartmann
     GSPosition: [21.5, -12.5]
     GSHeight: 0
     GSMag: 8

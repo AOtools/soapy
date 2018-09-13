@@ -25,7 +25,6 @@ if sys.platform == "win32":
     # described in more detail here:
     # http://stackoverflow.com/questions/15457786/ctrl-c-crashes-python-after-importing-scipy-stats
 
-    import imp
     import ctypes
     import _thread as thread
     import win32api
@@ -57,7 +56,7 @@ from . import wfs as WFS
 #Try to import GUI, if not then its ok
 try:
     from . import gui
-except ImportError:
+except:
     pass
 
 
