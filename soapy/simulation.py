@@ -369,15 +369,13 @@ class Sim(object):
         s = 0
         for nwfs in wfsList:
             #check if due to read out WFS
-            if loopIter:
-                read=False
-                if (int(float(self.config.sim.loopTime*(loopIter+1))
-                        /self.config.wfss[nwfs].exposureTime)
-                                        != self.wfsFrameNo[nwfs]):
-                    self.wfsFrameNo[nwfs]+=1
-                    read=True
+            if (int(float(self.config.sim.loopTime*(loopIter+1))
+                    /self.config.wfss[nwfs].exposureTime)
+                                    != self.wfsFrameNo[nwfs]):
+                self.wfsFrameNo[nwfs]+=1
+                read=True
             else:
-                read = True
+                read=False
 
             slopes[s:s+self.wfss[nwfs].n_measurements] = \
                     self.wfss[nwfs].frame(self.scrns, dmShape, read=read)
