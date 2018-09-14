@@ -310,13 +310,13 @@ class ShackHartmannLegacy(base.WFS):
         # Sub-aps need to be flipped to correct orientation
         self.FPSubapsArrays = self.FPSubapArrays[:, ::-1, ::-1]
 
-    def makeDetectorPlane(self):
+    def integrateDetectorPlane(self):
         '''
         Scales and bins intensity data onto the detector with a given number of
         pixels.
 
         If required, will first convolve final PSF with LGS PSF, then bin
-        PSF down to detector size. Finally puts back into ``wfsFocalPlane``
+        PSF down to detector size. Finally adds back to ``wfsFocalPlane``
         array in correct order.
         '''
 
@@ -388,6 +388,7 @@ class ShackHartmannLegacy(base.WFS):
             self.wfsDetectorPlane[x1:x2, y1:y2] += (
                     self.binnedFPSubapArrays[i, x1_fp:x2_fp, y1_fp:y2_fp])
 
+    def readDetectorPlane(self):
         # Scale data for correct number of photons
         self.wfsDetectorPlane /= self.wfsDetectorPlane.sum()
         self.wfsDetectorPlane *= aotools.photons_per_mag(
