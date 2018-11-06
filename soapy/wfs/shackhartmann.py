@@ -350,7 +350,7 @@ class ShackHartmann(base.WFS):
         if intensity != 1:
             self.subap_focus_intensity *= intensity
 
-    def makeDetectorPlane(self):
+    def integrateDetectorPlane(self):
         '''
         Scales and bins intensity data onto the detector with a given number of
         pixels.
@@ -378,6 +378,8 @@ class ShackHartmann(base.WFS):
 
         numbalib.wfs.place_subaps_on_detector(
                 self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords)
+
+    def readDetectorPlane(self):
         # Scale data for correct number of photons
         self.detector /= self.detector.sum()
         self.detector *= photons_per_mag(

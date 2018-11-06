@@ -742,7 +742,7 @@ class IPythonConsole:
         self.kernel_manager.start_kernel()
         self.kernel = self.kernel_manager.kernel
 
-        self.kernel.shell.write("Welcome to AO Sim!")
+        self.kernel.shell.write("Welcome to AO Sim!\n")
 
         config = sim.config
         #Pass some useful objects to the user

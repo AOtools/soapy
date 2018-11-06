@@ -79,7 +79,7 @@ class ExtendedSH(shackhartmann.ShackHartmann):
 
         self.corrSubapArrays = numpy.zeros(self.centSubapArrays.shape, dtype=DTYPE)
 
-    def makeDetectorPlane(self):
+    def integrateDetectorPlane(self):
         """
         If an extended object is supplied, convolve with spots to make
         the detector images
@@ -98,7 +98,7 @@ class ExtendedSH(shackhartmann.ShackHartmann):
             self.FPSubapArrays *= fieldMask
 
         # Finally, run put these arrays onto the simulated detector
-        super(ExtendedSH, self).makeDetectorPlane()
+        super(ExtendedSH, self).integrateDetectorPlane()
 
     def makeCorrelationImgs(self):
         """

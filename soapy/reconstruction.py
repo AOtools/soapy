@@ -130,8 +130,7 @@ class Reconstructor(object):
 
         filename = self.sim_config.simName+"/cMat.fits"
 
-        logger.statusMessage(
-                    1,  1, "Load Command Matrix")
+        logger.info("Load Command Matrix")
 
         cMatHDU = fits.open(filename)[0]
         cMatHDU.verify("fix")
@@ -304,7 +303,7 @@ class Reconstructor(object):
             if callback != None:
                 callback()
 
-            logger.statusMessage(i+1, dm.n_acts,
+            logger.statusMessage(i, dm.n_acts,
                                  "Generating {} Actuator DM iMat".format(dm.n_acts))
 
         logger.info("Checking for redundant actuators...")

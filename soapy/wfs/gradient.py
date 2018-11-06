@@ -126,7 +126,7 @@ class Gradient(base.WFS):
             self.subapArrays[i] = self.pupilPhase[x1: x2, y1: y2]
 
 
-    def makeDetectorPlane(self):
+    def integrateDetectorPlane(self):
         '''
         Creates a 'detector' image suitable for plotting
         '''
