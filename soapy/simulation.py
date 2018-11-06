@@ -656,8 +656,14 @@ class Sim(object):
             #Init WFS FP Saving
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
-
-            shutil.copyfile(self.configFile, self.path+"/conf.py" )
+            
+            # Copy the config file to the save directory so you can 
+            # remember what the parameters where
+            if isinstance(self.config, confParse.YAML_Configurator):
+                fname = "conf.yaml"
+            else:
+                fname = "conf.py"
+            shutil.copyfile(self.configFile, os.path.join(self.path, fname))
 
         # Init Strehl Saving
         if self.config.sim.nSci>0:
