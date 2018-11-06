@@ -129,9 +129,9 @@ class Sim(object):
         if configFile:
             self.configFile = configFile
 
+        logger.info("Loading configuration file...")
         self.config = confParse.loadSoapyConfig(self.configFile)
-        logger.statusMessage(
-                1, 1,"Loaded configuration file successfully!" )
+        logger.info("Loading configuration file... success!")
 
     def setLoggingLevel(self, level):
         """
@@ -369,15 +369,13 @@ class Sim(object):
         s = 0
         for nwfs in wfsList:
             #check if due to read out WFS
-            if loopIter:
-                read=False
-                if (int(float(self.config.sim.loopTime*loopIter)
-                        /self.config.wfss[nwfs].exposureTime)
-                                        != self.wfsFrameNo[nwfs]):
-                    self.wfsFrameNo[nwfs]+=1
-                    read=True
+            if (int(float(self.config.sim.loopTime*(loopIter+1))
+                    /self.config.wfss[nwfs].exposureTime)
+                                    != self.wfsFrameNo[nwfs]):
+                self.wfsFrameNo[nwfs]+=1
+                read=True
             else:
-                read = True
+                read=False
 
             slopes[s:s+self.wfss[nwfs].n_measurements] = \
                     self.wfss[nwfs].frame(self.scrns, dmShape, read=read)
@@ -425,7 +423,7 @@ class Sim(object):
             # check if due to read out WFS
             if loopIter:
                 read=False
-                if (int(float(self.config.sim.loopTime*loopIter)
+                if (int(float(self.config.sim.loopTime*(loopIter+1))
                         /self.config.wfss[nwfs].exposureTime)
                                         != self.wfsFrameNo[nwfs]):
                     self.wfsFrameNo[nwfs]+=1
@@ -987,7 +985,7 @@ class Sim(object):
                         sci, self.sciCams[sci].instStrehl,
                         self.sciCams[sci].longExpStrehl)
 
-        logger.statusMessage(iter+1, self.config.sim.nIters, string )
+        logger.statusMessage(iter, self.config.sim.nIters, string )
 
 
     def addToGuiQueue(self):

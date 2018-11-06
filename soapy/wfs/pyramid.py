@@ -152,7 +152,7 @@ class Pyramid(base.WFS):
                                                 pSize:pSize+size,
                                                 pSize:pSize+size]
 
-    def makeDetectorPlane(self):
+    def integrateDetectorPlane(self):
 
         #Bin down to requried pixels
         self.wfsDetectorPlane[:] += interp.binImgs(

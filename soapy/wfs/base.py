@@ -68,7 +68,8 @@ Adding new WFSs
 New WFS classes should inherit the ``WFS`` class, then create methods which deal with creating the focal plane and making a measurement from it. To make use of the base-classes ``frame`` method, which will run the WFS entirely, the new class must contain the following methods::
 
     calcFocalPlane(self)
-    makeDetectorPlane(self)
+    integrateDetectorPlane(self)
+    readDetectorPlane(self)
     calculateSlopes(self)
 
 The Final ``calculateSlopes`` method must set ``self.slopes`` to be the measurements made by the WFS. If LGS elongation is to be used for the new WFS, create a ``detectorPlane``, which is added to for each LGS elongation propagation. Have a look at the code for the ``Shack-Hartmann`` and experimental ``Pyramid`` WFSs to get some ideas on how to do this.
@@ -432,8 +433,9 @@ class WFS(object):
                 
             self.calcFocalPlane()
 
+        self.integrateDetectorPlane()
         if read:
-            self.makeDetectorPlane()
+            self.readDetectorPlane()
             self.calculateSlopes()
             self.zeroData(detector=False)
 
@@ -450,7 +452,10 @@ class WFS(object):
         if numpy.any(numpy.isnan(self.slopes)):
             numpy.nan_to_num(self.slopes)
 
-        return self.slopes
+        if read:
+            return self.slopes
+        else:
+            return numpy.zeros((self.n_measurements), dtype=float)
 
     def addPhotonNoise(self):
         """
@@ -475,7 +480,10 @@ class WFS(object):
     def calcFocalPlane(self, intensity=None):
         pass
 
-    def makeDetectorPlane(self):
+    def integrateDetectorPlane(self):
+        pass
+
+    def readDetectorPlane(self):
         pass
 
     def LGSUplink(self):

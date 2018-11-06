@@ -68,7 +68,7 @@ def setStatusFunc(func):
 def statusMessage(i, maxIter, message):
 	if not STATUS_FUNC:
 		sys.stdout.flush()
-		sys.stdout.write(COLOURS[4]+"\r{0} of {1}: {2}".format(i,maxIter, message)+COLOUR_RESET)
+		sys.stdout.write(COLOURS[4]+"\r{0} of {1}: {2}".format(i+1,maxIter, message)+COLOUR_RESET)
 
 	else:
 		STATUS_FUNC(message, i, maxIter)
