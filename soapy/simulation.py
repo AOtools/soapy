@@ -578,7 +578,7 @@ class Sim(object):
         # compute final ee50d
         for sci in range(self.config.sim.nSci):
             pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
-            ee50d = aotools.encircledEnergy(
+            ee50d = aotools.encircled_energy(
                 self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
             if ee50d < (self.sciCams[sci].fov / 2):
                 self.ee50d[sci] = ee50d
