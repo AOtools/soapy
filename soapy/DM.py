@@ -48,7 +48,7 @@ from scipy.ndimage.interpolation import rotate
 import astropy.io.fits as fits
 import aotools
 
-from . import karhunenLoeve as KL
+from aotools import karhunenLoeve as KL
 from . import logger, interp
 # from .aotools import interp, circle
 
@@ -64,7 +64,7 @@ class DM(object):
     The base DM class
 
     This class is intended to be inherited by other DM classes which describe
-    real DMs. It provides methods to create DM shapes and then interaction matrices, 
+    real DMs. It provides methods to create DM shapes and then interaction matrices,
     given a specific WFS or WFSs.
 
     Parameters:
@@ -131,7 +131,7 @@ class DM(object):
         # If using imatshapes, sclae by imat value
         if hasattr(self, "iMatShapes"):
             self.iMatShapes *= self.config.iMatValue
-            
+
         # An array of values for each actuator. 1 if actuator is valid, 0 if not
         self._valid_actuators = numpy.ones((self.n_acts))
 
@@ -198,7 +198,7 @@ class DM(object):
 
     def makeDMFrame(self, actCoeffs):
         dm_shape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
-            
+
         return dm_shape
 
     def reset(self):
@@ -528,8 +528,7 @@ class Phase(numpy.ndarray):
         obj = numpy.asarray(input_array).view(cls)
         obj.altitude = altitude
         return obj
-        
+
     def __array_finalize__(self, obj):
         if obj is None: return
         self.info = getattr(obj, 'info', None)
- 
