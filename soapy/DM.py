@@ -230,7 +230,8 @@ class DM(object):
 
 class CustomShapes(DM):
     """
-
+    DM shape are based on a fits file.
+    Interpolation is performed if required.
     """
 
     def makeIMatShapes(self):
@@ -276,13 +277,13 @@ class CustomShapes(DM):
 
 class KarhunenLoeve(DM):
     """
-    A DM which corrects using a provided number of Zernike Polynomials
+    A DM which corrects using a provided number of Karhunen-Loeve Polynomials
     """
 
     def makeIMatShapes(self):
         '''
         Creates all the DM shapes which are required for creating the
-        interaction Matrix. In this case, this is a number of Zernike Polynomials
+        interaction Matrix. In this case, this is a number of K-L Polynomials
         '''
         diam = self.soapy_config.tel.telDiam
         cobs = self.soapy_config.tel.obsDiam / diam

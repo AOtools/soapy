@@ -955,8 +955,9 @@ class DmConfig(ConfigObj):
                              functions in units of actuator
                               spacing.                           ``1``
         ``dmShapesFilename`` str: if dm type is 'CustomShapes',
-                             use this string to read the fits
-                             file defining the DM shapes
+                             use this string to define the path
+                             to the fits file defining the DM
+                             shapes.
         ==================== =================================   ===========
     """
 
