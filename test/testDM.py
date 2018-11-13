@@ -3,6 +3,7 @@ import unittest
 import numpy
 import aotools
 import os
+import astropy.io.fits as fits
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../conf/")
 
 def testa_initDM():
@@ -43,9 +44,6 @@ def testf_initTT():
     wfs = WFS.ShackHartmann(config, mask=mask)
     dm = DM.TT(config, wfss=[wfs], mask=mask)
 
-
-
-
 def testf_initFastPiezo():
 
     config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
@@ -54,6 +52,42 @@ def testf_initFastPiezo():
 
     wfs = WFS.ShackHartmann(config, mask=mask)
     dm = DM.FastPiezo(config, n_dm=1, wfss=[wfs], mask=mask)
+
+
+def testg_initKL():
+
+    config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+
+    mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
+
+    wfs = WFS.ShackHartmann(config, mask=mask)
+    dm = DM.KarhunenLoeve(config, n_dm=1, wfss=[wfs], mask=mask)
+
+def testg_initCustomShape():
+
+    config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+
+    config.sim.pupilSize = 64
+    config.sim.simSize = 66
+    mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
+    wfs = WFS.ShackHartmann(config, mask=mask)
+    dm = DM.KarhunenLoeve(config, n_dm=1, wfss=[wfs], mask=mask)
+    customShape = dm.iMatShapes
+
+    # saving temporary shapes
+    fname = os.path.dirname(os.path.abspath(__file__)) + '/tmp_CustomDmShapes.fits'
+    fits.writeto(fname, customShape, overwrite=True)
+
+    # change size to ensure it tests interpolation
+    config.sim.pupilSize = 100
+    config.sim.simSize = 104
+    mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
+    wfs = WFS.ShackHartmann(config, mask=mask)
+    config.dms[1].dmShapesFilename = fname
+    dm = DM.CustomShapes(config, n_dm=1, wfss=[wfs], mask=mask)
+    # remove temporary shapes
+    os.remove(fname)
+
 
 def test_set_valid_actuators():
     """
