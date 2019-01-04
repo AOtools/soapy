@@ -431,7 +431,8 @@ class Reconstructor(object):
         return self.actuator_values
 
     def reset(self):
-        self.actuator_values[:] = 0
+        if self.actuator_values is not None:
+            self.actuator_values[:] = 0
 
 
 class MVM(Reconstructor):
