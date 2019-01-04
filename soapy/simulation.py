@@ -599,12 +599,24 @@ class Sim(object):
         Resets parameters in the system to zero, to restart an AO run wihtout reinitialising
         """
         self.iters = 0
+
         self.slopes[:] = 0
         self.dmCommands[:] = 0
-        self.longStrehl[:] = 0
-        self.ee50d[:] = 0
+
+        if self.config.sim.saveSlopes:
+            self.allSlopes[:] = 0
+
+        if self.config.sim.saveDmCommands:
+            self.allDmCommands[:] = 0
+
+    
         self.recon.reset()
-        for sci in self.sciImgs.values(): sci[:] = 0
+
+        if self.config.sim.nSci > 0:
+            self.longStrehl[:] = 0
+            self.ee50d[:] = 0
+            for sci in self.sciImgs.values(): sci[:] = 0
+        
         for dm in self.dms.values(): dm.reset()
 
     def finishUp(self):
@@ -689,7 +701,7 @@ class Sim(object):
 
         #Init WFS slopes data saving
         if self.config.sim.saveSlopes:
-            self.allSlopes = numpy.empty(
+            self.allSlopes = numpy.zeros(
                     (self.config.sim.nIters, self.config.sim.totalWfsData) )
         else:
             self.allSlopes = None
@@ -698,7 +710,7 @@ class Sim(object):
         if self.config.sim.saveDmCommands:
             ttActs = 0
 
-            self.allDmCommands = numpy.empty( (self.config.sim.nIters, ttActs+self.config.sim.totalActs))
+            self.allDmCommands = numpy.zeros( (self.config.sim.nIters, ttActs+self.config.sim.totalActs))
 
         else:
             self.allDmCommands = None
