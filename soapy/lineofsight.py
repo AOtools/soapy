@@ -381,6 +381,7 @@ def physical_atmosphere_propagation(
     scrnNo = len(phase_screens)
     z_total = 0
     scrnRange = range(0, scrnNo)
+    prop_scrns = phase_screens.copy()
 
     nx_output_pixels = phase_screens[0].shape[0]
 
@@ -401,7 +402,7 @@ def physical_atmosphere_propagation(
         ht = layer_altitudes[scrnNo-1]
         ht_final = 0
         scrnAlts = layer_altitudes[::-1]
-        phase_screens = phase_screens[::-1]
+        prop_scrns = prop_scrns[::-1]
         EFieldBuf = numpy.exp(
                 1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
         logger.debug("Create EField Buf of zero phase")
@@ -418,7 +419,7 @@ def physical_atmosphere_propagation(
     # Go through and propagate between phase screens
     for i in scrnRange:
 
-        phase = phase_screens[i]
+        phase = prop_scrns[i]
         # print("Got phase")
 
         # Convert phase to radians
