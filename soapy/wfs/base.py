@@ -493,7 +493,8 @@ class WFS(object):
         self.slopes = self.los.EField
 
     def zeroData(self, detector=True, FP=True):
-        self.zeroPhaseData()
+        #self.zeroPhaseData()
+        pass
 
 
     @property

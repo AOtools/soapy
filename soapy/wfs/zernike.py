@@ -24,6 +24,7 @@ class Zernike(base.WFS):
 
         self.n_measurements = self.n_zerns
 
+        # Make Zernike array - don't include piston
         self.zernike_array = aotools.zernikeArray(self.n_zerns, self.pupil_size)
         self.zernike_array.shape = self.n_zerns, self.pupil_size**2
 
