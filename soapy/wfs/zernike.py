@@ -19,17 +19,21 @@ class Zernike(base.WFS):
         super(Zernike, self).calcInitParams(phaseSize=phaseSize)
 
         # Generate an array of Zernikes to use in the loop
-
         self.n_zerns = self.config.nxSubaps
 
         self.n_measurements = self.n_zerns
 
-        # Make Zernike array - don't include piston
+        # Make Zernike array
         self.zernike_array = aotools.zernikeArray(self.n_zerns, self.pupil_size)
         self.zernike_array.shape = self.n_zerns, self.pupil_size**2
 
-        # Scale to be 1rad in nm
+        mask_sum = self.zernike_array[0].sum()
+        
+        # Scale to be 1rad in nm ## SHOULDNT NEED THIS AS PHASE ALREADY IN RAD
         # self.zernike_array *=  ((2 * numpy.pi) / (10e9*self.config.wavelength))
+        
+        # Normalise for hte number of points in the Zernike anlaysis
+        self.zernike_array /= mask_sum
 
 
     def allocDataArrays(self):

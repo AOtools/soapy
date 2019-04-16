@@ -750,7 +750,11 @@ class Sim(object):
         """
         Stores data from each frame in an appropriate data structure.
 
-        Called on each frame to store the simulation data into various data structures corresponding to different data sources in the system.
+        Called on each frame to store the simulation data into various data 
+        structures corresponding to different data sources in the system.
+
+        For some data streams that are very large, data gets saved to disk on 
+        each iteration - this also happens here.
 
         Args:
             i (int): The system iteration number
@@ -791,13 +795,13 @@ class Sim(object):
                         self.wfss[nwfs].wfsDetectorPlane,
                         header=self.config.sim.saveHeader)
 
-        #Save Instantaneous PSF
+        # Save Instantaneous PSF
         if self.config.sim.nSci>0 and self.config.sim.saveInstPsf==True:
             for sci in xrange(self.config.sim.nSci):
                 self.sciImgsInst[sci][i,:,:] = self.sciCams[sci].detector
 
 
-        #Save Instantaneous electric field
+        # Save Instantaneous electric field
         if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
             for sci in xrange(self.config.sim.nSci):
                 self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield
@@ -806,7 +810,8 @@ class Sim(object):
         """
         Saves all recorded data to disk
 
-        Called once simulation has ended to save the data recorded during the simulation to disk in the directories created during initialisation.
+        Called once simulation has ended to save the data recorded during 
+        the simulation to disk in the directories created during initialisation.
         """
 
         if self.config.sim.simName!=None:
@@ -1010,7 +1015,13 @@ class Sim(object):
         """
         Adds data to a Queue object provided by the soapy GUI.
 
-        The soapy GUI doesn't need to plot every frame from the simulation. When it wants a frame, it will request if by setting ``waitingPlot = True``. As this function is called on every iteration, data is passed to the GUI only if ``waitingPlot = True``. This allows efficient and abstracted interaction between the GUI and the simulation
+        The soapy GUI doesn't need to plot every frame from the simulation. 
+        When it wants a frame, it will request if by setting 
+        ``waitingPlot = True``. As this function is called on
+        every iteration, data is passed to the GUI only if 
+        ``waitingPlot = True``. 
+        This allows efficient and abstracted interaction 
+        between the GUI and the simulation
         """
         if self.guiQueue != None:
             if self.waitingPlot:
