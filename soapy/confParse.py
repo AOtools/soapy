@@ -290,7 +290,7 @@ class YAML_Configurator(PY_Configurator):
 
         # load config file from Yaml file
         with open(self.filename) as file_:
-            self.configDict = yaml.load(file_)
+            self.configDict = yaml.load(file_, Loader=yaml.FullLoader)
 
 
     def loadSimParams(self):
