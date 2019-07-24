@@ -1,5 +1,5 @@
 import numpy
-from scipy.interpolate import interp2d,RectBivariateSpline
+from scipy.interpolate import interp2d,RectBivariateSpline, griddata
 #a lookup dict for interp2d order (expressed as 'kind')
 INTERP_KIND = {1: 'linear', 3:'cubic', 5:'quintic'}
 
@@ -133,3 +133,66 @@ def binImgs(data, n):
             binnedImg += binnedImgTmp[...,i::n,:]
 
         return binnedImg
+
+
+def zoomWithMissingData(data, newSize,
+                        method='linear',
+                        non_valid_value=numpy.nan):
+    '''
+    Zoom 2-dimensional or 3D arrays using griddata interpolation.
+    This allows interpolation over unstructured data, e.g. interpolating values
+    inside a pupil but excluding everything outside.
+    See also DM.CustomShapes.
+
+    Note that it can be time consuming, particularly on 3D data
+
+    Parameters
+    ----------
+    data : ndArray
+        2d or 3d array. If 3d array, interpolate by slices of the first dim.
+    newSize : tuple
+        2 value for the new array (or new slices) size.
+    method: str
+        'linear', 'cubic', 'nearest'
+    non_valid_value: float
+        typically, NaN or 0. value in the array that are not valid for the
+        interpolation.
+
+    Returns
+    -------
+    arr : ndarray
+        of dimension (newSize[0], newSize[1]) or
+        (data.shape[0], newSize[0], newSize[1])
+    '''
+    if len(data.shape) == 3:
+        arr = data[0, :, :]
+    else:
+        assert len(data.shape) == 2
+        arr = data
+
+    Nx = arr.shape[0]
+    Ny = arr.shape[1]
+    coordX = (numpy.arange(Nx) - Nx / 2. + 0.5) / (Nx / 2.)
+    coordY = (numpy.arange(Ny) - Ny / 2. + 0.5) / (Ny / 2.)
+    Nx = newSize[0]
+    Ny = newSize[1]
+    ncoordX = (numpy.arange(Nx) - Nx / 2. + 0.5) / (Nx / 2.)
+    ncoordY = (numpy.arange(Ny) - Ny / 2. + 0.5) / (Ny / 2.)
+
+    x, y = numpy.meshgrid(coordX, coordY)
+    xnew, ynew = numpy.meshgrid(ncoordX, ncoordY)
+
+    if len(data.shape) == 2:
+        idx = ~(arr == non_valid_value)
+        znew = griddata((x[idx], y[idx]), arr[idx], (xnew, ynew),
+                        method=method)
+        return znew
+    elif len(data.shape) == 3:
+        narr = numpy.zeros((data.shape[0], newSize[0], newSize[1]))
+        for i in range(data.shape[0]):
+            arr = data[i, :, :]
+            idx = ~(arr == non_valid_value)
+            znew = griddata((x[idx], y[idx]), arr[idx], (xnew, ynew),
+                            method=method)
+            narr[i, :, :] = znew
+        return narr

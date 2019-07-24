@@ -405,8 +405,8 @@ def physical_atmosphere_propagation(
     else:
         ht = layer_altitudes[scrnNo-1]
         ht_final = 0
-        scrnRange = scrnRange[::-1]
         scrnAlts = layer_altitudes[::-1]
+        phase_screens = phase_screens[::-1]
         EFieldBuf = numpy.exp(
                 1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
         logger.debug("Create EField Buf of zero phase")
@@ -415,6 +415,7 @@ def physical_atmosphere_propagation(
     if ht!=scrnAlts[0]:
         logger.debug("propagate to first phase screen")
         z = abs(scrnAlts[0] - ht)
+        z_total += z
         EFieldBuf[:] = opticalpropagation.angularSpectrum(
                     EFieldBuf, wavelength,
                     output_pixel_scale, output_pixel_scale, z)
