@@ -946,39 +946,42 @@ class DmConfig(ConfigObj):
         ``gaussWidth``       float: Width of Guass DM actuator
                              as a fraction of the
                              inter-actuator spacing.             ``0.5``
-        ``altitude``         float: Altitude to which DM is 
+        ``altitude``         float: Altitude to which DM is
                              optically conjugated.               ``0``
-        ``diameter``         float: Diameter covered by DM in 
-                             metres. If ``None`` if telescope 
+        ``diameter``         float: Diameter covered by DM in
+                             metres. If ``None`` if telescope
                              diameter.                           ``None``
         ``gauss_width``      float: Width of gaussian influence
                              functions in units of actuator
                               spacing.                           ``1``
+        ``dmShapesFilename`` str: if dm type is 'CustomShapes',
+                             use this string to define the path
+                             to the fits file defining the DM
+                             shapes.
         ==================== =================================   ===========
     """
 
-
-    requiredParams = [ "type",
-                        ]
-
+    requiredParams = ["type",
+                      ]
 
     optionalParams = [
-                    ("nxActuators", None),
-                    ("svdConditioning", 0),
-                    ("gain", 0.6),
-                    ("closed", True),
-                    ("iMatValue", 10),
-                    ("wfs", None),
-                    ("rotation", 0),
-                    ("interpOrder", 2),
-                    ("gaussWidth", 0.5),
-                    ("altitude", 0.),
-                    ("diameter", None),
-                    ("gauss_width", 0.7),
-                    ]
+        ("nxActuators", None),
+        ("svdConditioning", 0),
+        ("gain", 0.6),
+        ("closed", True),
+        ("iMatValue", 10),
+        ("wfs", None),
+        ("rotation", 0),
+        ("interpOrder", 2),
+        ("gaussWidth", 0.5),
+        ("altitude", 0.),
+        ("diameter", None),
+        ("gauss_width", 0.7),
+        ("dmShapesFilename", None)
+    ]
 
     calculatedParams = [
-                        ]
+    ]
 
     allowedAttrs = copy.copy(requiredParams + calculatedParams + CONFIG_ATTRIBUTES)
     for p in optionalParams:

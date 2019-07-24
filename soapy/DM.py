@@ -38,16 +38,17 @@ Adding New DMs
 ==============
 
 New DMs are easy to add into the simulation. At its simplest, the :py:class:`DM`
-class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided, 
+class is inherited by the new DM class. Only a ``makeIMatShapes` method need be provided,
 which creates the independent influence function the DM can make. The
 base class deals with the rest, including making interaction matrices and loop
 operation.
 """
 import numpy
 from scipy.ndimage.interpolation import rotate
-
+import astropy.io.fits as fits
 import aotools
 
+from aotools import karhunenLoeve as KL
 from . import logger, interp
 # from .aotools import interp, circle
 
@@ -63,7 +64,7 @@ class DM(object):
     The base DM class
 
     This class is intended to be inherited by other DM classes which describe
-    real DMs. It provides methods to create DM shapes and then interaction matrices, 
+    real DMs. It provides methods to create DM shapes and then interaction matrices,
     given a specific WFS or WFSs.
 
     Parameters:
@@ -130,7 +131,7 @@ class DM(object):
         # If using imatshapes, sclae by imat value
         if hasattr(self, "iMatShapes"):
             self.iMatShapes *= self.config.iMatValue
-            
+
         # An array of values for each actuator. 1 if actuator is valid, 0 if not
         self._valid_actuators = numpy.ones((self.n_acts))
 
@@ -197,7 +198,7 @@ class DM(object):
 
     def makeDMFrame(self, actCoeffs):
         dm_shape = (self.iMatShapes.T*actCoeffs.T).T.sum(0)
-            
+
         return dm_shape
 
     def reset(self):
@@ -223,7 +224,83 @@ class DM(object):
         self.n_valid_actuators = self._valid_actuators.sum()
 
         # Sort threough imat shapes and get rid of those not valid
-        self.iMatShapes = numpy.array([self.iMatShapes[i] for i in range(len(valid_actuators)) if valid_actuators[i]])
+        self.iMatShapes = numpy.array([self.iMatShapes[i]
+                                       for i in range(len(valid_actuators)) if valid_actuators[i]])
+
+
+class CustomShapes(DM):
+    """
+    DM shape are based on a fits file.
+    Interpolation is performed if required.
+    """
+
+    def makeIMatShapes(self):
+        '''
+        Creates all the DM shapes which are required for creating the
+        interaction Matrix.
+
+        if the shapes are not of the correct size, it interpolates them by slices
+        with non valid value either NaN or 0.
+
+        For best result, it is however preferable that no interpolation occurs.
+        '''
+        try:
+            dmShape = fits.getdata(self.config.dmShapesFilename)
+        except:
+            raise ValueError("Can't open fits file %s" % self.config.dmShapesFilename)
+
+        assert dmShape.shape[0] >= int(self.n_acts), 'Not enough shapes in DM shape file'
+        dmShape = dmShape[:int(self.n_acts), :, :]
+
+        if (dmShape.shape[1] != int(self.nx_dm_elements)) or\
+                (dmShape.shape[2] != int(self.nx_dm_elements)):
+            logger.warning("Interpolation custom DM shapes of size "
+                           "({0:1.0f}, {1:1.0f}) to size of "
+                           "({2:1.0f}, {2:1.0f})".format(dmShape.shape[1],
+                                                         dmShape.shape[1],
+                                                         self.nx_dm_elements))
+            if (numpy.any(dmShape == 0)):
+                dmShape[dmShape == 0] = numpy.nan
+            shapes = interp.zoomWithMissingData(dmShape,
+                                                (self.nx_dm_elements,
+                                                 self.nx_dm_elements),
+                                                 non_valid_value=numpy.nan)
+        else:
+            shapes = dmShape
+
+        shapes[numpy.isnan(shapes)] = 0
+        pad = self.simConfig.simPad
+        self.iMatShapes = numpy.pad(
+            shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
+        ).astype("float32")
+
+
+class KarhunenLoeve(DM):
+    """
+    A DM which corrects using a provided number of Karhunen-Loeve Polynomials
+    """
+
+    def makeIMatShapes(self):
+        '''
+        Creates all the DM shapes which are required for creating the
+        interaction Matrix. In this case, this is a number of K-L Polynomials
+        '''
+        diam = self.soapy_config.tel.telDiam
+        cobs = self.soapy_config.tel.obsDiam / diam
+
+        if self.n_acts <= 500:
+            nr = 64
+        elif self.n_acts <= 1000:
+            nr = 72
+        elif self.nacts > 1000:
+            nr = 128
+        shapes, _, _, _ = KL.make_kl(int(self.n_acts), int(self.nx_dm_elements),
+                                     ri=cobs, nr=nr, mask=True)
+        pad = self.simConfig.simPad
+        self.iMatShapes = numpy.pad(
+            shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
+        ).astype("float32")
+
 
 class Zernike(DM):
     """
@@ -236,15 +313,14 @@ class Zernike(DM):
         interaction Matrix. In this case, this is a number of Zernike Polynomials
         '''
 
-
         shapes = aotools.zernikeArray(
-                int(self.n_acts + 1), int(self.nx_dm_elements))[1:]
-
+            int(self.n_acts + 1), int(self.nx_dm_elements))[1:]
 
         pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
-                shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
-                ).astype("float32")
+            shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
+        ).astype("float32")
+
 
 class Piezo(DM):
     """
@@ -453,8 +529,7 @@ class Phase(numpy.ndarray):
         obj = numpy.asarray(input_array).view(cls)
         obj.altitude = altitude
         return obj
-        
+
     def __array_finalize__(self, obj):
         if obj is None: return
         self.info = getattr(obj, 'info', None)
- 
