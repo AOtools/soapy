@@ -154,7 +154,7 @@ class PSF(object):
         Calculates the instantaneous Strehl, including TT if configured.
         """
         if self.sciConfig.instStrehlWithTT:
-            self.instStrehl = self.detector[self.sciConfig.pxls // 2, self.sciConfig.pxls // 2] / self.detector.sum() / self.psfMax
+            self.instStrehl = self.detector[self.sciConfig.pxls // 2 - 1, self.sciConfig.pxls // 2 - 1] / self.detector.sum() / self.psfMax
         else:
             self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
 
