@@ -118,11 +118,11 @@ Once a simulation has been completed, the task then turns to extracting an analy
 
 The first science detector image can be retrieved with::
 
-    imshow(sim.sciImgs[0])
+    pyplot.imshow(sim.sciImgs[0])
 
 and the measurements recored on all WFSs with::
 
-    imshow(sim.allSlopes)
+    pyplot.imshow(sim.allSlopes)
 
 The parameters which were originally defined in the configuration file can also be accessed and altered. The variables holding the parameters have the same name as the configuration file parameters, though the names of the groups may be shortened. Assuming that the simulation object is called ``sim`` (as in this tutorial), any configuration parameter can be access with::
 
