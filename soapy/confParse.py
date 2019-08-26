@@ -244,28 +244,34 @@ class PY_Configurator(object):
         objs = {'Sim': dict(self.sim),
                 'Atmosphere': dict(self.atmos),
                 'Telescope': dict(self.tel),
-                'WFS': [],
-                'DM': [],
-                'Science': []
+                'WFS': {},
+                'DM': {},
+                'Science': {}
                 }
 
-        for w in self.wfss:
+        for w_i, w in enumerate(self.wfss):
             if w is not None:
-                objs['WFS'].append(dict(w))
+                objs['WFS'][w_i] = dict(w)
             else:
-                objs['WFS'].append(None)
+                objs['WFS'][w_i] = None
 
-        for d in self.dms:
+        # for l in self.lgss:
+        #     if l is not None:
+        #         objs['LGS'].append(dict(l))
+        #     else:
+        #         objs['LGS'].append(None)
+
+        for d_i, d in enumerate(self.dms):
             if d is not None:
-                objs['DM'].append(dict(d))
+                objs['DM'][d_i] = dict(d)
             else:
-                objs['DM'].append(None)
+                objs['DM'][d_i] = None
 
-        for s in self.scis:
+        for s_i, s in enumerate(self.scis):
             if s is not None:
-                objs['Science'].append(dict(s))
+                objs['Science'][s_i] = dict(s)
             else:
-                objs['Science'].append(None)
+                objs['Science'][s_i] = None
 
         for configName, configObj in objs.items():
             yield configName, configObj
@@ -411,10 +417,19 @@ class ConfigObj(object):
 
     def __iter__(self):
         for param in self.requiredParams:
-            yield param, self.__dict__[param]
+            key = param
+            val = self.__dict__[param] 
+            if isinstance(val, numpy.ndarray):
+                val = val.tolist()
+            yield key, val
+                
         for param in self.optionalParams:
-            yield param[0], self.__dict__[param[0]]
-
+            key = param[0]
+            val = self.__dict__[param[0]]
+            if isinstance(val, numpy.ndarray):
+                val = val.tolist()
+            yield key, val
+            
     def __len__(self):
         return len(self.requiredParams)+len(self.optionalParams)
 
