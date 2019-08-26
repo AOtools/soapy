@@ -517,7 +517,7 @@ class Sim(object):
         # Get next phase screens
         t = time.time()
         self.scrns = self.atmos.moveScrns()
-        self.Tatmos = time.time()-t
+        self.Tatmos += time.time()-t
 
         # Run Loop...
         ########################################
