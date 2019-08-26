@@ -74,7 +74,6 @@ class PY_Configurator(object):
 
         # placeholder for param objs
         self.wfss = []
-        # self.lgss = []
         self.scis = []
         self.dms = []
 
@@ -149,9 +148,7 @@ class PY_Configurator(object):
         for w in self.wfss:
             if w is not None:
                 w.calcParams()
-        # for l in self.lgss:
-        #     if l is not None:
-        #         l.calcParams()
+
         for d in self.dms:
             if d is not None:
                 d.calcParams()
@@ -248,7 +245,6 @@ class PY_Configurator(object):
                 'Atmosphere': dict(self.atmos),
                 'Telescope': dict(self.tel),
                 'WFS': [],
-                'LGS': [],
                 'DM': [],
                 'Science': []
                 }
@@ -258,12 +254,6 @@ class PY_Configurator(object):
                 objs['WFS'].append(dict(w))
             else:
                 objs['WFS'].append(None)
-
-        # for l in self.lgss:
-        #     if l is not None:
-        #         objs['LGS'].append(dict(l))
-        #     else:
-        #         objs['LGS'].append(None)
 
         for d in self.dms:
             if d is not None:
@@ -277,12 +267,13 @@ class PY_Configurator(object):
             else:
                 objs['Science'].append(None)
 
-        for configName, configObj in objs.iteritems():
+        for configName, configObj in objs.items():
             yield configName, configObj
 
     def __len__(self):
-        # Always have sim, atmos, tel, DMs, WFSs, LGSs, and Scis
-        return 7
+        # Always have sim, atmos, tel, DMs, WFSs,  and Scis
+        return 6
+
 
 class YAML_Configurator(PY_Configurator):
 
@@ -290,7 +281,7 @@ class YAML_Configurator(PY_Configurator):
 
         # load config file from Yaml file
         with open(self.filename) as file_:
-            self.configDict = yaml.load(file_)
+            self.configDict = yaml.load(file_, Loader=yaml.SafeLoader)
 
 
     def loadSimParams(self):
