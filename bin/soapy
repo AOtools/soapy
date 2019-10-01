@@ -37,7 +37,7 @@ if sys.platform == "win32":
 from argparse import ArgumentParser
 import IPython
 import soapy
-from soapy import gui
+# from soapy import gui
 
 
 def runCmdSim(sim, newIMat=False, interactive = False):
@@ -114,6 +114,7 @@ if __name__=="__main__":
 
     #if gui start gui
     if args.gui:
+        from soapy import gui
         simGUI = gui.start_gui(sim, useOpenGL=args.gl, verbosity=verbosity)
 
     else:
