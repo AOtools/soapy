@@ -472,8 +472,8 @@ class WFS(object):
             ndarray: WFS measurements
         """
 
-
-       #If iMatFrame, turn off unwanted effects
+        self.zeroData()
+        #If iMatFrame, turn off unwanted effects
         if iMatFrame:
             self.iMat = True
             removeTT = self.config.removeTT
