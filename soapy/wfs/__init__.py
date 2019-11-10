@@ -10,3 +10,4 @@ from .gradient import Gradient
 from .pyramid import Pyramid
 from .extendedshackhartmann import ExtendedSH
 from .shackhartmann_legacy import ShackHartmannLegacy
+from .zernike import Zernike

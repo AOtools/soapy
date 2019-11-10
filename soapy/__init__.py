@@ -54,10 +54,11 @@ from .atmosphere import makePhaseScreens
 from . import wfs as WFS
 
 #Try to import GUI, if not then its ok
-try:
-    from . import gui
-except:
-    pass
+# Don't do this as it slows down importing for script or CLI use
+# try:
+#     from . import gui
+# except:
+#     pass
 
 
 from ._version import get_versions

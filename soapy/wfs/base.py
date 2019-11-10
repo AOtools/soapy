@@ -460,6 +460,56 @@ class WFS(object):
         else:
             return numpy.zeros((self.n_measurements), dtype=float)
 
+    def simple_frame(self, phase, iMatFrame=False):
+        """
+        Runs simple WFS frame with no Line of Sight propagation
+
+        The WFS is run by simply getting the measurements relating to a 
+        2d phase pattern. This does not account for hte altitude of the 
+        turbulence, or for correction applied by a DM.
+
+        Parameters:
+            phase (ndarray): array of phase of size scrnSize x scrnSize in nm
+
+        Returns: 
+            ndarray: WFS measurements
+        """
+
+        self.zeroData()
+        #If iMatFrame, turn off unwanted effects
+        if iMatFrame:
+            self.iMat = True
+            removeTT = self.config.removeTT
+            self.config.removeTT = False
+            photonNoise = self.config.photonNoise
+            self.config.photonNoise = False
+            eReadNoise = self.config.eReadNoise
+            self.config.eReadNoise = 0
+
+        self.los.phase = phase * self.los.phs2Rad
+                
+        self.calcFocalPlane()
+
+        self.integrateDetectorPlane()
+        self.readDetectorPlane()
+        self.calculateSlopes()
+
+        # Turn back on stuff disabled for iMat
+        if iMatFrame:
+            self.iMat=False
+            self.config.removeTT = removeTT
+            self.config.photonNoise = photonNoise
+            self.config.eReadNoise = eReadNoise
+
+        # Check that slopes aint `nan`s. Set to 0 if so
+        # if numpy.any(numpy.isnan(self.slopes)):
+        #     self.slopes[:] = 0
+        if numpy.any(numpy.isnan(self.slopes)):
+            numpy.nan_to_num(self.slopes)
+
+        return self.slopes
+
+
     def addPhotonNoise(self):
         """
         Add photon noise to ``wfsDetectorPlane`` using ``numpy.random.poisson``
@@ -496,7 +546,8 @@ class WFS(object):
         self.slopes = self.los.EField
 
     def zeroData(self, detector=True, FP=True):
-        self.zeroPhaseData()
+        #self.zeroPhaseData()
+        pass
 
 
     @property

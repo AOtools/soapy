@@ -87,7 +87,7 @@ class ShackHartmann(base.WFS):
                 (float(self.sim_size)/self.pupil_size)
                 ))
 
-        # If physical prop, must always be at same pixel scale
+        # If physical prop, must always be at same pixel scale because we can't interpolate EField afterwards
         # If not, can use less phase points for speed
         if self.config.propagationMode=="Physical":
             # This the pixel scale required for the correct FOV

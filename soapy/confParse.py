@@ -442,6 +442,10 @@ class ConfigObj(object):
     def __repr__(self):
         return str(dict(self))
 
+    def __getitem__(self, item):
+        return self.__getattribute__(item)
+
+
 class SimConfig(ConfigObj):
     """
     Configuration parameters relavent for the entire simulation. These should be held at the beginning of the parameter file with no indendation.
@@ -605,7 +609,8 @@ class AtmosConfig(ConfigObj):
         ``randomScrns``     bool: Use a random set of phase
                             phase screens for each loop
                             iteration?                          ``False``
-        ``infinite``        bool: Use infinite phase screens?   ``False``
+        ``infinite``        bool: Use infinite phase screens?
+                            warning: EXPERIMENTAL!              ``False``
         ``tau0``            float: Turbulence coherence time,
                             if set wind speeds are scaled.      ``None``
         ``wholeScrnSize``   int: Size of the phase screens 
@@ -703,9 +708,9 @@ class WfsConfig(ConfigObj):
         ``lgs``                 bool: is WFS an LGS?                ``False``
         ``centMethod``          string: Method used for
                                 Centroiding. Can be
-                                ``centreOfGravity``,
-                                ``brightestPxl``, or
-                                ``correlation``.\**                 ``centreOfGravity``
+                                ``centre_of_gravity``,
+                                ``brightest_pixel``, or
+                                ``correlation_centroid``.           ``centre_of_gravity``
         ``referenceImage``      array: Reference images used in
                                 the correlation centroider. Full
                                 image plane image, each subap has
@@ -761,7 +766,7 @@ class WfsConfig(ConfigObj):
                         ("subapThreshold", 0.5),
                         ("lgs", None),
                         ("centThreshold", 0.),
-                        ("centMethod", "centreOfGravity"),
+                        ("centMethod", "centre_of_gravity"),
                         ("type", "ShackHartmann"),
                         ("exposureTime", None),
                         ("referenceImage", None),

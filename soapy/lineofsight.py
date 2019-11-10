@@ -192,9 +192,12 @@ class LineOfSight(object):
         self.dm_metapupil_coords = self.dm_metapupil_coords.clip(0, self.nx_scrn_size - 1.000000001)
 
         self.radii = None
-
+        
+        # Relavent phase  centred on the line of sight direction
         self.phase_screens = numpy.zeros((self.n_layers, self.nx_out_pixels, self.nx_out_pixels))
+        # Buffer for corection across fulll FOV
         self.correction_screens = numpy.zeros((self.n_dm, self.nx_out_pixels, self.nx_out_pixels))
+        # Relavent correction centred on teh line of sight direction
         self.phase_correction = numpy.zeros((self.nx_out_pixels, self.nx_out_pixels))
 
     def calculate_altitude_coords(self, layer_altitude):
@@ -249,6 +252,8 @@ class LineOfSight(object):
         """
         self.EField[:] = 1
         self.phase[:] = 0
+        self.phase_screens[:] = 0
+        self.correction_screens[:] = 0
 
     def makePhase(self, radii=None, apos=None):
         """
