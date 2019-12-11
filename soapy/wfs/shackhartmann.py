@@ -74,7 +74,7 @@ class ShackHartmann(base.WFS):
             self.SUBAP_OVERSIZE = 1
         else:
             self.SUBAP_OVERSIZE = 2
-        
+
         self.nx_detector_pixels = self.nx_subaps * (self.nx_subap_pixels + self.nx_guard_pixels) + self.nx_guard_pixels
 
         self.nx_subap_interp *= self.SUBAP_OVERSIZE
@@ -200,8 +200,7 @@ class ShackHartmann(base.WFS):
             self.iFFT = pyfftw.FFTW(
                 self.ifft_input_data, self.ifft_output_data, axes=(-2, -1),
                 threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
-                direction="FFTW_BACKWARD"
-                )
+                direction="FFTW_BACKWARD")
 
             self.lgs_ifft_input_data = pyfftw.empty_aligned(
                 (self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
@@ -210,8 +209,7 @@ class ShackHartmann(base.WFS):
             self.lgs_iFFT = pyfftw.FFTW(
                 self.lgs_ifft_input_data, self.lgs_ifft_output_data, axes=(0, 1),
                 threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
-                direction="FFTW_BACKWARD"
-                )
+                direction="FFTW_BACKWARD")
 
     def initLGS(self):
         super(ShackHartmann, self).initLGS()
@@ -401,7 +399,7 @@ class ShackHartmann(base.WFS):
 
         self.lgs.getLgsPsf(self.los.scrns)
 
-        self.lgs_ifft_input_data[:] = self.lgs.psf[::-1, ::-1]
+        self.lgs_ifft_input_data[:] = self.lgs.psf  #self.lgs.psf[::-1, ::-1]
         self.lgs_iFFT()
 
         self.ifft_input_data[:] = self.subap_focus_intensity
@@ -444,8 +442,13 @@ class ShackHartmann(base.WFS):
         self.slopes[:] = slopes.reshape(self.n_subaps * 2)
 
         if self.config.removeTT == True:
-            self.slopes[:self.n_subaps] -= self.slopes[:self.n_subaps].mean()
-            self.slopes[self.n_subaps:] -= self.slopes[self.n_subaps:].mean()
+            _tip = self.slopes[:self.n_subaps].mean()
+            _tilt = self.slopes[self.n_subaps:].mean()
+            self.slopes[:self.n_subaps] -= _tip
+            # self.slopes[:self.n_subaps].mean()
+            self.slopes[self.n_subaps:] -= _tilt
+            # self.slopes[self.n_subaps:].mean()
+            self._tiptilt = numpy.array([_tip, _tilt]) * self.pixel_scale
 
         if self.config.angleEquivNoise and not self.iMat:
             pxlEquivNoise = (
