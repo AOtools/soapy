@@ -523,8 +523,10 @@ class Sim(object):
         ########################################
 
         # Get dmCommands from reconstructor
+        t_recon = time.time()
         if self.config.sim.nDM:
             self.dmCommands[:] = self.recon.reconstruct(self.slopes)
+        self.Trecon += (time.time() - t_recon)
 
         # Delay the dmCommands if loopDelay is configured
         self.dmCommands = self.buffer.delay(self.dmCommands, self.config.sim.loopDelay)
