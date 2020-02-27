@@ -13,8 +13,8 @@ setup(
     name='soapy',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    author='Andrew Reeves',
-    author_email='a.p.reeves@durham.ac.uk',
+    author='Andrew P. Reeves',
+    author_email='andrewpaulreeves@gmail.com',
     packages=find_packages(),
     scripts=['bin/soapy'],
     description='A tomographic astronomical adaptive optics simulation with realistic laser guide star propagation.',
@@ -23,6 +23,14 @@ setup(
         "numpy >= 1.7.0",
         "scipy >= 0.15.0",
         "astropy >= 1.0",
-        # "aotools >= 0.3.0"
+        "aotools >= 1.0.0",
+        "pyfftw >= 0.12.0"
       ],
+    classifiers=[
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+    ],
 )
