@@ -44,8 +44,6 @@ def zoom(array, newSize, order=3):
         return (realInterpObj(coordsY,coordsX) 
                             + 1j*imagInterpObj(coordsY,coordsX))
 
-        
-
     else:
 
         interpObj = interp2d(   numpy.arange(array.shape[0]),
@@ -70,11 +68,11 @@ def zoom_rbs(array, newSize, order=3):
         ndarray : zoom array of new size.
     """
     try:
-        xSize = newSize[0]
-        ySize = newSize[1]
+        xSize = int(newSize[0])
+        ySize = int(newSize[1])
 
     except IndexError:
-        xSize = ySize = newSize
+        xSize = ySize = int(newSize)
 
     coordsX = numpy.linspace(0, array.shape[0]-1, xSize)
     coordsY = numpy.linspace(0, array.shape[1]-1, ySize)
@@ -105,6 +103,13 @@ def binImgs(data, n):
     Bins one or more images down by the given factor
     bins. n must be a factor of data.shape, who knows what happens
     otherwise......
+
+    Parameters:
+        data (ndimage): 2 or 3d array of image(s) to bin
+        n (int): binning factor
+    
+    Returns:
+        binned image(s): ndarray
     '''
     shape = numpy.array( data.shape )
     
