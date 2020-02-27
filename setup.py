@@ -23,7 +23,7 @@ setup(
         "numpy >= 1.7.0",
         "scipy >= 0.15.0",
         "astropy >= 1.0",
-        "aotools >= 1.0.0",
+        "aotools >= 1.0",
         "pyfftw >= 0.12.0"
       ],
     classifiers=[
