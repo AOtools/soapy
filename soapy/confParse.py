@@ -746,6 +746,9 @@ class WfsConfig(ConfigObj):
         ``nx_guard_pixels``     int: Guard Pixels between
                                 Shack-Hartmann sub-apertures
                                 (Not currently operational)         ``0``
+        ``loadModule``          str: External module to load,       ``None``
+                                where the specified science 
+                                object is stored.  
         =====================   ================================== ===========
 
 
@@ -781,6 +784,7 @@ class WfsConfig(ConfigObj):
                         ("subapFOV", 5),
                         ("correlationFFTPad", None),
                         ("nx_guard_pixels", 0),
+                        ("loadModule", None)
                         ]
 
         # Parameters which may be Set at some point and are allowed
@@ -970,6 +974,9 @@ class DmConfig(ConfigObj):
                              use this string to define the path
                              to the fits file defining the DM
                              shapes.
+        ``loadModule``       str: External module to load,       ``None``
+                             where the specified science 
+                             object is stored.  
         ==================== =================================   ===========
     """
 
@@ -989,7 +996,8 @@ class DmConfig(ConfigObj):
         ("altitude", 0.),
         ("diameter", None),
         ("gauss_width", 0.7),
-        ("dmShapesFilename", None)
+        ("dmShapesFilename", None),
+        ("loadModule", None)
     ]
 
     calculatedParams = [
@@ -1027,6 +1035,9 @@ class ReconstructorConfig(ConfigObj):
                              loop.                               ``0.6``
         ``imat_noise``       bool: include WFS noise when
                              making in interaction matrix        ``True``
+        ``loadModule``       str: External module to load,       ``None``
+                             where the specified science 
+                             object is stored.  
         ==================== =================================   ===========
 
     """
@@ -1036,7 +1047,8 @@ class ReconstructorConfig(ConfigObj):
             ("type", "MVM"),
             ("svdConditioning", 0.),
             ("gain", 0.6),
-            ("imat_noise", True)
+            ("imat_noise", True),
+            ("loadModule", None)
                         ]
 
     calculatedParams = [
@@ -1092,7 +1104,9 @@ class SciConfig(ConfigObj):
         ``instStrehlWithTT`` bool: Whether or not to include
                              tip/tilt in instantaneous Strehl
                              calculations.                       ``False``
-
+        ``loadModule``       str: External module to load,       ``None``
+                             where the specified science 
+                             object is stored.  
         ==================== =================================   ===========
 
     """
@@ -1110,7 +1124,8 @@ class SciConfig(ConfigObj):
                         ("fftwThreads", 1),
                         ("instStrehlWithTT", False),
                         ("height", 0),
-                        ("propagationMode", "Geometric")
+                        ("propagationMode", "Geometric"),
+                        ("loadModule", None),
                         ]
 
     calculatedParams = [
