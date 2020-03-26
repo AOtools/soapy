@@ -534,14 +534,16 @@ class Sim(object):
         # Get next phase screens
         t = time.time()
         self.scrns = self.atmos.moveScrns()
-        self.Tatmos = time.time()-t
+        self.Tatmos += time.time()-t
 
         # Run Loop...
         ########################################
 
         # Get dmCommands from reconstructor
+        t_recon = time.time()
         if self.config.sim.nDM:
             self.dmCommands[:] = self.recon.reconstruct(self.slopes)
+        self.Trecon += (time.time() - t_recon)
 
         # Delay the dmCommands if loopDelay is configured
         self.dmCommands = self.buffer.delay(self.dmCommands, self.config.sim.loopDelay)

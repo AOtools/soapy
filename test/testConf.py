@@ -36,3 +36,9 @@ class TestConf(unittest.TestCase):
 
         config = confParse.loadSoapyConfig(
                 os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
+
+    def test_config_dict(self):
+
+        config = confParse.loadSoapyConfig(
+            os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
+        config_dict = dict(config)

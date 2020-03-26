@@ -21,10 +21,10 @@ before_install:
 - conda update --yes conda
 install:
 - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose astropy pyyaml matplotlib numba
-- python setup.py install
 - pip install pyfftw
 - pip install codecov
 - pip install aotools
+- python setup.py install
 script:
 - nosetests -vv --with-coverage --cover-package=soapy test/
 after_success:

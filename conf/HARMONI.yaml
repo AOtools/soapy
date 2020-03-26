@@ -133,7 +133,7 @@ DM:
 
 Reconstructor:
   type: MVM
-  svdConditioning: 0.01
+  svdConditioning: 0.001
   gain: 0.6
 
 

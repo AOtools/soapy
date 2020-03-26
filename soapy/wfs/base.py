@@ -162,6 +162,9 @@ class WFS(object):
         self.calcTiltCorrect()
         self.getStatic()
 
+        # base WFS makes no measurements....
+        # self.n_measurements = 0
+
 ############################################################
 # Initialisation routines
 
