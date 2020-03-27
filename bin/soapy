@@ -70,8 +70,8 @@ if __name__=="__main__":
 
     #Define parser and add arguments
     parser = ArgumentParser()
-    parser.add_argument("configFile", nargs="?", action="store",
-            help="The AO config file you wish to simulate. Defaults to conf/sh_8x8.py if none specified.")
+    parser.add_argument("configFile", nargs="?", action="store", required=True
+            help="The AO config file you wish to simulate.")
     parser.add_argument("--gui","-g", action="store_true", dest="gui",
             help="Starts the AO gui to visualise your simulation")
 
