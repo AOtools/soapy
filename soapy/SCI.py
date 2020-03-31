@@ -109,6 +109,7 @@ class PSF(object):
         self.longExpStrehl = 0
         self.instStrehl = 0
 
+
     def setMask(self, mask):
         """
         Sets the pupil mask as seen by the WFS.
@@ -123,6 +124,7 @@ class PSF(object):
             self.mask = aotools.circle(
                     self.pupil_size/2., self.sim_size,
                     )
+
 
     def calcFocalPlane(self):
         '''
@@ -151,6 +153,7 @@ class PSF(object):
 
         # Normalise the psf
         self.detector /= self.detector.sum()
+
 
     def calcInstStrehl(self):
         """
@@ -217,13 +220,16 @@ class singleModeFibre(PSF):
         self.fibre_efield = self.fibreEfield(self.fibreSize)
         print("Coupling efficiency: {0:.3f}".format(self.refStrehl))
 
+
     def fibreEfield(self, size):
         fibre_efield = aotools.gaussian2d((self.sim_size, self.sim_size), (size, size))
         fibre_efield /= numpy.sqrt(numpy.sum(numpy.abs(aotools.gaussian2d((self.sim_size*3, self.sim_size*3), (size, size)))**2))
         return fibre_efield
 
+
     def refCouplingLoss(self, size):
         return 1.0 - numpy.abs(numpy.sum(self.fibreEfield(size) * self.normMask))**2
+
 
     def calcInstStrehl(self):
         self.instStrehl = numpy.abs(numpy.sum(self.fibre_efield * self.los.EField * self.normMask))**2
