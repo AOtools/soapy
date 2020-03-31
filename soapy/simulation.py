@@ -81,7 +81,7 @@ except ImportError:
 import aotools
 
 #sim imports
-from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, interp
+from . import atmosphere, logger, wfs, DM, reconstruction, scienceinstrument, confParse, interp
 
 import shutil
 
@@ -254,7 +254,7 @@ class Sim(object):
         self.sciImgNo=0
         for nSci in xrange(self.config.sim.nSci):
             try:
-                sciObj = getattr(SCI, self.config.scis[nSci].type)
+                sciObj = getattr(scienceinstrument, self.config.scis[nSci].type)
             except AttributeError:
                 raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[nSci].type))
             self.sciCams[nSci] = sciObj(
@@ -591,10 +591,10 @@ class Sim(object):
                 self.ee50d[sci] = None
 
 
-
         # Finally save data after loop is over.
         self.saveData()
         self.finishUp()
+
 
     def reset_loop(self):
         """

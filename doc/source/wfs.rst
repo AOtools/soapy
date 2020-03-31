@@ -10,7 +10,7 @@ WFS Module
 Base WFS Class
 ==============
 
-.. autoclass:: soapy.wfs.base.WFS
+.. autoclass:: soapy.wfs.wfs.WFS
     :members:
 
 .. autoclass:: soapy.wfs.shackhartmann.ShackHartmann

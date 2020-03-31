@@ -11,7 +11,7 @@ from aotools.image_processing import centroiders
 from aotools import wfs
 
 from .. import AOFFT, LGS, logger, interp
-from . import base
+from . import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -24,7 +24,7 @@ except NameError:
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
-class ShackHartmannLegacy(base.WFS):
+class ShackHartmannLegacy(wfs.WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
     def calcInitParams(self):

@@ -17,7 +17,7 @@ except ImportError:
 from aotools import wfs
 
 from .. import AOFFT, LGS, logger
-from . import base
+from . import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -33,7 +33,7 @@ DTYPE = numpy.float32
 RAD2ASEC = 206264.849159
 ASEC2RAD = 1./RAD2ASEC
 
-class Gradient(base.WFS):
+class Gradient(wfs.WFS):
     """
     The Grandient WFS class.
 

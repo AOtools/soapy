@@ -15,11 +15,11 @@ def test_zoomtoefield():
     
 
     thread_pool = numbalib.ThreadPool(1)
-    numbalib.wfs.zoom(input_data, output_data, thread_pool=thread_pool)
+    numbalib.wfslib.zoom(input_data, output_data, thread_pool=thread_pool)
 
     output_efield1 = numpy.exp(1j * output_data)
 
-    numbalib.wfs.zoomtoefield(input_data, output_efield2)
+    numbalib.wfslib.zoomtoefield(input_data, output_efield2)
 
     assert numpy.allclose(output_efield1, output_efield2)
 
@@ -40,11 +40,11 @@ def test_zoomtoefield_threads():
         
 
         thread_pool = numbalib.ThreadPool(4)
-        numbalib.wfs.zoom(input_data, output_data, thread_pool=thread_pool)
+        numbalib.wfslib.zoom(input_data, output_data, thread_pool=thread_pool)
 
         output_efield1 = numpy.exp(1j * output_data)
 
-        numbalib.wfs.zoomtoefield(input_data, output_efield2)
+        numbalib.wfslib.zoomtoefield(input_data, output_efield2)
 
         assert numpy.allclose(output_efield1, output_efield2)
 
@@ -73,7 +73,7 @@ def test_chop_subaps_mask():
 
     numpy_chop(phase, subap_coords, nx_subap_size, numpy_subap_array, mask)
     thread_pool = numbalib.ThreadPool(1)
-    numbalib.wfs.chop_subaps_mask_pool(
+    numbalib.wfslib.chop_subaps_mask_pool(
             phase, subap_coords, nx_subap_size, subap_array, mask, thread_pool)
     assert numpy.array_equal(numpy_subap_array, subap_array)
 
@@ -106,7 +106,7 @@ def test_chop_subaps_mask_threads():
 
         numpy_chop(phase, subap_coords, nx_subap_size, numpy_subap_array, mask)
         thread_pool = numbalib.ThreadPool(1)
-        numbalib.wfs.chop_subaps_mask_pool(
+        numbalib.wfslib.chop_subaps_mask_pool(
                 phase, subap_coords, nx_subap_size, subap_array, mask, thread_pool)
 
         assert numpy.array_equal(numpy_subap_array, subap_array)
@@ -185,7 +185,7 @@ def test_place_subaps_detector():
     detector_coords = numpy.array(detector_coords).astype("int")
     subap_coords = numpy.array(subap_coords).astype("int")
 
-    numbalib.wfs.place_subaps_on_detector(
+    numbalib.wfslib.place_subaps_on_detector(
         subaps, detector, detector_coords, subap_coords)
 
     numpy_place_subaps(subaps, detector_numpy, detector_coords, subap_coords)

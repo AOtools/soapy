@@ -197,8 +197,10 @@ class LineOfSight(object):
         self.phase_screens = numpy.zeros((self.n_layers, self.nx_out_pixels, self.nx_out_pixels))
         # Buffer for corection across fulll FOV
         self.correction_screens = numpy.zeros((self.n_dm, self.nx_out_pixels, self.nx_out_pixels))
-        # Relavent correction centred on teh line of sight direction
+        # Relavent correction centred on the line of sight direction
         self.phase_correction = numpy.zeros((self.nx_out_pixels, self.nx_out_pixels))
+
+        self.allocDataArrays()
 
     def calculate_altitude_coords(self, layer_altitude):
         """

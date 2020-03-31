@@ -2,7 +2,7 @@ import numpy
 import numpy.random
 
 from .. import AOFFT, LGS, logger, interp
-from . import base
+from . import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -16,7 +16,7 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 
-class Pyramid(base.WFS):
+class Pyramid(wfs.WFS):
     """
     *Experimental* Pyramid WFS.
 
