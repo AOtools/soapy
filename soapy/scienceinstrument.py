@@ -73,8 +73,12 @@ class PSFCamera(object):
             self.FOVPxlNo * float(self.sim_size)
             / self.pupil_size)
         )
+
+        # If odd, keep off, if even, keep even, keeps padding an integer
         if self.padFOVPxlNo % 2 != self.FOVPxlNo % 2:
             self.padFOVPxlNo += 1
+        
+        self.fov_sim_pad = int((self.padFOVPxlNo - self.FOVPxlNo) // 2.)
 
         self.los = lineofsight.LineOfSight(
                 self.config, self.soapy_config,
@@ -84,13 +88,13 @@ class PSFCamera(object):
         if self.config.propagationMode == "Physical":
             # If physical prop, must do propagation at 
             # at FOV size 
-            out_pixel_scale = float(self.sim_size) / float(self.padFOVPxlNo)
+            out_pixel_scale = float(self.telescope_diameter) / float(self.FOVPxlNo)
             self.los.calcInitParams(
                     out_pixel_scale=out_pixel_scale,
                     nx_out_pixels=self.padFOVPxlNo
             )
         
-        # Cut out the mask just around the telesocpe aperture
+        # Cut out the mask just around the telescope aperture
         simpad = self.simConfig.simPad
         mask_pupil = self.mask[simpad: -simpad, simpad: -simpad]
         self.scaledMask = numpy.round(interp.zoom(mask_pupil, self.FOVPxlNo)
@@ -157,7 +161,11 @@ class PSFCamera(object):
         if self.config.propagationMode == "Physical":
             # If physical propagation, efield should already be the correct
             # size for the Field of View
-            self.EField_fov = self.los.EField * self.scaledMask
+            crop_efield = self.los.EField[
+                    self.fov_sim_pad: -self.fov_sim_pad,
+                    self.fov_sim_pad: -self.fov_sim_pad] # crop 
+                    
+            self.EField_fov = crop_efield * self.scaledMask
         else:
             # If geo prop...
 

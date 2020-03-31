@@ -334,7 +334,7 @@ class Sim(object):
 
         self.dmCommands = numpy.zeros(self.config.sim.totalActs)
 
-        self.Timat+= time.time() - t
+        self.Timat += time.time() - t
 
 
 
