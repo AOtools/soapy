@@ -50,7 +50,7 @@ class LineOfSight(object):
     Parameters:
         config: The soapy config for the line of sight
         simConfig: The soapy simulation config object
-        propagationDirection (str, optional): Direction of light propagation, either `"up"` or `"down"`
+        propagation_direction (str, optional): Direction of light propagation, either `"up"` or `"down"`
         outPxlScale (float, optional): The EField pixel scale required at the output (m/pxl)
         nOutPxls (int, optional): Number of pixels to return in EFIeld
         mask (ndarray, optional): Mask to apply at the *beginning* of propagation
@@ -68,6 +68,7 @@ class LineOfSight(object):
         self.sim_size = self.soapy_config.sim.simSize
         self.wavelength = self.config.wavelength
         self.telescope_diameter = self.soapy_config.tel.telDiam
+        self.propagation_direction = propagation_direction
 
         self.source_altitude = self.height
 
@@ -90,7 +91,6 @@ class LineOfSight(object):
         self.atmosConfig = soapyConfig.atmos
 
         self.mask = mask
-        self.propagation_direction = propagation_direction
 
         self.calcInitParams(out_pixel_scale, nx_out_pixels)
 
@@ -362,7 +362,7 @@ class LineOfSight(object):
         self.zeroData()
 
         # If we propagate up, must do correction first!
-        if (self.propagationDirection == "up") and correction:
+        if (self.propagation_direction == "up") and (correction is not None):
             self.performCorrection(correction)
 
         # Now do propagation through atmospheric turbulence
@@ -374,7 +374,7 @@ class LineOfSight(object):
 
         self.residual = self.phase
         # If propagating down, do correction last
-        if (self.propagationDirection == "down") and correction:
+        if (self.propagation_direction == "down") and (correction is not None):
             self.performCorrection(correction)
 
         return self.residual
@@ -400,6 +400,10 @@ def physical_atmosphere_propagation(
 
     phs2Rad = 2 * numpy.pi / (wavelength * 10 ** 9)
 
+    if input_efield is None:
+        EFieldBuf = numpy.exp(
+                1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
+
     # Get initial up/down dependent params
     if propagation_direction == "up":
         ht = 0
@@ -407,8 +411,8 @@ def physical_atmosphere_propagation(
         if ht_final==0:
             raise ValueError("Can't propagate up to infinity")
         scrnAlts = layer_altitudes
-
-        EFieldBuf = output_mask.copy().astype(CDTYPE)
+        # If propagating up from telescope, apply mask to the EField
+        EFieldBuf *= output_mask
         logger.debug("Create EField Buf of mask")
 
     else:
@@ -416,8 +420,6 @@ def physical_atmosphere_propagation(
         ht_final = 0
         scrnAlts = layer_altitudes[::-1]
         phase_screens = phase_screens[::-1]
-        EFieldBuf = numpy.exp(
-                1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
         logger.debug("Create EField Buf of zero phase")
 
     # Propagate to first phase screen (if not already there)
