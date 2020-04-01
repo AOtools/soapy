@@ -21,7 +21,6 @@ Examples::
     # Get resulting complex amplitude through line of sight
     EField = los.frame(some_phase_screens)
 
-
 """
 
 import numpy

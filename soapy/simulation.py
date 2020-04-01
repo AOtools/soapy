@@ -136,6 +136,7 @@ class Sim(object):
         self.config = confParse.loadSoapyConfig(self.configFile)
         logger.info("Loading configuration file... success!")
 
+
     def setLoggingLevel(self, level):
         """
         sets which messages are printed from logger.
@@ -148,6 +149,7 @@ class Sim(object):
             level (int): the desired logging level
         """
         logger.setLoggingLevel(level)
+
 
     def aoinit(self):
         '''
@@ -306,7 +308,6 @@ class Sim(object):
         self.Timat = 0
         self.Tatmos = 0
 
-
         logger.info("Initialisation Complete!")
 
 
@@ -356,7 +357,6 @@ class Sim(object):
         self.Timat += time.time() - t
 
 
-
     def runWfs_noMP(self, scrns = None, dmShape=None, wfsList=None,
                     loopIter=None):
         """
@@ -402,6 +402,7 @@ class Sim(object):
 
         self.Twfs+=time.time()-t_wfs
         return slopes
+
 
     def runWfs_MP(self, scrns=None, dmShape=None, wfsList=None, loopIter=None):
         """
@@ -475,6 +476,7 @@ class Sim(object):
         self.Twfs+=time.time()-t_wfs
         return slopes
 
+
     def runDM(self, dmCommands, closed=True):
         """
         Runs a single frame of the deformable mirrors
@@ -503,6 +505,7 @@ class Sim(object):
         self.Tdm += time.time() - t
         return correction_buffer
 
+
     def runSciCams(self, dmShape=None):
         """
         Runs a single frame of the science Cameras
@@ -526,6 +529,7 @@ class Sim(object):
                     self.sciCams[sci].psfMax)
 
         self.Tsci +=time.time()-t
+
 
     def loopFrame(self):
         """
@@ -879,8 +883,6 @@ class Sim(object):
                              "due to small FoV of Science Camera {}\n").
                             format(sci))
                 self.ee50d[sci] = None
-
-
 
         if self.config.sim.simName!=None:
 
