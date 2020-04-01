@@ -298,7 +298,7 @@ class LineOfSight(object):
         if self.propagation_direction == 'up':
             self.phase *= -1
 
-        self.EField[:] = numpy.exp(1j*self.phase)
+        self.EField[:] *= numpy.exp(1j*self.phase)
 
         return self.EField
 
@@ -311,12 +311,13 @@ class LineOfSight(object):
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
-        self.EField[:] = physical_atmosphere_propagation(
+        self.EField[:] *= physical_atmosphere_propagation(
             self.phase_screens, self.outMask, self.layer_altitudes, self.source_altitude,
             self.wavelength, self.out_pixel_scale,
             propagation_direction=self.propagation_direction)
 
         return self.EField
+
 
     def performCorrection(self, correction):
         """
@@ -360,14 +361,20 @@ class LineOfSight(object):
 
         self.zeroData()
 
+        # If we propagate up, must do correction first!
+        if (self.propagationDirection == "up") and correction:
+            self.performCorrection(correction)
+
+        # Now do propagation through atmospheric turbulence
         if scrns is not None:
             if scrns.ndim==2:
                 scrns.shape = 1, scrns.shape[0], scrns.shape[1]
             self.scrns = scrns
             self.makePhase(self.radii)
 
-        self.residual = self.phase        
-        if correction is not None:
+        self.residual = self.phase
+        # If propagating down, do correction last
+        if (self.propagationDirection == "down") and correction:
             self.performCorrection(correction)
 
         return self.residual
@@ -376,7 +383,7 @@ class LineOfSight(object):
 def physical_atmosphere_propagation(
             phase_screens, output_mask, layer_altitudes, source_altitude,
             wavelength, output_pixel_scale,
-            propagation_direction="up"):
+            propagation_direction="up", input_efield=None):
     '''
     Finds total line of sight complex amplitude by propagating light through phase screens
 

@@ -243,9 +243,6 @@ class PSFCamera(object):
 
         self.calcInstStrehl()
 
-        # Here so when viewing data, that outside of the pupil isn't visible.
-        # self.residual*=self.mask
-
         return self.detector
 
 
