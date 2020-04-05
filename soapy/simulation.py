@@ -119,6 +119,7 @@ class Sim(object):
         self.guiQueue = None
         self.go = False
 
+
     def readParams(self, configFile=None):
         """
         Reads configuration file parameters
@@ -134,6 +135,7 @@ class Sim(object):
         self.config = confParse.loadSoapyConfig(self.configFile)
         logger.info("Loading configuration file... success!")
 
+
     def setLoggingLevel(self, level):
         """
         sets which messages are printed from logger.
@@ -146,6 +148,7 @@ class Sim(object):
             level (int): the desired logging level
         """
         logger.setLoggingLevel(level)
+
 
     def aoinit(self):
         '''
