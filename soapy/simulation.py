@@ -119,6 +119,7 @@ class Sim(object):
         self.guiQueue = None
         self.go = False
 
+
     def readParams(self, configFile=None):
         """
         Reads configuration file parameters
@@ -134,6 +135,7 @@ class Sim(object):
         self.config = confParse.loadSoapyConfig(self.configFile)
         logger.info("Loading configuration file... success!")
 
+
     def setLoggingLevel(self, level):
         """
         sets which messages are printed from logger.
@@ -147,6 +149,7 @@ class Sim(object):
         """
         logger.setLoggingLevel(level)
 
+
     def aoinit(self):
         '''
         Initialises all simulation objects.
@@ -157,7 +160,6 @@ class Sim(object):
         setting propagation modes and pre-allocating data arrays 
         used later in the simulation.
         '''
-
         # Read params if they haven't been read before
         try:
             self.config.sim.pupilSize
@@ -783,7 +785,6 @@ class Sim(object):
 
         if self.config.sim.saveDmCommands:
             act=0
-
             self.allDmCommands[i,act:] = self.dmCommands
 
         #Quick bodge to save lgs psfs as images
@@ -824,6 +825,7 @@ class Sim(object):
         if self.config.sim.nSci>0 and self.config.sim.saveInstScieField==True:
             for sci in xrange(self.config.sim.nSci):
                 self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield
+
 
     def saveData(self):
         """

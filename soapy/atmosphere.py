@@ -45,7 +45,6 @@ Examples:
 
         for i in range(10):
             randomPhaseScrns = atmosphere.randomScrns()
-
 """
 
 import os
