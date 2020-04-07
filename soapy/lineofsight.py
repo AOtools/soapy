@@ -216,7 +216,10 @@ class LineOfSight(object):
 
         # If propagating up must account for launch position
         if self.propagation_direction == "up":
-            centre += self.launch_position * (1 - layer_altitude/self.source_altitude)
+            if self.source_altitude == 0:
+                centre += self.launch_position
+            else:
+                centre += self.launch_position * (1 - layer_altitude/self.source_altitude)
 
         if self.source_altitude != 0:
             meta_pupil_size = self.output_phase_diameter * (1 - layer_altitude / self.source_altitude)
@@ -278,7 +281,6 @@ class LineOfSight(object):
             return self.makePhaseGeometric(radii)
 
 
-
     def makePhaseGeometric(self, radii=None, apos=None):
         '''
         Creates the total phase along line of sight offset by a given angle using a geometric ray tracing approach
@@ -289,18 +291,21 @@ class LineOfSight(object):
         '''
 
 
-        self.phase_screens.sum(0, out=self.phase)
+        geo_phase = self.phase_screens.sum(0)
 
         # Convert phase to radians
-        self.phase *= self.phs2Rad
+        geo_phase *= self.phs2Rad
 
         # Change sign if propagating up
         if self.propagation_direction == 'up':
-            self.phase *= -1
+            geo_phase *= -1
+
+        self.phase[:] = geo_phase
 
         self.EField[:] *= numpy.exp(1j*self.phase)
 
         return self.EField
+
 
     def makePhasePhys(self, radii=None, apos=None):
         '''

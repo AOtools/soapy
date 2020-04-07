@@ -93,7 +93,7 @@ class PSFCamera(object):
 
         self.los = lineofsight.LineOfSight(
                 self.config, self.soapy_config,
-                propagation_direction="down")
+                propagation_direction=self.config.propagationDir)
 
         # Init line of sight - Get the phase at the right size for the FOV
         if self.config.propagationMode == "Physical":
