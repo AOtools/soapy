@@ -192,22 +192,25 @@ class PSFCamera(object):
             # Field of View on the detector
             numbalib.bilinear_interp(
                     self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
-                    self.thread_pool, bounds_check=False)
+                    thread_pool=self.thread_pool, bounds_check=False)
 
             self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 
-        # Get the focal plan using an FFT
+        # Get the focal plane using an FFT
         self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov
         self.focus_efield = AOFFT.ftShift2d(self.FFT())
 
         # Turn complex efield into intensity
         numbalib.abs_squared(self.focus_efield, out=self.focus_intensity)
 
+        if self.fft_crop_elements != 0:
         # Bin down to detector number of pixels
-        fov_focus_intensity = self.focus_intensity[
-                self.fft_crop_elements: -self.fft_crop_elements,
-                self.fft_crop_elements: -self.fft_crop_elements
-        ]
+            fov_focus_intensity = self.focus_intensity[
+                    self.fft_crop_elements: -self.fft_crop_elements,
+                    self.fft_crop_elements: -self.fft_crop_elements
+            ]
+        else:
+            fov_focus_intensity = self.focus_intensity
         # numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
         numbalib.bin_img(fov_focus_intensity, self.config.fftOversamp, self.detector)
         # Normalise the psf
