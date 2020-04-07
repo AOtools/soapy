@@ -67,6 +67,7 @@ import traceback
 from multiprocessing import Process, Queue
 from argparse import ArgumentParser
 import shutil
+import importlib
 
 import numpy
 #Use pyfits or astropy for fits file handling
@@ -192,7 +193,11 @@ class Sim(object):
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for nwfs in xrange(self.config.sim.nGS):
             try:
-                wfsClass = getattr(wfs, self.config.wfss[nwfs].type)
+                if self.config.wfss[nwfs].loadModule:
+                    wfs_lib = importlib.import_module(self.config.wfsss[nwfs].loadModule)
+                else:
+                    wfs_lib = wfs
+                wfsClass = getattr(wfs_lib, self.config.wfss[nwfs].type)
             except AttributeError:
                 raise confParse.ConfigurationError(
                         "No WFS of type {} found.".format(
@@ -217,7 +222,11 @@ class Sim(object):
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
-                dmObj = getattr(DM, self.config.dms[dm].type)
+                if self.config.dms[dm].loadModule:
+                    dm_lib = importlib.import_module(self.config.dms[dm].loadModule)
+                else:
+                    dm_lib = DM
+                dmObj = getattr(dm_lib, self.config.dms[dm].type)
             except AttributeError:
                 raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
@@ -239,7 +248,11 @@ class Sim(object):
         # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
-            reconObj = getattr(reconstruction, self.config.recon.type)
+            if self.config.recon.loadModule:
+                recon_lib = importlib.import_module(self.config.recon.loadModule)
+            else:
+                recon_lib = reconstruction
+            reconObj = getattr(recon_lib, self.config.recon.type)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.recon.type))
         self.recon = reconObj(
@@ -254,7 +267,11 @@ class Sim(object):
         self.sciImgNo=0
         for nSci in xrange(self.config.sim.nSci):
             try:
-                sciObj = getattr(scienceinstrument, self.config.scis[nSci].type)
+                if self.config.scis[nSci].loadModule:
+                    sci_lib = importlib.import_module(self.config.scis[nSci].loadModule)
+                else:
+                    sci_lib = scienceinstrument
+                sciObj = getattr(sci_lib, self.config.scis[nSci].type)
             except AttributeError:
                 raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[nSci].type))
             self.sciCams[nSci] = sciObj(
