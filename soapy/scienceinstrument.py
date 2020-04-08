@@ -63,8 +63,6 @@ class PSFCamera(object):
 
         self.setMask(mask)
 
-        self.thread_pool = numbalib.ThreadPool(self.threads)
-
         # Calculate the number of pixels required in the aperture plane
         # To generate the correct FOV in the focal plane
         self.FOVPxlNo = int(numpy.round(
@@ -199,7 +197,7 @@ class PSFCamera(object):
             # Field of View on the detector
             numbalib.bilinear_interp(
                     self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
-                    thread_pool=self.thread_pool, bounds_check=False)
+                    bounds_check=False)
 
             self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 

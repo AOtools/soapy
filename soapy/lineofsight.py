@@ -85,8 +85,6 @@ class LineOfSight(object):
         except AttributeError:
             self.launch_position = numpy.array([0, 0])
 
-        self.threads = self.soapy_config.sim.threads
-
         self.simConfig = soapyConfig.sim
         self.atmosConfig = soapyConfig.atmos
 
@@ -98,8 +96,6 @@ class LineOfSight(object):
 
         # Can be set to use other values as metapupil position
         self.metaPupilPos = metaPupilPos
-
-        self.thread_pool = numbalib.ThreadPool(self.threads)
 
 
     # Some attributes for compatability between WFS and others
@@ -260,6 +256,7 @@ class LineOfSight(object):
         self.phase_screens[:] = 0
         self.correction_screens[:] = 0
 
+
     def makePhase(self, radii=None, apos=None):
         """
         Generates the required phase or EField. Uses difference approach depending on whether propagation is geometric or physical
@@ -272,7 +269,7 @@ class LineOfSight(object):
         for i in range(self.scrns.shape[0]):
             numbalib.bilinear_interp(
                 self.scrns[i], self.layer_metapupil_coords[i, 0], self.layer_metapupil_coords[i, 1],
-                self.phase_screens[i], self.thread_pool, bounds_check=False)
+                self.phase_screens[i], bounds_check=False)
 
         # Check if geometric or physical
         if self.config.propagationMode == "Physical":
@@ -333,7 +330,7 @@ class LineOfSight(object):
         for i in range(correction.shape[0]):
             numbalib.bilinear_interp(
                 correction[i], self.dm_metapupil_coords[i, 0], self.dm_metapupil_coords[i, 1],
-                self.correction_screens[i], self.thread_pool, bounds_check=False)
+                self.correction_screens[i], bounds_check=False)
 
         self.correction_screens.sum(0, out=self.phase_correction)
 

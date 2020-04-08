@@ -13,40 +13,13 @@ def test_zoomtoefield():
     output_data = numpy.zeros((100, 100), dtype="float32")
     output_efield2 = numpy.zeros((100, 100), dtype="complex64")
     
-
-    thread_pool = numbalib.ThreadPool(1)
-    numbalib.wfslib.zoom(input_data, output_data, thread_pool=thread_pool)
+    numbalib.zoom(input_data, output_data)
 
     output_efield1 = numpy.exp(1j * output_data)
 
     numbalib.wfslib.zoomtoefield(input_data, output_efield2)
 
     assert numpy.allclose(output_efield1, output_efield2)
-
-
-
-def test_zoomtoefield_threads():
-    """
-    Checks that when zooming to efield, the same result is found as when zooming
-    then using numpy.exp to get efield.
-    Uses multiple threads and runs many times in case of intermittant threading bugs
-    """
-
-    # Perform this tests many times to catch any intermittent errors
-    for i in range(50):
-        input_data = numpy.random.random((10,10)).astype("float32")
-        output_data = numpy.zeros((100, 100), dtype="float32")
-        output_efield2 = numpy.zeros((100, 100), dtype="complex64")
-        
-
-        thread_pool = numbalib.ThreadPool(4)
-        numbalib.wfslib.zoom(input_data, output_data, thread_pool=thread_pool)
-
-        output_efield1 = numpy.exp(1j * output_data)
-
-        numbalib.wfslib.zoomtoefield(input_data, output_efield2)
-
-        assert numpy.allclose(output_efield1, output_efield2)
 
 
 def test_chop_subaps_mask():
@@ -72,44 +45,42 @@ def test_chop_subaps_mask():
     subap_coords = numpy.array([x_coords.flatten(), y_coords.flatten()]).T
 
     numpy_chop(phase, subap_coords, nx_subap_size, numpy_subap_array, mask)
-    thread_pool = numbalib.ThreadPool(1)
-    numbalib.wfslib.chop_subaps_mask_pool(
-            phase, subap_coords, nx_subap_size, subap_array, mask, thread_pool)
+    numbalib.wfslib.chop_subaps_mask(
+            phase, subap_coords, nx_subap_size, subap_array, mask)
     assert numpy.array_equal(numpy_subap_array, subap_array)
 
 
-def test_chop_subaps_mask_threads():
-    """
-    Tests that the numba routing chops phase into sub-apertures in the same way
-    as using numpy indices
-    Runs with multiple threads many times to detectect potential intermittant errors
-    """
-    nx_phase = 12
-    nx_subap_size = 3
-    nx_subaps = nx_phase // nx_subap_size
+# def test_chop_subaps_mask_threads():
+#     """
+#     Tests that the numba routing chops phase into sub-apertures in the same way
+#     as using numpy indices
+#     Runs with multiple threads many times to detectect potential intermittant errors
+#     """
+#     nx_phase = 12
+#     nx_subap_size = 3
+#     nx_subaps = nx_phase // nx_subap_size
 
-    subap_array = numpy.zeros((nx_subaps * nx_subaps, nx_subap_size, nx_subap_size)).astype("complex64")
-    numpy_subap_array = subap_array.copy()
+#     subap_array = numpy.zeros((nx_subaps * nx_subaps, nx_subap_size, nx_subap_size)).astype("complex64")
+#     numpy_subap_array = subap_array.copy()
 
-    mask = aotools.circle(nx_phase/2., nx_phase)
+#     mask = aotools.circle(nx_phase/2., nx_phase)
 
-    x_coords, y_coords = numpy.meshgrid(
-            numpy.arange(0, nx_phase, nx_subap_size),
-            numpy.arange(0, nx_phase, nx_subap_size))
-    subap_coords = numpy.array([y_coords.flatten(),x_coords.flatten()]).T
+#     x_coords, y_coords = numpy.meshgrid(
+#             numpy.arange(0, nx_phase, nx_subap_size),
+#             numpy.arange(0, nx_phase, nx_subap_size))
+#     subap_coords = numpy.array([y_coords.flatten(),x_coords.flatten()]).T
 
 
-    for i in range(50):
-        phase = (numpy.random.random((nx_phase, nx_phase)) 
-                + 1j * numpy.random.random((nx_phase, nx_phase))
-                ).astype("complex64")
+#     for i in range(50):
+#         phase = (numpy.random.random((nx_phase, nx_phase)) 
+#                 + 1j * numpy.random.random((nx_phase, nx_phase))
+#                 ).astype("complex64")
 
-        numpy_chop(phase, subap_coords, nx_subap_size, numpy_subap_array, mask)
-        thread_pool = numbalib.ThreadPool(1)
-        numbalib.wfslib.chop_subaps_mask_pool(
-                phase, subap_coords, nx_subap_size, subap_array, mask, thread_pool)
+#         numpy_chop(phase, subap_coords, nx_subap_size, numpy_subap_array, mask)
+#         numbalib.wfslib.chop_subaps_mask(
+#                 phase, subap_coords, nx_subap_size, subap_array, mask)
 
-        assert numpy.array_equal(numpy_subap_array, subap_array)
+#         assert numpy.array_equal(numpy_subap_array, subap_array)
 
 def numpy_chop(phase, subap_coords, nx_subap_size, subap_array, mask):
     """
@@ -144,7 +115,6 @@ def test_place_subaps_detector():
     tot_pxls_per_subap = 2 * pxls_per_subap # More for total FOV
     tot_subaps = nx_subaps * nx_subaps
     nx_pxls = nx_subaps * pxls_per_subap
-    n_threads = 1
 
     detector = numpy.zeros((nx_pxls, nx_pxls))
     detector_numpy = detector.copy()
