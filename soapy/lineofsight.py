@@ -291,18 +291,17 @@ class LineOfSight(object):
         '''
 
 
-        geo_phase = self.phase_screens.sum(0)
+        self.atmos_phase = self.phase_screens.sum(0)
 
         # Convert phase to radians
-        geo_phase *= self.phs2Rad
+        self.atmos_phase *= self.phs2Rad
 
         # Change sign if propagating up
-        if self.propagation_direction == 'up':
-            geo_phase *= -1
+        # if self.propagation_direction == 'up':
+        #     self.atmos_phase *= -1
 
-        self.phase[:] = geo_phase
-
-        self.EField[:] *= numpy.exp(1j*self.phase)
+        self.phase[:] += self.atmos_phase
+        self.EField[:] *= numpy.exp(1j*self.atmos_phase)
 
         return self.EField
 
@@ -338,11 +337,12 @@ class LineOfSight(object):
 
         self.correction_screens.sum(0, out=self.phase_correction)
 
+        self.phase_correction *= self.phs2Rad
         # Correct EField
-        self.EField *= numpy.exp(-1j * self.phase_correction * self.phs2Rad)
+        self.EField *= numpy.exp(-1j * self.phase_correction)
 
         # Also correct phase in case its required
-        self.residual = self.phase / self.phs2Rad - self.phase_correction
+        self.residual = (self.phase - self.phase_correction) / self.phs2Rad
 
         self.phase = self.residual * self.phs2Rad
 
@@ -446,8 +446,8 @@ def physical_atmosphere_propagation(
         phase *= phs2Rad
 
         # Change sign if propagating up
-        if propagation_direction == 'up':
-            phase *= -1
+        # if propagation_direction == 'up':
+        #     phase *= -1
         # print("Get distance")
         # Get propagation distance for this layer
         if i==(scrnNo-1):
