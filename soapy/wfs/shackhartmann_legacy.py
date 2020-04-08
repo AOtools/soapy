@@ -8,7 +8,7 @@ import numpy.random
 
 import aotools
 from aotools.image_processing import centroiders
-from aotools import wfs
+import aotools
 
 from .. import AOFFT, LGS, logger, interp
 from . import wfs
@@ -90,7 +90,7 @@ class ShackHartmannLegacy(wfs.WFS):
                 self.sim_pad : -self.sim_pad,
                 self.sim_pad : -self.sim_pad
                 ]
-        self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
+        self.subapCoords, self.subapFillFactor = aotools.wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, mask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
@@ -109,7 +109,7 @@ class ShackHartmannLegacy(wfs.WFS):
                     self.mask, self.scaledEFieldSize))
 
         p = self.sim_pad
-        self.subapFillFactor = wfs.computeFillFactor(
+        self.subapFillFactor = aotools.wfs.computeFillFactor(
                 self.mask[p:-p, p:-p],
                 self.subapCoords,
                 round(float(self.pupil_size)/self.wfsConfig.nxSubaps)
@@ -163,6 +163,7 @@ class ShackHartmannLegacy(wfs.WFS):
                     fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
+
     def initLGS(self):
         super(ShackHartmannLegacy, self).initLGS()
         if self.lgsConfig.uplink:
@@ -173,6 +174,7 @@ class ShackHartmannLegacy(wfs.WFS):
                     nOutPxls=self.subapFFTPadding,
                     outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
                     )
+
 
     def allocDataArrays(self):
         """
@@ -228,6 +230,7 @@ class ShackHartmannLegacy(wfs.WFS):
 
         else:
             self.tiltFix = numpy.zeros((self.subapFOVSpacing,)*2)
+
 
     def getStatic(self):
         """

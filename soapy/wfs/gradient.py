@@ -14,7 +14,7 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from aotools import wfs
+import aotools
 
 from .. import AOFFT, LGS, logger
 from . import wfs
@@ -78,7 +78,7 @@ class Gradient(wfs.WFS):
                 self.sim_pad : -self.sim_pad,
                 self.sim_pad : -self.sim_pad
                 ]
-        self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
+        self.subapCoords, self.subapFillFactor = aotools.wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, pupilMask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
