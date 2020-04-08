@@ -392,9 +392,11 @@ def physical_atmosphere_propagation(
     '''
     Finds total line of sight complex amplitude by propagating light through phase screens
 
+    If the source altitude is infinity (denoted as 0), then the result of the propagation is
+    the
+
     Parameters:
-        radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
-        apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
+
     '''
 
     scrnNo = len(phase_screens)
@@ -413,8 +415,8 @@ def physical_atmosphere_propagation(
     if propagation_direction == "up":
         ht = 0
         ht_final = source_altitude
-        if ht_final==0:
-            raise ValueError("Can't propagate up to infinity")
+        # if ht_final==0:
+        #     raise ValueError("Can't propagate up to infinity")
         scrnAlts = layer_altitudes
         # If propagating up from telescope, apply mask to the EField
         EFieldBuf *= output_mask
@@ -445,13 +447,20 @@ def physical_atmosphere_propagation(
         # Convert phase to radians
         phase *= phs2Rad
 
+        # Apply phase to EField
+        EFieldBuf *= numpy.exp(1j*phase)
+
         # Change sign if propagating up
         # if propagation_direction == 'up':
         #     phase *= -1
         # print("Get distance")
         # Get propagation distance for this layer
         if i==(scrnNo-1):
-            z = abs(ht_final - ht) - z_total
+            if ht_final == 0:
+                # if the final height is infinity, don't propagate any more!
+                continue
+            else:
+                z = abs(ht_final - ht) - z_total
         else:
             z = abs(scrnAlts[i+1] - scrnAlts[i])
 
@@ -459,8 +468,7 @@ def physical_atmosphere_propagation(
         z_total += z
 
         # print("Make EField")
-        # Apply phase to EField
-        EFieldBuf *= numpy.exp(1j*phase)
+
 
         # Do ASP for last layer to next
         EFieldBuf[:] = opticalpropagation.angularSpectrum(

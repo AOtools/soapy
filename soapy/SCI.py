@@ -67,7 +67,7 @@ class PSF(object):
                 self.config, self.soapy_config,
                 propagation_direction="down")
 
-        # Cut out the mask just around the telesocpe aperture
+        # Cut out the mask just around the telescope aperture
         simpad = self.simConfig.simPad
         mask_pupil = self.mask[simpad: -simpad, simpad: -simpad]
         self.scaledMask = numpy.round(interp.zoom(mask_pupil, self.FOVPxlNo)

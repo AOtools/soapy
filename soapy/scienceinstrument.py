@@ -91,9 +91,16 @@ class PSFCamera(object):
             self.padFOVPxlNo += 1
         self.fov_sim_pad = int((self.padFOVPxlNo - self.FOVPxlNo) // 2.)
 
+        # If propagation direction is up, need to consider a mask in the optical propagation
+        # Otherwise, we'll apply it later
+        if self.config.propagationDir == "up":
+            los_mask = self.mask
+        else:
+            los_mask = None
+
         self.los = lineofsight.LineOfSight(
                 self.config, self.soapy_config,
-                propagation_direction=self.config.propagationDir)
+                propagation_direction=self.config.propagationDir, mask=los_mask)
 
         # Init line of sight - Get the phase at the right size for the FOV
         if self.config.propagationMode == "Physical":
