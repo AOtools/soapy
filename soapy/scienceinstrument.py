@@ -204,7 +204,18 @@ class PSFCamera(object):
             self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 
         # Get the focal plane using an FFT
-        self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov
+        # Reset the FFT from the previous iteration
+        self.FFT.inputData[:] = 0
+        # place the array in the centre of the padding
+        self.FFT.inputData[
+                (self.FFTPadding - self.FOVPxlNo)//2:
+                (self.FFTPadding + self.FOVPxlNo)//2, 
+                (self.FFTPadding - self.FOVPxlNo)//2:
+                (self.FFTPadding + self.FOVPxlNo)//2
+                ] = self.EField_fov
+        # This means we can do a pre-fft shift properly. This is neccessary for anythign that 
+        # cares about the EField of the focal plane, not just the intensity pattern
+        self.FFT.inputData[:] = numpy.fft.fftshift(self.FFT.inputData)
         self.focus_efield = AOFFT.ftShift2d(self.FFT())
 
         # Turn complex efield into intensity
