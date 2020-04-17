@@ -767,7 +767,6 @@ class IPythonConsole:
         self.kernel_client = self.kernel_manager.client()
         self.kernel_client.start_channels()
 
-
         control = RichIPythonWidget()
         control.kernel_manager = self.kernel_manager
         control.kernel_client = self.kernel_client
