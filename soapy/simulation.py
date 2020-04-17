@@ -68,6 +68,7 @@ from multiprocessing import Process, Queue
 from argparse import ArgumentParser
 import shutil
 import importlib
+import threading
 
 import numpy
 #Use pyfits or astropy for fits file handling
@@ -118,6 +119,7 @@ class Sim(object):
 
         self.guiQueue = None
         self.go = False
+        self._sim_running = False
 
 
     def readParams(self, configFile=None):
@@ -306,7 +308,6 @@ class Sim(object):
         self.Timat = 0
         self.Tatmos = 0
 
-
         logger.info("Initialisation Complete!")
 
 
@@ -356,7 +357,6 @@ class Sim(object):
         self.Timat += time.time() - t
 
 
-
     def runWfs_noMP(self, scrns = None, dmShape=None, wfsList=None,
                     loopIter=None):
         """
@@ -402,6 +402,7 @@ class Sim(object):
 
         self.Twfs+=time.time()-t_wfs
         return slopes
+
 
     def runWfs_MP(self, scrns=None, dmShape=None, wfsList=None, loopIter=None):
         """
@@ -475,6 +476,7 @@ class Sim(object):
         self.Twfs+=time.time()-t_wfs
         return slopes
 
+
     def runDM(self, dmCommands, closed=True):
         """
         Runs a single frame of the deformable mirrors
@@ -503,6 +505,7 @@ class Sim(object):
         self.Tdm += time.time() - t
         return correction_buffer
 
+
     def runSciCams(self, dmShape=None):
         """
         Runs a single frame of the science Cameras
@@ -526,6 +529,7 @@ class Sim(object):
                     self.sciCams[sci].psfMax)
 
         self.Tsci +=time.time()-t
+
 
     def loopFrame(self):
         """
@@ -568,13 +572,15 @@ class Sim(object):
         self.runSciCams(self.combinedCorrection)
 
         # Save Data
-        self.storeData(self.iters)
+        i = self.iters % self.config.sim.nIters # If sim is run continuously in loop, overwrite oldest data in buffer
+        self.storeData(i)
 
         self.printOutput(self.iters, strehl=True)
 
         self.addToGuiQueue()
 
         self.iters += 1
+
 
     def aoloop(self):
         """
@@ -584,8 +590,6 @@ class Sim(object):
         """
 
         self.go = True
-
-
         try:
             while self.iters < self.config.sim.nIters:
                 if self.go:
@@ -596,23 +600,54 @@ class Sim(object):
             self.go = False
             logger.info("\nSim exited by user\n")
 
-        # compute final ee50d
-        for sci in range(self.config.sim.nSci):
-            pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
-            ee50d = aotools.encircled_energy(
-                self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
-            if ee50d < (self.sciCams[sci].fov / 2):
-                self.ee50d[sci] = ee50d
-            else:
-                logger.info(("\nEE50d computation invalid "
-                             "due to small FoV of Science Camera {}\n").
-                            format(sci))
-                self.ee50d[sci] = None
-
 
         # Finally save data after loop is over.
         self.saveData()
         self.finishUp()
+
+
+    def start_aoloop_thread(self):
+        """
+        Run the simulation continuously in a thread
+
+        The Simulation will loop continuously as long as it is required. The data buffers for
+        simulation are limited however to the size given by sim.config.nIters. Once this is 
+        full, the oldest data will be overwritten.
+        """
+        if self._sim_running is False:
+            self._loop_thread = threading.Thread(
+                    target=self._aoloop_thread, daemon=True)
+
+            self._sim_running = True
+            self._loop_thread.start()
+
+
+    def stop_aoloop_thread(self):
+        """
+        Stops the AO loop if its running continuously in a thread.
+
+        Stops the simulation after the current iteration and joins the loop thread.
+        Will save the data buffers to disk if configured to do so and v
+        the output summary
+        """
+
+        if self._sim_running:
+            # signal for thread to stop
+            self._sim_running = False
+            # wait for thread to finish
+            self._loop_thread.join()
+
+            # save data and finish up
+            self.saveData()
+            self.finishUp()
+            
+
+    def _aoloop_thread(self):
+        """
+        Runs the AO Loop as a while loop to be used in a thread
+        """
+        while self._sim_running:
+            self.loopFrame()
 
 
     def reset_loop(self):
@@ -640,6 +675,7 @@ class Sim(object):
         
         for dm in self.dms.values(): dm.reset()
 
+
     def finishUp(self):
         """
         Prints a message to the console giving timing data. Used on sim end.
@@ -661,7 +697,6 @@ class Sim(object):
         print("Time in DM: %0.2f"%self.Tdm)
         print("Time making science image: %0.2f"%self.Tsci)
         print("\n")
-
 
 
     def initSaveData(self):
@@ -835,6 +870,19 @@ class Sim(object):
         the simulation to disk in the directories created during initialisation.
         """
 
+        # compute final ee50d
+        for sci in range(self.config.sim.nSci):
+            pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
+            ee50d = aotools.encircled_energy(
+                self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
+            if ee50d < (self.sciCams[sci].fov / 2):
+                self.ee50d[sci] = ee50d
+            else:
+                logger.info(("\nEE50d computation invalid "
+                             "due to small FoV of Science Camera {}\n").
+                            format(sci))
+                self.ee50d[sci] = None
+
         if self.config.sim.simName!=None:
 
             if self.config.sim.saveSlopes:
@@ -994,6 +1042,7 @@ class Sim(object):
         header["NFRAMES"] = self.config.sim.nIters
 
         return header
+
 
     def getTimeStamp(self):
         """
