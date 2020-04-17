@@ -52,6 +52,7 @@ from .atmosphere import makePhaseScreens
 
 # Compatability with older API
 from . import wfs as WFS
+from . import scienceinstrument as SCI
 
 #Try to import GUI, if not then its ok
 # Don't do this as it slows down importing for script or CLI use
