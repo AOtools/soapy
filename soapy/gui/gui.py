@@ -29,7 +29,7 @@ API_VERSION = 2
 for name in API_NAMES:
     sip.setapi(name, API_VERSION)
 
-from . import logger
+from .. import logger
 # Attempt to import PyQt5, if not try PyQt4
 try:
     from PyQt5 import QtGui, QtWidgets, QtCore
@@ -57,7 +57,7 @@ elif PYQT_VERSION == 4:
 
 from matplotlib.figure import Figure
 import matplotlib.pyplot as pyplot
-from . import pyqtgraph
+from .. import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
 # set default colourmaps available
@@ -171,7 +171,7 @@ class GUI(QtWidgets.QMainWindow):
         self.sciPlots = {}
         self.resPlots = {}
 
-        self.console = IPythonConsole(self.ui.consoleLayout,self.sim,self)
+        self.console = IPythonConsole(self.ui.consoleLayout, self.sim, self)
 
         self.loopRunning=False
         self.makingIMat=False
@@ -739,10 +739,12 @@ class IPythonConsole:
         # Create an in-process kernel
 
         self.kernel_manager = QtInProcessKernelManager()
+        # self.kernel_manager = QtKernelManager()
         self.kernel_manager.start_kernel()
+
         self.kernel = self.kernel_manager.kernel
 
-        self.kernel.shell.write("Welcome to AO Sim!\n")
+        # self.kernel.shell.write("Welcome to AO Sim!\n")
 
         config = sim.config
         #Pass some useful objects to the user
@@ -753,16 +755,17 @@ class IPythonConsole:
                             "telConfig" : sim.config.tel,
                             "atmosConfig" : sim.config.atmos,
                             "np" : numpy,
-                            "plt" : pyplot}
+                            "plt" : pyplot
+                            }
 
-        for i in range(sim.config.sim.nGS):
-            usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
-        for i in range(sim.config.sim.nDM):
-            usefulObjects["dm{}Config".format(i)] = sim.config.dms[i]
-        for i in range(sim.config.sim.nSci):
-            usefulObjects["sci{}Config".format(i)] = sim.config.scis[i]
+        # for i in range(sim.config.sim.nGS):
+        #     usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
+        # for i in range(sim.config.sim.nDM):
+        #     usefulObjects["dm{}Config".format(i)] = sim.config.dms[i]
+        # for i in range(sim.config.sim.nSci):
+        #     usefulObjects["sci{}Config".format(i)] = sim.config.scis[i]
 
-        self.kernel.shell.push(usefulObjects)
+        # self.kernel.shell.push(usefulObjects)
 
         self.kernel_client = self.kernel_manager.client()
         self.kernel_client.start_channels()
@@ -774,15 +777,17 @@ class IPythonConsole:
         control.exit_requested.connect(self.stop)
         layout.addWidget(control)
 
-        self.kernel.shell.ex("")
+        # self.kernel.shell.ex("")
 
     def stop(self):
         self.kernel_client.stop_channels()
         self.kernel_manager.shutdown_kernel()
 
     def write(self,message):
-        self.kernel.shell.write(message)
-        self.kernel.shell.ex("")
+        pass
+        # self.kernel.shell.write(message)
+        # self.kernel.shell.ex("")
+
 
 class OverlapCanvas(FigureCanvas):
     def __init__(self, nAxes):
@@ -832,11 +837,11 @@ def start_gui(simulation, useOpenGL=False, verbosity=1):
     gui = GUI(simulation, useOpenGL=useOpenGL, verbosity=verbosity)
 
     app.exec_()
-    del(gui.initThread)
-    del(gui.iMatThread)
-    del(gui.loopThread)
-    del(gui.console)
-    del(gui)
+    # del(gui.initThread)
+    # del(gui.iMatThread)
+    # del(gui.loopThread)
+    # del(gui.console)
+    # del(gui)
     # sys.exit()
 
 if __name__ == "__main__":
