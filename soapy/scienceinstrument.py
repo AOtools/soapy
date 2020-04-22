@@ -184,11 +184,10 @@ class PSFCamera(object):
         if self.config.propagationMode == "Physical":
             # If physical propagation, efield should already be the correct
             # size for the Field of View
-            crop_efield = self.los.EField[
+            self.EField_fov = self.los.EField[
                     self.fov_sim_pad: -self.fov_sim_pad,
                     self.fov_sim_pad: -self.fov_sim_pad] # crop 
-                    
-            self.EField_fov = crop_efield * self.scaledMask
+
         else:
             # If geo prop...
 
@@ -201,7 +200,10 @@ class PSFCamera(object):
                     self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
                     thread_pool=self.thread_pool, bounds_check=False)
 
-            self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
+            self.EField_fov = numpy.exp(1j * self.interp_phase)
+        
+        if self.config.propagationDir == "down":
+            self.EField_fov *= self.scaledMask
 
         # Get the focal plane using an FFT
         # Reset the FFT from the previous iteration

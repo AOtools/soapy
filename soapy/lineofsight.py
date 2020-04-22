@@ -166,7 +166,7 @@ class LineOfSight(object):
 
         if self.mask is not None:
             self.outMask = interp.zoom(
-                    self.mask, self.nx_out_pixels).round()
+                    self.mask, self.nx_out_pixels)#.round()
         else:
             self.outMask = None
 

@@ -758,14 +758,14 @@ class IPythonConsole:
                             "plt" : pyplot
                             }
 
-        # for i in range(sim.config.sim.nGS):
-        #     usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
-        # for i in range(sim.config.sim.nDM):
-        #     usefulObjects["dm{}Config".format(i)] = sim.config.dms[i]
-        # for i in range(sim.config.sim.nSci):
-        #     usefulObjects["sci{}Config".format(i)] = sim.config.scis[i]
+        for i in range(sim.config.sim.nGS):
+            usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
+        for i in range(sim.config.sim.nDM):
+            usefulObjects["dm{}Config".format(i)] = sim.config.dms[i]
+        for i in range(sim.config.sim.nSci):
+            usefulObjects["sci{}Config".format(i)] = sim.config.scis[i]
 
-        # self.kernel.shell.push(usefulObjects)
+        self.kernel.shell.push(usefulObjects)
 
         self.kernel_client = self.kernel_manager.client()
         self.kernel_client.start_channels()
