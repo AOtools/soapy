@@ -111,8 +111,6 @@ class atmos(object):
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *self.config.normScrnStrengths)**(-3./5.) )
-        # #Assume r0 calculated for 550nm.
-        # self.wvl = 550e-9
 
         # Computes tau0, the AO time constant (Roddier 1981), at current wind speed
         vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * self.config.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)

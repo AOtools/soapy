@@ -25,6 +25,7 @@ observe a target with the purpose of assessing AO performance
 
 import numpy
 import scipy.optimize as opt
+import pyfftw
 
 import aotools
 
@@ -132,11 +133,24 @@ class PSFCamera(object):
         self.fft_crop_elements = (self.FFTPadding * self.crop_fov_factor - self.FFTPadding)//2
         self.FFTPadding *= self.crop_fov_factor
 
-        self.FFT = AOFFT.FFT(
-                inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1),
-                mode="pyfftw", dtype="complex64",
-                fftw_FLAGS=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
-                THREADS=self.config.fftwThreads)
+        # create an FFTW object for fast FFT calculation
+        # Must first define input and output arrays, then define the 
+        # FFT calculator. This can be multi-threaded and accepts flags
+        # Always allow input to be overwritten, option to add other flags from config
+        self.fft_input_data = pyfftw.empty_aligned(
+                (self.FFTPadding, self.FFTPadding), dtype=CDTYPE)
+        self.fft_output_data = pyfftw.empty_aligned(
+                (self.FFTPadding, self.FFTPadding), dtype=CDTYPE)
+        self.fft_calculator = pyfftw.FFTW(
+                self.fft_input_data, self.fft_output_data, axes=(0, 1),
+                threads=self.threads,
+                flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT")
+        )
+        # self.FFT = AOFFT.FFT(
+        #         inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1),
+        #         mode="pyfftw", dtype="complex64",
+        #         fftw_FLAGS=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
+        #         THREADS=self.config.fftwThreads)
 
         # Convert phase in nm to radians at science wavelength
         self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
@@ -207,9 +221,9 @@ class PSFCamera(object):
 
         # Get the focal plane using an FFT
         # Reset the FFT from the previous iteration
-        self.FFT.inputData[:] = 0
+        self.fft_input_data[:] = 0
         # place the array in the centre of the padding
-        self.FFT.inputData[
+        self.fft_input_data[
                 (self.FFTPadding - self.FOVPxlNo)//2:
                 (self.FFTPadding + self.FOVPxlNo)//2, 
                 (self.FFTPadding - self.FOVPxlNo)//2:
@@ -217,8 +231,8 @@ class PSFCamera(object):
                 ] = self.EField_fov
         # This means we can do a pre-fft shift properly. This is neccessary for anythign that 
         # cares about the EField of the focal plane, not just the intensity pattern
-        self.FFT.inputData[:] = numpy.fft.fftshift(self.FFT.inputData)
-        self.focus_efield = AOFFT.ftShift2d(self.FFT())
+        self.fft_input_data[:] = numpy.fft.fftshift(self.fft_input_data)
+        self.focus_efield = AOFFT.ftShift2d(self.fft_calculator())
 
         # Turn complex efield into intensity
         numbalib.abs_squared(self.focus_efield, out=self.focus_intensity)

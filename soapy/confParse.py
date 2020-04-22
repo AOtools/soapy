@@ -617,6 +617,8 @@ class AtmosConfig(ConfigObj):
                             to store in the ``atmosphere`` 
                             object. Required if large screens
                             used.                               ``None``
+        ``elevationAngle``  float: Elevation of observation
+                            in degrees from the ground          ``90``
         ==================  =================================   ===========
     """
 
@@ -634,8 +636,8 @@ class AtmosConfig(ConfigObj):
                         ("randomScrns", False),
                         ("tau0", None),
                         ("infinite", False),
-                        ("wholeScrnSize", None)
-
+                        ("wholeScrnSize", None),
+                        ("elevationAngle", 90)
                        ]
 
     # Parameters which may be set at some point and are allowed
