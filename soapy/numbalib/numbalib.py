@@ -261,6 +261,7 @@ def rotate(data, interpArray, rotation_angle):
             interpArray[i, j] = a1 + yGrad * (y - y1)
     return interpArray
 
+
 @numba.vectorize(["float32(complex64)"], nopython=True, target="parallel")
 def abs_squared(data):
     return abs(data)**2
@@ -333,6 +334,42 @@ def bin_img_slow(img, bin_size, new_img):
             for x in range(bin_size):
                 for y in range(bin_size):
                     new_img[i, j] += img[x + x1, y + y1]
+
+
+@numba.jit(nopython=True, parallel=True)
+def fft_shift_2d(data):
+
+    output_data = numpy.zeros_like(data)
+
+    for i in numba.prange(data.shape[0]//2):
+        for j in numba.prange(data.shape[1]//2):
+            tmp = data[i, j] 
+            output_data[i, j] = data[i + data.shape[0]//2, j + data.shape[1]//2]
+            output_data[i + data.shape[0]//2, j + data.shape[1]//2] = tmp
+
+            tmp = data[i + data.shape[0]//2, j]
+            output_data[i + data.shape[0]//2, j] = data[i, j + data.shape[1]//2]
+            output_data[i, j + data.shape[1]//2] = tmp
+
+    return output_data
+
+
+@numba.jit(nopython=True, parallel=True)
+def fft_shift_2d_inplace(data):
+    # if output_data is None:
+    #     output_data = data
+
+    for i in numba.prange(data.shape[0]//2):
+        for j in numba.prange(data.shape[1]//2):
+            tmp = data[i, j] 
+            data[i, j] = data[i + data.shape[0]//2, j + data.shape[1]//2]
+            data[i + data.shape[0]//2, j + data.shape[1]//2] = tmp
+
+            tmp = data[i + data.shape[0]//2, j]
+            data[i + data.shape[0]//2, j] = data[i, j + data.shape[1]//2]
+            data[i, j + data.shape[1]//2] = tmp
+
+    return data
 
 
 def zoom(data, zoomArray, threads=None):

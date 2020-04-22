@@ -29,7 +29,7 @@ import pyfftw
 
 import aotools
 
-from . import AOFFT, logger, lineofsight, numbalib, interp
+from . import logger, lineofsight, numbalib, interp
 DTYPE = numpy.float32
 CDTYPE = numpy.complex64
 
@@ -146,11 +146,6 @@ class PSFCamera(object):
                 threads=self.threads,
                 flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT")
         )
-        # self.FFT = AOFFT.FFT(
-        #         inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1),
-        #         mode="pyfftw", dtype="complex64",
-        #         fftw_FLAGS=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
-        #         THREADS=self.config.fftwThreads)
 
         # Convert phase in nm to radians at science wavelength
         self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
@@ -231,8 +226,9 @@ class PSFCamera(object):
                 ] = self.EField_fov
         # This means we can do a pre-fft shift properly. This is neccessary for anythign that 
         # cares about the EField of the focal plane, not just the intensity pattern
-        self.fft_input_data[:] = numpy.fft.fftshift(self.fft_input_data)
-        self.focus_efield = AOFFT.ftShift2d(self.fft_calculator())
+        numbalib.fft_shift_2d_inplace(self.fft_input_data)
+        self.fft_calculator() # perform FFT
+        numbalib.fft_shift_2d_inplace(self.fft_output_data)
 
         # Turn complex efield into intensity
         numbalib.abs_squared(self.focus_efield, out=self.focus_intensity)
