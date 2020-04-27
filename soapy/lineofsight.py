@@ -352,7 +352,8 @@ class LineOfSight(object):
 
         Finds the phase or complex amplitude through line of sight for a
         single simulation frame, with a given set of phase screens and
-        some optional correction.
+        some optional correction. 
+        If scrns is ``None``, then light is propagated with no phase.
 
         Parameters:
             scrns (list): A list or dict containing the phase screens
@@ -374,7 +375,12 @@ class LineOfSight(object):
             if scrns.ndim==2:
                 scrns.shape = 1, scrns.shape[0], scrns.shape[1]
             self.scrns = scrns
-            self.makePhase(self.radii)
+        else: # If no scrns, just assume no turbulence
+            self.scrns = numpy.zeros(
+                    (self.n_layers, self.nx_scrn_size, self.nx_scrn_size))
+
+        self.makePhase(self.radii)
+
 
         self.residual = self.phase
         # If propagating down, do correction last

@@ -157,11 +157,14 @@ class PSFCamera(object):
 
         self.interp_phase = numpy.zeros((self.FOVPxlNo, self.FOVPxlNo), DTYPE)
         self.focus_efield = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=CDTYPE)
-        self.focus_intensity = numpy.zeros((self.FFTPadding, self.FFTPadding), dtype=DTYPE)
+        focus_intensity_size = self.FFTPadding // self.crop_fov_factor if self.crop_fov_factor else self.FFTPadding
+        self.focus_intensity = numpy.zeros(
+                (focus_intensity_size, focus_intensity_size), dtype=DTYPE)
         self.detector = numpy.zeros((self.nx_pixels, self.nx_pixels), dtype=DTYPE)
+        self.long_exp_image = numpy.zeros_like(self.detector)
 
         # Calculate ideal PSF for purposes of strehl calculation
-        self.los.phase[:] = 1
+        self.los.frame()
         self.calcFocalPlane()
         self.bestPSF = self.detector.copy()
         self.psfMax = self.bestPSF.max()
@@ -230,19 +233,23 @@ class PSFCamera(object):
         self.fft_calculator() # perform FFT
         numbalib.fft_shift_2d_inplace(self.fft_output_data)
 
-        # Turn complex efield into intensity
-        numbalib.abs_squared(self.focus_efield, out=self.focus_intensity)
 
         if self.fft_crop_elements != 0:
         # Bin down to detector number of pixels
-            fov_focus_intensity = self.focus_intensity[
+            self.fov_focus_efield = self.fft_output_data[
                     self.fft_crop_elements: -self.fft_crop_elements,
                     self.fft_crop_elements: -self.fft_crop_elements
             ]
         else:
-            fov_focus_intensity = self.focus_intensity
+            self.fov_focus_efield = self.fft_output_data
+
+
+        # Turn complex efield into intensity
+        numbalib.abs_squared(self.fov_focus_efield, out=self.focus_intensity)
+
+
         # numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
-        numbalib.bin_img(fov_focus_intensity, self.config.fftOversamp, self.detector)
+        numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
         # Normalise the psf
         self.detector /= self.detector.sum()
 
@@ -251,11 +258,15 @@ class PSFCamera(object):
         """
         Calculates the instantaneous Strehl, including TT if configured.
         """
+        self.long_exp_image += self.detector
+        self.long_exp_image /= self.long_exp_image.sum()
+
         if self.sciConfig.instStrehlWithTT:
             self.instStrehl = self.detector[self.sciConfig.pxls // 2 - 1, self.sciConfig.pxls // 2 - 1] / self.detector.sum() / self.psfMax
         else:
             self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
 
+        self.long_exposure_strehl = self.long_exp_image.max() / self.psfMax
 
     def calc_wavefronterror(self):
         """
