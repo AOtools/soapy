@@ -33,7 +33,6 @@ from . import logger
 
 # Check if can use yaml configuration style
 try:
-
     import yaml
     YAML = True
 except ImportError:
@@ -244,6 +243,7 @@ class PY_Configurator(object):
         objs = {'Sim': dict(self.sim),
                 'Atmosphere': dict(self.atmos),
                 'Telescope': dict(self.tel),
+                'Reconstructor': dict(self.recon),
                 'WFS': {},
                 'DM': {},
                 'Science': {}
@@ -255,11 +255,6 @@ class PY_Configurator(object):
             else:
                 objs['WFS'][w_i] = None
 
-        # for l in self.lgss:
-        #     if l is not None:
-        #         objs['LGS'].append(dict(l))
-        #     else:
-        #         objs['LGS'].append(None)
 
         for d_i, d in enumerate(self.dms):
             if d is not None:
@@ -276,9 +271,10 @@ class PY_Configurator(object):
         for configName, configObj in objs.items():
             yield configName, configObj
 
+
     def __len__(self):
-        # Always have sim, atmos, tel, DMs, WFSs,  and Scis
-        return 6
+        # Always have sim, atmos, tel, recon, DMs, WFSs,  and Scis
+        return 7
 
 
 class YAML_Configurator(PY_Configurator):
@@ -295,7 +291,10 @@ class YAML_Configurator(PY_Configurator):
         self.readfile()
 
         logger.debug("\nLoad Sim Params...")
-        self.sim.loadParams(self.configDict)
+        try:
+            self.sim.loadParams(self.configDict["Sim"])
+        except KeyError:
+            self.sim.loadParams(self.configDict)
 
         logger.debug("\nLoad Atmosphere Params...")
         self.atmos.loadParams(self.configDict["Atmosphere"])
@@ -338,6 +337,7 @@ class YAML_Configurator(PY_Configurator):
             self.scis[nSci].loadParams(sciDict)
 
         self.calcParams()
+
 
 class ConfigObj(object):
     # Parameters that can be had by any configuration object

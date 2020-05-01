@@ -3,7 +3,7 @@ from PyQt5 import QtWidgets
 from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 
-class IPythonConsoleWidget(QtWidgets.QWidget):
+class JupyterConsoleWidget(QtWidgets.QWidget):
     def __init__(self):
         # Create an in-process kernel
         self.kernel_manager = QtInProcessKernelManager()
@@ -29,3 +29,10 @@ class IPythonConsoleWidget(QtWidgets.QWidget):
         self.kernel.shell.write(message)
         self.kernel.shell.ex("")
 
+
+
+if __name__ == "__main__":
+
+    jcw = JupyterConsoleWidget()
+
+    jcw.show()
