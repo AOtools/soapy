@@ -552,7 +552,6 @@ class SimConfig(ConfigObj):
                             ("simOversize", 1.02),
                             ("loopDelay", 0),
                             ("threads", 1),
-                            ("photometric_zp", 2e9),
                         ]
 
     # Parameters which may be set at some point and are allowed
