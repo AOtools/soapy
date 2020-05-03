@@ -2,10 +2,10 @@
 Shack-Hartmann WFS
 
 The Shack-Hartmann WFS is simulated using the `ShackHartmann` class contained here.
-Pupil phase or complex amplitude is recieved from the line of sight on the WFS, via the base WFS class.
-This array of phase or complex amplitude is chopped into relavent sub-apertures.
+Pupil phase or complex amplitude is received from the line of sight on the WFS, via the base WFS class.
+This array of phase or complex amplitude is chopped into relevant sub-apertures.
 Before this however, it is interpolated such that the correct sub-aperture field of view will be
- obtianed. This also means that the phase does not need to be a integer multiple of the number
+ obtained. This also means that the phase does not need to be a integer multiple of the number
  of sub-apertures. An FFT is performed to create the focal plane image for each sub-aperture.
  To obtain a multiple of the number of pixels per sub-aperture, the FFT is padded to an appropriate size.
  To get the final detector frame the focal plane is binned, photon flux is calculated and noise added.
@@ -384,7 +384,7 @@ class ShackHartmann(base.WFS):
         self.detector /= self.detector.sum()
         self.detector *= photons_per_mag(
                 self.config.GSMag, self.mask, self.phase_scale,
-                self.config.exposureTime, self.soapy_config.sim.photometric_zp
+                self.config.exposureTime, self.config.photometric_zp
                 )# * self.config.throughput
 
         if self.config.photonNoise:
@@ -570,7 +570,7 @@ def photons_per_mag(mag, mask, phase_scale, exposureTime, zeropoint):
         mask (ndarray): 2-d pupil mask. 1 if aperture clear, 0 if not
         phase_scale (float): Size of pupil mask pixel in metres
         exposureTime (float): WFS exposure time in seconds
-        zeropoint (float): Photometric zeropoint of mag 0 star in photons/metre^2/seconds
+        zeropoint (float): Photometric zeropoint of mag 0 star in photons/metre^2/second/band
 
     Returns:
         float: photons per WFS frame
