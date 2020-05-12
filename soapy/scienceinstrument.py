@@ -220,6 +220,7 @@ class PSFCamera(object):
         # Get the focal plane using an FFT
         # Reset the FFT from the previous iteration
         self.fft_input_data[:] = 0
+        
         # place the array in the centre of the padding
         self.fft_input_data[
                 (self.FFTPadding - self.FOVPxlNo)//2:
@@ -267,6 +268,7 @@ class PSFCamera(object):
             self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
 
         self.long_exposure_strehl = self.long_exp_image.max() / self.psfMax
+
 
     def calc_wavefronterror(self):
         """

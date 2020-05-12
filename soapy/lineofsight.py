@@ -201,6 +201,7 @@ class LineOfSight(object):
 
         self.allocDataArrays()
 
+
     def calculate_altitude_coords(self, layer_altitude):
         """
         Calculate the co-ordinates of vertices of fo the meta-pupil at altitude given a guide star
@@ -235,6 +236,7 @@ class LineOfSight(object):
 
         return x1, x2, y1, y2
 
+
     def allocDataArrays(self):
         """
         Allocate the data arrays the LOS will require
@@ -258,6 +260,7 @@ class LineOfSight(object):
         self.phase[:] = 0
         self.phase_screens[:] = 0
         self.correction_screens[:] = 0
+
 
     def makePhase(self, radii=None, apos=None):
         """
@@ -392,7 +395,7 @@ class LineOfSight(object):
 
 def physical_atmosphere_propagation(
             phase_screens, output_mask, layer_altitudes, source_altitude,
-            wavelength, output_pixel_scale,
+            wavelength, output_pixel_scale, 
             propagation_direction="up", input_efield=None):
     '''
     Finds total line of sight complex amplitude by propagating light through phase screens
@@ -401,7 +404,7 @@ def physical_atmosphere_propagation(
     the
 
     Parameters:
-
+        
     '''
 
     scrnNo = len(phase_screens)
