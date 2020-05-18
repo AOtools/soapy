@@ -53,7 +53,6 @@ class ShackHartmann(wfs.WFS):
         self.nx_guard_pixels = self.config.nx_guard_pixels
         self.subap_threshold = self.config.subapThreshold
 
-
         # Calculate some others
         self.pixel_scale =self.subap_fov / self.nx_subap_pixels
         self.subap_fov_rad = self.subap_fov * numpy.pi / (180. * 3600)
@@ -100,8 +99,7 @@ class ShackHartmann(wfs.WFS):
         self.referenceImage = self.config.referenceImage
         self.n_measurements = 2 * self.n_subaps
 
-        self.thread_pool = numbalib.ThreadPool(self.threads)
-
+    
     def initLos(self):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
@@ -329,25 +327,26 @@ class ShackHartmann(wfs.WFS):
 
         if self.config.propagationMode=="Geometric":
             # Have to make phase the correct size if geometric prop
-            numbalib.wfslib.zoomtoefield(self.los.phase, self.interp_efield, thread_pool=self.thread_pool)
+            numbalib.wfslib.zoomtoefield(self.los.phase, self.interp_efield)
 
         else:
             self.interp_efield = self.EField
 
         # Create an array of individual subap EFields
         self.fft_input_data[:] = 0
-        numbalib.wfslib.chop_subaps_mask_pool(
+        numbalib.wfslib.chop_subaps_mask(
                 self.interp_efield, self.interp_subap_coords, self.nx_subap_interp,
-                self.fft_input_data, self.scaledMask, thread_pool=self.thread_pool)
+                self.fft_input_data, self.scaledMask)
         self.fft_input_data[:, :self.nx_subap_interp, :self.nx_subap_interp] *= self.tilt_fix_efield
         self.FFT()
 
         self.temp_subap_focus = AOFFT.ftShift2d(self.fft_output_data)
 
-        numbalib.abs_squared(self.temp_subap_focus, out=self.subap_focus_intensity)
+        numbalib.abs_squared(self.temp_subap_focus, self.subap_focus_intensity)
 
         if intensity != 1:
             self.subap_focus_intensity *= intensity
+
 
     def integrateDetectorPlane(self):
         '''
@@ -367,9 +366,9 @@ class ShackHartmann(wfs.WFS):
         # bins back down to correct size and then
         # fits them back in to a focal plane array
         self.binnedFPSubapArrays[:] = 0
-        numbalib.wfslib.bin_imgs_pool(
+        numbalib.wfslib.bin_imgs(
                 self.subap_focus_intensity, self.config.fftOversamp, self.binnedFPSubapArrays,
-                thread_pool=self.thread_pool)
+                )
 
         # Scale each sub-ap flux by sub-aperture fill-factor
         self.binnedFPSubapArrays\
@@ -425,7 +424,7 @@ class ShackHartmann(wfs.WFS):
         '''
         numbalib.wfslib.chop_subaps(
                 self.detector, self.detector_cent_coords, self.nx_subap_pixels,
-                self.centSubapArrays, threads=self.threads)
+                self.centSubapArrays)
 
         slopes = getattr(centroiders, self.config.centMethod)(
                 self.centSubapArrays,
