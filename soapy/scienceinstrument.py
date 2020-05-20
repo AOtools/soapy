@@ -228,9 +228,9 @@ class PSFCamera(object):
                 ] = self.EField_fov
         # This means we can do a pre-fft shift properly. This is neccessary for anythign that 
         # cares about the EField of the focal plane, not just the intensity pattern
-        numbalib.fft_shift_2d_inplace(self.fft_input_data)
+        numbalib.fftshift_2d_inplace(self.fft_input_data)
         self.fft_calculator() # perform FFT
-        numbalib.fft_shift_2d_inplace(self.fft_output_data)
+        numbalib.fftshift_2d_inplace(self.fft_output_data)
 
 
         if self.fft_crop_elements != 0:
