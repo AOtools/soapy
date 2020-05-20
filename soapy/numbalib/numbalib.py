@@ -213,3 +213,18 @@ def zoom(data, zoomArray):
 
     return zoomArray
 
+@numba.jit(nopython=True, parallel=True)
+def fftshift_2d_inplace(data):
+
+    for x in numba.prange(data.shape[0]//2):
+        for y in range(data.shape[1]//2):
+            
+            tmp = data[x, y]
+            data[x, y] = data[x + data.shape[0]//2, y + data.shape[1]//2]
+            data[x + data.shape[0]//2, y + data.shape[1]//2] = tmp
+
+            tmp = data[x + data.shape[0]//2, y] 
+            data[x + data.shape[0]//2, y] = data[x, y + data.shape[1]//2]
+            data[x, y + data.shape[1]//2] = tmp
+
+    return data
