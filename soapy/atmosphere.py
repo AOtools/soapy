@@ -178,6 +178,7 @@ class atmos(object):
                 logger.info("Loading Phase Screens")
 
                 for i in xrange(self.scrnNo):
+                    logger.info("Load screen {}...".format(i))
                     fitsHDU = fits.open(self.config.scrnNames[i])
                     scrnHDU = fitsHDU[0]
                     self.wholeScrns[i] = scrnHDU.data.astype("float32")
@@ -196,9 +197,12 @@ class atmos(object):
 
                     except KeyError:
                         logger.warning("no r0 info found in screen header - will assume its ok as it is")
+                    
+                    # close fits HDU now we're done with it
+                    fitsHDU.close()
 
-                # close fits HDU now we're done with it
-                fitsHDU.close()
+                    logger.info("Load screen {}...Done".format(i))
+
 
                 if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
                     logger.warning("Requested phase screen has different size to that input in config file....loading anyway")
