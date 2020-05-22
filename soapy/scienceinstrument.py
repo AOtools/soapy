@@ -63,31 +63,47 @@ class PSFCamera(object):
 
         self.setMask(mask)
 
-        self.thread_pool = numbalib.ThreadPool(self.threads)
-
+        # Calculate the number of pixels required in the aperture plane
+        # To generate the correct FOV in the focal plane
         self.FOVPxlNo = int(numpy.round(
             self.telescope_diameter * self.fov_rad
             / self.config.wavelength))
 
+        # WIP: We dont' want to down sample too much from the users
+        # specifed pupil_size, so find an integer factor of elements greater than required
+        # This gives a focus FOV n times larger than specified,
+        # but later we will crop the focal plane back down to size
+        self.crop_fov_factor = 1 + self.pupil_size // self.FOVPxlNo
+        self.fov_crop_elements = (self.FOVPxlNo * self.crop_fov_factor - self.FOVPxlNo) // 2
+        self.FOVPxlNo *= self.crop_fov_factor
+
+        # And then pad it by the required telescope padding.
+        # Will later cut out the FOVPxlNo of pixels for focussing
         self.padFOVPxlNo = int(round(
             self.FOVPxlNo * float(self.sim_size)
             / self.pupil_size)
         )
 
-        # If odd, keep off, if even, keep even, keeps padding an integer
+        # If odd, keep odd, if even, keep even - keeps padding an integer on each side
         if self.padFOVPxlNo % 2 != self.FOVPxlNo % 2:
             self.padFOVPxlNo += 1
-        
         self.fov_sim_pad = int((self.padFOVPxlNo - self.FOVPxlNo) // 2.)
+
+        # If propagation direction is up, need to consider a mask in the optical propagation
+        # Otherwise, we'll apply it later
+        if self.config.propagationDir == "up":
+            los_mask = self.mask
+        else:
+            los_mask = None
 
         self.los = lineofsight.LineOfSight(
                 self.config, self.soapy_config,
-                propagation_direction="down")
+                propagation_direction=self.config.propagationDir, mask=los_mask)
 
         # Init line of sight - Get the phase at the right size for the FOV
         if self.config.propagationMode == "Physical":
             # If physical prop, must do propagation at 
-            # at FOV size 
+            # at FOV size to avoid interpolation of EField
             out_pixel_scale = float(self.telescope_diameter) / float(self.FOVPxlNo)
             self.los.calcInitParams(
                     out_pixel_scale=out_pixel_scale,
@@ -101,6 +117,7 @@ class PSFCamera(object):
                                       ).astype("int32")
 
         # Init FFT object
+        # fft padding must be oversampled from nx_pixels, and an integer number of FOVPxlNo
         self.FFTPadding = self.nx_pixels * self.config.fftOversamp
         if self.FFTPadding < self.FOVPxlNo:
             while self.FFTPadding < self.FOVPxlNo:
@@ -109,6 +126,9 @@ class PSFCamera(object):
                     = self.nx_pixels * self.config.fftOversamp
             logger.info(
                 "SCI FFT Padding less than FOV size... Setting oversampling to %d" % self.config.fftOversamp)
+
+        self.fft_crop_elements = (self.FFTPadding * self.crop_fov_factor - self.FFTPadding)//2
+        self.FFTPadding *= self.crop_fov_factor
 
         self.FFT = AOFFT.FFT(
                 inputSize=(self.FFTPadding, self.FFTPadding), axes=(0, 1),
@@ -120,7 +140,8 @@ class PSFCamera(object):
         self.phsNm2Rad = 2*numpy.pi/(self.sciConfig.wavelength*10**9)
 
         # Allocate some useful arrays
-        self.interp_coords = numpy.linspace(self.sim_pad, self.pupil_size + self.sim_pad, self.FOVPxlNo).astype(DTYPE)
+        self.interp_coords = numpy.linspace(
+                self.sim_pad, self.pupil_size + self.sim_pad, self.FOVPxlNo).astype(DTYPE)
         self.interp_coords = self.interp_coords.clip(0, self.los.nx_out_pixels-1.00001)
 
         self.interp_phase = numpy.zeros((self.FOVPxlNo, self.FOVPxlNo), DTYPE)
@@ -176,20 +197,38 @@ class PSFCamera(object):
             # Field of View on the detector
             numbalib.bilinear_interp(
                     self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
-                    self.thread_pool, bounds_check=False)
+                    bounds_check=False)
 
             self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 
-        # Get the focal plan using an FFT
-        self.FFT.inputData[:self.FOVPxlNo, :self.FOVPxlNo] = self.EField_fov
+        # Get the focal plane using an FFT
+        # Reset the FFT from the previous iteration
+        self.FFT.inputData[:] = 0
+        # place the array in the centre of the padding
+        self.FFT.inputData[
+                (self.FFTPadding - self.FOVPxlNo)//2:
+                (self.FFTPadding + self.FOVPxlNo)//2, 
+                (self.FFTPadding - self.FOVPxlNo)//2:
+                (self.FFTPadding + self.FOVPxlNo)//2
+                ] = self.EField_fov
+        # This means we can do a pre-fft shift properly. This is neccessary for anythign that 
+        # cares about the EField of the focal plane, not just the intensity pattern
+        self.FFT.inputData[:] = numpy.fft.fftshift(self.FFT.inputData)
         self.focus_efield = AOFFT.ftShift2d(self.FFT())
 
         # Turn complex efield into intensity
         numbalib.abs_squared(self.focus_efield, out=self.focus_intensity)
 
+        if self.fft_crop_elements != 0:
         # Bin down to detector number of pixels
-        numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
-
+            fov_focus_intensity = self.focus_intensity[
+                    self.fft_crop_elements: -self.fft_crop_elements,
+                    self.fft_crop_elements: -self.fft_crop_elements
+            ]
+        else:
+            fov_focus_intensity = self.focus_intensity
+        # numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
+        numbalib.bin_img(fov_focus_intensity, self.config.fftOversamp, self.detector)
         # Normalise the psf
         self.detector /= self.detector.sum()
 
@@ -242,9 +281,6 @@ class PSFCamera(object):
         self.calcFocalPlane()
 
         self.calcInstStrehl()
-
-        # Here so when viewing data, that outside of the pupil isn't visible.
-        # self.residual*=self.mask
 
         return self.detector
 

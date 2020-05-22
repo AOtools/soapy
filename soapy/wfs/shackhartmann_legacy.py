@@ -162,6 +162,7 @@ class ShackHartmannLegacy(wfs.WFS):
                     fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
+
     def initLGS(self):
         super(ShackHartmannLegacy, self).initLGS()
         if self.lgsConfig.uplink:
@@ -172,6 +173,7 @@ class ShackHartmannLegacy(wfs.WFS):
                     nOutPxls=self.subapFFTPadding,
                     outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
                     )
+
 
     def allocDataArrays(self):
         """
@@ -227,6 +229,7 @@ class ShackHartmannLegacy(wfs.WFS):
 
         else:
             self.tiltFix = numpy.zeros((self.subapFOVSpacing,)*2)
+
 
     def getStatic(self):
         """

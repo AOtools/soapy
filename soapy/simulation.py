@@ -121,6 +121,7 @@ class Sim(object):
         self.go = False
         self._sim_running = False
 
+
     def readParams(self, configFile=None):
         """
         Reads configuration file parameters
@@ -161,7 +162,6 @@ class Sim(object):
         setting propagation modes and pre-allocating data arrays 
         used later in the simulation.
         '''
-
         # Read params if they haven't been read before
         try:
             self.config.sim.pupilSize
@@ -820,7 +820,6 @@ class Sim(object):
 
         if self.config.sim.saveDmCommands:
             act=0
-
             self.allDmCommands[i,act:] = self.dmCommands
 
         #Quick bodge to save lgs psfs as images

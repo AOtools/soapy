@@ -42,8 +42,8 @@ def geometric_propagation(phase_screens, metapupil_coords, output_phase, thread_
 
     return output_phase
 
-# @numba.jit(nopython=True, nogil=True)
-def geometric_propagation_numba(phase_screens, metapupil_coords, output_phase, thread_indices):
+@numba.jit(nopython=True, parallel=True)
+def geometric_propagation_numba(phase_screens, metapupil_coords, output_phase):
     """
     2-D interpolation using purely python - fast if compiled with numba
     This version also accepts a parameter specifying how much of the array
@@ -51,9 +51,7 @@ def geometric_propagation_numba(phase_screens, metapupil_coords, output_phase, t
 
     Parameters:
         array (ndarray): The 2-D array to interpolate
-        xCoords (ndarray): A 1-D array of x-coordinates
-        yCoords (ndarray): A 2-D array of y-coordinates
-        chunkIndices (ndarray): A 2 element array, with (start Index, stop Index) to work on for the x-dimension.
+        metapupil_coords: Coordinates of each point on the meta pupil at that layer
         interpArray (ndarray): The array to place the calculation
 
     Returns:
@@ -61,13 +59,12 @@ def geometric_propagation_numba(phase_screens, metapupil_coords, output_phase, t
     """
 
     jRange = range(metapupil_coords.shape[0])
-    for layer in range(phase_screens.shape[0]):
+    for layer in numba.prange(phase_screens.shape[0]):
         if metapupil_coords[layer, 0, -1] == phase_screens.shape[1] - 1:
             metapupil_coords[layer, 0, -1] -= 1e-6
         if metapupil_coords[layer, 1, -1] == phase_screens.shape[2] - 1:
             metapupil_coords[layer, 1, -1] -= 1e-6
-        for i in range(thread_indices[0], thread_indices[1]):
-            print(i)
+        for i in numba.prange(metapupil_coords.shape[0]):
             x = metapupil_coords[layer, 0, i]
             x1 = numba.int32(x)
             for j in jRange:

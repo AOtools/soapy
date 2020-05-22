@@ -49,8 +49,6 @@ class PSF(object):
 
         self.setMask(mask)
 
-        self.thread_pool = numbalib.ThreadPool(self.threads)
-
         self.FOVPxlNo = int(numpy.round(
             self.telescope_diameter * self.fov_rad
             / self.config.wavelength))
@@ -67,7 +65,7 @@ class PSF(object):
                 self.config, self.soapy_config,
                 propagation_direction="down")
 
-        # Cut out the mask just around the telesocpe aperture
+        # Cut out the mask just around the telescope aperture
         simpad = self.simConfig.simPad
         mask_pupil = self.mask[simpad: -simpad, simpad: -simpad]
         self.scaledMask = numpy.round(interp.zoom(mask_pupil, self.FOVPxlNo)
@@ -137,7 +135,7 @@ class PSF(object):
 
         numbalib.bilinear_interp(
                 self.los.phase, self.interp_coords, self.interp_coords, self.interp_phase,
-                self.thread_pool, bounds_check=False)
+                bounds_check=False)
 
         self.EField_fov = numpy.exp(1j * self.interp_phase) * self.scaledMask
 

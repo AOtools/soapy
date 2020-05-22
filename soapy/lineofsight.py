@@ -49,7 +49,7 @@ class LineOfSight(object):
     Parameters:
         config: The soapy config for the line of sight
         simConfig: The soapy simulation config object
-        propagationDirection (str, optional): Direction of light propagation, either `"up"` or `"down"`
+        propagation_direction (str, optional): Direction of light propagation, either `"up"` or `"down"`
         outPxlScale (float, optional): The EField pixel scale required at the output (m/pxl)
         nOutPxls (int, optional): Number of pixels to return in EFIeld
         mask (ndarray, optional): Mask to apply at the *beginning* of propagation
@@ -67,6 +67,7 @@ class LineOfSight(object):
         self.sim_size = self.soapy_config.sim.simSize
         self.wavelength = self.config.wavelength
         self.telescope_diameter = self.soapy_config.tel.telDiam
+        self.propagation_direction = propagation_direction
 
         self.source_altitude = self.height
 
@@ -83,13 +84,10 @@ class LineOfSight(object):
         except AttributeError:
             self.launch_position = numpy.array([0, 0])
 
-        self.threads = self.soapy_config.sim.threads
-
         self.simConfig = soapyConfig.sim
         self.atmosConfig = soapyConfig.atmos
 
         self.mask = mask
-        self.propagation_direction = propagation_direction
 
         self.calcInitParams(out_pixel_scale, nx_out_pixels)
 
@@ -97,8 +95,6 @@ class LineOfSight(object):
 
         # Can be set to use other values as metapupil position
         self.metaPupilPos = metaPupilPos
-
-        self.thread_pool = numbalib.ThreadPool(self.threads)
 
 
     # Some attributes for compatability between WFS and others
@@ -166,7 +162,7 @@ class LineOfSight(object):
 
         if self.mask is not None:
             self.outMask = interp.zoom(
-                    self.mask, self.nx_out_pixels).round()
+                    self.mask, self.nx_out_pixels)#.round()
         else:
             self.outMask = None
 
@@ -215,7 +211,10 @@ class LineOfSight(object):
 
         # If propagating up must account for launch position
         if self.propagation_direction == "up":
-            centre += self.launch_position * (1 - layer_altitude/self.source_altitude)
+            if self.source_altitude == 0:
+                centre += self.launch_position
+            else:
+                centre += self.launch_position * (1 - layer_altitude/self.source_altitude)
 
         if self.source_altitude != 0:
             meta_pupil_size = self.output_phase_diameter * (1 - layer_altitude / self.source_altitude)
@@ -256,6 +255,7 @@ class LineOfSight(object):
         self.phase_screens[:] = 0
         self.correction_screens[:] = 0
 
+
     def makePhase(self, radii=None, apos=None):
         """
         Generates the required phase or EField. Uses difference approach depending on whether propagation is geometric or physical
@@ -268,14 +268,13 @@ class LineOfSight(object):
         for i in range(self.scrns.shape[0]):
             numbalib.bilinear_interp(
                 self.scrns[i], self.layer_metapupil_coords[i, 0], self.layer_metapupil_coords[i, 1],
-                self.phase_screens[i], self.thread_pool, bounds_check=False)
+                self.phase_screens[i], bounds_check=False)
 
         # Check if geometric or physical
         if self.config.propagationMode == "Physical":
             return self.makePhasePhys(radii)
         else:
             return self.makePhaseGeometric(radii)
-
 
 
     def makePhaseGeometric(self, radii=None, apos=None):
@@ -288,18 +287,20 @@ class LineOfSight(object):
         '''
 
 
-        self.phase_screens.sum(0, out=self.phase)
+        self.atmos_phase = self.phase_screens.sum(0)
 
         # Convert phase to radians
-        self.phase *= self.phs2Rad
+        self.atmos_phase *= self.phs2Rad
 
         # Change sign if propagating up
-        if self.propagation_direction == 'up':
-            self.phase *= -1
+        # if self.propagation_direction == 'up':
+        #     self.atmos_phase *= -1
 
-        self.EField[:] = numpy.exp(1j*self.phase)
+        self.phase[:] += self.atmos_phase
+        self.EField[:] *= numpy.exp(1j*self.atmos_phase)
 
         return self.EField
+
 
     def makePhasePhys(self, radii=None, apos=None):
         '''
@@ -310,12 +311,13 @@ class LineOfSight(object):
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
-        self.EField[:] = physical_atmosphere_propagation(
+        self.EField[:] *= physical_atmosphere_propagation(
             self.phase_screens, self.outMask, self.layer_altitudes, self.source_altitude,
             self.wavelength, self.out_pixel_scale,
             propagation_direction=self.propagation_direction)
 
         return self.EField
+
 
     def performCorrection(self, correction):
         """
@@ -327,15 +329,16 @@ class LineOfSight(object):
         for i in range(correction.shape[0]):
             numbalib.bilinear_interp(
                 correction[i], self.dm_metapupil_coords[i, 0], self.dm_metapupil_coords[i, 1],
-                self.correction_screens[i], self.thread_pool, bounds_check=False)
+                self.correction_screens[i], bounds_check=False)
 
         self.correction_screens.sum(0, out=self.phase_correction)
 
+        self.phase_correction *= self.phs2Rad
         # Correct EField
-        self.EField *= numpy.exp(-1j * self.phase_correction * self.phs2Rad)
+        self.EField *= numpy.exp(-1j * self.phase_correction)
 
         # Also correct phase in case its required
-        self.residual = self.phase / self.phs2Rad - self.phase_correction
+        self.residual = (self.phase - self.phase_correction) / self.phs2Rad
 
         self.phase = self.residual * self.phs2Rad
 
@@ -359,14 +362,20 @@ class LineOfSight(object):
 
         self.zeroData()
 
+        # If we propagate up, must do correction first!
+        if (self.propagation_direction == "up") and (correction is not None):
+            self.performCorrection(correction)
+
+        # Now do propagation through atmospheric turbulence
         if scrns is not None:
             if scrns.ndim==2:
                 scrns.shape = 1, scrns.shape[0], scrns.shape[1]
             self.scrns = scrns
             self.makePhase(self.radii)
 
-        self.residual = self.phase        
-        if correction is not None:
+        self.residual = self.phase
+        # If propagating down, do correction last
+        if (self.propagation_direction == "down") and (correction is not None):
             self.performCorrection(correction)
 
         return self.residual
@@ -375,13 +384,15 @@ class LineOfSight(object):
 def physical_atmosphere_propagation(
             phase_screens, output_mask, layer_altitudes, source_altitude,
             wavelength, output_pixel_scale,
-            propagation_direction="up"):
+            propagation_direction="up", input_efield=None):
     '''
     Finds total line of sight complex amplitude by propagating light through phase screens
 
+    If the source altitude is infinity (denoted as 0), then the result of the propagation is
+    the
+
     Parameters:
-        radii (dict, optional): Radii of each meta pupil of each screen height in pixels. If not given uses pupil radius.
-        apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
+
     '''
 
     scrnNo = len(phase_screens)
@@ -392,15 +403,19 @@ def physical_atmosphere_propagation(
 
     phs2Rad = 2 * numpy.pi / (wavelength * 10 ** 9)
 
+    if input_efield is None:
+        EFieldBuf = numpy.exp(
+                1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
+
     # Get initial up/down dependent params
     if propagation_direction == "up":
         ht = 0
         ht_final = source_altitude
-        if ht_final==0:
-            raise ValueError("Can't propagate up to infinity")
+        # if ht_final==0:
+        #     raise ValueError("Can't propagate up to infinity")
         scrnAlts = layer_altitudes
-
-        EFieldBuf = output_mask.copy().astype(CDTYPE)
+        # If propagating up from telescope, apply mask to the EField
+        EFieldBuf *= output_mask
         logger.debug("Create EField Buf of mask")
 
     else:
@@ -408,8 +423,6 @@ def physical_atmosphere_propagation(
         ht_final = 0
         scrnAlts = layer_altitudes[::-1]
         phase_screens = phase_screens[::-1]
-        EFieldBuf = numpy.exp(
-                1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
         logger.debug("Create EField Buf of zero phase")
 
     # Propagate to first phase screen (if not already there)
@@ -430,13 +443,20 @@ def physical_atmosphere_propagation(
         # Convert phase to radians
         phase *= phs2Rad
 
+        # Apply phase to EField
+        EFieldBuf *= numpy.exp(1j*phase)
+
         # Change sign if propagating up
-        if propagation_direction == 'up':
-            phase *= -1
+        # if propagation_direction == 'up':
+        #     phase *= -1
         # print("Get distance")
         # Get propagation distance for this layer
         if i==(scrnNo-1):
-            z = abs(ht_final - ht) - z_total
+            if ht_final == 0:
+                # if the final height is infinity, don't propagate any more!
+                continue
+            else:
+                z = abs(ht_final - ht) - z_total
         else:
             z = abs(scrnAlts[i+1] - scrnAlts[i])
 
@@ -444,8 +464,7 @@ def physical_atmosphere_propagation(
         z_total += z
 
         # print("Make EField")
-        # Apply phase to EField
-        EFieldBuf *= numpy.exp(1j*phase)
+
 
         # Do ASP for last layer to next
         EFieldBuf[:] = opticalpropagation.angularSpectrum(

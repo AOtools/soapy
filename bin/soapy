@@ -57,8 +57,6 @@ def runCmdSim(sim, newIMat=False, interactive = False):
         IPython.embed()
         raise SystemExit
 
-
-
     else:
         sim.aoinit()
         sim.makeIMat()

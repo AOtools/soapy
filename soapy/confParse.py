@@ -1100,6 +1100,8 @@ class SciConfig(ConfigObj):
         ``propagationMode``  str: Mode of light propogation
                              from object. Can be "Physical" or
                              "Geometric".                        ``"Geometric"``
+        ``propagationDir``   str: Direction to propagatate.
+                             Either ``up`` or ``down``           ``down``
         ``instStrehlWithTT`` bool: Whether or not to include
                              tip/tilt in instantaneous Strehl
                              calculations.                       ``False``
@@ -1125,6 +1127,7 @@ class SciConfig(ConfigObj):
                         ("height", 0),
                         ("propagationMode", "Geometric"),
                         ("loadModule", None),
+                        ("propagationDir", "down")
                         ]
 
     calculatedParams = [
