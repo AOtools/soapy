@@ -101,6 +101,9 @@ class atmos(object):
         self.L0s = self.config.L0
         self.looptime = self.simConfig.loopTime
 
+        if self.config.randomSeed is not None:
+            numpy.random.seed(self.config.randomSeed)
+
         self.config.scrnStrengths = numpy.array(self.config.scrnStrengths,
                 dtype="float32")
 

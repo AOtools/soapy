@@ -30,6 +30,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -47,6 +48,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
         sim.config.wfss[0].propagationMode="Physical"
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -63,6 +65,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition = (20,0)
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -81,6 +84,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition = (0,0)
+        sim.config.atmos.randomSeed = 0
 
         sim.config.sim.nDM = 1
         sim.config.dms[0].type = "Zernike"
@@ -105,6 +109,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -122,6 +127,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
+        sim.config.atmos.randomSeed = 0
 
         for i in range(sim.config.sim.nDM):
             sim.config.dms[i].closed = False
@@ -143,6 +149,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.wfss[0].GSPosition = (0, 0)
         sim.config.wfss[1].GSPosition = (0, 0)
         sim.config.wfss[1].lgs.propagationMode = "Physical"
+        sim.config.atmos.randomSeed = 0
         sim.aoinit()
 
         sim.makeIMat(forceNew=True)
@@ -160,6 +167,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.wfss[0].GSPosition = (0, 0)
         sim.config.wfss[1].GSPosition = (0, 0)
         sim.config.wfss[1].lgs.propagationMode = "Geometric"
+        sim.config.atmos.randomSeed = 0
         sim.aoinit()
 
         sim.makeIMat(forceNew=True)

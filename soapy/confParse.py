@@ -617,8 +617,9 @@ class AtmosConfig(ConfigObj):
                             to store in the ``atmosphere`` 
                             object. Required if large screens
                             used.                               ``None``
-        ``elevationAngle``  float: Elevation of observation
-                            in degrees from the ground          ``90``
+        ``randomSeed``      int: Seed for the random number
+                            generator used to make phase
+                            screens. If None, seed is random.   ``None``
         ==================  =================================   ===========
     """
 
@@ -637,7 +638,8 @@ class AtmosConfig(ConfigObj):
                         ("tau0", None),
                         ("infinite", False),
                         ("wholeScrnSize", None),
-                        ("elevationAngle", 90)
+                        # ("elevationAngle", 90),
+                        ("randomSeed", None)
                        ]
 
     # Parameters which may be set at some point and are allowed
