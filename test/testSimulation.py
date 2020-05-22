@@ -40,6 +40,7 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8"], atol=0.2)
 
+
     def testPhysProp(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
@@ -56,6 +57,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_phys"], atol=0.2)
+
 
     def testOffAxis(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
@@ -116,6 +118,7 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(
                 sim.longStrehl[0,-1], RESULTS["8x8_lgs"], atol=0.2)
 
+
     def testOpenLoop(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_openloop.yaml"))
         sim.config.sim.simName = None
@@ -135,6 +138,7 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_open"], atol=0.2)
 
+
     def testLgsUplink_phys(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         sim.config.sim.simName = None
@@ -151,6 +155,7 @@ class TestSimpleSCAO(unittest.TestCase):
 
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
+
 
     def testLgsUplink_geo(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
@@ -248,6 +253,8 @@ def testMaskLoad():
         raise
     finally:
         os.remove('testmask.fits') 
+
+
 
 if __name__ == '__main__':
     unittest.main()
