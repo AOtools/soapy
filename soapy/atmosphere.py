@@ -167,12 +167,16 @@ class atmos(object):
                         self.wholeScrns[i] = phasescreen.ft_sh_phase_screen(
                                 self.wholeScrnR0,
                                 self.wholeScrnSize, self.pixel_scale,
-                                self.config.L0[i], 0.01)
+                                self.config.L0[i], 0.01,
+                                seed=self.config.randomSeed + i
+                                )
                     else:
                         self.wholeScrns[i] = phasescreen.ft_phase_screen(
                                 self.wholeScrnR0,
                                 self.wholeScrnSize, self.pixel_scale,
-                                self.config.L0[i], 0.01)
+                                self.config.L0[i], 0.01,
+                                seed=self.config.randomSeed + i
+                                )
 
                     self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
