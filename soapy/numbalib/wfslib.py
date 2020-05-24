@@ -109,13 +109,13 @@ def chop_subaps_efield_slow(phase, subap_coords, nx_subap_size, subap_array, thr
     return subap_array
 
 
-@numba.jit(nopython=True, parallel=True)
+@numba.jit(nopython=True)
 def place_subaps_on_detector(subap_imgs, detector_img, detector_positions, subap_coords):
     """
     Puts a set of sub-apertures onto a detector image
     """
 
-    for i in numba.prange(subap_imgs.shape[0]):
+    for i in range(subap_imgs.shape[0]):
         x1, x2, y1, y2 = detector_positions[i]
         sx1 ,sx2, sy1, sy2 = subap_coords[i]
         detector_img[x1: x2, y1: y2] += subap_imgs[i, sx1: sx2, sy1: sy2]
