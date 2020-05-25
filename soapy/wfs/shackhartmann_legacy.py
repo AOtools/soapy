@@ -8,7 +8,6 @@ import numpy.random
 
 import aotools
 from aotools.image_processing import centroiders
-import aotools
 
 from .. import AOFFT, LGS, logger, interp
 from . import wfs
