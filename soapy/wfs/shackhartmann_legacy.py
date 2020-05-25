@@ -25,7 +25,9 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 class ShackHartmannLegacy(wfs.WFS):
-    """Class to simulate a Shack-Hartmann WFS"""
+    """
+    Class to simulate a Shack-Hartmann WFS
+    """
 
     def calcInitParams(self):
         """
