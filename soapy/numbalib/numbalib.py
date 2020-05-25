@@ -196,10 +196,10 @@ def zoom(data, zoomArray):
         interpArray (ndarray): A pointer to the calculated ``zoomArray''
     """
     for i in numba.prange(zoomArray.shape[0]):
-        x = i*numba.float32(data.shape[0]-1)/(zoomArray.shape[0]-0.99999999)
+        x = i*numba.float32(data.shape[0]-1) / (zoomArray.shape[0] - 0.99999999)
         x1 = numba.int32(x)
         for j in range(zoomArray.shape[1]):
-            y = j*numba.float32(data.shape[1]-1)/(zoomArray.shape[1]-0.99999999)
+            y = j*numba.float32(data.shape[1]-1) / (zoomArray.shape[1] - 0.99999999)
             y1 = numba.int32(y)
 
             xGrad1 = data[x1+1, y1] - data[x1, y1]

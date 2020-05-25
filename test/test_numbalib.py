@@ -1,7 +1,29 @@
-from soapy import numbalib
 import numpy
-
+import scipy.ndimage
 import aotools
+
+from soapy import numbalib
+
+
+def test_zoom():
+
+    NX_DATA_SHAPE = 10
+    ZOOM_FACTOR = 5
+
+    input_data = numpy.arange(NX_DATA_SHAPE**2)
+    input_data.resize(NX_DATA_SHAPE, NX_DATA_SHAPE)
+    input_data = input_data.astype("float32")
+
+    # reference zoom using scipy
+    zoom_data = scipy.ndimage.zoom(
+            input_data, (ZOOM_FACTOR, ZOOM_FACTOR), order=1)
+
+    # numbalib zoom to test 
+    zoom_data2 = numpy.zeros((ZOOM_FACTOR * NX_DATA_SHAPE, ) * 2).astype(input_data.dtype)
+    numbalib.zoom(input_data, zoom_data2)
+
+    assert numpy.allclose(zoom_data, zoom_data2)
+
 
 def test_zoomtoefield():
     """
@@ -76,6 +98,7 @@ def test_abs_squared():
 
     assert numpy.array_equal(output_data, numpy.abs(data)**2)
 
+
 def test_place_subaps_detector():
 
     nx_subaps = 4
@@ -149,6 +172,9 @@ def test_fftshift_2d():
     data_shift = numbalib.fftshift_2d_inplace(data.copy())
 
     assert numpy.array_equal(data_shift, npy_shift)    
+
+
+
 
 
 if __name__ == "__main__":
