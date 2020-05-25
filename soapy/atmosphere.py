@@ -161,21 +161,25 @@ class atmos(object):
             if not self.config.scrnNames:
                 logger.info("Generating Phase Screens")
                 for i in xrange(self.scrnNo):
+                    if self.config.randomSeed is None:
+                        seed = None
+                    else:
+                        seed = self.config.randomSeed + i
 
                     logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
                     if self.config.subHarmonics:
                         self.wholeScrns[i] = phasescreen.ft_sh_phase_screen(
                                 self.wholeScrnR0,
                                 self.wholeScrnSize, self.pixel_scale,
-                                self.config.L0[i], 0.01,
-                                seed=self.config.randomSeed + i
+                                self.config.L0[i], 0.001,
+                                seed=seed
                                 )
                     else:
                         self.wholeScrns[i] = phasescreen.ft_phase_screen(
                                 self.wholeScrnR0,
                                 self.wholeScrnSize, self.pixel_scale,
-                                self.config.L0[i], 0.01,
-                                seed=self.config.randomSeed + i
+                                self.config.L0[i], 0.001,
+                                seed=seed
                                 )
 
                     self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
