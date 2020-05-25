@@ -1,5 +1,5 @@
 """
-A Legacy Shack Hartmann WFS simulation that shoudl nto normally be used as it is quite slow,
+A Legacy Shack Hartmann WFS simulation that should not normally be used as it is quite slow,
 but it required for some features such as LGS spot elongation
 """
 

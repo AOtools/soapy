@@ -448,7 +448,7 @@ class ConfigObj(object):
 
 class SimConfig(ConfigObj):
     """
-    Configuration parameters relavent for the entire simulation. These should be held at the beginning of the parameter file with no indendation.
+    Configuration parameters relevant for the entire simulation. These should be held at the beginning of the parameter file with no indendation.
 
     Required:
         =============   ===================
@@ -494,9 +494,6 @@ class SimConfig(ConfigObj):
                             of ``loopTime``                     ``0``
         ``threads``         int: Number of threads to use
                             for multithreaded operations        ``1``
-        ``photometric_zp``  float: Photometric zeropoint -
-                            number of photons/meter/second
-                            from a magnitude 0 star             ``2e9``
         ==================  =================================   ===============
 
     Data Saving (all default to False):
@@ -555,7 +552,6 @@ class SimConfig(ConfigObj):
                             ("simOversize", 1.02),
                             ("loopDelay", 0),
                             ("threads", 1),
-                            ("photometric_zp", 2e9),
                         ]
 
     # Parameters which may be set at some point and are allowed
@@ -752,6 +748,9 @@ class WfsConfig(ConfigObj):
         ``loadModule``          str: External module to load,       ``None``
                                 where the specified science 
                                 object is stored.  
+        ``photometric_zp``      float: Photometric zeropoint -
+                                number of photons/meter^2/second/band
+                                from a magnitude 0 star             ``2e9``
         =====================   ================================== ===========
 
 
@@ -787,7 +786,8 @@ class WfsConfig(ConfigObj):
                         ("subapFOV", 5),
                         ("correlationFFTPad", None),
                         ("nx_guard_pixels", 0),
-                        ("loadModule", None)
+                        ("loadModule", None),
+                        ("photometric_zp", 2e9)
                         ]
 
         # Parameters which may be Set at some point and are allowed
