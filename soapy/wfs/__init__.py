@@ -1,4 +1,4 @@
-from .base import *
+from .wfs import * 
 
 from . import shackhartmann, gradient, pyramid
 

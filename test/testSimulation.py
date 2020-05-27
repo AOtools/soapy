@@ -30,6 +30,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -40,6 +41,7 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8"], atol=0.2)
 
+
     def testPhysProp(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
@@ -47,6 +49,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
         sim.config.wfss[0].propagationMode="Physical"
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -57,12 +60,14 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_phys"], atol=0.2)
 
+
     def testOffAxis(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition = (20,0)
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -81,6 +86,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition = (0,0)
+        sim.config.atmos.randomSeed = 0
 
         sim.config.sim.nDM = 1
         sim.config.dms[0].type = "Zernike"
@@ -105,6 +111,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.sim.simName= None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
+        sim.config.atmos.randomSeed = 0
 
         sim.aoinit()
 
@@ -116,12 +123,14 @@ class TestSimpleSCAO(unittest.TestCase):
         assert numpy.allclose(
                 sim.longStrehl[0,-1], RESULTS["8x8_lgs"], atol=0.2)
 
+
     def testOpenLoop(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_openloop.yaml"))
         sim.config.sim.simName = None
         sim.config.sim.logfile = None
         sim.config.sim.nIters = 100
         sim.config.wfss[0].GSPosition=(0,0)
+        sim.config.atmos.randomSeed = 0
 
         for i in range(sim.config.sim.nDM):
             sim.config.dms[i].closed = False
@@ -135,6 +144,7 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_open"], atol=0.2)
 
+
     def testLgsUplink_phys(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         sim.config.sim.simName = None
@@ -143,6 +153,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.wfss[0].GSPosition = (0, 0)
         sim.config.wfss[1].GSPosition = (0, 0)
         sim.config.wfss[1].lgs.propagationMode = "Physical"
+        sim.config.atmos.randomSeed = 0
         sim.aoinit()
 
         sim.makeIMat(forceNew=True)
@@ -152,6 +163,7 @@ class TestSimpleSCAO(unittest.TestCase):
         #Check results are ok
         assert numpy.allclose(sim.longStrehl[0,-1], RESULTS["8x8_lgsuplink"], atol=0.2)
 
+
     def testLgsUplink_geo(self):
         sim = soapy.Sim(os.path.join(CONFIG_PATH, "sh_8x8_lgs-uplink.yaml"))
         sim.config.sim.simName = None
@@ -160,6 +172,7 @@ class TestSimpleSCAO(unittest.TestCase):
         sim.config.wfss[0].GSPosition = (0, 0)
         sim.config.wfss[1].GSPosition = (0, 0)
         sim.config.wfss[1].lgs.propagationMode = "Geometric"
+        sim.config.atmos.randomSeed = 0
         sim.aoinit()
 
         sim.makeIMat(forceNew=True)
@@ -248,6 +261,8 @@ def testMaskLoad():
         raise
     finally:
         os.remove('testmask.fits') 
+
+
 
 if __name__ == '__main__':
     unittest.main()

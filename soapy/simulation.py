@@ -67,6 +67,8 @@ import traceback
 from multiprocessing import Process, Queue
 from argparse import ArgumentParser
 import shutil
+import importlib
+import threading
 
 import numpy
 #Use pyfits or astropy for fits file handling
@@ -81,7 +83,7 @@ except ImportError:
 import aotools
 
 #sim imports
-from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, interp
+from . import atmosphere, logger, wfs, DM, reconstruction, scienceinstrument, confParse, interp
 
 import shutil
 
@@ -117,6 +119,8 @@ class Sim(object):
 
         self.guiQueue = None
         self.go = False
+        self._sim_running = False
+
 
     def readParams(self, configFile=None):
         """
@@ -133,6 +137,7 @@ class Sim(object):
         self.config = confParse.loadSoapyConfig(self.configFile)
         logger.info("Loading configuration file... success!")
 
+
     def setLoggingLevel(self, level):
         """
         sets which messages are printed from logger.
@@ -146,6 +151,7 @@ class Sim(object):
         """
         logger.setLoggingLevel(level)
 
+
     def aoinit(self):
         '''
         Initialises all simulation objects.
@@ -156,7 +162,6 @@ class Sim(object):
         setting propagation modes and pre-allocating data arrays 
         used later in the simulation.
         '''
-
         # Read params if they haven't been read before
         try:
             self.config.sim.pupilSize
@@ -192,7 +197,11 @@ class Sim(object):
         self.wfsFrameNo = numpy.zeros(self.config.sim.nGS)
         for nwfs in xrange(self.config.sim.nGS):
             try:
-                wfsClass = getattr(wfs, self.config.wfss[nwfs].type)
+                if self.config.wfss[nwfs].loadModule:
+                    wfs_lib = importlib.import_module(self.config.wfsss[nwfs].loadModule)
+                else:
+                    wfs_lib = wfs
+                wfsClass = getattr(wfs_lib, self.config.wfss[nwfs].type)
             except AttributeError:
                 raise confParse.ConfigurationError(
                         "No WFS of type {} found.".format(
@@ -217,7 +226,11 @@ class Sim(object):
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
-                dmObj = getattr(DM, self.config.dms[dm].type)
+                if self.config.dms[dm].loadModule:
+                    dm_lib = importlib.import_module(self.config.dms[dm].loadModule)
+                else:
+                    dm_lib = DM
+                dmObj = getattr(dm_lib, self.config.dms[dm].type)
             except AttributeError:
                 raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
 
@@ -239,7 +252,11 @@ class Sim(object):
         # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
-            reconObj = getattr(reconstruction, self.config.recon.type)
+            if self.config.recon.loadModule:
+                recon_lib = importlib.import_module(self.config.recon.loadModule)
+            else:
+                recon_lib = reconstruction
+            reconObj = getattr(recon_lib, self.config.recon.type)
         except AttributeError:
             raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.recon.type))
         self.recon = reconObj(
@@ -254,7 +271,11 @@ class Sim(object):
         self.sciImgNo=0
         for nSci in xrange(self.config.sim.nSci):
             try:
-                sciObj = getattr(SCI, self.config.scis[nSci].type)
+                if self.config.scis[nSci].loadModule:
+                    sci_lib = importlib.import_module(self.config.scis[nSci].loadModule)
+                else:
+                    sci_lib = scienceinstrument
+                sciObj = getattr(sci_lib, self.config.scis[nSci].type)
             except AttributeError:
                 raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[nSci].type))
             self.sciCams[nSci] = sciObj(
@@ -286,7 +307,6 @@ class Sim(object):
         self.Trecon = 0
         self.Timat = 0
         self.Tatmos = 0
-
 
         logger.info("Initialisation Complete!")
 
@@ -334,8 +354,7 @@ class Sim(object):
 
         self.dmCommands = numpy.zeros(self.config.sim.totalActs)
 
-        self.Timat+= time.time() - t
-
+        self.Timat += time.time() - t
 
 
     def runWfs_noMP(self, scrns = None, dmShape=None, wfsList=None,
@@ -383,6 +402,7 @@ class Sim(object):
 
         self.Twfs+=time.time()-t_wfs
         return slopes
+
 
     def runWfs_MP(self, scrns=None, dmShape=None, wfsList=None, loopIter=None):
         """
@@ -456,6 +476,7 @@ class Sim(object):
         self.Twfs+=time.time()-t_wfs
         return slopes
 
+
     def runDM(self, dmCommands, closed=True):
         """
         Runs a single frame of the deformable mirrors
@@ -484,6 +505,7 @@ class Sim(object):
         self.Tdm += time.time() - t
         return correction_buffer
 
+
     def runSciCams(self, dmShape=None):
         """
         Runs a single frame of the science Cameras
@@ -507,6 +529,7 @@ class Sim(object):
                     self.sciCams[sci].psfMax)
 
         self.Tsci +=time.time()-t
+
 
     def loopFrame(self):
         """
@@ -549,13 +572,15 @@ class Sim(object):
         self.runSciCams(self.combinedCorrection)
 
         # Save Data
-        self.storeData(self.iters)
+        i = self.iters % self.config.sim.nIters # If sim is run continuously in loop, overwrite oldest data in buffer
+        self.storeData(i)
 
         self.printOutput(self.iters, strehl=True)
 
         self.addToGuiQueue()
 
         self.iters += 1
+
 
     def aoloop(self):
         """
@@ -565,8 +590,6 @@ class Sim(object):
         """
 
         self.go = True
-
-
         try:
             while self.iters < self.config.sim.nIters:
                 if self.go:
@@ -577,24 +600,55 @@ class Sim(object):
             self.go = False
             logger.info("\nSim exited by user\n")
 
-        # compute final ee50d
-        for sci in range(self.config.sim.nSci):
-            pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
-            ee50d = aotools.encircled_energy(
-                self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
-            if ee50d < (self.sciCams[sci].fov / 2):
-                self.ee50d[sci] = ee50d
-            else:
-                logger.info(("\nEE50d computation invalid "
-                             "due to small FoV of Science Camera {}\n").
-                            format(sci))
-                self.ee50d[sci] = None
-
-
 
         # Finally save data after loop is over.
         self.saveData()
         self.finishUp()
+
+
+    def start_aoloop_thread(self):
+        """
+        Run the simulation continuously in a thread
+
+        The Simulation will loop continuously as long as it is required. The data buffers for
+        simulation are limited however to the size given by sim.config.nIters. Once this is 
+        full, the oldest data will be overwritten.
+        """
+        if self._sim_running is False:
+            self._loop_thread = threading.Thread(
+                    target=self._aoloop_thread, daemon=True)
+
+            self._sim_running = True
+            self._loop_thread.start()
+
+
+    def stop_aoloop_thread(self):
+        """
+        Stops the AO loop if its running continuously in a thread.
+
+        Stops the simulation after the current iteration and joins the loop thread.
+        Will save the data buffers to disk if configured to do so and v
+        the output summary
+        """
+
+        if self._sim_running:
+            # signal for thread to stop
+            self._sim_running = False
+            # wait for thread to finish
+            self._loop_thread.join()
+
+            # save data and finish up
+            self.saveData()
+            self.finishUp()
+            
+
+    def _aoloop_thread(self):
+        """
+        Runs the AO Loop as a while loop to be used in a thread
+        """
+        while self._sim_running:
+            self.loopFrame()
+
 
     def reset_loop(self):
         """
@@ -621,15 +675,17 @@ class Sim(object):
         
         for dm in self.dms.values(): dm.reset()
 
+
     def finishUp(self):
         """
         Prints a message to the console giving timing data. Used on sim end.
         """
         print('\n')
+        iter_num = self.iters % self.config.sim.nIters -1
         if hasattr(self, "longStrehl") and (self.longStrehl is not None):
             for sci_n in range(self.config.sim.nSci):
                 print("Science Camera {}: Long Exposure Strehl Ratio: {:0.2f}".
-                      format(sci_n, self.longStrehl[sci_n][self.iters-1]))
+                      format(sci_n, self.longStrehl[sci_n][iter_num]))
                 if hasattr(self, "ee50d") and (self.ee50d is not None):
                     print("                  EE50 diameter [mas]: {:0.0f}".
                           format(self.ee50d[sci_n] * 1000))
@@ -642,7 +698,6 @@ class Sim(object):
         print("Time in DM: %0.2f"%self.Tdm)
         print("Time making science image: %0.2f"%self.Tsci)
         print("\n")
-
 
 
     def initSaveData(self):
@@ -766,7 +821,6 @@ class Sim(object):
 
         if self.config.sim.saveDmCommands:
             act=0
-
             self.allDmCommands[i,act:] = self.dmCommands
 
         #Quick bodge to save lgs psfs as images
@@ -808,6 +862,7 @@ class Sim(object):
             for sci in xrange(self.config.sim.nSci):
                 self.scieFieldInst[sci][self.iters,:,:] = self.sciCams[sci].focalPlane_efield
 
+
     def saveData(self):
         """
         Saves all recorded data to disk
@@ -815,6 +870,19 @@ class Sim(object):
         Called once simulation has ended to save the data recorded during 
         the simulation to disk in the directories created during initialisation.
         """
+
+        # compute final ee50d
+        for sci in range(self.config.sim.nSci):
+            pxscale = self.sciCams[sci].fov / self.sciCams[sci].nx_pixels
+            ee50d = aotools.encircled_energy(
+                self.sciImgs[sci], fraction=0.5, eeDiameter=True) * pxscale
+            if ee50d < (self.sciCams[sci].fov / 2):
+                self.ee50d[sci] = ee50d
+            else:
+                logger.info(("\nEE50d computation invalid "
+                             "due to small FoV of Science Camera {}\n").
+                            format(sci))
+                self.ee50d[sci] = None
 
         if self.config.sim.simName!=None:
 
@@ -975,6 +1043,7 @@ class Sim(object):
         header["NFRAMES"] = self.config.sim.nIters
 
         return header
+
 
     def getTimeStamp(self):
         """

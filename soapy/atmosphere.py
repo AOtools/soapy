@@ -45,7 +45,6 @@ Examples:
 
         for i in range(10):
             randomPhaseScrns = atmosphere.randomScrns()
-
 """
 
 import os
@@ -102,6 +101,9 @@ class atmos(object):
         self.L0s = self.config.L0
         self.looptime = self.simConfig.loopTime
 
+        if self.config.randomSeed is not None:
+            numpy.random.seed(self.config.randomSeed)
+
         self.config.scrnStrengths = numpy.array(self.config.scrnStrengths,
                 dtype="float32")
 
@@ -112,8 +114,6 @@ class atmos(object):
 
         self.scrnStrengths = ( ((self.r0**(-5./3.))
                                 *self.config.normScrnStrengths)**(-3./5.) )
-        # #Assume r0 calculated for 550nm.
-        # self.wvl = 550e-9
 
         # Computes tau0, the AO time constant (Roddier 1981), at current wind speed
         vBar53 = (self.windSpeeds[:self.scrnNo]**(5./3.) * self.config.normScrnStrengths[:self.scrnNo]).sum() ** (3./5.)
@@ -161,18 +161,26 @@ class atmos(object):
             if not self.config.scrnNames:
                 logger.info("Generating Phase Screens")
                 for i in xrange(self.scrnNo):
+                    if self.config.randomSeed is None:
+                        seed = None
+                    else:
+                        seed = self.config.randomSeed + i
 
                     logger.info("Generate Phase Screen {0}  with r0: {1:.2f}, size: {2}".format(i,self.scrnStrengths[i], self.wholeScrnSize))
                     if self.config.subHarmonics:
                         self.wholeScrns[i] = phasescreen.ft_sh_phase_screen(
                                 self.wholeScrnR0,
                                 self.wholeScrnSize, self.pixel_scale,
-                                self.config.L0[i], 0.01)
+                                self.config.L0[i], 0.001,
+                                seed=seed
+                                )
                     else:
                         self.wholeScrns[i] = phasescreen.ft_phase_screen(
                                 self.wholeScrnR0,
                                 self.wholeScrnSize, self.pixel_scale,
-                                self.config.L0[i], 0.01)
+                                self.config.L0[i], 0.001,
+                                seed=seed
+                                )
 
                     self.scrns[i] = self.wholeScrns[i][:scrnSize,:scrnSize]
 
@@ -181,6 +189,7 @@ class atmos(object):
                 logger.info("Loading Phase Screens")
 
                 for i in xrange(self.scrnNo):
+                    logger.info("Load screen {}...".format(i))
                     fitsHDU = fits.open(self.config.scrnNames[i])
                     scrnHDU = fitsHDU[0]
                     self.wholeScrns[i] = scrnHDU.data.astype("float32")
@@ -199,9 +208,12 @@ class atmos(object):
 
                     except KeyError:
                         logger.warning("no r0 info found in screen header - will assume its ok as it is")
+                    
+                    # close fits HDU now we're done with it
+                    fitsHDU.close()
 
-                # close fits HDU now we're done with it
-                fitsHDU.close()
+                    logger.info("Load screen {}...Done".format(i))
+
 
                 if self.wholeScrnSize!=self.wholeScrns[i].shape[0]:
                     logger.warning("Requested phase screen has different size to that input in config file....loading anyway")
@@ -486,8 +498,6 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreenVonKarman):
         # The coordinates to use to interpolate - will add on a float  less that 1
         self.interp_coords = numpy.arange(1, self.nx_size+1)
 
-        self.thread_pool = numbalib.ThreadPool(2)
-
         self.output_screen = numpy.zeros((self.nx_size, self.nx_size))
         self.output_rotation_screen = numpy.zeros((self.nx_output_size, self.nx_output_size))
 
@@ -510,8 +520,7 @@ class InfinitePhaseScreen(infinitephasescreen.PhaseScreenVonKarman):
         self._scrn = self._scrn[:self.stencil_length, :self.nx_size]
 
         numbalib.bilinear_interp(
-                self._scrn, self.interp_coords - self.float_position, self.interp_coords, self.output_screen,
-                self.thread_pool)
+                self._scrn, self.interp_coords - self.float_position, self.interp_coords, self.output_screen)
 
         self.rotate_screen()
 

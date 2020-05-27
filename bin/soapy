@@ -57,8 +57,6 @@ def runCmdSim(sim, newIMat=False, interactive = False):
         IPython.embed()
         raise SystemExit
 
-
-
     else:
         sim.aoinit()
         sim.makeIMat()
@@ -70,8 +68,9 @@ if __name__=="__main__":
 
     #Define parser and add arguments
     parser = ArgumentParser()
-    parser.add_argument("configFile", nargs="?", action="store", required=True
+    parser.add_argument("configFile", action="store", default=None,
             help="The AO config file you wish to simulate.")
+
     parser.add_argument("--gui","-g", action="store_true", dest="gui",
             help="Starts the AO gui to visualise your simulation")
 
@@ -93,6 +92,9 @@ if __name__=="__main__":
 
     #Finally, parse args
     args = parser.parse_args()
+
+    if args.configFile is None:
+        raise ValueError("Must supply a configuration file")
 
     #default confFile
     if args.configFile!=None:

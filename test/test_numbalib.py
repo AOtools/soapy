@@ -1,7 +1,29 @@
-from soapy import numbalib
 import numpy
-
+import scipy.ndimage
 import aotools
+
+from soapy import numbalib
+
+
+def test_zoom():
+
+    NX_DATA_SHAPE = 10
+    ZOOM_FACTOR = 5
+
+    input_data = numpy.arange(NX_DATA_SHAPE**2)
+    input_data.resize(NX_DATA_SHAPE, NX_DATA_SHAPE)
+    input_data = input_data.astype("float32")
+
+    # reference zoom using scipy
+    zoom_data = scipy.ndimage.zoom(
+            input_data, (ZOOM_FACTOR, ZOOM_FACTOR), order=1)
+
+    # numbalib zoom to test 
+    zoom_data2 = numpy.zeros((ZOOM_FACTOR * NX_DATA_SHAPE, ) * 2).astype(input_data.dtype)
+    numbalib.zoom(input_data, zoom_data2)
+
+    assert numpy.allclose(zoom_data, zoom_data2)
+
 
 def test_zoomtoefield():
     """
@@ -13,40 +35,13 @@ def test_zoomtoefield():
     output_data = numpy.zeros((100, 100), dtype="float32")
     output_efield2 = numpy.zeros((100, 100), dtype="complex64")
     
-
-    thread_pool = numbalib.ThreadPool(1)
-    numbalib.wfs.zoom(input_data, output_data, thread_pool=thread_pool)
+    numbalib.zoom(input_data, output_data)
 
     output_efield1 = numpy.exp(1j * output_data)
 
-    numbalib.wfs.zoomtoefield(input_data, output_efield2)
+    numbalib.wfslib.zoomtoefield(input_data, output_efield2)
 
     assert numpy.allclose(output_efield1, output_efield2)
-
-
-
-def test_zoomtoefield_threads():
-    """
-    Checks that when zooming to efield, the same result is found as when zooming
-    then using numpy.exp to get efield.
-    Uses multiple threads and runs many times in case of intermittant threading bugs
-    """
-
-    # Perform this tests many times to catch any intermittent errors
-    for i in range(50):
-        input_data = numpy.random.random((10,10)).astype("float32")
-        output_data = numpy.zeros((100, 100), dtype="float32")
-        output_efield2 = numpy.zeros((100, 100), dtype="complex64")
-        
-
-        thread_pool = numbalib.ThreadPool(4)
-        numbalib.wfs.zoom(input_data, output_data, thread_pool=thread_pool)
-
-        output_efield1 = numpy.exp(1j * output_data)
-
-        numbalib.wfs.zoomtoefield(input_data, output_efield2)
-
-        assert numpy.allclose(output_efield1, output_efield2)
 
 
 def test_chop_subaps_mask():
@@ -72,44 +67,10 @@ def test_chop_subaps_mask():
     subap_coords = numpy.array([x_coords.flatten(), y_coords.flatten()]).T
 
     numpy_chop(phase, subap_coords, nx_subap_size, numpy_subap_array, mask)
-    thread_pool = numbalib.ThreadPool(1)
-    numbalib.wfs.chop_subaps_mask_pool(
-            phase, subap_coords, nx_subap_size, subap_array, mask, thread_pool)
+    numbalib.wfslib.chop_subaps_mask(
+            phase, subap_coords, nx_subap_size, subap_array, mask)
     assert numpy.array_equal(numpy_subap_array, subap_array)
 
-
-def test_chop_subaps_mask_threads():
-    """
-    Tests that the numba routing chops phase into sub-apertures in the same way
-    as using numpy indices
-    Runs with multiple threads many times to detectect potential intermittant errors
-    """
-    nx_phase = 12
-    nx_subap_size = 3
-    nx_subaps = nx_phase // nx_subap_size
-
-    subap_array = numpy.zeros((nx_subaps * nx_subaps, nx_subap_size, nx_subap_size)).astype("complex64")
-    numpy_subap_array = subap_array.copy()
-
-    mask = aotools.circle(nx_phase/2., nx_phase)
-
-    x_coords, y_coords = numpy.meshgrid(
-            numpy.arange(0, nx_phase, nx_subap_size),
-            numpy.arange(0, nx_phase, nx_subap_size))
-    subap_coords = numpy.array([y_coords.flatten(),x_coords.flatten()]).T
-
-
-    for i in range(50):
-        phase = (numpy.random.random((nx_phase, nx_phase)) 
-                + 1j * numpy.random.random((nx_phase, nx_phase))
-                ).astype("complex64")
-
-        numpy_chop(phase, subap_coords, nx_subap_size, numpy_subap_array, mask)
-        thread_pool = numbalib.ThreadPool(1)
-        numbalib.wfs.chop_subaps_mask_pool(
-                phase, subap_coords, nx_subap_size, subap_array, mask, thread_pool)
-
-        assert numpy.array_equal(numpy_subap_array, subap_array)
 
 def numpy_chop(phase, subap_coords, nx_subap_size, subap_array, mask):
     """
@@ -137,6 +98,7 @@ def test_abs_squared():
 
     assert numpy.array_equal(output_data, numpy.abs(data)**2)
 
+
 def test_place_subaps_detector():
 
     nx_subaps = 4
@@ -144,7 +106,6 @@ def test_place_subaps_detector():
     tot_pxls_per_subap = 2 * pxls_per_subap # More for total FOV
     tot_subaps = nx_subaps * nx_subaps
     nx_pxls = nx_subaps * pxls_per_subap
-    n_threads = 1
 
     detector = numpy.zeros((nx_pxls, nx_pxls))
     detector_numpy = detector.copy()
@@ -185,7 +146,7 @@ def test_place_subaps_detector():
     detector_coords = numpy.array(detector_coords).astype("int")
     subap_coords = numpy.array(subap_coords).astype("int")
 
-    numbalib.wfs.place_subaps_on_detector(
+    numbalib.wfslib.place_subaps_on_detector(
         subaps, detector, detector_coords, subap_coords)
 
     numpy_place_subaps(subaps, detector_numpy, detector_coords, subap_coords)
@@ -200,6 +161,21 @@ def numpy_place_subaps( subap_arrays, detector, detector_subap_coords, valid_sub
         detector[x1: x2, y1: y2] += subap[sx1: sx2, sy1: sy2]
     
     return detector
+
+
+def test_fftshift_2d():
+
+    data = numpy.arange(100).reshape(10,10)
+
+    npy_shift = numpy.fft.fftshift(data)
+
+    data_shift = numbalib.fftshift_2d_inplace(data.copy())
+
+    assert numpy.array_equal(data_shift, npy_shift)    
+
+
+
+
 
 if __name__ == "__main__":
     test_zoomtoefield()

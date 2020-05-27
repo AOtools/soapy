@@ -14,10 +14,10 @@ except ImportError:
     except ImportError:
         raise ImportError("PyAOS requires either pyfits or astropy")
 
-from aotools import wfs
+import aotools
 
 from .. import AOFFT, LGS, logger
-from . import base
+from . import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -33,7 +33,7 @@ DTYPE = numpy.float32
 RAD2ASEC = 206264.849159
 ASEC2RAD = 1./RAD2ASEC
 
-class Gradient(base.WFS):
+class Gradient(wfs.WFS):
     """
     The Grandient WFS class.
 
@@ -78,7 +78,7 @@ class Gradient(base.WFS):
                 self.sim_pad : -self.sim_pad,
                 self.sim_pad : -self.sim_pad
                 ]
-        self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
+        self.subapCoords, self.subapFillFactor = aotools.wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, pupilMask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
