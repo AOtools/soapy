@@ -32,7 +32,9 @@ setup(
         "scipy >= 0.15.0",
         "astropy >= 1.0",
         "aotools >= 1.0",
-        "pyfftw >= 0.12.0"
+        "pyfftw >= 0.12.0",
+        "pyyaml >= 5.1.1",
+        "numba >= 0.40"
       ],
     classifiers=[
         "Programming Language :: Python",
