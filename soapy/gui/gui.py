@@ -229,7 +229,7 @@ class GUI(QtWidgets.QMainWindow):
 
         fname = str(fname)
 
-        if fname is not "":
+        if fname:
             self.sim.readParams(fname)
             self.config = self.sim.config
             self.initPlots()

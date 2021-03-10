@@ -171,7 +171,7 @@ class PY_Configurator(object):
 
             # Need to add bit if the GS is an elongated off-axis LGS
             if (hasattr(self.wfss[gs].lgs, 'elongationDepth')
-                    and self.wfss[gs].lgs.elongationDepth is not 0):
+                    and self.wfss[gs].lgs.elongationDepth != 0):
                 # This calculation is done more explicitely in the WFS module
                 # in the ``calcElongPos`` method
                 maxLaunch = abs(numpy.array(
