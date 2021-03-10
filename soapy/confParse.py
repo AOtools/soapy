@@ -160,7 +160,7 @@ class PY_Configurator(object):
 
         # We oversize the pupil to what we'll call the "simulation size"
         simPadRatio = (self.sim.simOversize-1)/2.
-        self.sim.simPad = int(round(self.sim.pupilSize*simPadRatio))
+        self.sim.simPad = max(int(round(self.sim.pupilSize*simPadRatio)), 1)
         self.sim.simSize = self.sim.pupilSize + 2 * self.sim.simPad
 
 
