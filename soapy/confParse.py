@@ -160,7 +160,7 @@ class PY_Configurator(object):
 
         # We oversize the pupil to what we'll call the "simulation size"
         simPadRatio = (self.sim.simOversize-1)/2.
-        self.sim.simPad = int(round(self.sim.pupilSize*simPadRatio))
+        self.sim.simPad = max(int(round(self.sim.pupilSize*simPadRatio)), 1)
         self.sim.simSize = self.sim.pupilSize + 2 * self.sim.simPad
 
 
@@ -171,7 +171,7 @@ class PY_Configurator(object):
 
             # Need to add bit if the GS is an elongated off-axis LGS
             if (hasattr(self.wfss[gs].lgs, 'elongationDepth')
-                    and self.wfss[gs].lgs.elongationDepth is not 0):
+                    and self.wfss[gs].lgs.elongationDepth != 0):
                 # This calculation is done more explicitely in the WFS module
                 # in the ``calcElongPos`` method
                 maxLaunch = abs(numpy.array(
