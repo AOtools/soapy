@@ -9,10 +9,10 @@ import numpy
 
 import aotools
 
-from . import base
+from . import wfs
 
 
-class Zernike(base.WFS):
+class Zernike(wfs.WFS):
 
     def calcInitParams(self, phaseSize=None):
         # Call the case WFS methoc

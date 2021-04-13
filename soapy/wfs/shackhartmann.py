@@ -2,10 +2,10 @@
 Shack-Hartmann WFS
 
 The Shack-Hartmann WFS is simulated using the `ShackHartmann` class contained here.
-Pupil phase or complex amplitude is recieved from the line of sight on the WFS, via the base WFS class.
-This array of phase or complex amplitude is chopped into relavent sub-apertures.
+Pupil phase or complex amplitude is received from the line of sight on the WFS, via the base WFS class.
+This array of phase or complex amplitude is chopped into relevant sub-apertures.
 Before this however, it is interpolated such that the correct sub-aperture field of view will be
- obtianed. This also means that the phase does not need to be a integer multiple of the number
+ obtained. This also means that the phase does not need to be a integer multiple of the number
  of sub-apertures. An FFT is performed to create the focal plane image for each sub-aperture.
  To obtain a multiple of the number of pixels per sub-aperture, the FFT is padded to an appropriate size.
  To get the final detector frame the focal plane is binned, photon flux is calculated and noise added.
@@ -19,10 +19,9 @@ import pyfftw
 
 import aotools
 from aotools.image_processing import centroiders
-from aotools import wfs
 
 from .. import LGS, logger, lineofsight, AOFFT, interp
-from . import base
+from . import wfs
 from .. import numbalib
 
 # xrange now just "range" in python3.
@@ -37,7 +36,7 @@ CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
 
-class ShackHartmann(base.WFS):
+class ShackHartmann(wfs.WFS):
     """Class to simulate a Shack-Hartmann WFS"""
 
     def calcInitParams(self):
@@ -53,7 +52,6 @@ class ShackHartmann(base.WFS):
         self.fft_oversamp = self.config.fftOversamp
         self.nx_guard_pixels = self.config.nx_guard_pixels
         self.subap_threshold = self.config.subapThreshold
-
 
         # Calculate some others
         self.pixel_scale =self.subap_fov / self.nx_subap_pixels
@@ -101,8 +99,7 @@ class ShackHartmann(base.WFS):
         self.referenceImage = self.config.referenceImage
         self.n_measurements = 2 * self.n_subaps
 
-        self.thread_pool = numbalib.ThreadPool(self.threads)
-
+    
     def initLos(self):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
@@ -146,7 +143,7 @@ class ShackHartmann(base.WFS):
                     self.mask, self.nx_interp_efield))
 
         p = self.sim_pad
-        self.subapFillFactor = wfs.computeFillFactor(
+        self.subapFillFactor = aotools.wfs.computeFillFactor(
                 self.mask[p:-p, p:-p],
                 self.pupil_subap_coords,
                 round(float(self.pupil_size)/self.nx_subaps)
@@ -330,25 +327,26 @@ class ShackHartmann(base.WFS):
 
         if self.config.propagationMode=="Geometric":
             # Have to make phase the correct size if geometric prop
-            numbalib.wfs.zoomtoefield(self.los.phase, self.interp_efield, thread_pool=self.thread_pool)
+            numbalib.wfslib.zoomtoefield(self.los.phase, self.interp_efield)
 
         else:
             self.interp_efield = self.EField
 
         # Create an array of individual subap EFields
         self.fft_input_data[:] = 0
-        numbalib.wfs.chop_subaps_mask_pool(
+        numbalib.wfslib.chop_subaps_mask(
                 self.interp_efield, self.interp_subap_coords, self.nx_subap_interp,
-                self.fft_input_data, self.scaledMask, thread_pool=self.thread_pool)
+                self.fft_input_data, self.scaledMask)
         self.fft_input_data[:, :self.nx_subap_interp, :self.nx_subap_interp] *= self.tilt_fix_efield
         self.FFT()
 
         self.temp_subap_focus = AOFFT.ftShift2d(self.fft_output_data)
 
-        numbalib.abs_squared(self.temp_subap_focus, out=self.subap_focus_intensity)
+        numbalib.abs_squared(self.temp_subap_focus, self.subap_focus_intensity)
 
         if intensity != 1:
             self.subap_focus_intensity *= intensity
+
 
     def integrateDetectorPlane(self):
         '''
@@ -368,23 +366,24 @@ class ShackHartmann(base.WFS):
         # bins back down to correct size and then
         # fits them back in to a focal plane array
         self.binnedFPSubapArrays[:] = 0
-        numbalib.wfs.bin_imgs_pool(
+        numbalib.wfslib.bin_imgs(
                 self.subap_focus_intensity, self.config.fftOversamp, self.binnedFPSubapArrays,
-                thread_pool=self.thread_pool)
+                )
 
         # Scale each sub-ap flux by sub-aperture fill-factor
         self.binnedFPSubapArrays\
                 = (self.binnedFPSubapArrays.T * self.subapFillFactor).T
 
-        numbalib.wfs.place_subaps_on_detector(
+        numbalib.wfslib.place_subaps_on_detector(
                 self.binnedFPSubapArrays, self.detector, self.detector_subap_coords, self.valid_subap_coords)
+
 
     def readDetectorPlane(self):
         # Scale data for correct number of photons
         self.detector /= self.detector.sum()
         self.detector *= photons_per_mag(
                 self.config.GSMag, self.mask, self.phase_scale,
-                self.config.exposureTime, self.soapy_config.sim.photometric_zp
+                self.config.exposureTime, self.config.photometric_zp
                 )# * self.config.throughput
 
         if self.config.photonNoise:
@@ -392,6 +391,7 @@ class ShackHartmann(base.WFS):
 
         if self.config.eReadNoise!=0:
             self.addReadNoise()
+
 
     def applyLgsUplink(self):
         """
@@ -422,9 +422,9 @@ class ShackHartmann(base.WFS):
         Returns:
             ndarray: array of all WFS measurements
         '''
-        numbalib.wfs.chop_subaps(
+        numbalib.wfslib.chop_subaps(
                 self.detector, self.detector_cent_coords, self.nx_subap_pixels,
-                self.centSubapArrays, threads=self.threads)
+                self.centSubapArrays)
 
         slopes = getattr(centroiders, self.config.centMethod)(
                 self.centSubapArrays,
@@ -570,7 +570,7 @@ def photons_per_mag(mag, mask, phase_scale, exposureTime, zeropoint):
         mask (ndarray): 2-d pupil mask. 1 if aperture clear, 0 if not
         phase_scale (float): Size of pupil mask pixel in metres
         exposureTime (float): WFS exposure time in seconds
-        zeropoint (float): Photometric zeropoint of mag 0 star in photons/metre^2/seconds
+        zeropoint (float): Photometric zeropoint of mag 0 star in photons/metre^2/second/band
 
     Returns:
         float: photons per WFS frame

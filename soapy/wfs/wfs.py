@@ -201,6 +201,7 @@ class WFS(object):
                 self.config, self.soapy_config,
                 propagationDirection="down")
 
+
     def initLGS(self):
         """
         Initialises the LGS objects for the WFS

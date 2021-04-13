@@ -6,9 +6,9 @@ Firstly, you'll need Python. This comes with pretty much every linux distributio
 ============
 Installation
 ============
-Once all the requirements outlined below are met, you are ready to install Soapy. Download the source from `github <https://github.com/andrewpaulreeves/soapy>`_, either as a zip file, or clone the git repository with::
+Once all the requirements outlined below are met, you are ready to install Soapy. Download the source from `github <https://github.com/AOtools/soapy>`_, either as a zip file, or clone the git repository with::
 
-    git clone https://github.com/soapy/soapy.git
+    git clone https://github.com/AOtools/soapy.git
 
 If downloading the code as a zip, you can choose which version to use with the drop down box on the left of the page, entitled ``branch:master``. Whilst I try not to, the master branch will occasionally be broken so you might want to get the latest stable version by clicking "tags" in the dropdown list, and selecting the most recent version number.
 

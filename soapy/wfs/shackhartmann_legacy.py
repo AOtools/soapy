@@ -1,5 +1,5 @@
 """
-A Legacy Shack Hartmann WFS simulation that shoudl nto normally be used as it is quite slow,
+A Legacy Shack Hartmann WFS simulation that should not normally be used as it is quite slow,
 but it required for some features such as LGS spot elongation
 """
 
@@ -8,10 +8,9 @@ import numpy.random
 
 import aotools
 from aotools.image_processing import centroiders
-from aotools import wfs
 
 from .. import AOFFT, LGS, logger, interp
-from . import base
+from . import wfs
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -24,8 +23,10 @@ except NameError:
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
-class ShackHartmannLegacy(base.WFS):
-    """Class to simulate a Shack-Hartmann WFS"""
+class ShackHartmannLegacy(wfs.WFS):
+    """
+    Class to simulate a Shack-Hartmann WFS
+    """
 
     def calcInitParams(self):
         """
@@ -90,7 +91,7 @@ class ShackHartmannLegacy(base.WFS):
                 self.sim_pad : -self.sim_pad,
                 self.sim_pad : -self.sim_pad
                 ]
-        self.subapCoords, self.subapFillFactor = wfs.findActiveSubaps(
+        self.subapCoords, self.subapFillFactor = aotools.wfs.findActiveSubaps(
                 self.wfsConfig.nxSubaps, mask,
                 self.wfsConfig.subapThreshold, returnFill=True)
 
@@ -109,7 +110,7 @@ class ShackHartmannLegacy(base.WFS):
                     self.mask, self.scaledEFieldSize))
 
         p = self.sim_pad
-        self.subapFillFactor = wfs.computeFillFactor(
+        self.subapFillFactor = aotools.wfs.computeFillFactor(
                 self.mask[p:-p, p:-p],
                 self.subapCoords,
                 round(float(self.pupil_size)/self.wfsConfig.nxSubaps)
@@ -163,6 +164,7 @@ class ShackHartmannLegacy(base.WFS):
                     fftw_FLAGS=(self.wfsConfig.fftwFlag,"FFTW_DESTROY_INPUT")
                     )
 
+
     def initLGS(self):
         super(ShackHartmannLegacy, self).initLGS()
         if self.lgsConfig.uplink:
@@ -173,6 +175,7 @@ class ShackHartmannLegacy(base.WFS):
                     nOutPxls=self.subapFFTPadding,
                     outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
                     )
+
 
     def allocDataArrays(self):
         """
@@ -228,6 +231,7 @@ class ShackHartmannLegacy(base.WFS):
 
         else:
             self.tiltFix = numpy.zeros((self.subapFOVSpacing,)*2)
+
 
     def getStatic(self):
         """

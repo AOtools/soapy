@@ -245,7 +245,8 @@ class CustomShapes(DM):
         For best result, it is however preferable that no interpolation occurs.
         '''
         try:
-            dmShape = fits.getdata(self.config.dmShapesFilename)
+            with open(self.config.dmShapesFilename, "rb") as shapes_file:
+                dmShape = fits.getdata(shapes_file)
         except:
             raise ValueError("Can't open fits file %s" % self.config.dmShapesFilename)
 
