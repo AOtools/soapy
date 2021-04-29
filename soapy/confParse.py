@@ -751,6 +751,16 @@ class WfsConfig(ConfigObj):
         ``photometric_zp``      float: Photometric zeropoint -
                                 number of photons/meter^2/second/band
                                 from a magnitude 0 star             ``2e9``
+        ``apex_prism``          Apex angle of the 4-faces Pyramid
+                                in  radian/pixels                  ``0.4``
+        ``nb_modulation``       Number of modulations used for      
+                                pyramid WFS                        ``4``
+        ``amplitude_modulation``Amplitude of the modulations used
+                                for the pyramid WFS                 ``3``
+        ``FOV``                 Field of view use in the case of    ``.5``
+                                the PWS in arcsec
+        ``detector_size``       WFS detector size(in pixel) for     ``None``
+                                the PWS. If None, taken 5*pupilsize
         =====================   ================================== ===========
 
 
@@ -788,6 +798,11 @@ class WfsConfig(ConfigObj):
                         ("nx_guard_pixels", 0),
                         ("loadModule", None),
                         ("photometric_zp", 2e9)
+                        ("apex_prism", 0.4),
+                        ("nb_modulation", 4),
+                        ("amplitude_modulation", 3),
+                        ("FOV", 0.5),
+                        ("detector_size", None)
                         ]
 
         # Parameters which may be Set at some point and are allowed

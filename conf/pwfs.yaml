@@ -1,0 +1,92 @@
+simName: PWFS_100
+pupilSize: 30
+nGS: 1
+nDM: 1
+nSci: 1
+nIters: 1000
+loopTime: 0.002
+threads: 4
+simOversize: 10
+
+
+verbosity: 2
+
+saveCMat: False
+saveSlopes: False
+saveDmCommands:   True
+saveLgsPsf: True
+saveSciPsf: True
+saveStrehl : True
+saveWfe : True
+saveSciRes : True
+saveCalic : False
+
+Atmosphere:
+  scrnNo: 1
+  scrnHeights: [0, 5000, 10000, 15000]
+  scrnStrengths: [0.5, 0.3, 0.1, 0.1]
+  windDirs: [0, 45, 90, 135]
+  windSpeeds: [10, 10, 10, 20]
+  wholeScrnSize: 2048
+  r0: 0.13
+  L0: [20, 20, 20, 20]
+  infinite: True
+
+
+
+Telescope:
+  telDiam: 8
+  mask: circle
+  
+  
+
+WFS:
+  0:
+    type: Pyramid #Pyramid #ShackHartmann
+    GSPosition: [0, 0]
+    nxSubaps: 30
+    FOV: 1
+    wavelength: .5e-6
+    apex_prism: 0.5
+    nb_modulation: 8
+    amplitude_modulation: 4
+    eReadNoise: 0
+    detector_size: 150
+    
+  #1:
+   # type: Pyramid #Pyramid #ShackHartmann
+    #GSPosition: [0, 0]
+    #GSHeight: 0
+    #GSMag: 8
+    #nxSubaps: 11
+    #pxlsPerSubap: 10
+    #subapFOV: 2.5
+    #wavelength: 0.6e-6
+    #apex_prism: 0.38
+    #nb_modulation: 16
+    #amplitude_modulation: 4
+    #eReadNoise: 0
+    
+
+DM:
+  0:
+    type: Zernike #Zernike #KarhunenLoeve
+    closed: True
+    nxActuators: 100
+    gain: 0.6
+    svdConditioning: 0.01 # 0.03
+
+
+
+Reconstructor:
+  type: MVM
+  svdConditioning: 0.001
+  gain: 0.6
+  
+Science:
+  0:
+    position: [0, 0]
+    FOV: .5
+    wavelength: 1.65e-6
+    pxls: 100
+
