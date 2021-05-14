@@ -797,7 +797,7 @@ class WfsConfig(ConfigObj):
                         ("correlationFFTPad", None),
                         ("nx_guard_pixels", 0),
                         ("loadModule", None),
-                        ("photometric_zp", 2e9)
+                        ("photometric_zp", 2e9),
                         ("apex_prism", 0.4),
                         ("nb_modulation", 4),
                         ("amplitude_modulation", 3),
