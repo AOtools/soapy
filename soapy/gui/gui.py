@@ -57,7 +57,7 @@ elif PYQT_VERSION == 4:
 
 from matplotlib.figure import Figure
 import matplotlib.pyplot as pyplot
-from .. import pyqtgraph
+import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
 # set default colourmaps available
