@@ -751,6 +751,20 @@ class WfsConfig(ConfigObj):
         ``photometric_zp``      float: Photometric zeropoint -
                                 number of photons/meter^2/second/band
                                 from a magnitude 0 star             ``2e9``
+        ``nb_modulation``       Number of modulations used for      
+                                pyramid WFS                        ``4``
+        ``amplitude_modulation``Amplitude of the modulations used
+                                for the pyramid WFS (arcsec)        ``0.1``
+        ``FOV``                 Field of view use in the case of    ``.5``
+                                the PWS in arcsec
+        ``detector_size``       WFS detector size(in pixel) for     ``None``
+                                the PWS. If None, taken 5*pupilsize
+        ``detector``            introduce the possibility to choose ``CCD``
+                                MKID (photon counting) 
+        ``nb_of_photon``        number of photon per frame         ``3.6e4``
+        ``pupil_separation``    Number of pixel of separation between ``10``
+                                each pupil image on the detector for 
+                                for the PWS
         =====================   ================================== ===========
 
 
@@ -787,7 +801,14 @@ class WfsConfig(ConfigObj):
                         ("correlationFFTPad", None),
                         ("nx_guard_pixels", 0),
                         ("loadModule", None),
-                        ("photometric_zp", 2e9)
+                        ("photometric_zp", 2e9),
+                        ("nb_modulation", 4),
+                        ("amplitude_modulation", 0.1),
+                        ("FOV", 0.5),
+                        ("detector_size", None),
+                        ("detector", "CCD"),
+                        ("nb_of_photon", None),
+                        ("pupil_separation", 10)
                         ]
 
         # Parameters which may be Set at some point and are allowed
