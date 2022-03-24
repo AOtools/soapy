@@ -33,13 +33,14 @@ Author : Aurelie Magniez
 
 """
 
-import numpy 
+
+import numpy
 import numpy.random
+from aotools.functions import circle
+
+from .. import AOFFT, LGS, logger
 from . import wfs
 import pyfftw
-
-
-from .. import LGS, logger, lineofsight, AOFFT, interp
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -48,29 +49,36 @@ try:
 except NameError:
     xrange = range
 
-
 # The data type of data arrays (complex and real respectively)
 CDTYPE = numpy.complex64
 DTYPE = numpy.float32
 
-FFT_OVERSAMP = 10
-MOD_MASK = 4
+# Parameters use for the detector mask
+MOD_MASK = 32
+AMPL_MASK = 1/numpy.pi
 
-def phase_screen_tip_tilt(input_array, tip_value, tilt_value):
+# Deflaut wavelength of Soapy
+LAMBDA_0 = 500e-9
+
+
+def rebin(arr, new_shape):
+    shape = (new_shape[0], arr.shape[0] // new_shape[0],
+             new_shape[1], arr.shape[1] // new_shape[1])
+    return arr.reshape(shape).mean(-1).mean(1)
+
+def calcPhaseScreenTipTilt(input_array, tip_value, tilt_value):
     """
-    Create a phase mask of a tip tilt aberration for the given tip and tilt angles (in radians)
-    Used for modulation and pyramid phase mask
-
-    Args:
-        input_array (ndarray):  use to define the size of the phase screen. Typically, give the phase screen the tip-tilt aberration will be aplied to.
-        tip_value (float): Tip value of the phase aberation.
-        tilt_value (float):  Tilt value of the phase aberation.
-
-    Returns:
-        ndarray: Phase screen.
-
-    """
+    Create a phase mask of complex exponentials with modulus one and an appropriate phase at each element
+    for the given tip and tilt angles (in radians)
     
+    Param:
+        - input_array : use to define the size of the phase screen. Typically, give the phase screen the tip-tilt aberration
+                        will be aplied to
+        - tip_value, tilt_value
+    output
+        - phase screen
+    
+    """
     #Positive tip = moves PSF to right, positive tilt = moves PSF up
     sizeX, sizeY = input_array.shape
     tip = numpy.arange(sizeX)*tip_value
@@ -82,96 +90,57 @@ def phase_screen_tip_tilt(input_array, tip_value, tilt_value):
     
     return tip_phase-tilt_phase.T
 
-
 class Pyramid(wfs.WFS):
     """
        Class to simulate de 4-faces Pyramid wavefront sensor
     """         
 
-        
+    # oversampling for the first FFT from EField to focus (4 seems ok...)
+    FOV_OVERSAMP = 4
 
     def calcInitParams(self):
         """
-        Define essentials parameters of the PWS
-        Set the different masks used in the simulation
+            Define essentials parameters of the PWS
+            Set the different masks used in the simulation
 
         """
-        
         super(Pyramid, self).calcInitParams()
-        
-        
+
         # ---- prism param ---
-        self.apex =  self.wfsConfig.apex_prism*numpy.pi
+        self.pupil_separation = self.wfsConfig.pupil_separation
         
         # ---- Modulation param ---
         self.nb_modulation =  self.wfsConfig.nb_modulation
-        self.amplitude_modulation =  self.wfsConfig.amplitude_modulation
+        self.amplitude_modulation =  self.wfsConfig.amplitude_modulation / 206265
         
+        # ---  Sampling parameters
+        self.size_array = self.sim_size
         
-        # ---- PWS sim param ----
-        
-        # define the size array of the simulation
-        if self.soapy_config.sim.simOversize > 1.2:
-            self.size_array = self.sim_size
-            self.oversamp = False
-            self.phase_size = self.pupil_size
-            
-            self.fovScale = 2*numpy.pi/self.pupil_size
-            
-        else : 
-            self.size_array = FFT_OVERSAMP * self.pupil_size
-            self.oversamp = True
-            self.phase_size = self.mask.shape[0]
-            
-            #remove the edges of the mask due to 1.2 oversampling by default
-
-            self.fovScale = 2*numpy.pi/self.pupil_size
-
-        # ---- Rescaling parameters ---
-        self.FOV = self.wfsConfig.FOV/206265 # Convert Fov from arcsec to rad
-        
-        # New size of the pupil plane
-        self.interp_size = int (self.telescope_diameter*self.FOV/self.wavelength)
-        if self.interp_size %2 !=0: # To have an even number
-            self.interp_size+=1
-            
-            
-        # Final number of pixels (subaps) for the pupil images on the detector plane
+         # ---- Detector parameters ----
         self.nx_subaps = self.wfsConfig.nxSubaps
-        
-        if self.interp_size > self.nx_subaps:
-            logger.warning(" The interpolation will make you loose information :\n\
-                                telescope_diameter*FOV/wavelength = {} should be superior to nxSubaps = {}"\
-                                .format(self.interp_size, self.nx_subaps))
-        
-        # Detector size, to have the right number of subapertures
-        self.detector_interp_size = int(self.nx_subaps*self.size_array/self.interp_size)
-        if self.detector_interp_size %2 !=0:
-            self.detector_interp_size+=1
-        
-        
-        # Final detector size, if the user defined a detector size bigger than the number of used pixels
-        # the final size is the used pixel
-        ds = self.wfsConfig.detector_size
-        if ds and ds < self.detector_interp_size:
-            self.detector_size = self.wfsConfig.detector_size
-        else :
-            self.detector_size = self.detector_interp_size
-            logger.warning("WARNING :the user defined a detector size bigger than the number of used pixels")
+        self.bin = int(self.pupil_size / self.nx_subaps)
 
+        self.detector_size = int(self.size_array / self.bin)
+        # self.detector_size = self.wfsConfig.detector_size
+        self.detector = self.wfsConfig.detector
+        
+        self.count=0
+        
+        # ---- GS Parameters
+        self.GSMag = self.wfsConfig.GSMag
+        self.FOV = self.wfsConfig.FOV/206265    # Convert Fov from arcsec to rad
+        
         # ---- Masks Creation ----
         self.initFFTs()
-        self.set_pyramid_mask()
-        self.set_centroid_mask()
-        self.set_detector_mask()
-        self.get_tip_tilt_modulations_points()
-        self.set_modulation_matrix()
+        self.calcPyramidMask()
+        self.calcCentroidMask()
+        self.calcDetectorMask()
+        self.calcTipTiltModulationsPoints()
+        self.calcModulationMatrix()
+        self.calcFlatSlopes()
         
         self.n_measurements = self.SlopeSize
-        
         self.los.allocDataArrays()
-                
-
 
     def initFFTs(self):
         
@@ -196,43 +165,45 @@ class Pyramid(wfs.WFS):
                 threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
                 direction="FFTW_BACKWARD"
                 )
+        self.focal_plane =  pyfftw.empty_aligned(
+                (max(MOD_MASK,self.nb_modulation),self.size_array,self.size_array), dtype=CDTYPE)
 
-
-
-    def set_centroid_mask(self):
+    def calcCentroidMask(self):
         """
         Centroid mask, use to shif of 1 pixel the inputphase screen to center for the fft
         """
-        pupil_plane = numpy.zeros((self.phase_size,self.phase_size))
-        self.centroidMask = phase_screen_tip_tilt(pupil_plane, -2*numpy.pi/(2*(self.size_array )), 
-                                                  2*numpy.pi/(2*(self.size_array)))
+        pupil_plane = numpy.zeros((self.size_array,self.size_array))
+        self.centroidMask = calcPhaseScreenTipTilt(pupil_plane, - numpy.pi / (self.size_array ), 
+                                                 numpy.pi / (self.size_array))
 
-
-
-    def set_detector_mask(self, threshold = 0.1):
+    def calcDetectorMask(self):
         """
         To use only the illuminated pixel
         We illuminate de 4 faces with a flat phase screen and get the correpondent detector array
         Then we keep the pixel with a value above the threshold
         Also give the slope size
 
-        Args:
-            threshold (float, optional): Threshold to set the detector maks. Defaults to 0.1.
+        Parameters
+        ----------
+        threshold : Float, optional
+            Threshold to set the detector maks. The default is 0.7
 
         """
 
         # Get the pupil images on the detector plane
-        self.get_tip_tilt_modulations_points(ampl = 4, num_of_mod=4)
-        self.set_modulation_matrix(num_of_mod=4)
-        self.calcFocalPlane( num_of_mod=4)
-        
-        # half_size = int(self.size_array/2)
+    
         half_size = int(self.detector_size/2)
         
-        # split in 4 and define the mask
-        inputArray = numpy.abs(self.wfsDetectorPlane[0:half_size, 0:half_size])**4
+        
+        submask = circle(int(self.nx_subaps/2),self.nx_subaps)
 
-        QuadMask1 = numpy.where(inputArray>threshold, 1, 0)
+        
+        QuadMask1 = numpy.zeros((half_size,half_size))
+        
+        begin = int(half_size-(self.nx_subaps+self.pupil_separation/2)+0.5)
+        end = int(half_size-(self.pupil_separation/2)+0.5)
+        QuadMask1[begin:end,begin:end] = submask
+
         QuadMask2 = numpy.flip(QuadMask1, axis=1)
         QuadMask3 = numpy.flip(QuadMask1, axis = 0)
         QuadMask4 = numpy.flip(QuadMask3, axis=1)
@@ -249,47 +220,45 @@ class Pyramid(wfs.WFS):
         
         self.SlopeSize = numpy.count_nonzero(QuadMask1)*2
         
-        # Clean the class to be sure it is not use again in that modulation configuration
-        del self.modulation_phase_matrix
-        del self.wfsDetectorPlane
-        del self.tip_mod
-        del self.tilt_mod
-        
 
         
-    def set_pyramid_mask(self):
+    def calcPyramidMask(self):
         """
         Creation of the pyramid mask that splits the wavefront into 4 pupils images
         The pyramid is considered symetrical ie each face has the same angle.
         
         """
+        #Calc Apex angle
+        self.apex = ((self.pupil_size/self.nx_subaps)*self.pupil_separation \
+                     + self.pupil_size)*(1/self.size_array) * numpy.pi
 
         quad = numpy.zeros((int(self.size_array/2),int(self.size_array/2)))
-        quad1 = phase_screen_tip_tilt (quad, -self.apex,  self.apex)
-        quad2 = phase_screen_tip_tilt (quad, self.apex,  self.apex)
-        quad3 = phase_screen_tip_tilt (quad, -self.apex, -self.apex)
-        quad4 = phase_screen_tip_tilt (quad, self.apex, -self.apex)
+        quad1 = calcPhaseScreenTipTilt (quad, -self.apex,  self.apex)
+        quad2 = calcPhaseScreenTipTilt (quad, self.apex,  self.apex)
+        quad3 = calcPhaseScreenTipTilt (quad, -self.apex, -self.apex)
+        quad4 = calcPhaseScreenTipTilt (quad, self.apex, -self.apex)
         
         self.pyramid_mask = numpy.append(numpy.append(quad1,quad2, axis=1),numpy.append(quad3,quad4, axis = 1),axis = 0)
         
         #Complex phase screen
         self.pyramid_mask_phs_screen = numpy.exp(1j*self.pyramid_mask)
         
-        
-        
-    def get_tip_tilt_modulations_points(self, ampl=None, num_of_mod = None):
+    def calcTipTiltModulationsPoints(self, ampl=None, num_of_mod = None):
         """
         Define the modulations according to the parameters
 
-        Args:
-            ampl (float, optional):  Amplitude of the modulations. If none it is define by the input parameters of the simulation. Defaults to None.
-            num_of_mod (float, optional): Number of the modulation. If none it is define by the input parameters of the simulation. Defaults to None.
+        Parameters
+        ----------
+        ampl : float, optional. Amplitude of the modulations. If none it is define by the input parameters
+                of the simulation
+        num_of_mod : float, optional. Number of the modulation. If none it is define by the input parameters
+                of the simulation
 
         """
-
         
         if ampl==None:
-            ampl = self.amplitude_modulation
+            ampl =  self.amplitude_modulation *  (self.telescope_diameter)/(self.wavelength * self.pupil_size) * 2*numpy.pi 
+        
         if num_of_mod ==None:
             num_of_mod = self.nb_modulation
         
@@ -298,155 +267,153 @@ class Pyramid(wfs.WFS):
         tip = []
         tilt = []
         for t in theta:
-            tip.append(ampl*numpy.cos(t+(numpy.pi/4))*self.fovScale)
-            tilt.append(-ampl*numpy.sin(t+(numpy.pi/4))*self.fovScale)
+            tip.append(ampl*numpy.cos(t+(numpy.pi/4)))
+            tilt.append(-ampl*numpy.sin(t+(numpy.pi/4)))
             
         self.tip_mod = tip
         self.tilt_mod = tilt
         
-
-    def set_modulation_matrix(self, num_of_mod=None):
+    def calcModulationMatrix(self, num_of_mod=None):
+        
         """
         Creation of the modulation matrix. Creates num_modulation tip-tilt aberrated phase screens
         correnpondent of the modulation points define by the function 'tip_tilt_modulation'
 
-        Args:
-            num_of_mod (float, optional):  Number of the modulation. If none it is define by the input parameters
-                of the simulation. Defaults to None.
+        Parameters
+        ----------
+        num_of_mod : float, optional. Number of the modulation. If none it is define by the input parameters
+                of the simulation
 
         """
         if num_of_mod==None:
             num_of_mod = self.nb_modulation
 
-        #Data allocation
-        if self.oversamp:
-            self.modulation_phase_matrix = numpy.zeros((num_of_mod, self.phase_size, self.phase_size),
+
+        self.modulation_phase_matrix = numpy.zeros((num_of_mod, self.size_array,
+                                                    self.size_array),
                                                        dtype=DTYPE)
-        else:
-            self.modulation_phase_matrix = numpy.zeros((num_of_mod, self.phase_size, self.phase_size),
-                                                       dtype=DTYPE)
-            
-            
         # Get the phase screens
         for i in range (num_of_mod):
-            self.modulation_phase_matrix[i]=phase_screen_tip_tilt( self.modulation_phase_matrix[0],
-                                                                    self.tip_mod[i],self.tilt_mod[i])
-            
-                      
-
-    def calcFocalPlane(self, num_of_mod=None):
-        """
-        Calculates the detector plane corresponding to the phase screen generated by the los class.
-        This detector plane consists of an intensity map of the 4 pupil images.
-        It takes into account modulation and noise.
-
-        Args:
-            num_of_mod (float, optional): Number of the modulation. If none it is define by the input parameters
-                of the simulation. Defaults to None.
+            self.modulation_phase_matrix[i] = \
+                calcPhaseScreenTipTilt( self.modulation_phase_matrix[0],
+                                       self.tip_mod[i],self.tilt_mod[i])
                 
+        
+    def calcFocalPlane(self, num_of_mod=None, intensity=1, maskd = False):
+        """
+        
+
+        Parameters
+        ----------
+        num_of_mod : float, optional. Number of the modulation. If none it is define by
+        the input parameters of the simulation
+        intensity : TYPE, optional
+            DESCRIPTION. The default is 1.
+
+        Returns
+        -------
+        None.
+
         """       
+        
         
         if num_of_mod==None:
             num_of_mod = self.nb_modulation
             
-            
-        # Correction of the phi2rad phase conversion 
-        # self.phs2Rad = 2*numpy.pi/(self.wavelength * 10**9)
-        if self.iMat :
-            phase =  self.los.phase
+                
+        if maskd :
+            phase  = self.mask
+        elif self.iMat :
+            phase =  self.los.phase 
+            # plt.figure()
+            # plt.imshow(self.los.phase)
+            # plt.colorbar()
+            # plt.savefig(str(self.count)+'.png')
+            # self.count+=1
+            # plt.close()
         else:
-            phase = self.los.phase * self.wavelength * 10**9 / (2*numpy.pi)*0.003
+            phase = self.los.phase     
+
+            
         #set phase screen
-        if not self.oversamp:
-            mid = int(numpy.abs(self.pupil_size-self.size_array)/2)
-            mask =  self.mask[mid:-mid,mid:-mid]
-            phase_screen = (phase[mid:-mid,mid:-mid] * mask + self.modulation_phase_matrix + self.centroidMask) 
+        phase_screen = (phase  + self.modulation_phase_matrix + self.centroidMask)\
+                                    * intensity * self.mask
+        complex_phase_screen = self.mask * numpy.exp(1j * phase_screen)
         
-        else:
-            mask =  self.mask
-            phase_screen = (phase * mask + self.modulation_phase_matrix + self.centroidMask) 
-            
+
         
-        
-        interp_phase = numpy.zeros((num_of_mod,self.interp_size, self.interp_size ), dtype=CDTYPE)
-        for n in range(num_of_mod):
-            interp_phase[n] = interp.zoom(phase_screen[n], [self.interp_size, self.interp_size], order = 1)
-        
-        reshaped_mask = interp.zoom(mask, [self.interp_size, self.interp_size], order = 1)
-        complex_phase_screen = reshaped_mask*numpy.exp(1j*interp_phase)
-        
-        # middle = int(self.size_array/2 - self.phase_size/2)
-        middle = int(self.size_array/2 - self.interp_size/2)
-        self.fft_input_data[:num_of_mod,middle:-middle,middle:-middle] = complex_phase_screen
        
         # ---- Fourier filter with a pyramid mask ----
+        self.fft_input_data[:num_of_mod,:,:] = complex_phase_screen
         self.FFT()
-        focal_plane = numpy.fft.fftshift(self.fft_output_data)
-        self.ifft_input_data[:,:,:] = focal_plane*self.pyramid_mask_phs_screen
+        coord = int(self.size_array/4)
+        self.focal_plane= numpy.fft.fftshift(self.fft_output_data)
+        # self.focal_plane[:,coord:-coord,coord:-coord] = numpy.fft.fftshift(self.fft_output_data)[:,coord:-coord,coord:-coord]
+        self.ifft_input_data[:,:,:] = self.focal_plane*self.pyramid_mask_phs_screen
         self.iFFT()
+        self.wfsDetectorPlane  = numpy.sum((numpy.abs(self.ifft_output_data)**2),axis=0)
         
-        
-        DetectorPlane = numpy.sum((numpy.abs(self.ifft_output_data)**2),axis=0)
-        # self.wfsDetectorPlane = numpy.sum((numpy.abs(self.ifft_output_data)**2),axis=0)
-        DetectorPlane = interp.zoom(DetectorPlane, [self.detector_interp_size, self.detector_interp_size])
-        mid = int(numpy.abs(self.detector_interp_size-self.detector_size)/2)
-        if mid != 0:
-            self.wfsDetectorPlane = DetectorPlane[mid:-mid, mid:-mid]
-        else:
-            self.wfsDetectorPlane = DetectorPlane
-
+        if self.bin != 1:
+            new_shape = int(self.size_array/self.bin)
+            self.wfsDetectorPlane = rebin(self.wfsDetectorPlane, [new_shape,new_shape])
+        if not maskd :
+            self.wfsDetectorPlane /= num_of_mod
+            
         # ---- Add read noise ----
         if self.config.eReadNoise!=0:
             self.addReadNoise()
 
-            
-            
-    def calculateSlopes(self):
+
+    def calculateSlopes(self,flat = False):
         """
         Get the detector plane and compute the slopes according to the formula in the Raggazzoni et al. 1996            
 
         """
         
         #Get each pupil image
-        x =numpy.array(numpy.split(self.wfsDetectorPlane*self.detector_mask,2, axis=0))
+        x = numpy.array(numpy.split(self.wfsDetectorPlane*self.detector_mask,2, axis=0))
         quad1,quad2=numpy.split(x[0],2, axis=1)
         quad3,quad4=numpy.split(x[1],2, axis=1)
     
         #Transform in intensity vertor
+        # I use the mask because if there is a 0 in the 
+        x_d = numpy.array(numpy.split(self.detector_mask,2, axis=0))
+        quad_d1,quad_d2=numpy.split(x_d[0],2, axis=1)
+        quad_d3,quad_d4=numpy.split(x_d[1],2, axis=1)
+    
         quad1 = quad1.flatten()
-        quad1 = numpy.abs(quad1[quad1!=0])
+        quad_d1 = quad_d1.flatten()
+        quad1 = numpy.abs(quad1[quad_d1!=0])
+        
         quad2 = quad2.flatten()
-        quad2 = numpy.abs(quad2[quad2!=0])
+        quad_d2 = quad_d2.flatten()
+        quad2 = numpy.abs(quad2[quad_d2!=0])
+        
         quad3 = quad3.flatten()
-        quad3 = numpy.abs(quad3[quad3!=0])
+        quad_d3 = quad_d3.flatten()
+        quad3 = numpy.abs(quad3[quad_d3!=0])
+        
         quad4 = quad4.flatten()
-        quad4 = numpy.abs(quad4[quad4!=0])
-    
+        quad_d4 = quad_d4.flatten()
+        quad4 = numpy.abs(quad4[quad_d4!=0])
+
+
         #Gradient according to the 2 axis of the detector plane
-        self.Yslopes = (quad1+quad2-(quad3+quad4))/ (quad1+quad2 + quad3+quad4)
-        self.Xslopes = (quad1+quad3-(quad2+quad4))/ (quad1+quad2 + quad3+quad4)
+        sum_int = numpy.sum(( quad1, quad2, quad3, quad4 ))
+        self.Xslopes = (quad1 + quad2 - (quad3 + quad4)) / sum_int
+        self.Yslopes = (quad1 + quad3 - (quad2 + quad4)) / sum_int
 
-        self.slopes = numpy.append(self.Yslopes,self.Xslopes)
+        if flat :
+            self.slopes = numpy.append(self.Yslopes, self.Xslopes)
+        else :
+            self.slopes = numpy.append(self.Yslopes, self.Xslopes) - self.flat_slopes
+
         
-
-    
-    def get_flatphase_slopes(self):
-        """
-        Use to get theanswer of the PWS of a flat phase, ie the null phase.
-
-        """
-        
-        self.calcFocalPlane(intensity = 0)
-        self.Flats_slope = self.calculateSlopes()
- 
-
-
     def addPhotonNoise(self):
         """
         Add photon noise to ``wfsDetectorPlane`` using ``numpy.random.poisson``
         """
         self.detector[:] = numpy.random.poisson(self.detector).astype(DTYPE)
-
 
 
     def addReadNoise(self):
@@ -459,26 +426,32 @@ class Pyramid(wfs.WFS):
         """
         self.wfsDetectorPlane += numpy.random.normal(
                 0, self.config.eReadNoise, self.wfsDetectorPlane.shape)
+    
+    def calcFlatSlopes(self):
+        self.calcFocalPlane( maskd = True)
+        self.calculateSlopes(flat = True)
+        self.flat_slopes = self.slopes
         
         
-# def photons_per_mag(mag, exposureTime):
-#     """
-#     Calculates the number of photons per guide star magnitude
+        
+def photons_per_mag(mag, exposureTime):
+    """
+    Calculates the number of photons per guide star magnitude
 
-#     Parameters:
-#         mag (int): Magnitude of guide star
-#         mask (ndarray): 2-d pupil mask. 1 if aperture clear, 0 if not
-#         phase_scale (float): Size of pupil mask pixel in metres
-#         exposureTime (float): WFS exposure time in seconds
-#         zeropoint (float): Photometric zeropoint of mag 0 star in photons/metre^2/seconds
+    Parameters:
+        mag (int): Magnitude of guide star
+        mask (ndarray): 2-d pupil mask. 1 if aperture clear, 0 if not
+        phase_scale (float): Size of pupil mask pixel in metres
+        exposureTime (float): WFS exposure time in seconds
+        zeropoint (float): Photometric zeropoint of mag 0 star in photons/metre^2/seconds
 
-#     Returns:
-#         float: photons per WFS frame
-#     """
-#     # ZP of telescope
+    Returns:
+        float: photons per WFS frame
+    """
+    # ZP of telescope
     
 
-#     # N photons for mag and exposure time
-#     n_photons = (10**(-float(mag)/2.5)) * exposureTime
+    # N photons for mag and exposure time
+    n_photons = (10**(-float(mag)/2.5)) * exposureTime
 
-#     return n_photons
+    return n_photons

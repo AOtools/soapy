@@ -1,15 +1,15 @@
 simName: PWFS_100
-pupilSize: 30
+pupilSize: 100
 nGS: 1
 nDM: 1
 nSci: 1
-nIters: 1000
+nIters: 500
 loopTime: 0.002
 threads: 4
-simOversize: 10
+simOversize: 2.50
 
 
-verbosity: 2
+verbosity: 0
 
 saveCMat: False
 saveSlopes: False
@@ -20,6 +20,7 @@ saveStrehl : True
 saveWfe : True
 saveSciRes : True
 saveCalic : False
+saveWfsFrames: False
 
 Atmosphere:
   scrnNo: 1
@@ -27,15 +28,15 @@ Atmosphere:
   scrnStrengths: [0.5, 0.3, 0.1, 0.1]
   windDirs: [0, 45, 90, 135]
   windSpeeds: [10, 10, 10, 20]
-  wholeScrnSize: 2048
-  r0: 0.13
+  wholeScrnSize: 1024
+  r0: 0.12
   L0: [20, 20, 20, 20]
   infinite: True
 
 
 
 Telescope:
-  telDiam: 8
+  telDiam: 4
   mask: circle
   
   
@@ -44,37 +45,24 @@ WFS:
   0:
     type: Pyramid #Pyramid #ShackHartmann
     GSPosition: [0, 0]
-    nxSubaps: 30
+    nxSubaps: 20
     FOV: 1
     wavelength: .5e-6
-    apex_prism: 0.5
-    nb_modulation: 8
-    amplitude_modulation: 4
+    nb_modulation: 32
+    amplitude_modulation: 0.1
     eReadNoise: 0
     detector_size: 150
-    
-  #1:
-   # type: Pyramid #Pyramid #ShackHartmann
-    #GSPosition: [0, 0]
-    #GSHeight: 0
-    #GSMag: 8
-    #nxSubaps: 11
-    #pxlsPerSubap: 10
-    #subapFOV: 2.5
-    #wavelength: 0.6e-6
-    #apex_prism: 0.38
-    #nb_modulation: 16
-    #amplitude_modulation: 4
-    #eReadNoise: 0
-    
-
+    nb_of_photon: 1000
+    detector: CCD
+    pupil_separation: 6
 DM:
   0:
     type: Zernike #Zernike #KarhunenLoeve
     closed: True
     nxActuators: 100
     gain: 0.6
-    svdConditioning: 0.01 # 0.03
+    # svdConditioning: 0.01 # 0.03
+    iMatValue: 10
 
 
 
