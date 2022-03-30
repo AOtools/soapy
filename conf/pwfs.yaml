@@ -1,0 +1,80 @@
+simName: PWFS_100
+pupilSize: 100
+nGS: 1
+nDM: 1
+nSci: 1
+nIters: 500
+loopTime: 0.002
+threads: 4
+simOversize: 2.50
+
+
+verbosity: 0
+
+saveCMat: False
+saveSlopes: False
+saveDmCommands:   True
+saveLgsPsf: True
+saveSciPsf: True
+saveStrehl : True
+saveWfe : True
+saveSciRes : True
+saveCalic : False
+saveWfsFrames: False
+
+Atmosphere:
+  scrnNo: 1
+  scrnHeights: [0, 5000, 10000, 15000]
+  scrnStrengths: [0.5, 0.3, 0.1, 0.1]
+  windDirs: [0, 45, 90, 135]
+  windSpeeds: [10, 10, 10, 20]
+  wholeScrnSize: 1024
+  r0: 0.12
+  L0: [20, 20, 20, 20]
+  infinite: True
+
+
+
+Telescope:
+  telDiam: 4
+  mask: circle
+  
+  
+
+WFS:
+  0:
+    type: Pyramid #Pyramid #ShackHartmann
+    GSPosition: [0, 0]
+    nxSubaps: 20
+    FOV: 1
+    wavelength: .5e-6
+    nb_modulation: 32
+    amplitude_modulation: 0.1
+    eReadNoise: 0
+    detector_size: 150
+    nb_of_photon: 1000
+    detector: CCD
+    pupil_separation: 6
+DM:
+  0:
+    type: Zernike #Zernike #KarhunenLoeve
+    closed: True
+    nxActuators: 100
+    gain: 0.6
+    # svdConditioning: 0.01 # 0.03
+    iMatValue: 10
+
+
+
+Reconstructor:
+  type: MVM
+  svdConditioning: 0.001
+  gain: 0.6
+  
+Science:
+  0:
+    position: [0, 0]
+    FOV: .5
+    wavelength: 1.65e-6
+    pxls: 100
+
