@@ -431,27 +431,3 @@ class Pyramid(wfs.WFS):
         self.calcFocalPlane( maskd = True)
         self.calculateSlopes(flat = True)
         self.flat_slopes = self.slopes
-        
-        
-        
-def photons_per_mag(mag, exposureTime):
-    """
-    Calculates the number of photons per guide star magnitude
-
-    Parameters:
-        mag (int): Magnitude of guide star
-        mask (ndarray): 2-d pupil mask. 1 if aperture clear, 0 if not
-        phase_scale (float): Size of pupil mask pixel in metres
-        exposureTime (float): WFS exposure time in seconds
-        zeropoint (float): Photometric zeropoint of mag 0 star in photons/metre^2/seconds
-
-    Returns:
-        float: photons per WFS frame
-    """
-    # ZP of telescope
-    
-
-    # N photons for mag and exposure time
-    n_photons = (10**(-float(mag)/2.5)) * exposureTime
-
-    return n_photons
