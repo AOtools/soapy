@@ -401,7 +401,7 @@ class ShackHartmann(wfs.WFS):
 
         self.lgs.getLgsPsf(self.los.scrns)
 
-        self.lgs_ifft_input_data[:] = self.lgs.psf[::-1, ::-1]
+        self.lgs_ifft_input_data[:] = self.lgs.psf
         self.lgs_iFFT()
 
         self.ifft_input_data[:] = self.subap_focus_intensity
@@ -413,7 +413,7 @@ class ShackHartmann(wfs.WFS):
         # back to Focal Plane.
         self.fft_input_data[:] = self.ifft_output_data
         self.FFT()
-        self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.fft_output_data).real
+        self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.fft_output_data).real[:,::-1,::-1]
 
     def calculateSlopes(self):
         '''

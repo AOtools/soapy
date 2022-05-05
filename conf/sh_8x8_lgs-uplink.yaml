@@ -43,7 +43,7 @@ WFS:
     wavelength: 600e-9
 
   1:
-    type: ShackHartmannLegacy
+    type: ShackHartmann
     GSPosition: [0, 0]
     GSHeight: 90000
     GSMag: 8
