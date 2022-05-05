@@ -67,6 +67,9 @@ class LGS(object):
         self.config.position = self.wfsConfig.GSPosition
         self.losMask = None
 
+        # correction phase for LGS precompensation
+        self.precorrection = None            
+
         self.calcInitParams()
 
         self.initLos()
@@ -111,7 +114,7 @@ class LGS(object):
 
     def getLgsPsf(self, scrns):
         logger.debug("Get LGS PSF")
-        self.los.frame(scrns)
+        self.los.frame(scrns, self.precorrection)
         self.EField = self.los.EField
         self.phase = self.los.phase
 
@@ -159,6 +162,9 @@ class LGS_Geometric(LGS):
 
         # The mask to apply before geometric FFTing
         self.mask = aotools.circle(self.nFovPxls/2., self.nFovPxls)
+        if self.config.obsDiam > 0:
+            obspxls = self.nFovPxls * (self.config.obsDiam/self.config.pupilDiam)
+            self.mask -= aotools.circle(obspxls/2, self.nFovPxls)
 
         self.losNOutPxls = self.lgsPupilPxls
         self.losOutPxlScale = self.config.pupilDiam/self.lgsPupilPxls
@@ -237,6 +243,19 @@ class LGS_Physical(LGS):
         # The mask to apply before physical propagation
         self.lgsPupilPxls = int(round(self.config.pupilDiam/self.outPxlScale_m))
         self.mask = aotools.circle(self.lgsPupilPxls/2., 3*self.nOutPxls)
+        if self.config.obsDiam > 0:
+            obspxls = self.config.obsDiam/self.outPxlScale_m
+            self.mask -= aotools.circle(obspxls/2., self.mask.shape[-1])
+
+        # this is the geometric focus assuming you want to focus at the LGS height
+        focus_rms = self.config.height / ( 2.*numpy.sqrt(3.) * 8. * (self.config.height/self.config.pupilDiam)**2 ) * (2*numpy.pi)/self.config.wavelength
+
+        focus = -focus_rms * aotools.zernike_noll(4, self.lgsPupilPxls)
+        focus = numpy.pad(focus, (self.mask.shape[-1]-self.lgsPupilPxls)//2)
+
+        # NOTE applying focus here makes mask complex, doesn't seem to break anything
+        self.mask = self.mask.astype(complex) * numpy.exp(1j * focus)
+
         self.losMask = self.mask
 
         self.losOutPxlScale = self.outPxlScale_m
