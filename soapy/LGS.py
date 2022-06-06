@@ -227,7 +227,6 @@ class LGS_Physical(LGS):
         # Get the angular scale in radians of the output array
         self.outPxlScale_rad = self.outPxlScale_m/self.config.height
 
-
         # The number of pixels required across the LGS image
         if self.nOutPxls is None:
             self.nOutPxls = self.simConfig.simSize
@@ -250,8 +249,12 @@ class LGS_Physical(LGS):
         # this is the geometric focus assuming you want to focus at the LGS height
         focus_rms = self.config.height / ( 2.*numpy.sqrt(3.) * 8. * (self.config.height/self.config.pupilDiam)**2 ) * (2*numpy.pi)/self.config.wavelength
 
-        focus = -focus_rms * aotools.zernike_noll(4, self.lgsPupilPxls)
-        focus = numpy.pad(focus, (self.mask.shape[-1]-self.lgsPupilPxls)//2)
+        focus = numpy.zeros(self.mask.shape, dtype=complex)
+        start = self.mask.shape[-1]//2 - self.lgsPupilPxls//2
+        end = self.mask.shape[-1]//2 + self.lgsPupilPxls//2
+        if self.lgsPupilPxls % 2 != 0:
+            end += 1
+        focus[start:end,start:end] = -focus_rms * aotools.zernike_noll(4, self.lgsPupilPxls)
 
         # NOTE applying focus here makes mask complex, doesn't seem to break anything
         self.mask = self.mask.astype(complex) * numpy.exp(1j * focus)
