@@ -435,6 +435,9 @@ class WFS(object):
             if phase_correction is not None:
                 self.los.performCorrection(phase_correction)
                 
+                if self.config.lgs and self.config.lgs.precompensated:
+                    self.lgs.precorrection = phase_correction
+
             self.calcFocalPlane()
 
         self.integrateDetectorPlane()

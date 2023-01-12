@@ -885,6 +885,8 @@ class LgsConfig(ConfigObj):
         ``uplink``           bool: Include LGS uplink effects    ``False``
         ``pupilDiam``        float: Diameter of LGS launch
                              aperture in metres.                 ``0.3``
+        ``obsDiam``          float: Diameter of LGS launch       ``0``
+                             central obscuration in metres
         ``wavelength``       float: Wavelength of laser beam
                              in metres                           ``600e-9``
         ``propagationMode``  str: Mode of light propogation
@@ -911,6 +913,8 @@ class LgsConfig(ConfigObj):
         ``naProfile``        list: The relative sodium layer
                              strength for each elongation
                              layer. If None, all equal.          ``None``
+        ``precompensated``   bool: precompensate LGS with DM(s)  ``False``
+                             before launching
         ==================== =================================   ===========
 
     """
@@ -919,6 +923,7 @@ class LgsConfig(ConfigObj):
 
     optionalParams = [  ("uplink", False),
                         ("pupilDiam", 0.3),
+                        ("obsDiam", 0.0),
                         ("wavelength", 600e-9),
                         ("propagationMode", "Physical"),
                         ("height", 90000),
@@ -928,6 +933,7 @@ class LgsConfig(ConfigObj):
                         ("elongationLayers", 10),
                         ("launchPosition",  numpy.array([0,0])),
                         ("naProfile", None),
+                        ("precompensated", False),
                         ]
     calculatedParams = ["position"]
 

@@ -313,10 +313,11 @@ class LineOfSight(object):
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
-        self.EField[:] *= physical_atmosphere_propagation(
+        self.EField[:] = physical_atmosphere_propagation(
             self.phase_screens, self.outMask, self.layer_altitudes, self.source_altitude,
             self.wavelength, self.out_pixel_scale,
-            propagation_direction=self.propagation_direction)
+            propagation_direction=self.propagation_direction,
+            input_efield=self.EField)
 
         return self.EField
 
@@ -411,6 +412,7 @@ def physical_atmosphere_propagation(
 
     phs2Rad = 2 * numpy.pi / (wavelength * 10 ** 9)
 
+    EFieldBuf = input_efield
     if input_efield is None:
         EFieldBuf = numpy.exp(
                 1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
