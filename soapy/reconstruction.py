@@ -20,7 +20,6 @@ import traceback
 import time
 
 import numpy
-import scipy
 
 from . import logger
 
@@ -449,7 +448,7 @@ class MVM(Reconstructor):
 
         logger.info("Invert iMat with conditioning: {:.4f}".format(
                 self.config.svdConditioning))
-        self.control_matrix = scipy.linalg.pinv(
+        self.control_matrix = numpy.linalg.pinv(
                 self.interaction_matrix, self.config.svdConditioning
                 )
 
