@@ -8,7 +8,7 @@ nSci: 1
 nIters:   1000
 loopTime: 0.004
 reconstructor: LearnAndApply
-learnIters: 500
+learnIters: 5000
 learnAtmos: random
 
 verbosity: 2
@@ -89,12 +89,8 @@ WFS:
 
 DM:
   0:
-    type: TT
-    closed: False
-    iMatValue: 0.25
-  1:
     type: FastPiezo
-    closed: False
+    closed: True
     nxActuators: 9
     svdConditioning: 0.05
     gain: 0.7
