@@ -23,11 +23,12 @@ import sys
 
 # Following required in case pyqt api v1 is default (on smome linux distros)
 # Explicitly set it to get v2!
-import sip
-API_NAMES = ["QDate", "QDateTime", "QString", "QTextStream", "QTime", "QUrl", "QVariant"]
-API_VERSION = 2
-for name in API_NAMES:
-    sip.setapi(name, API_VERSION)
+# May 2023 -> Lets assume that this isn't a problem any more...
+# import sip
+# API_NAMES = ["QDate", "QDateTime", "QString", "QTextStream", "QTime", "QUrl", "QVariant"]
+# API_VERSION = 2
+# for name in API_NAMES:
+#     sip.setapi(name, API_VERSION)
 
 from .. import logger
 # Attempt to import PyQt5, if not try PyQt4
@@ -48,7 +49,6 @@ except ImportError:
     from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
     from IPython.qt.inprocess import QtInProcessKernelManager
 
-from IPython.lib import guisupport
 
 if PYQT_VERSION == 5:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -57,28 +57,28 @@ elif PYQT_VERSION == 4:
 
 from matplotlib.figure import Figure
 import matplotlib.pyplot as pyplot
-from .. import pyqtgraph
+import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
 # set default colourmaps available
-pyqtgraph.graphicsItems.GradientEditorItem.Gradients = pyqtgraph.pgcollections.OrderedDict([
-    ('viridis', {'ticks': [(0.,  ( 68,   1,  84, 255)),
-                           (0.2, ( 65,  66, 134, 255)),
-                           (0.4, ( 42, 118, 142, 255)),
-                           (0.6, ( 32, 165, 133, 255)),
-                           (0.8, (112, 206,  86, 255)),
-                           (1.0, (241, 229,  28, 255))], 'mode':'rgb'}),
-    ('coolwarm', {'ticks': [(0.0, ( 59,  76, 192)),
-                            (0.5, (220, 220, 220)),
-                            (1.0, (180, 4, 38))], 'mode': 'rgb'}),
-    ('grey', {'ticks': [(0.0, (0, 0, 0, 255)),
-                        (1.0, (255, 255, 255, 255))], 'mode': 'rgb'}),
-    ('magma', {'ticks':[(0., (0, 0, 3, 255)),
-                        (0.25, (80, 18, 123, 255)),
-                        (0.5, (182,  54, 121, 255)),
-                        (0.75, (251, 136,  97, 255)),
-                        (1.0, (251, 252, 191))], 'mode':'rgb'})
-        ])
+# pyqtgraph.graphicsItems.GradientEditorItem.Gradients = pyqtgraph.pgcollections.OrderedDict([
+#     ('viridis', {'ticks': [(0.,  ( 68,   1,  84, 255)),
+#                            (0.2, ( 65,  66, 134, 255)),
+#                            (0.4, ( 42, 118, 142, 255)),
+#                            (0.6, ( 32, 165, 133, 255)),
+#                            (0.8, (112, 206,  86, 255)),
+#                            (1.0, (241, 229,  28, 255))], 'mode':'rgb'}),
+#     ('coolwarm', {'ticks': [(0.0, ( 59,  76, 192)),
+#                             (0.5, (220, 220, 220)),
+#                             (1.0, (180, 4, 38))], 'mode': 'rgb'}),
+#     ('grey', {'ticks': [(0.0, (0, 0, 0, 255)),
+#                         (1.0, (255, 255, 255, 255))], 'mode': 'rgb'}),
+#     ('magma', {'ticks':[(0., (0, 0, 3, 255)),
+#                         (0.25, (80, 18, 123, 255)),
+#                         (0.5, (182,  54, 121, 255)),
+#                         (0.75, (251, 136,  97, 255)),
+#                         (1.0, (251, 252, 191))], 'mode':'rgb'})
+#         ])
 
 
 if PYQT_VERSION == 5:
@@ -222,7 +222,7 @@ class GUI(QtWidgets.QMainWindow):
 #Load Param file methods
     def readParamFile(self):
 
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
+        fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', '.')
 
         if PYQT_VERSION == 5:
             fname = fname[0]
@@ -284,11 +284,11 @@ class GUI(QtWidgets.QMainWindow):
         #Set initial gains
         self.gainSpins = []
         for dm in range(self.config.sim.nDM):
-            gainLabel = QtGui.QLabel()
+            gainLabel = QtWidgets.QLabel()
             gainLabel.setText("DM {}:".format(dm))
             self.ui.gainLayout.addWidget(gainLabel)
 
-            self.gainSpins.append(QtGui.QDoubleSpinBox())
+            self.gainSpins.append(QtWidgets.QDoubleSpinBox())
             self.ui.gainLayout.addWidget(self.gainSpins[dm])
             self.gainSpins[dm].setValue(self.config.dms[dm].gain)
             self.gainSpins[dm].setSingleStep(0.05)
@@ -796,15 +796,15 @@ class OverlapCanvas(FigureCanvas):
             self.axes.append(self.fig.add_subplot(2, numpy.ceil(nAxes/2.),i+1))
 
         FigureCanvas.__init__(self, self.fig)
-        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
-class OverlapWidget(QtGui.QWidget):
+class OverlapWidget(QtWidgets.QWidget):
 
     def __init__(self, nAxes, parent = None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.canvas = OverlapCanvas(nAxes)
-        self.vbl = QtGui.QVBoxLayout()
+        self.vbl = QtWidgets.QVBoxLayout()
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)
 
@@ -816,16 +816,16 @@ class PlotCanvas(FigureCanvas):
         self.ax = self.fig.add_subplot(111)
 
         FigureCanvas.__init__(self, self.fig)
-        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
 
-class PlotWidget(QtGui.QWidget):
+class PlotWidget(QtWidgets.QWidget):
 
     def __init__(self, parent = None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.canvas = PlotCanvas()
-        self.vbl = QtGui.QVBoxLayout()
+        self.vbl = QtWidgets.QVBoxLayout()
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)
 
