@@ -3,14 +3,6 @@ import platform
 from setuptools import setup, find_packages
 import versioneer
 
-
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'soapy/_version.py'
-versioneer.versionfile_build = 'soapy/_version.py'
-versioneer.tag_prefix = '' # tags are like 1.2.0
-versioneer.parentdir_prefix = 'soapy-' # dirname like 'myproject-1.2.0'
-
-
 scripts = ["bin/soapy"]
 
 if (platform.system() == "Windows"):
@@ -19,8 +11,6 @@ if (platform.system() == "Windows"):
   
 setup(
     name='soapy',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
     author='Andrew P. Reeves',
     author_email='andrewpaulreeves@gmail.com',
     packages=find_packages(),
@@ -43,4 +33,6 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass()
 )

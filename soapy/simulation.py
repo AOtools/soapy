@@ -58,6 +58,9 @@ Examples:
     Andrew Reeves
 
 '''
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 # standard python imports
 import datetime
@@ -982,6 +985,8 @@ class Sim(object):
         header = fits.Header()
         self.timeStamp = self.getTimeStamp()
 
+        
+
         # Sim Params
         header["INSTRUME"] = "SOAPY"
         header["SVER"] = __version__
@@ -1268,9 +1273,3 @@ if __name__ == "__main__":
     sim.aoinit()
     sim.makeIMat()
     sim.aoloop()
-
-
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
