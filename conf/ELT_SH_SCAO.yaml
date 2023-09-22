@@ -1,4 +1,4 @@
-simName: HARMONI
+simName: ELT_SH_SCAO
 pupilSize: 444
 nGS: 1
 nDM: 2
@@ -12,6 +12,8 @@ verbosity: 2
 threads: 4
 
 saveSlopes: True
+saveCMat: True
+saveIMat: True
 
 Atmosphere:
   scrnNo: 10
