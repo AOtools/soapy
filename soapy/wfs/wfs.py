@@ -84,7 +84,7 @@ import numpy.random
 
 import aotools
 
-from .. import AOFFT, LGS, logger, lineofsight_legacy
+from .. import AOFFT, LGS, logger, lineofsight, interp
 
 # xrange now just "range" in python3.
 # Following code means fastest implementation used in 2 and 3
@@ -197,9 +197,9 @@ class WFS(object):
         """
         Initialises the ``LineOfSight`` object, which gets the phase or EField in a given direction through turbulence.
         """
-        self.los = lineofsight_legacy.LineOfSight(
+        self.los = lineofsight.LineOfSight(
                 self.config, self.soapy_config,
-                propagationDirection="down")
+                propagation_direction="down")
 
 
     def initLGS(self):
@@ -248,17 +248,21 @@ class WFS(object):
                 self.elongRadii = {}
                 self.elongPos = {}
                 self.elongPhaseAdditions = numpy.zeros(
-                    (self.elongLayers, self.los.nx_out_pixels, self.los.nx_out_pixels))
+                    (self.elongLayers, self.sim_size, self.sim_size))
                 for i in xrange(self.elongLayers):
-                    self.elongRadii[i] = self.los.findMetaPupilSizes(
-                                                float(self.elongHeights[i]))
+                    # self.elongRadii[i] = self.los.findMetaPupilSizes(
+                    #                             float(self.elongHeights[i]))
                     self.elongPhaseAdditions[i] = self.calcElongPhaseAddition(i)
                     self.elongPos[i] = self.calcElongPos(i)
 
                 # self.los.metaPupilPos = self.elongPos
 
-                logger.debug(
-                        'Elong Meta Pupil Pos: {}'.format(self.los.metaPupilPos))
+                # redefine los 
+                self.los = lineofsight.ElongLineOfSight(self.elongHeights, self.elongPos,
+                                                        self.config, self.soapy_config, propagation_direction="down")
+
+                # logger.debug(
+                #         'Elong Meta Pupil Pos: {}'.format(self.los.metaPupilPos))
             # If GS at infinity cant do elongation
             elif (self.config.GSHeight==0 and
                     self.lgsConfig.elongationDepth!=0):
@@ -292,7 +296,7 @@ class WFS(object):
         h = self.elongHeights[elongLayer]
         dh = h - self.config.GSHeight
         H = float(self.lgsConfig.height)
-        d = numpy.array(self.lgsLaunchPos).astype('float32') * self.los.telDiam/2.
+        d = numpy.array(self.lgsLaunchPos).astype('float32') * self.soapy_config.tel.telDiam/2.
         D = self.telescope_diameter
         theta = (d.astype("float")/H) - self.config.GSPosition
 
@@ -324,7 +328,7 @@ class WFS(object):
         pad = ((self.sim_pad,)*2, (self.sim_pad,)*2)
         phaseAddition = numpy.pad(phaseAddition, pad, mode="constant")
 
-        phaseAddition = interp.zoom(phaseAddition, self.los.nx_out_pixels)
+        # phaseAddition = interp.zoom(phaseAddition, self.los.nx_out_pixels)
 
         return phaseAddition
 
@@ -358,8 +362,7 @@ class WFS(object):
         return elongPos
 
     def zeroPhaseData(self):
-        self.los.EField[:] = 0
-        self.los.phase[:] = 0
+        self.los.zeroData()
 
 
     def makeElongationFrame(self, correction=None):
@@ -368,28 +371,26 @@ class WFS(object):
 
         Runs the phase stacking and propagation routines multiple times with different GS heights, positions and/or aberrations to simulation the effect of a number of points in an elongation guide star.
         """
+        # initialise uncorrected phase 
+        self.uncorrectedPhase = numpy.zeros(self.los[0].phase.shape)
+
         # Loop over the elongation layers
         for i in xrange(self.elongLayers):
             logger.debug('Elong layer: {}'.format(i))
-            # Reset the phase propagation routines (not the detector though)
-            self.zeroData(FP=False)
 
-            # Find the phase from that elongation layer (with different cone effect radii and potentially angular position)
-            self.los.makePhase(self.elongRadii[i], apos=self.elongPos[i])
-
-            # Make a copy of the uncorrectedPhase for plotting
-            self.uncorrectedPhase = self.los.phase.copy()/self.los.phs2Rad
+            # Add uncorrected phase for plotting
+            self.uncorrectedPhase += self.los[i].phase/self.los[i].phs2Rad
 
             # Add the effect of the defocus and possibly tilt
-            self.los.EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
-            self.los.phase += self.elongPhaseAdditions[i]
+            self.los[i].EField *= numpy.exp(1j*self.elongPhaseAdditions[i])
+            self.los[i].phase += self.elongPhaseAdditions[i]
 
             # Apply any correction
             if correction is not None:
-                self.los.performCorrection(correction)
+                self.los[i].performCorrection(correction)
 
             # Add onto the focal plane with that layers intensity
-            self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i])
+            self.calcFocalPlane(intensity=self.lgsConfig.naProfile[i], los=self.los[i])
 
     def frame(self, scrns, phase_correction=None, read=True, iMatFrame=False):
         '''
@@ -534,7 +535,7 @@ class WFS(object):
                 0, self.config.eReadNoise, self.wfsDetectorPlane.shape
                 )
 
-    def calcFocalPlane(self, intensity=None):
+    def calcFocalPlane(self, intensity=None, los=None):
         pass
 
     def integrateDetectorPlane(self):
