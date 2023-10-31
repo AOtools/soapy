@@ -207,20 +207,24 @@ class Reconstructor(object):
         imat_header = fits.getheader(filename)
         imat_data = fits.getdata(filename)
 
-        # Check that imat shape is copatibile with curretn sim
-        if imat_data.shape != (self.sim_config.totalActs, self.sim_config.totalWfsData):
+        imat_totalActs = imat_header['DMNACTU']
+        imat_totalWfsData = imat_header['NSLOP']
+        
+        # Check iMat generated with same totalActs and totalWfsData as current sim
+        # NOTE the actual shape of the loaded iMat can be different due to invalid acts
+        if imat_totalActs != self.sim_config.totalActs or imat_totalWfsData != self.sim_config.totalWfsData:
             logger.warning(
-                "interaction matrix does not match required required size."
+                "interaction matrix not generated with same number of actuators/wfs slopes"
             )
             raise IOError("interaction matrix does not match required required size.")
 
-        self.interaction_matrix[:] = imat_data
-
         # Load valid actuators
+        n_total_valid_acts = 0
         for i in range(self.n_dms):
             valid_acts_filename =  self.sim_config.simName+"/active_acts_dm{}.fits".format(i)
             valid_acts = fits.getdata(valid_acts_filename)
             self.dms[i].valid_actuators = valid_acts
+            n_total_valid_acts += self.dms[i].n_valid_actuators
 
             # DM may also have preloaded influence functions
             try:
@@ -232,6 +236,14 @@ class Reconstructor(object):
                 # Found no DM influence funcs
                 logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
 
+        # Final check of loaded iMat
+        if imat_data.shape != (n_total_valid_acts, self.sim_config.totalWfsData):
+            logger.warning(
+                "interaction matrix does not match required required size."
+            )
+            raise IOError("interaction matrix does not match required required size.")
+
+        self.interaction_matrix = imat_data
 
     def makeIMat(self, callback=None):
 

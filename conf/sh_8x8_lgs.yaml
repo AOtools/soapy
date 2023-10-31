@@ -46,7 +46,7 @@ WFS:
   1:
     type: ShackHartmann
     GSPosition: [0, 0]
-    GSHeight: 0
+    GSHeight: 90000
     GSMag: 8
     nxSubaps: 8
     pxlsPerSubap: 10

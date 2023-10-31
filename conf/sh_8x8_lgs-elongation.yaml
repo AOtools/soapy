@@ -4,7 +4,7 @@
 simName: sh_8x8_lgsElong
 pupilSize: 128
 nGS: 1
-nDM: 2
+nDM: 1
 nSci: 1
 nIters: 5000
 loopTime: 0.0025
@@ -43,7 +43,6 @@ WFS:
     subapFOV: 5.0
     wavelength: 600e-9
     lgs:
-      uplink: False
       pupilDiam: 0.3
       wavelength: 600e-9
       height:   90000
@@ -53,14 +52,6 @@ WFS:
 
 DM:
   0:
-    type: TT
-    nxActuators: 2
-    iMatValue: 1
-    gain: 0.6
-    svdConditioning: 0.07
-
-
-  1:
     type: Piezo
     nxActuators: 9
     svdConditioning: 0.07

@@ -160,6 +160,7 @@ class PSFCamera(object):
                 (focus_intensity_size, focus_intensity_size), dtype=DTYPE)
         self.detector = numpy.zeros((self.nx_pixels, self.nx_pixels), dtype=DTYPE)
         self.long_exp_image = numpy.zeros_like(self.detector)
+        self._long_exp_image = numpy.zeros_like(self.detector)
 
         # Calculate ideal PSF for purposes of strehl calculation
         self.los.frame()
@@ -168,6 +169,20 @@ class PSFCamera(object):
         self.psfMax = self.bestPSF.max()
         self.longExpStrehl = 0
         self.instStrehl = 0
+
+        # reset to ensure calibration does not affect sim 
+        self.reset()
+
+
+    def reset(self):
+        self.longExpStrehl = 0
+        self.instStrehl = 0
+        self._long_exp_image[:] = 0
+        self.long_exp_image[:] = 0
+        self.detector[:] = 0
+        self.focus_intensity[:] = 0
+        self.focus_efield[:] = 0
+        self.interp_phase[:] = 0
 
 
     def setMask(self, mask):
@@ -249,23 +264,25 @@ class PSFCamera(object):
 
         # numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
         numbalib.bin_img(self.focus_intensity, self.config.fftOversamp, self.detector)
+
+        # add detector to long exposure image
+        self._long_exp_image += self.detector
+
         # Normalise the psf
         self.detector /= self.detector.sum()
+        self.long_exp_image = self._long_exp_image / self._long_exp_image.sum()
 
 
     def calcInstStrehl(self):
         """
         Calculates the instantaneous Strehl, including TT if configured.
         """
-        self.long_exp_image += self.detector
-        self.long_exp_image /= self.long_exp_image.sum()
-
         if self.sciConfig.instStrehlWithTT:
-            self.instStrehl = self.detector[self.sciConfig.pxls // 2 - 1, self.sciConfig.pxls // 2 - 1] / self.detector.sum() / self.psfMax
-        else:
-            self.instStrehl = self.detector.max() / self.detector.sum() / self.psfMax
-
-        self.long_exposure_strehl = self.long_exp_image.max() / self.psfMax
+            self.instStrehl = self.detector[self.sciConfig.pxls // 2, self.sciConfig.pxls // 2] / self.psfMax
+            self.longExpStrehl = self.long_exp_image[self.sciConfig.pxls //2, self.sciConfig.pxls //2] / self.psfMax
+        else: 
+            self.instStrehl = self.detector.max() / self.psfMax
+            self.longExpStrehl = self.long_exp_image.max() / self.psfMax
 
 
     def calc_wavefronterror(self):
