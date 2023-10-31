@@ -24,6 +24,7 @@ setup(
         "aotools >= 1.0",
         "pyfftw >= 0.12.0",
         "pyyaml >= 5.1.1",
+        "pyqtgraph >= 0.12.0",
         "numba >= 0.40"
       ],
     classifiers=[
