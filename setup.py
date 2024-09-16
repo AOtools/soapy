@@ -2,13 +2,12 @@
 import platform
 from setuptools import setup, find_packages
 import versioneer
-
 scripts = ["bin/soapy"]
 
 if (platform.system() == "Windows"):
     scripts.append("bin/soapy.bat")
 
-  
+
 setup(
     name='soapy',
     author='Andrew P. Reeves',

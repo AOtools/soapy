@@ -408,7 +408,7 @@ class Reconstructor(object):
 
     def apply_gain(self):
         """
-        Applies the gains set for each DM to the DM actuator commands. 
+        Applies the gains set for each DM to the DM actuator commands.
         Also applies different control law if DM is in "closed" or "open" loop mode
         """
         # Loop through DMs and apply gain

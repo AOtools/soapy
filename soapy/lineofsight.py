@@ -79,6 +79,7 @@ class LineOfSight(object):
         self.n_dm = self.soapy_config.sim.nDM
         self.dm_altitudes = numpy.array([self.soapy_config.dms[dm_n].altitude for dm_n in range(self.n_dm)])
 
+
         # If the line of sight has a launch position, must include in calculations! Conver to metres from centre of telescope
         try:
             self.launch_position = numpy.array(self.config.launchPosition) * self.telescope_diameter/2.
@@ -143,7 +144,7 @@ class LineOfSight(object):
             outPxlScale (float): Pixel scale of required phase/EField (metres/pxl)
             nOutPxls (int): Size of output array in pixels
         """
-        logger.debug("Calculate LOS Init PArams!")
+        logger.debug("Calculate LOS Init Params!")
         # Convert phase deviation to radians at wfs wavelength.
         # (currently in nm remember...?)
         self.phs2Rad = 2*numpy.pi/(self.wavelength * 10**9)

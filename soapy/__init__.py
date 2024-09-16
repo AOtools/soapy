@@ -37,6 +37,5 @@ from . import scienceinstrument as SCI
 # except:
 #     pass
 
-
 from . import _version
 __version__ = _version.get_versions()['version']
