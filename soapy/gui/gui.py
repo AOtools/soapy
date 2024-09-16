@@ -31,29 +31,13 @@ import sys
 #     sip.setapi(name, API_VERSION)
 
 from .. import logger
-# Attempt to import PyQt5, if not try PyQt4
-try:
-    from PyQt5 import QtGui, QtWidgets, QtCore
-    PYQT_VERSION = 5
-except (ImportError ,RuntimeError):
-    from PyQt4 import QtGui, QtCore
-    QtWidgets = QtGui
-    PYQT_VERSION = 4
-logger.debug("Use PyQT Version {}".format(PYQT_VERSION ))
+from PyQt5 import QtGui, QtWidgets, QtCore
 
 # Do this so uses new Jupyter console if available
-try:
-    from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
-    from qtconsole.inprocess import QtInProcessKernelManager
-except ImportError:
-    from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
-    from IPython.qt.inprocess import QtInProcessKernelManager
+from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
+from qtconsole.inprocess import QtInProcessKernelManager
 
-
-if PYQT_VERSION == 5:
-    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-elif PYQT_VERSION == 4:
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from matplotlib.figure import Figure
 import matplotlib.pyplot as pyplot
@@ -81,29 +65,14 @@ import pyqtgraph
 #         ])
 
 
-if PYQT_VERSION == 5:
-    from .aogui_ui5 import Ui_MainWindow
-elif PYQT_VERSION == 4:
-    from .aogui_ui4 import Ui_MainWindow
-
-
+from .aogui_ui5 import Ui_MainWindow
 
 import numpy
 import time
 import json
 import traceback
 from functools import partial
-#Python2/3  compatibility
-try:
-    import queue
-except ImportError:
-
-    import Queue as queue
-try:
-    xrange
-except NameError:
-    xrange = range
-
+import queue
 
 from argparse import ArgumentParser
 import pylab
@@ -499,7 +468,7 @@ class GUI(QtWidgets.QMainWindow):
             del plt
 
         self.strehlPlts=[]
-        for sci in xrange(self.config.sim.nSci):
+        for sci in range(self.config.sim.nSci):
             self.strehlPlts.append(self.strehlAxes.plot(self.sim.instStrehl[sci],
                     linestyle=":", color=self.colorList[(self.colorNo+sci) % len(self.colorList)]))
             self.strehlPlts.append(self.strehlAxes.plot(self.sim.longStrehl[sci],
