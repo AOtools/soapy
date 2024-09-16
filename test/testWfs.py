@@ -86,22 +86,19 @@ class TestWfs(unittest.TestCase):
 
         wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
-    # def teste_initPyrWfs(self):
-    #     config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-    #     config.loadSimParams()
-    #
-    #     mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
-    #
-    #     wfs = WFS.Pyramid(config, config.lgss[0], mask)
-    #
-    # def testf_PyrWfsFrame(self):
-    #     config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "sh_8x8.yaml"))
-    #     config.loadSimParams()
-    #     mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
-    #
-    #     wfs = WFS.Pyramid(config, config.lgss[0], mask)
-    #
-    #     wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
+    def teste_initPyrWfs(self):
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "pwfs.yaml"))
+        mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
+    
+        wfs = WFS.Pyramid(config, mask=mask)
+    
+    def testf_PyrWfsFrame(self):
+        config = confParse.loadSoapyConfig(os.path.join(CONFIG_PATH, "pwfs.yaml"))
+        mask = aotools.circle(config.sim.pupilSize/2., config.sim.simSize)
+    
+        wfs = WFS.Pyramid(config, mask=mask)
+    
+        wfs.frame(numpy.zeros((config.sim.simSize, config.sim.simSize)))
 
 
 if __name__=="__main__":

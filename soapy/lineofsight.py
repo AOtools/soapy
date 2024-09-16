@@ -26,6 +26,7 @@ Examples::
 import numpy
 
 from aotools import opticalpropagation
+import copy 
 
 from . import logger, interp
 from . import numbalib
@@ -81,7 +82,7 @@ class LineOfSight(object):
 
         # If the line of sight has a launch position, must include in calculations! Conver to metres from centre of telescope
         try:
-            self.launch_position = self.config.launchPosition * self.telescope_diameter/2.
+            self.launch_position = numpy.array(self.config.launchPosition) * self.telescope_diameter/2.
         except AttributeError:
             self.launch_position = numpy.array([0, 0])
 
@@ -314,10 +315,11 @@ class LineOfSight(object):
             apos (ndarray, optional):  The angular position of the GS in radians. If not set, will use the config position
         '''
 
-        self.EField[:] *= physical_atmosphere_propagation(
+        self.EField[:] = physical_atmosphere_propagation(
             self.phase_screens, self.outMask, self.layer_altitudes, self.source_altitude,
             self.wavelength, self.out_pixel_scale,
-            propagation_direction=self.propagation_direction)
+            propagation_direction=self.propagation_direction,
+            input_efield=self.EField)
 
         return self.EField
 
@@ -412,6 +414,7 @@ def physical_atmosphere_propagation(
 
     phs2Rad = 2 * numpy.pi / (wavelength * 10 ** 9)
 
+    EFieldBuf = input_efield
     if input_efield is None:
         EFieldBuf = numpy.exp(
                 1j*numpy.zeros((nx_output_pixels,) * 2)).astype(CDTYPE)
@@ -461,7 +464,7 @@ def physical_atmosphere_propagation(
         # print("Get distance")
         # Get propagation distance for this layer
         if i==(scrnNo-1):
-            if ht_final == 0:
+            if ht_final == 0 and propagation_direction == "up":
                 # if the final height is infinity, don't propagate any more!
                 continue
             else:
@@ -483,3 +486,41 @@ def physical_atmosphere_propagation(
         # logger.debug("Propagation: {}, {} m. Total: {}".format(i, z, z_total))
 
     return EFieldBuf
+
+class ElongLineOfSight(object):
+    """
+    List of LineOfSight objects for elongated sources
+    """
+
+    def __init__(self, elongHeights, elongPos, config, *args, **kwargs):
+
+        self.elongHeights = elongHeights
+        self.elongPos = elongPos
+        self.config = config
+
+        self.los_list = []
+        for i in range(len(self.elongHeights)):
+            conf_tmp = copy.copy(config)
+            conf_tmp.GSPosition = self.elongPos[i]
+            conf_tmp.GSHeight = self.elongHeights[i]
+            conf_tmp.calcParams()
+
+            los = LineOfSight(conf_tmp, *args, **kwargs)
+            self.los_list.append(los)
+
+    def __getitem__(self, index):
+        return self.los_list[index]
+
+    def frame(self, scrns=None, correction=None):
+        
+        for i,los in enumerate(self.los_list):
+            los.frame(scrns, correction)
+
+    def zeroData(self):
+
+        for los in self.los_list:
+            los.zeroData()
+
+    @property
+    def scrns(self):
+        return self.los_list[0].scrns

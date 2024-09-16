@@ -2,8 +2,6 @@
 import platform
 from setuptools import setup, find_packages
 import versioneer
-
-
 scripts = ["bin/soapy"]
 
 if (platform.system() == "Windows"):
@@ -12,8 +10,6 @@ if (platform.system() == "Windows"):
 
 setup(
     name='soapy',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
     author='Andrew P. Reeves',
     author_email='andrewpaulreeves@gmail.com',
     packages=find_packages(),
@@ -26,7 +22,9 @@ setup(
         "astropy >= 1.0",
         "aotools >= 1.0",
         "pyfftw >= 0.12.0",
-        "pyqtgraph >= 0.11.1"
+        "pyyaml >= 5.1.1",
+        "pyqtgraph >= 0.12.0",
+        "numba >= 0.40"
       ],
     classifiers=[
         "Programming Language :: Python",
@@ -35,4 +33,6 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass()
 )

@@ -20,7 +20,6 @@ import traceback
 import time
 
 import numpy
-import scipy
 
 from . import logger
 
@@ -208,20 +207,24 @@ class Reconstructor(object):
         imat_header = fits.getheader(filename)
         imat_data = fits.getdata(filename)
 
-        # Check that imat shape is copatibile with curretn sim
-        if imat_data.shape != (self.sim_config.totalActs, self.sim_config.totalWfsData):
+        imat_totalActs = imat_header['DMNACTU']
+        imat_totalWfsData = imat_header['NSLOP']
+        
+        # Check iMat generated with same totalActs and totalWfsData as current sim
+        # NOTE the actual shape of the loaded iMat can be different due to invalid acts
+        if imat_totalActs != self.sim_config.totalActs or imat_totalWfsData != self.sim_config.totalWfsData:
             logger.warning(
-                "interaction matrix does not match required required size."
+                "interaction matrix not generated with same number of actuators/wfs slopes"
             )
             raise IOError("interaction matrix does not match required required size.")
 
-        self.interaction_matrix[:] = imat_data
-
         # Load valid actuators
+        n_total_valid_acts = 0
         for i in range(self.n_dms):
             valid_acts_filename =  self.sim_config.simName+"/active_acts_dm{}.fits".format(i)
             valid_acts = fits.getdata(valid_acts_filename)
             self.dms[i].valid_actuators = valid_acts
+            n_total_valid_acts += self.dms[i].n_valid_actuators
 
             # DM may also have preloaded influence functions
             try:
@@ -233,6 +236,14 @@ class Reconstructor(object):
                 # Found no DM influence funcs
                 logger.info("DM Influence functions not found. If the DM doesn't use them, this is ok. If not, set 'forceNew=True' when making IMat")
 
+        # Final check of loaded iMat
+        if imat_data.shape != (n_total_valid_acts, self.sim_config.totalWfsData):
+            logger.warning(
+                "interaction matrix does not match required required size."
+            )
+            raise IOError("interaction matrix does not match required required size.")
+
+        self.interaction_matrix = imat_data
 
     def makeIMat(self, callback=None):
 
@@ -505,12 +516,18 @@ class LearnAndApply(MVM):
     Assumes that on-axis sensor is WFS 0
     '''
 
+    def makeIMat(self, callback=None):
+        super(LearnAndApply, self).makeIMat(callback=callback)
+
+        # only truth sensor and DM(s) interaction matrix needed 
+        self.interaction_matrix = self.interaction_matrix[:,:2*self.wfss[0].n_subaps]
+
     def saveCMat(self):
         cMatFilename = self.sim_config.simName+"/cMat.fits"
         tomoMatFilename = self.sim_config.simName+"/tomoMat.fits"
 
         fits.writeto(
-                cMatFilename, self.controlMatrix,
+                cMatFilename, self.control_matrix,
                 header=self.sim_config.saveHeader, overwrite=True
                 )
 
@@ -529,8 +546,8 @@ class LearnAndApply(MVM):
 
         #And check its the right size
         if tomoMat.shape != (
-                2*self.wfss[0].activeSubaps,
-                self.sim_config.totalWfsData - 2*self.wfss[0].activeSubaps):
+                2*self.wfss[0].n_subaps,
+                self.sim_config.totalWfsData - 2*self.wfss[0].n_subaps):
             logger.warning("Loaded Tomo matrix not the expected shape - gonna make a new one..." )
             raise Exception
         else:
@@ -539,8 +556,8 @@ class LearnAndApply(MVM):
 
     def initControlMatrix(self):
 
-        self.controlShape = (2*self.wfss[0].activeSubaps, self.sim_config.totalActs)
-        self.controlMatrix = numpy.zeros( self.controlShape )
+        self.controlShape = (2*self.wfss[0].n_subaps, self.sim_config.totalActs)
+        self.control_matrix = numpy.zeros( self.controlShape )
 
 
     def learn(self, callback=None, progressCallback=None):
@@ -555,7 +572,10 @@ class LearnAndApply(MVM):
             self.learnIter=i
 
             scrns = self.moveScrns()
-            self.learnSlopes[i] = self.runWfs(scrns)
+
+            for j in range(len(self.wfss)):
+                wfs = self.wfss[j]
+                self.learnSlopes[i,j*wfs.n_measurements:(j+1)*wfs.n_measurements] = wfs.frame(scrns, read=True)
 
 
             logger.statusMessage(i+1, self.learnIters, "Performing Learn")
@@ -586,10 +606,10 @@ class LearnAndApply(MVM):
             progressCallback(1,1, "Calculating Covariance Matrices")
 
         self.covMat = numpy.cov(self.learnSlopes.T)
-        Conoff = self.covMat[   :2*self.wfss[0].activeSubaps,
-                                2*self.wfss[0].activeSubaps:     ]
-        Coffoff = self.covMat[  2*self.wfss[0].activeSubaps:,
-                                2*self.wfss[0].activeSubaps:    ]
+        Conoff = self.covMat[   :2*self.wfss[0].n_subaps,
+                                2*self.wfss[0].n_subaps:     ]
+        Coffoff = self.covMat[  2*self.wfss[0].n_subaps:,
+                                2*self.wfss[0].n_subaps:    ]
 
         logger.info("Inverting offoff Covariance Matrix")
         iCoffoff = numpy.linalg.pinv(Coffoff, rcond=1e-8)
@@ -618,22 +638,22 @@ class LearnAndApply(MVM):
         """
 
         #Retreive pseudo on-axis slopes from tomo reconstructor
-        slopes = self.tomoRecon.dot(slopes[2*self.wfss[0].activeSubaps:])
+        slopes = self.tomoRecon.dot(slopes[2*self.wfss[0].n_subaps:])
 
         if self.dms[0].dmConfig.type=="TT":
-            ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
-            ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
-            slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
-            slopes[self.wfss[0].activeSubaps:] -= ttMean[1]
+            ttMean = slopes.reshape(2, self.wfss[0].n_subaps).mean(1)
+            ttCommands = self.control_matrix[:,:2].T.dot(slopes)
+            slopes[:self.wfss[0].n_subaps] -= ttMean[0]
+            slopes[self.wfss[0].n_subaps:] -= ttMean[1]
 
             #get dm commands for the calculated on axis slopes
-            dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
+            dmCommands = self.control_matrix[:,2:].T.dot(slopes)
 
             return numpy.append(ttCommands, dmCommands)
 
         #get dm commands for the calculated on axis slopes
         dmCommands = super(LearnAndApply, self).reconstruct(slopes)
-        #dmCommands = self.controlMatrix.T.dot(slopes)
+        #dmCommands = self.control_matrix.T.dot(slopes)
         return dmCommands
 
 
@@ -647,10 +667,10 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
     Assumes that on-axis sensor is WFS 1
     '''
 
-    def initControlMatrix(self):
+    def initcontrol_matrix(self):
 
         self.controlShape = (2*(self.wfss[0].activeSubaps+self.wfss[1].activeSubaps), self.sim_config.totalActs)
-        self.controlMatrix = numpy.zeros( self.controlShape )
+        self.control_matrix = numpy.zeros( self.controlShape )
 
 
     def calcCMat(self,callback=None, progressCallback=None):
@@ -687,7 +707,7 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
 
         #Dont make global reconstructor. Will reconstruct on-axis slopes, then
         #dmcommands explicitly
-        #self.controlMatrix = (self.controlMatrix.T.dot(self.tomoRecon)).T
+        #self.control_matrix = (self.control_matrix.T.dot(self.tomoRecon)).T
         logger.info("Done.")
 
     def reconstruct(self, slopes):
@@ -713,29 +733,29 @@ class LearnAndApplyLTAO(LearnAndApply, MVM_SeparateDMs):
         onSlopes = numpy.append(
                 slopes[:self.wfss[1].config.dataStart], slopes_HO)
 
-        dmCommands = self.controlMatrix.T.dot(onSlopes)
+        dmCommands = self.control_matrix.T.dot(onSlopes)
 
         #
-        # ttCommands = self.controlMatrix[
+        # ttCommands = self.control_matrix[
         #         :self.wfss[1].config.dataStart,:2].T.dot(slopes_TT)
         #
-        # hoCommands = self.controlMatrix[
+        # hoCommands = self.control_matrix[
         #         self.wfss[1].config.dataStart:,2:].T.dot(slopes_HO)
         #
         # #if self.dms[0].dmConfig.type=="TT":
         #    ttMean = slopes.reshape(2, self.wfss[0].activeSubaps).mean(1)
-        #    ttCommands = self.controlMatrix[:,:2].T.dot(slopes)
+        #    ttCommands = self.control_matrix[:,:2].T.dot(slopes)
         #    slopes[:self.wfss[0].activeSubaps] -= ttMean[0]
         #    slopes[self.wfss[0].activeSubaps:] -= ttMean[1]
 
         #    #get dm commands for the calculated on axis slopes
-        #    dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
+        #    dmCommands = self.control_matrix[:,2:].T.dot(slopes)
 
         #    return numpy.append(ttCommands, dmCommands)
 
         #get dm commands for the calculated on axis slopes
 
-       # dmCommands = self.controlMatrix.T.dot(slopes)
+       # dmCommands = self.control_matrix.T.dot(slopes)
 
         return dmCommands
 

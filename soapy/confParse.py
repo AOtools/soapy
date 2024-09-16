@@ -160,7 +160,7 @@ class PY_Configurator(object):
 
         # We oversize the pupil to what we'll call the "simulation size"
         simPadRatio = (self.sim.simOversize-1)/2.
-        self.sim.simPad = int(round(self.sim.pupilSize*simPadRatio))
+        self.sim.simPad = max(int(round(self.sim.pupilSize*simPadRatio)), 1)
         self.sim.simSize = self.sim.pupilSize + 2 * self.sim.simPad
 
 
@@ -171,7 +171,7 @@ class PY_Configurator(object):
 
             # Need to add bit if the GS is an elongated off-axis LGS
             if (hasattr(self.wfss[gs].lgs, 'elongationDepth')
-                    and self.wfss[gs].lgs.elongationDepth is not 0):
+                    and self.wfss[gs].lgs.elongationDepth != 0):
                 # This calculation is done more explicitely in the WFS module
                 # in the ``calcElongPos`` method
                 maxLaunch = abs(numpy.array(
@@ -751,6 +751,20 @@ class WfsConfig(ConfigObj):
         ``photometric_zp``      float: Photometric zeropoint -
                                 number of photons/meter^2/second/band
                                 from a magnitude 0 star             ``2e9``
+        ``nb_modulation``       Number of modulations used for      
+                                pyramid WFS                        ``4``
+        ``amplitude_modulation``Amplitude of the modulations used
+                                for the pyramid WFS (arcsec)        ``0.1``
+        ``FOV``                 Field of view use in the case of    ``.5``
+                                the PWS in arcsec
+        ``detector_size``       WFS detector size(in pixel) for     ``None``
+                                the PWS. If None, taken 5*pupilsize
+        ``detector``            introduce the possibility to choose ``CCD``
+                                MKID (photon counting) 
+        ``nb_of_photon``        number of photon per frame         ``3.6e4``
+        ``pupil_separation``    Number of pixel of separation between ``10``
+                                each pupil image on the detector for 
+                                for the PWS
         =====================   ================================== ===========
 
 
@@ -787,7 +801,14 @@ class WfsConfig(ConfigObj):
                         ("correlationFFTPad", None),
                         ("nx_guard_pixels", 0),
                         ("loadModule", None),
-                        ("photometric_zp", 2e9)
+                        ("photometric_zp", 2e9),
+                        ("nb_modulation", 4),
+                        ("amplitude_modulation", 0.1),
+                        ("FOV", 0.5),
+                        ("detector_size", None),
+                        ("detector", "CCD"),
+                        ("nb_of_photon", None),
+                        ("pupil_separation", 10)
                         ]
 
         # Parameters which may be Set at some point and are allowed
@@ -864,6 +885,8 @@ class LgsConfig(ConfigObj):
         ``uplink``           bool: Include LGS uplink effects    ``False``
         ``pupilDiam``        float: Diameter of LGS launch
                              aperture in metres.                 ``0.3``
+        ``obsDiam``          float: Diameter of LGS launch       ``0``
+                             central obscuration in metres
         ``wavelength``       float: Wavelength of laser beam
                              in metres                           ``600e-9``
         ``propagationMode``  str: Mode of light propogation
@@ -890,6 +913,8 @@ class LgsConfig(ConfigObj):
         ``naProfile``        list: The relative sodium layer
                              strength for each elongation
                              layer. If None, all equal.          ``None``
+        ``precompensated``   bool: precompensate LGS with DM(s)  ``False``
+                             before launching
         ==================== =================================   ===========
 
     """
@@ -898,6 +923,7 @@ class LgsConfig(ConfigObj):
 
     optionalParams = [  ("uplink", False),
                         ("pupilDiam", 0.3),
+                        ("obsDiam", 0.0),
                         ("wavelength", 600e-9),
                         ("propagationMode", "Physical"),
                         ("height", 90000),
@@ -907,6 +933,7 @@ class LgsConfig(ConfigObj):
                         ("elongationLayers", 10),
                         ("launchPosition",  numpy.array([0,0])),
                         ("naProfile", None),
+                        ("precompensated", False),
                         ]
     calculatedParams = ["position"]
 

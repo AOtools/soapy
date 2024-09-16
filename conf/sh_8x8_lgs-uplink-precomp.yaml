@@ -1,7 +1,11 @@
 # Example configuration file for AO system with single, on-axis LGS.
 # LGS features realistic uplink propagation, so a NGS TT sensor also present
+# LGS launched from primary 1m telescope aperture ("monostatic" configuration), 
+# the size of the launched beam requires the LGS to be 1) focused at 90km and 2) 
+# precompensated by applying DM correction before launch. However, a much tighter 
+# (and therefore brighter) LGS spot results. 
 
-simName: sh_8x8_lgsUp
+simName: sh_8x8_lgsUp_precomp
 pupilSize: 128
 nGS: 2
 nDM: 2
@@ -24,57 +28,63 @@ Atmosphere:
   windDirs: [0,45,90,135]
   windSpeeds: [10,10,15,20]
   wholeScrnSize: 2048
-  r0: 0.16
+  r0: 0.15
 
 Telescope:
-  telDiam: 8
-  obsDiam: 1.1
+  telDiam: 1
+  obsDiam: 0.35
   mask: circle
 
 WFS:
   0:
     type: ShackHartmann
     GSPosition: [0,0]
-    GSHeight: 0
-    GSMag: 8
     nxSubaps: 2
     pxlsPerSubap: 10
-    subapFOV: 2.0
+    subapFOV: 5.0
     wavelength: 600e-9
+
 
   1:
     type: ShackHartmann
     GSPosition: [0, 0]
     GSHeight: 90000
     GSMag: 8
-    nxSubaps: 8
+    nxSubaps: 10
     pxlsPerSubap: 10
-    subapFOV: 5.0
-    wavelength: 600e-9
+    subapFOV: 6.0
+    wavelength: 589e-9
     removeTT: True
     centThreshold: 0.3
+    fftOversamp: 6
+    propagationMode: Physical
+
     lgs:
-      propagationMode: Geometric
+      propagationMode: Physical
       uplink: True
-      pupilDiam: 0.3
-      wavelength: 600e-9
+      pupilDiam: 1.0
+      obsDiam: 0.35
+      wavelength: 589e-9
       height:   90e3
+      precompensated: True 
 
 DM:
-  0:
+  0: 
     type: TT
     nxActuators: 2
-    wfs: 0
-    iMatValue: 0.2
+    svdConditioning: 0.
     gain: 0.6
+    iMatValue: 0.25
+    wfs: 0
 
   1:
     type: Piezo
-    nxActuators: 9
-    svdConditioning: 0.07
+    nxActuators: 11
+    svdConditioning: 0.05
     gain: 0.6
     iMatValue: 500
     wfs: 1
+
 
 Reconstructor:
   type: MVM_SeparateDMs
@@ -85,6 +95,6 @@ Science:
   0:
     type: PSF
     position: [0,0]
-    FOV: 1.0
-    wavelength: 1.65e-6
-    pxls: 64
+    FOV: 4.0
+    wavelength: 600e-9
+    pxls: 120

@@ -229,7 +229,6 @@ class ShackHartmann(wfs.WFS):
         avoid having to re-alloc memory during the running of the WFS and
         keep it fast.
         """
-        self.los.allocDataArrays()
 
         self.interp_phase = numpy.zeros(
                 (self.nx_interp_efield, self.nx_interp_efield), dtype=DTYPE)
@@ -293,7 +292,7 @@ class ShackHartmann(wfs.WFS):
         self.staticData = None
 
         # Make flat wavefront, and run through WFS in iMat mode to turn off features
-        phs = numpy.zeros([self.los.n_layers, self.screen_size, self.screen_size]).astype(DTYPE)
+        phs = numpy.zeros([self.soapy_config.atmos.scrnNo, self.screen_size, self.screen_size]).astype(DTYPE)
         self.staticData = self.frame(
                 phs, iMatFrame=True).copy().reshape(2, self.n_subaps)
 #######################################################################
@@ -317,20 +316,22 @@ class ShackHartmann(wfs.WFS):
             self.detector[:] = 0
 
 
-    def calcFocalPlane(self, intensity=1):
+    def calcFocalPlane(self, intensity=1, los=None):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
 
         Parameters:
             intensity (float): The relative intensity of this frame, is used when multiple WFS frames taken for extended sources.
         '''
+        if los == None:
+            los = self.los
 
         if self.config.propagationMode=="Geometric":
             # Have to make phase the correct size if geometric prop
-            numbalib.wfslib.zoomtoefield(self.los.phase, self.interp_efield)
+            numbalib.wfslib.zoomtoefield(los.phase, self.interp_efield)
 
         else:
-            self.interp_efield = self.EField
+            self.interp_efield[:] = interp.zoom(los.EField, self.nx_interp_efield)
 
         # Create an array of individual subap EFields
         self.fft_input_data[:] = 0
@@ -342,10 +343,12 @@ class ShackHartmann(wfs.WFS):
 
         self.temp_subap_focus = AOFFT.ftShift2d(self.fft_output_data)
 
-        numbalib.abs_squared(self.temp_subap_focus, self.subap_focus_intensity)
+        numbalib.abs_squared(self.temp_subap_focus, self.temp_subap_intensity)
 
         if intensity != 1:
-            self.subap_focus_intensity *= intensity
+            self.temp_subap_intensity *= intensity
+
+        self.subap_focus_intensity += self.temp_subap_intensity
 
 
     def integrateDetectorPlane(self):
@@ -401,7 +404,7 @@ class ShackHartmann(wfs.WFS):
 
         self.lgs.getLgsPsf(self.los.scrns)
 
-        self.lgs_ifft_input_data[:] = self.lgs.psf[::-1, ::-1]
+        self.lgs_ifft_input_data[:] = self.lgs.psf
         self.lgs_iFFT()
 
         self.ifft_input_data[:] = self.subap_focus_intensity
@@ -413,7 +416,7 @@ class ShackHartmann(wfs.WFS):
         # back to Focal Plane.
         self.fft_input_data[:] = self.ifft_output_data
         self.FFT()
-        self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.fft_output_data).real
+        self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.fft_output_data).real[:,::-1,::-1]
 
     def calculateSlopes(self):
         '''

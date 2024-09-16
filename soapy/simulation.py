@@ -58,6 +58,9 @@ Examples:
     Andrew Reeves
 
 '''
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 # standard python imports
 import datetime
@@ -374,7 +377,7 @@ class Sim(object):
             ndarray: The slope data return from the WFS frame (may not be actual slopes if WFS other than SH used)
             """
         t_wfs = time.time()
-        if scrns != None:
+        if scrns is not None:
             self.scrns=scrns
 
         if wfsList==None:
@@ -425,7 +428,7 @@ class Sim(object):
             ndarray: The slope data return from the WFS frame (may not be actual slopes if WFS other than SH used)
         """
         t_wfs = time.time()
-        if scrns != None:
+        if scrns is not None:
             self.scrns=scrns
         if wfsList==None:
             wfsList=range(self.config.sim.nGS)
@@ -519,14 +522,8 @@ class Sim(object):
 
         self.sciImgNo +=1
         for sci in xrange(self.config.sim.nSci):
-            self.sciImgs[sci] += self.sciCams[sci].frame(self.scrns, dmShape)
-
-            # Normalise long exposure psf
-            #self.sciImgs[sci] /= self.sciImgs[sci].sum()
-            self.sciCams[sci].longExpStrehl = (
-                    self.sciImgs[sci].max()/
-                    self.sciImgs[sci].sum()/
-                    self.sciCams[sci].psfMax)
+            self.sciCams[sci].frame(self.scrns, dmShape)
+            self.sciImgs[sci] = self.sciCams[sci].long_exp_image
 
         self.Tsci +=time.time()-t
 
@@ -672,6 +669,7 @@ class Sim(object):
             self.longStrehl[:] = 0
             self.ee50d[:] = 0
             for sci in self.sciImgs.values(): sci[:] = 0
+            for sci in self.sciCams.values(): sci.reset()
         
         for dm in self.dms.values(): dm.reset()
 
@@ -982,6 +980,8 @@ class Sim(object):
         header = fits.Header()
         self.timeStamp = self.getTimeStamp()
 
+        
+
         # Sim Params
         header["INSTRUME"] = "SOAPY"
         header["SVER"] = __version__
@@ -1268,9 +1268,3 @@ if __name__ == "__main__":
     sim.aoinit()
     sim.makeIMat()
     sim.aoloop()
-
-
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions

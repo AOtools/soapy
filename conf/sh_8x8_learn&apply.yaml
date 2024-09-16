@@ -33,6 +33,7 @@ Telescope:
 
 WFS:
   0:
+    type: ShackHartmann
     GSPosition: [0, 0]
     GSHeight: 0
     GSMag: 8
@@ -43,6 +44,7 @@ WFS:
     wavelength: 600e-9
 
   1:
+    type: ShackHartmann
     GSPosition: [-10, -10]
     GSHeight: 0
     GSMag: 8
@@ -53,6 +55,7 @@ WFS:
     wavelength: 600e-9
 
   2:
+    type: ShackHartmann
     GSPosition: [-10, 10]
     GSHeight: 0
     GSMag: 8
@@ -63,6 +66,7 @@ WFS:
     wavelength: 600e-9
 
   3:
+    type: ShackHartmann
     GSPosition: [10, -10]
     GSHeight: 0
     GSMag: 8
@@ -73,6 +77,7 @@ WFS:
     wavelength: 600e-9
 
   4:
+    type: ShackHartmann
     GSPosition: [10, 10]
     GSHeight: 0
     GSMag: 8
@@ -84,7 +89,7 @@ WFS:
 
 DM:
   0:
-    type: Piezo
+    type: FastPiezo
     closed: True
     nxActuators: 9
     svdConditioning: 0.05
@@ -93,7 +98,7 @@ DM:
     wfs: 0
 
 Reconstructor:
-  type: MVM
+  type: LearnAndApply
   svdConditioning: 0.03
   gain: 0.6
 
