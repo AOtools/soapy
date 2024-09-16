@@ -4,19 +4,12 @@ from setuptools import setup, find_packages
 import versioneer
 
 
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'soapy/_version.py'
-versioneer.versionfile_build = 'soapy/_version.py'
-versioneer.tag_prefix = '' # tags are like 1.2.0
-versioneer.parentdir_prefix = 'soapy-' # dirname like 'myproject-1.2.0'
-
-
 scripts = ["bin/soapy"]
 
 if (platform.system() == "Windows"):
     scripts.append("bin/soapy.bat")
 
-  
+
 setup(
     name='soapy',
     version=versioneer.get_version(),
@@ -33,7 +26,7 @@ setup(
         "astropy >= 1.0",
         "aotools >= 1.0",
         "pyfftw >= 0.12.0",
-        "pyqtgraph == 0.11.1"
+        "pyqtgraph >= 0.11.1"
       ],
     classifiers=[
         "Programming Language :: Python",
