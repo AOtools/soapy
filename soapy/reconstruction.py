@@ -397,7 +397,7 @@ class Reconstructor(object):
 
     def apply_gain(self):
         """
-        Applies the gains set for each DM to the DM actuator commands. 
+        Applies the gains set for each DM to the DM actuator commands.
         Also applies different control law if DM is in "closed" or "open" loop mode
         """
         # Loop through DMs and apply gain
@@ -449,7 +449,7 @@ class MVM(Reconstructor):
 
         logger.info("Invert iMat with conditioning: {:.4f}".format(
                 self.config.svdConditioning))
-        self.control_matrix = scipy.linalg.pinv(
+        self.control_matrix = numpy.linalg.pinv(
                 self.interaction_matrix, self.config.svdConditioning
                 )
 
