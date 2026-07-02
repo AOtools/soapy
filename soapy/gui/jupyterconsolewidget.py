@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 
 from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
 from qtconsole.inprocess import QtInProcessKernelManager

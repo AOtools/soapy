@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "versioneer[toml]"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soapy"
+dynamic = ["version"]
+description = "A tomographic astronomical adaptive optics simulation with realistic laser guide star propagation."
+readme = "README.md"
+authors = [
+    { name = "Andrew P. Reeves", email = "andrewpaulreeves@gmail.com" },
+]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "numpy >= 1.7.0",
+    "scipy >= 0.15.0",
+    "astropy >= 1.0",
+    "aotools >= 1.0",
+    "pyfftw >= 0.12.0",
+    "pyyaml >= 5.1.1",
+    "pyqtgraph >= 0.12.0",
+    "numba >= 0.40",
+    "ipython",
+    "matplotlib",
+    "PySide6",
+    "qtconsole",
+]
+
+[tool.setuptools.packages.find]
+include = ["soapy*"]
+
+[tool.setuptools.package-data]
+"soapy.gui" = ["*.qss"]
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "soapy/_version.py"
+versionfile_build = "soapy/_version.py"
+tag_prefix = "v"
+parentdir_prefix = "soapy-"

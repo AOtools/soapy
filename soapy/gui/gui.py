@@ -31,16 +31,18 @@ import sys
 #     sip.setapi(name, API_VERSION)
 
 from .. import logger
-from PyQt5 import QtGui, QtWidgets, QtCore
+from PySide6 import QtGui, QtWidgets, QtCore
 
 # Do this so uses new Jupyter console if available
 from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
 from matplotlib.figure import Figure
 import matplotlib.pyplot as pyplot
+import os
+os.environ.setdefault('PYQTGRAPH_QT_LIB', 'PySide6')
 import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
@@ -76,7 +78,6 @@ import queue
 
 from argparse import ArgumentParser
 import pylab
-import os
 try:
     from OpenGL import GL
 except ImportError:
@@ -192,9 +193,7 @@ class GUI(QtWidgets.QMainWindow):
     def readParamFile(self):
 
         fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', '.')
-
-        if PYQT_VERSION == 5:
-            fname = fname[0]
+        fname = fname[0]
 
         fname = str(fname)
 
@@ -604,7 +603,7 @@ class GUI(QtWidgets.QMainWindow):
 
 
 class StatsThread(QtCore.QThread):
-    updateStatsSignal = QtCore.pyqtSignal(float,float)
+    updateStatsSignal = QtCore.Signal(float,float)
     def __init__(self, sim):
         QtCore.QThread.__init__(self)
 
@@ -628,8 +627,8 @@ class StatsThread(QtCore.QThread):
 
 
 class InitThread(QtCore.QThread):
-    updateProgressSignal = QtCore.pyqtSignal(str,str,str)
-    init_done_signal = QtCore.pyqtSignal()
+    updateProgressSignal = QtCore.Signal(str,str,str)
+    init_done_signal = QtCore.Signal()
     def __init__(self,guiObj):
         QtCore.QThread.__init__(self)
         self.guiObj = guiObj
@@ -647,7 +646,7 @@ class InitThread(QtCore.QThread):
 
 
 class IMatThread(QtCore.QThread):
-    updateProgressSignal = QtCore.pyqtSignal(str,str,str)
+    updateProgressSignal = QtCore.Signal(str,str,str)
 
     def __init__(self,guiObj):
         self.sim = guiObj.sim
@@ -676,7 +675,7 @@ class IMatThread(QtCore.QThread):
 
 
 class LoopThread(QtCore.QThread):
-    updateProgressSignal = QtCore.pyqtSignal(str,str,str)
+    updateProgressSignal = QtCore.Signal(str,str,str)
 
     def __init__(self, guiObj):
 
@@ -767,7 +766,7 @@ class OverlapCanvas(FigureCanvas):
             self.axes.append(self.fig.add_subplot(2, numpy.ceil(nAxes/2.),i+1))
 
         FigureCanvas.__init__(self, self.fig)
-        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
         FigureCanvas.updateGeometry(self)
 
 class OverlapWidget(QtWidgets.QWidget):
@@ -787,7 +786,7 @@ class PlotCanvas(FigureCanvas):
         self.ax = self.fig.add_subplot(111)
 
         FigureCanvas.__init__(self, self.fig)
-        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding,QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
         FigureCanvas.updateGeometry(self)
 
 
@@ -806,7 +805,7 @@ def start_gui(simulation, useOpenGL=False, verbosity=1):
 
     gui = GUI(simulation, useOpenGL=useOpenGL, verbosity=verbosity)
 
-    app.exec_()
+    app.exec()
     # del(gui.initThread)
     # del(gui.iMatThread)
     # del(gui.loopThread)
