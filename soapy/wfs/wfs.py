@@ -280,7 +280,7 @@ class WFS(object):
 
         For each 'elongation layer' a phase addition is calculated which
         accounts for the difference in height from the nominal GS height where
-        the WFS is focussed, and accounts for the tilt seen if the LGS is
+        the WFS is focused, and accounts for the tilt seen if the LGS is
         launched off-axis.
 
         Parameters:
